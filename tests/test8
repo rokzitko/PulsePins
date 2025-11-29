@@ -1,0 +1,8 @@
+#!/bin/sh
+set -ex
+pptest 8 -c 1 -v 200 -check -dump-converted # Problematic at the highest frequencies ??
+pptest 8 -c 2 -v 200 -check -dump-converted
+pptest 8 -c 12 -v 400 -check -dump-converted
+pptest 8 -c 120 -v 400 -check -dump-converted
+pptest 8 -c 1200 -v 400 -check -dump-converted
+pptest 8 -c 12000 -v 400 -check -dump-converted

@@ -1,0 +1,5 @@
+#!/bin/bash
+OFFSET_EXT=$((36569*512))
+MOUNTPOINT=`pwd`
+mkdir -p $MOUNTPOINT/ext
+sudo mount -o loop,offset=$OFFSET_EXT pulsepins.img $MOUNTPOINT/ext

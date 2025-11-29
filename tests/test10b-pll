@@ -1,0 +1,40 @@
+#!/bin/bash
+#Replay tests - large counts
+set -ex
+
+export INT_PLL=50M
+
+pptest 10 -v 1 -c 10000 -repetitions 5000 -nr_replays 1 -check -verbosecheck -mid -post
+
+pptest 10 -v 8 -c 100000 -repetitions 100 -nr_replays 4 -check
+pptest 10 -v 8 -c 1000000 -repetitions 10 -nr_replays 4 -check
+pptest 10 -v 8 -c 1000000 -repetitions 100 -nr_replays 1 -check
+pptest 10 -v 2 -c 1000000 -repetitions 1000 -nr_replays 1 -check
+
+pptest 10 -v 8 -c 10000 -repetitions 512 -nr_replays 1 -check
+pptest 10 -v 7 -c 10000 -repetitions 512 -nr_replays 1 -check
+pptest 10 -v 6 -c 10000 -repetitions 512 -nr_replays 1 -check
+pptest 10 -v 5 -c 10000 -repetitions 512 -nr_replays 1 -check
+pptest 10 -v 4 -c 10000 -repetitions 512 -nr_replays 1 -check
+pptest 10 -v 3 -c 10000 -repetitions 512 -nr_replays 1 -check
+pptest 10 -v 2 -c 10000 -repetitions 512 -nr_replays 1 -check
+pptest 10 -v 1 -c 10000 -repetitions 512 -nr_replays 1 -check
+
+pptest 10 -v 2 -c 10000 -repetitions 2000 -nr_replays 1 -check
+
+pptest 10 -v 2 -c 20000 -repetitions 2048 -nr_replays 1 -check
+pptest 10 -v 2 -c 10000 -repetitions 2048 -nr_replays 1 -check
+pptest 10 -v 2 -c 5000 -repetitions 2048 -nr_replays 1 -check
+pptest 10 -v 2 -c 2500 -repetitions 2048 -nr_replays 1 -check
+pptest 10 -v 2 -c 1200 -repetitions 2048 -nr_replays 1 -check
+pptest 10 -v 2 -c 600 -repetitions 2048 -nr_replays 1 -check
+
+# -sep
+pptest 10 -v 8 -c 10000 -repetitions 10 -nr_replays 10 -check -post -o 2 -mid -m 2 -sep
+
+pptest 10 -v 6 -c 1000 -repetitions 24 -nr_replays 2 -check -mid 1 -sep
+pptest 10 -v 6 -c 1000 -repetitions 22 -nr_replays 3 -check -mid 1 -sep
+pptest 10 -v 6 -c 1000 -repetitions 20 -nr_replays 3 -check -mid 1 -sep
+pptest 10 -v 6 -c 1000 -repetitions 18 -nr_replays 4 -check -mid 1 -sep
+pptest 10 -v 6 -c 100000 -repetitions 16 -nr_replays 14 -check -mid 1 -sep
+pptest 10 -v 6 -c 100000 -repetitions 8 -nr_replays 200 -check -mid 1 -sep

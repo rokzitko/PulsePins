@@ -1,0 +1,4 @@
+#!/bin/bash
+ORIG=$HOME/yocto/src/
+MOUNTPOINT=`pwd`/ext/
+sudo cp -rv ${ORIG} $MOUNTPOINT/home/root/

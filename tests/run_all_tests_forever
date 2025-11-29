@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Rok Zitko
+
+# This will generate a lot of output.
+# Use a RAM-based storage mount point, not the SD card!
+my $logdir = "/var/volatile";
+(-d $logdir && -w $logdir) or die "$logdir not writable.";
+
+system "rm $logdir/report.*"; # clean up first!
+
+open (O, ">report");
+
+for ($i = 1 ; ; $i++) {
+    system("bash", "-o", "pipefail", "-c", "run_all_tests 2>&1 | tee $logdir/report.run_$i");
+    my $rc = $? >> 8;   # extract exit code
+    last if $rc != 0;   # stop if not zero
+    chomp($time = `date`);
+    print O "$i -- $time\n"; # log successful runs
+}

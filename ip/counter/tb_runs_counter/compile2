@@ -1,0 +1,3 @@
+#!/bin/sh
+rm -f tb2
+iverilog -g2012 -DDO_SUM2 -o tb2 ../runs_counter.sv tb2.sv

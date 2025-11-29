@@ -1,0 +1,6 @@
+#!/bin/sh
+rm -rf work
+rm -f SUCCESS
+vlib work
+vlog -sv -cover bcesft tb1.sv ../input_fifo.sv ../preprocessor.sv
+vsim -L altera_mf -L lpm -c -do "run -all" -coverage tb_input_pre_1

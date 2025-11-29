@@ -1,0 +1,17 @@
+#!/bin/sh
+set -ex
+pptest 2 -c 10_000_000 -v 42 -check
+pptest 2 -c 1_000_000 -v 42 -check
+pptest 2 -c 100_000 -v 42 -check
+pptest 2 -c 10_000 -v 42 -check
+pptest 2 -c 1_000 -v 42 -check
+pptest 2 -c 100 -v 42 -check
+pptest 2 -c 10 -v 42 -check
+pptest 2 -c 1 -v 42 -check
+pptest 2 -c 0 -v 42 -check
+# -dump-converted
+
+time pptest 2 -c 100_000_000 -v 42 -check
+time pptest 2 -c 1_000_000_000 -v 42 -check
+time pptest 2 -c 5_000_000_000 -v 42 -check
+# The last one will be truncated to length 0xFFFFFFFF (42 seconds at 100MHz)

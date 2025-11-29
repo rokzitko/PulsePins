@@ -1,0 +1,10 @@
+#!/bin/sh
+set -ex
+pptest 5 -c 1 -check
+pptest 5 -c 10 -check
+pptest 5 -c 100 -check
+pptest 5 -c 1_000 -check
+pptest 5 -c 10_000 -check
+pptest 5 -c 100_000 -check
+pptest 5 -c 1_000_000 -check -veryverbose -verbosecheck
+

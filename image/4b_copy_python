@@ -1,0 +1,4 @@
+#!/bin/bash
+ORIG=$HOME/yocto/python/
+MOUNTPOINT=`pwd`/ext/
+sudo cp -rv ${ORIG} $MOUNTPOINT/home/root/

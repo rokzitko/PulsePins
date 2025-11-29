@@ -1,0 +1,4 @@
+#!/bin/bash
+ORIG=boot/boot.scr
+MOUNTPOINT=`pwd`/fat/
+sudo cp -rv ${ORIG} $MOUNTPOINT

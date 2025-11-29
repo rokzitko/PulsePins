@@ -1,0 +1,4 @@
+#!/bin/bash
+ORIG=../pulsepins.rbf
+MOUNTPOINT=`pwd`/fat/
+sudo cp -rv ${ORIG} $MOUNTPOINT/socfpga.rbf

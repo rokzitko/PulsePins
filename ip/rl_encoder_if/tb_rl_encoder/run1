@@ -1,0 +1,6 @@
+#!/bin/sh
+rm -rf work
+rm -f SUCCESS
+vlib work
+vlog -sv tb1.sv  ../rl_encoder.sv
+vsim -L altera_mf -L lpm -c -do "run -all" tb

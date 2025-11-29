@@ -1,0 +1,5 @@
+# one ms pulse, immediately upon triggering (right button)
+./ppdelay -veryverbose -trig_misc -pll 10M-100M -duration 1ms
+
+# one ms pulse after 20ms delay
+./ppdelay -veryverbose -trig_misc -pll 10M-100M -duration 1ms -delay 20ms

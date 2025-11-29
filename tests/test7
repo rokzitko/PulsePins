@@ -1,0 +1,18 @@
+#!/bin/bash
+set -ex
+pptest 7 -iv 0 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 1 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 2 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 3 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 4 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 5 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 6 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 7 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 8 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 9 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 10 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 11 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 12 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 13 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 14 -read -timeout -0.1 -dont_wait
+pptest 7 -iv 15 -read -timeout -0.1 -dont_wait

@@ -1,0 +1,131 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Rok Zitko
+
+// Sequence class
+
+#pragma once
+
+#include <iostream>
+#include <string>
+#include <deque>
+
+#include "elements.hh"
+
+// Extended version of a standard library deque of el objects
+class Sequence : public std::deque<el> {
+ public:
+   using Base = std::deque<el>;
+   using Base::Base;
+
+   void push_back_py(el && x) { Base::push_back(x); }
+
+   // Total length of the sequence (in units of periods)
+   uint64_t length() const {
+     uint64_t len = 0;
+     for (const auto &e : *this)
+       if (e.is_regular())
+         len += e.count();
+     return len;
+   }
+
+   // Number of regular elements in the container
+   uint64_t data_size() const {
+     uint64_t sz = 0;
+     for (const auto &e : *this)
+       if (e.is_regular())
+         sz++;
+     return sz;
+   }
+
+   // Dump the sequence to stream `F`.
+   void dump(std::ostream &F = std::cout, const std::string prefix = "") const {
+     F << prefix << "Sequence: number of elements (size)=" << size() << ", sequence duration in clock periods (length)=" << length() << std::endl;
+     size_t i = 0;
+     for (const auto &e : *this) {
+       F << prefix << std::dec << i << ": " << e << std::endl;
+       i++;
+     }
+   }
+
+   void dump_py(const std::string prefix = "") const {
+     dump(std::cout, prefix);
+   }
+
+   // Convert to a sequence of BitLoad's only. This can then be used as reference data in readback checking.
+   Sequence convert_to_BitLoad() {
+     Sequence s;
+     size_t n = 0; // counts regular elements only
+     value_t v_prev;
+     for (const auto &e: *this) {
+       el enew = e;
+       if (n && e.is_regular()) {
+         enew.set_value(BitLoad(e.updated_value(v_prev)));
+         enew.set_control((e.control() & ~MODEBITS) | BITLOAD);
+       }
+       s.push_back(enew);
+       if (e.is_regular())
+         v_prev = enew.value();
+       if (e.is_regular())
+         n++;
+     }
+     return s;
+   }
+
+   // Merge equal elements
+   Sequence merge() {
+     Sequence s = *this; // make a copy
+     merge_adjacent<el>(s,
+                        [](const el &x, const el &y){ return x.is_regular() && y.is_regular() && x.control() == y.control() && x.value() == y.value(); },
+                        [](const el &x, const el &y){ return el(Counter(x.count() + y.count()), Value(x.value())); });
+     return s;
+   }
+
+   virtual ~Sequence() = default;
+};
+
+inline bool compare(const Sequence &X, const Sequence &Y, bool verbose = false) {
+  if (X.size() != Y.size()) return false;
+  size_t size = X.size();
+  for (size_t i = 0; i < size; i++) {
+    if (verbose) std::cout << X[i].desc() << "  <->  " << Y[i].desc() << std::endl;
+    if (X[i] != Y[i]) return false;
+  }
+  return true;
+}
+
+inline bool operator==(const Sequence &X, const Sequence &Y) {
+  return compare(X, Y);
+}
+
+std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
+{
+  Sequence elements;
+  bool force_trigger = false;
+  try {
+    while (f) {
+      std::string token;
+      f >> token;
+      if (token == "d") {
+        std::string sc, sv;
+        f >> sc >> sv;
+        auto c = parse_count_t(sc);
+        auto v = parse_value_t(sv);
+        elements.push_back(el(c, v));
+      }
+      if (token == "t") {
+        std::string sp, sm;
+        f >> sp >> sm;
+        auto p = parse_trigger_t(sp);
+        auto m = parse_trigger_t(sm);
+        elements.push_back(el(p, m, true));
+      }
+      if (token == "f") {
+        force_trigger = true;
+      }
+    }
+  } catch (const std::exception& e) {
+    std::cout << "Caught exception in parse_sequence_from_stream(): " << e.what() << std::endl;
+    throw;
+  }
+  return {elements, force_trigger};
+}

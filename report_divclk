@@ -1,0 +1,4 @@
+#!/bin/bash
+# Generate timing report listing 100 worst paths
+quartus_sta -t report_divclk.tcl pulsepins
+

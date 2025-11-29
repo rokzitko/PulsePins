@@ -1,0 +1,10 @@
+#!/bin/bash
+set -ex
+time ppdmatest 21 -c 10 -v 44739241
+time ppdmatest 21 -c 10 -v 5000000
+time ppdmatest 21 -c 10 -v 500000
+time ppdmatest 21 -c 10 -v 50000
+time ppdmatest 21 -c 10 -v 5000
+time ppdmatest 21 -c 10 -v 500
+time ppdmatest 21 -c 10 -v 50
+time ppdmatest 21 -c 10 -v 5

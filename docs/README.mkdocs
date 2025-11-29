@@ -1,0 +1,9 @@
+https://www.mkdocs.org/getting-started/
+
+pip install mkdocs
+mkdocs new NAME
+cd NAME
+
+mkdocs serve
+http://127.0.0.1:8000/
+mkdocs serve -a $IP:8080

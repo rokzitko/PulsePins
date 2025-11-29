@@ -1,0 +1,3 @@
+#!/bin/sh
+# Infinite duration
+pptest 20 -c 1_000_000 -quiet -rnd -report 1

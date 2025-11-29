@@ -1,0 +1,9 @@
+#!/bin/bash
+# Replay tests
+set -ex
+
+pptest 10 -v 2 -c 100 -repetitions 2048 -nr_replays 1 -check -pll 10M-100M
+pptest 10 -v 2 -c 40 -repetitions 2048 -nr_replays 1 -check -pll 10M-100M
+
+pptest 10 -v 2 -c 10 -repetitions 2048 -nr_replays 1 -check -pll 1M-100M
+pptest 10 -v 2 -c 4 -repetitions 2048 -nr_replays 1 -check -pll 1M-100M

@@ -1,0 +1,2 @@
+#!/bin/bash
+mkdocs serve -a 192.168.0.110:8080

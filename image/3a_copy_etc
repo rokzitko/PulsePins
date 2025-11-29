@@ -1,0 +1,4 @@
+#!/bin/bash
+ORIG=etc/
+MOUNTPOINT=`pwd`/ext/
+sudo cp -rv ${ORIG} $MOUNTPOINT

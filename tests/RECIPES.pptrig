@@ -1,0 +1,46 @@
+For troubleshooting:
+./pptrig -debug
+
+# Controlling internal trigger via PIO
+./pptrig -debug -veryverbose -trig_int -pio 0b111
+ 0: trig in=00001111
+
+./pptrig -debug -veryverbose -trig_misc -pio 0b1111
+
+./pptrig -debug -veryverbose -trig_misc -pio 0b111_1111_1111
+ Trigger: misc (pushbuttons + 1PPS)
+ 0: trig in=11111111 [enable] [force] [reset]
+
+# misc trigger + inverting result
+./pptrig -debug -veryverbose -trig_misc -invert_trig_result 0b11
+ Trigger: misc (pushbuttons + 1PPS)
+ Trig result inverting: trig=00000011
+ 0: trig in=00000011
+
+# ext trigger + inverting result (output)
+./pptrig -debug -veryverbose -trig_ext -invert_trig_result 0b101_1101_1011
+ Trig result inverting: trig=11011011 [enable] [reset]
+ 0: trig in=00100100 [force]
+
+# invert int
+./pptrig -debug -veryverbose -trig_int -pio 0b111_1111_1111 -invert_trig_result 0b11 -invert_int 0b110000
+ Trigger: internal
+ Trig result inverting: trig=00000011
+ Trig int inverting: trig=00110000
+ 0: trig in=11001100 [enable] [force] [reset]
+
+# invert misc
+./pptrig -debug -veryverbose -trig_misc -invert_trig_result 0b11 -invert_misc 0b110000
+ Trigger: misc (pushbuttons + 1PPS)
+ Trig result inverting: trig=00000011
+ Trig misc inverting: trig=00110000
+ 0: trig in=00110011
+
+# -trig_std
+./pptrig -debug -veryverbose -trig_std -pio 0b000_0000_0000 -invert_int 0 -invert_misc 0
+ Trigger: standard (any of)
+ Trig int inverting: trig=00000000
+ Trig misc inverting: trig=00000000
+ 0: trig in=00000000
+
+./pptrig -debug -veryverbose -trig_std -pio 0b001_0000_0000 -invert_int 0 -invert_misc 0

@@ -1,0 +1,21 @@
+#!/bin/sh
+set -ex
+
+pptest 1 -check
+
+# Test final (terminal) value parsing + setting
+pptest 1 -t 0 -check
+pptest 1 -t 42 -check
+pptest 1 -t 0x20 -check
+pptest 1 -t 0b11111111 -check
+
+# Verilog integer literals. ' needs to be escaped!
+pptest 1 -t \'b1111_1111 -check
+pptest 1 -t \'b1111 -check
+pptest 1 -t \'hFF -check
+pptest 1 -t \'hFF_FF -check
+pptest 1 -t \'h10_20_30_40 -check
+pptest 1 -t \'hFF_FF_FF_FF -check
+pptest 1 -t \'h00_FF_00_FF -check
+pptest 1 -t \'d10 -check
+pptest 1 -t \'d100 -check

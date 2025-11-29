@@ -1,0 +1,7 @@
+export RBMODE=0
+export CORE_PLL=50M
+export INT_PLL=50M
+
+Core PLL is the clock for the FPGA streamer circuit (decoder). Internal PLL generates the clock for clocking out the date from the output FIFO buffer, i.e., it's a "data clock.
+
+CORE_PLL=100M and INT_PLL=10M pass all tests.

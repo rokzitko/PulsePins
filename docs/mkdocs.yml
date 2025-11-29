@@ -1,0 +1,31 @@
+site_name: PulsePins RLE-Streamer
+repo_url: https://github.com/rokzitko/pulsepins
+nav:
+  - Hardware:
+    - Electronics: index.md
+    - ppboards sheilds: ppboards.md
+    - Technicalities : details.md
+  - API:
+    - C++ API: cpp.md
+    - Python API: python.md
+  - pptool:
+    - pptool: pptool.md
+    - ppaux - AUX port tool: ppaux.md
+    - ppdelay - delay generator: ppdelay.md
+    - ppfg - function generator: ppfg.md
+    - pphheloworld - quick test: pphelloworld.md
+    - ppqout - multiplexer test: ppqout.md
+    - ppread - readback tool: ppread.md
+    - ppreset - reset tool: ppreset.md
+    - pptest - self-tests: pptest.md
+    - pptrig - trigger debugging tool: pptrig.md
+  - Testing:
+    - Test infrastructure : testing.md
+    - Readback : readback.md
+  - Development: development.md
+  - About: about.md
+theme: readthedocs
+markdown_extensions:
+  - attr_list
+extra_css:
+  - css/heartbeat.css

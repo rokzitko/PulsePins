@@ -1,0 +1,12 @@
+#!/bin/bash
+set -ex
+# Trick: we use -timeout with a negative value to termine the readback after one second,
+# and we use -dont_wait to skip waiting for the streaming process to terminate.
+pptest 11 -c 1 -read -quiet -timeout -1.0 -dont_wait
+pptest 11 -c 10 -read -quiet -timeout -1.0 -dont_wait
+pptest 11 -c 100 -read -quiet -timeout -1.0 -dont_wait
+pptest 11 -c 1000 -read -quiet -timeout -1.0 -dont_wait
+pptest 11 -c 10_000 -read -quiet -timeout -1.0 -dont_wait
+pptest 11 -c 100_000 -read -quiet -timeout -1.0 -dont_wait
+pptest 11 -c 1_000_000 -read -quiet -timeout -1.0 -dont_wait
+pptest 11 -c 10_000_000 -read -quiet -timeout -1.0 -dont_wait

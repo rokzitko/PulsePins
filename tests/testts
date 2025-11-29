@@ -1,0 +1,8 @@
+#!/bin/sh
+set -ex
+ppts -nr 5
+ppts -nr 10 -timeout 3.0 -selA 0 -sigA
+ppts -nr 10 -timeout 10.0 -selA 7 -sigA
+ppts -nr 10 -timeout 10.0 -selA 6 -sigA
+ppts -nr 10 -timeout 10.0 -selA 5 -sigA
+ppts -nr 10 -timeout 10.0 -selA 4 -sigA

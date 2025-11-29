@@ -1,0 +1,7 @@
+#!/bin/sh
+set -ex
+pptest 6 -c 1 -check -dump-converted
+pptest 6 -c 10 -check -dump-converted
+pptest 6 -c 100 -check -dump-converted
+pptest 6 -c 1000 -check -dump-converted
+pptest 6 -c 1_000_000 -check -dump-converted

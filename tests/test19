@@ -1,0 +1,6 @@
+#!/bin/sh
+set -ex
+pptest 19 -c 10
+pptest 19 -c 100
+pptest 19 -c 512
+# -c SIZE should not exceed the readback FIFO size

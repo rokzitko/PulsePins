@@ -1,0 +1,2 @@
+These tests are based on those in tb_preprocessor, but now the preprocessor is embedded between two FIFO buffers.
+We are thus also testing synchronization and throttling.

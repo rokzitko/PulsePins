@@ -1,0 +1,4 @@
+#!/bin/sh
+rm -f tb
+iverilog -g2012 -o tb ../activity_monitor.sv tb.sv
+

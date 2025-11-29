@@ -1,0 +1,56 @@
+# KiCad project files to keep under version control:
+#   *.kicad_pro, *.kicad_sch, *.kicad_pcb, *.kicad_sym, *.kicad_mod, *.pretty/*
+# so we DO NOT ignore those
+
+# Backup / autosave files
+*.bak
+*.bck
+*.kicad_pcb-bak
+*.kicad_sch-bak
+*-backups/
+*.tmp
+
+# User-specific settings
+*.kicad_prl    # project local settings
+*.kicad_sch-prl
+*.kicad_pcb-prl
+
+# Generated outputs (can be regenerated)
+*.net
+*.xml
+*.dcm
+*.cmp
+*.pro
+*.dsn
+*.ses
+*.ps
+*.pdf
+*.svg
+*.png
+*.gbr
+*.gbl
+*.gbo
+*.gbp
+*.gbs
+*.gtl
+*.gto
+*.gtp
+*.gts
+*.drl
+*.zip
+fabrication/
+outputs/
+
+# Simulator / spice
+*.cir
+*.spice
+
+# Cache and temp
+*.cache*
+*.tmp
+__pycache__/
+*.swp
+
+
+fp-info-cache
+shield.kicad_prl

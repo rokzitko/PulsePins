@@ -1,0 +1,51 @@
+# https://gist.github.com/nhasbun/71918796044b7ba89d6662133495f754
+# Note that files can be explicitly added even if the pattern is
+# excluded here!
+
+# Quartus generated files
+*.done
+*.rpt
+*.smsg
+*.summary
+*.jdi
+*.pin
+*.qws
+*.sld
+hps_sdram_p0_summary.csv
+base_hps.sopcinfo
+c5_pin_model_dump.txt
+*_assignment_defaults.qdf
+hps_0.h
+
+qar_info.json
+
+# Binary output
+*.sof
+*.rbf
+
+# Generated directories
+incremental_db/
+db/
+hps_isw_handoff/
+.qsys_edit/
+base_hps/
+
+# Backup files
+*~
+*.bak
+
+compile.log
+
+# Temporary stuff
+old/
+
+build-log-*
+
+# Local overrides
+Makefile.local
+local.qsf
+
+sha256.pulsepins.rbf
+sha256.pulsepins.sof
+
+.DS_Store

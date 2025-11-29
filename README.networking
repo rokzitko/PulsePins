@@ -1,0 +1,23 @@
+The network interface is configured in /etc/network/interfaces
+
+By default, DHCP is used to setup the eth interface.
+
+The MAC address can be change as follows:
+
+auto eth0
+iface eth0 inet dhcp
+     hwaddress ether 02:xx:xx:xx:xx:xx
+
+Choose a locally administered MAC: set the second least significant bit of the first octet (e.g. 02:xx:xx:xx:xx:xx is
+fine) to avoid collisions with real vendor MACs.
+
+Statis address can be set up as follows:
+
+iface eth0 inet static
+     address 192.168.0.42
+     network 192.168.0.0
+     netmask 255.255.255.0
+     broadcast 192.168.0.255
+     gateway 192.168.0.1
+     
+See also https://unix.stackexchange.com/questions/128439/good-detailed-explanation-of-etc-network-interfaces-syntax

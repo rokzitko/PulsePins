@@ -1,0 +1,3 @@
+#!/bin/sh
+set -ex
+pptest 14 -c 200 -v 42 -check -trig -cycles 10 -delay 100000

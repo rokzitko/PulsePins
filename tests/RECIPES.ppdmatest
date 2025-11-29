@@ -1,0 +1,4 @@
+# Quick test
+./ppdmatest 4 -c 10 -v 10 -check -veryverbose
+
+time ./ppdmatest 21 -c 10 -v 30000 -veryverbose

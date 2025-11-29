@@ -1,0 +1,6 @@
+#!/bin/sh
+rm -rf work
+rm -f SUCCESS
+vlib work
+vlog -sv -cover bcesft ../combiner_comb.sv tb2.sv
+vsim -c -do "run -all" -coverage tb_combiner2

@@ -1,0 +1,5 @@
+*.o
+pptool
+ppserver
+unit_tests
+._*

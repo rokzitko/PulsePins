@@ -1,0 +1,3 @@
+#!/bin/sh
+rm -f tb
+iverilog -g2012 -o tb ../pulse_gen_timebase.sv tb.sv

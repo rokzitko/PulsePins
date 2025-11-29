@@ -1,0 +1,16 @@
+#!/bin/bash
+set -ex
+ppmstest 1 -veryverbose -check -trig -mode 1
+ppmstest 1 -check -trig -mode 2
+ppmstest 1 -check -trig -mode 3
+ppmstest 1 -check -trig -mode 4
+ppmstest 1 -check -trig -mode 5
+ppmstest 1 -check -trig -mode 6
+ppmstest 1 -check -trig -mode 7
+ppmstest 1 -check -trig -mode 8
+ppmstest 1 -check -trig -mode 9
+ppmstest 1 -check -trig -mode 10
+ppmstest 1 -check -trig -mode 11
+ppmstest 1 -check -trig -mode 12
+ppmstest 1 -check -trig -mode 13
+ppmstest 1 -check -trig -mode 14

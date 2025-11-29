@@ -1,0 +1,37 @@
+.heartbeat {
+  /* Make the pulses feel a bit physical */
+  animation: heartbeat 1.6s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+/* Heartbeat: two quick flashes and then silence */
+@keyframes heartbeat {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  /* First beat */
+  5% {
+    opacity: 1;
+    transform: scale(1.10);
+  }
+  10% {
+    opacity: 0.2;
+    transform: scale(1.0);
+  }
+
+  /* Second beat, slightly stronger */
+  15% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  20% {
+    opacity: 0.2;
+    transform: scale(1.0);
+  }
+
+  /* 20%–100%: “diastole” (dark, no signal) */
+}
+

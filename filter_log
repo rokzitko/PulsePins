@@ -1,0 +1,2 @@
+#!/bin/bash
+grep Warning build-log-compile | grep -v HPS_ | grep -v f2sdram | grep -v _sdram | grep -v  base_hps_hps_0_hps_io_border | grep -v altera_mem_if_hard_memory_controller_ | grep -v altera_merlin_ | grep -v st_adapter_ | grep -v "Synthesized away node" | grep -v set_false_path | grep -v HDMI_

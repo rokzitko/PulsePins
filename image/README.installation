@@ -1,0 +1,6 @@
+1. update /etc
+2. reduce memory to 512
+3. pip3 install nanobind
+4. pip3 install pytest
+5. export TZ="CET-1CEST,M3.5.0,M10.5.0/3" to /etc/profile
+6. add user pp, password pp -> access to hw, but not to admin stuff

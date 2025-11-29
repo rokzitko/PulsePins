@@ -1,0 +1,1 @@
+Replacement boot.scr which drops memory boundary to 512MB to make room for the DMA transfer buffers.

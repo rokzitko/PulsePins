@@ -1,0 +1,10 @@
+This has to be built on the DE10 nano board.
+
+On DE10 nano, do the following:
+
+cd python
+pip3 install pytest
+make
+make test
+
+The test should pass without any errors.

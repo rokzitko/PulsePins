@@ -1,0 +1,6 @@
+#!/bin/bash
+TARGET=pulsepins.img
+rm -fv ${TARGET}
+ORIG=$HOME/yocto/rsYocto_1_042_D10NANO.img
+sha256sum ${ORIG}
+cp -v ${ORIG} ${TARGET}

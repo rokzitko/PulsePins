@@ -1,0 +1,10 @@
+#!/bin/sh
+set -ex
+pptest 4 -c 120_000 -v 1 -check
+pptest 4 -c 120_000 -v 10 -check
+pptest 4 -c 120_000 -v 100 -check
+
+pptest 4 -c 120_000 -v 100 -rnd -check
+
+pptest 4 -c 1_000_000 -v 100 -check
+pptest 4 -c 10_000_000 -v 100 -check

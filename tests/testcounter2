@@ -1,0 +1,3 @@
+#!/bin/bash
+set -ex
+ppcounter -test1 -veryverbose -check

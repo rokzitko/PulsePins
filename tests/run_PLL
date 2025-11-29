@@ -1,0 +1,5 @@
+#!/bin/sh
+export PLL=10M-100M
+./pptest 0 -pll $PLL
+time ./run_all_tests
+#time ./run_all_tests_forever

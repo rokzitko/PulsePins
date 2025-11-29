@@ -1,0 +1,120 @@
+#!/bin/bash
+#Replay tests
+set -ex
+
+pptest 10 -v 4 -c 5 -repetitions 2 -nr_replays 2 -pre -p 2 -mid -m 3 -post -o 2 -check  -dump-converted
+pptest 10 -v 8 -c 13 -repetitions 2 -nr_replays 2 -pre -p 2 -mid -m 3 -post -o 2 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 7 -check
+pptest 10 -v 8 -c 1 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 7 -check
+pptest 10 -v 1 -c 13 -repetitions 2 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 2 -check
+pptest 10 -v 8 -c 13 -repetitions 1 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 7 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 1 -pre -p 5 -mid -m 6 -post -o 7 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 1 -mid -m 6 -post -o 7 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 0 -mid -m 6 -post -o 7 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 1 -post -o 7 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 0 -post -o 7 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 2 -check
+
+pptest 10 -v 1 -c 1 -repetitions 2 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 2 -check
+pptest 10 -v 1 -c 1 -repetitions 1 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 2 -check
+pptest 10 -v 1 -c 1 -repetitions 1 -nr_replays 1 -pre -p 5 -mid -m 6 -post -o 2 -check
+pptest 10 -v 1 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+
+pptest 10 -v 8 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 7 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 6 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 5 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 4 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 3 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 2 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 1 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+
+pptest 10 -v 8 -c 5 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 7 -c 5 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 6 -c 5 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 5 -c 5 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 4 -c 5 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 3 -c 5 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 2 -c 5 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 1 -c 5 -repetitions 2 -nr_replays 1 -post -o 2 -check
+
+pptest 10 -v 8 -c 1 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 7 -c 1 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 6 -c 1 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 5 -c 1 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 4 -c 1 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 3 -c 1 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 2 -c 1 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 1 -c 1 -repetitions 2 -nr_replays 1 -post -o 2 -check
+
+pptest 10 -v 8 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 7 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 6 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 5 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 4 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 3 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 2 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 1 -c 1 -repetitions 1 -nr_replays 1 -post -o 2 -check
+
+pptest 10 -v 0 -c 5 -repetitions 1 -nr_replays 1 -post -o 2 -check
+
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 3 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 2 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 1 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 6 -post -o 0 -check
+pptest 10 -v 8 -c 13 -repetitions 3 -nr_replays 4 -pre -p 5 -mid -m 6 -check
+
+pptest 10 -v 2 -c 2 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 2 -c 2 -repetitions 1 -nr_replays 1 -post -o 1 -check
+pptest 10 -v 2 -c 2 -repetitions 1 -nr_replays 1 -post -o 0 -check
+pptest 10 -v 2 -c 2 -repetitions 1 -nr_replays 1 -check
+
+pptest 10 -v 8 -c 2 -repetitions 1 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 8 -c 2 -repetitions 1 -nr_replays 1 -post -o 1 -check
+pptest 10 -v 8 -c 2 -repetitions 1 -nr_replays 1 -post -o 0 -check
+pptest 10 -v 8 -c 2 -repetitions 1 -nr_replays 1 -check
+
+pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 1 -post -o 2 -check
+pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 1 -post -o 1 -check
+pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 1 -post -o 0 -check
+pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 1 -check
+
+pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 2 -post -o 2 -check
+pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 2 -post -o 1 -check
+pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 2 -post -o 0 -check
+pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 2 -check
+
+pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -post -o 2 -check
+pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -post -o 1 -check
+pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -post -o 0 -check
+pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -check q
+
+# v=7, variable repetitions
+pptest 10 -v 7 -c 1 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 7 -c 10 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 7 -c 100 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 7 -c 1000 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 4 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 5 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 6 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 7 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 8 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 9 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 10 -nr_replays 4 -check
+pptest 10 -v 7 -c 10000 -repetitions 100 -nr_replays 4 -check
+
+# v=8, variable repetitions
+pptest 10 -v 8 -c 1 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 8 -c 10 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 8 -c 100 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 8 -c 1000 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 3 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 4 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 5 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 6 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 7 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 8 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 9 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 10 -nr_replays 4 -check
+pptest 10 -v 8 -c 10000 -repetitions 100 -nr_replays 4 -check

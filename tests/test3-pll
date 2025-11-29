@@ -1,0 +1,21 @@
+#!/bin/sh
+# Tests for clock synthesis using PLL
+set -ex
+# Equal core and streaming frequency
+pptest 3 -c 1_000 -v 1_000 -check -pll 100M
+pptest 3 -c 1_000 -v 1_000 -check -pll 75M
+pptest 3 -c 1_000 -v 1_000 -check -pll 50M
+pptest 3 -c 1_000 -v 1_000 -check -pll 25M
+pptest 3 -c 1_000 -v 1_000 -check -pll 20M
+pptest 3 -c 1_000 -v 1_000 -check -pll 10M
+pptest 3 -c 1_000 -v 1_000 -check -pll 1M
+
+# Streaming frequency lower than core frequency
+pptest 3 -c 1_000 -v 1_000 -check -pll 50M-100M
+pptest 3 -c 1_000 -v 1_000 -check -pll 10M-100M
+pptest 3 -c 1_000 -v 1_000 -check -pll 1M-100M
+pptest 3 -c 1_000 -v 1_000 -check -pll 1M-10M
+
+# Restore the PLL setting as configure in environ variable of PLL or "orig" if PLL is not set (or empty)
+: "${PLL:=orig}"
+pptest 3 -c 1_000 -v 1_000 -check -pll $PLL

@@ -1,0 +1,5 @@
+#!/bin/bash
+OFFSET_FAT=$((2048*512))
+MOUNTPOINT=`pwd`
+mkdir -p $MOUNTPOINT/fat
+sudo mount -o loop,offset=$OFFSET_FAT pulsepins.img $MOUNTPOINT/fat

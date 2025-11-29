@@ -1,0 +1,4 @@
+#!/bin/bash
+ORIG=home/
+MOUNTPOINT=`pwd`/ext/
+sudo cp -rv ${ORIG} $MOUNTPOINT

@@ -1,0 +1,12 @@
+# fdisk -l pulsepins.img
+Disk pulsepins.img: 3.98 GiB, 4246770176 bytes, 8294473 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0x61b0906e
+
+Device         Boot   Start     End Sectors  Size Id Type
+pulsepins.img1         2048   36568   34521 16.9M  b W95 FAT32
+pulsepins.img2        36569 8253905 8217337  3.9G 83 Linux
+pulsepins.img3      8253906 8294472   40567 19.8M a2 unknown

@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e  # exit immediately if a command fails
+pptest 42 -f sequence.simple -check
+pptest 42 -f sequence.longer -check
+pptest 42 -f sequence.one_line -check

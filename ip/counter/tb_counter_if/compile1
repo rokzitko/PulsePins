@@ -1,0 +1,4 @@
+#!/bin/sh
+rm -f tb1
+iverilog -g2012 -o tb1 ../counter_if.sv ../basic_counter.sv ../runs_counter.sv ../seq_counter.sv ../autocorrelation.sv \
+  ../packet_stats.sv ../mux32to1.sv ../mux32to2.sv ../crosscorrelation.sv ../time_counter.sv ../../../../IP/cdc.v tb1.sv
