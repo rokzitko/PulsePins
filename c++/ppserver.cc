@@ -7,7 +7,7 @@
 #include <string>
 #include <exception>
 
-#include "scpi_server.hpp"
+#include "scpi_server.hh"
 #include "ppcommon.hh"
 #include "ppmisc.hh"
 #include "verbosity.hh"
