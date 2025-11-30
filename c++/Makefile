@@ -82,11 +82,3 @@ copy_sources_img:
 	mkdir -p $(IMGROOT)/$(CPPDIR)
 	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(CPPDIR)
 	cp -v ../hps_0.h $(IMGROOT)
-
-EXTRAFILES=.profile
-
-copy_extra:
-	scp $(EXTRAFILES) @$(TARGETHOST):
-
-copy_extra_img:
-	cp -v $(EXTRAFILES) $(IMGROOT)

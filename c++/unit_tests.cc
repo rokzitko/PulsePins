@@ -9,7 +9,7 @@
 #include <iostream>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "../../include/doctest.h"
+#include "include/doctest.h"
 
 #include "elements.hh"
 #include "sequence.hh"

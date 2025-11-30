@@ -59,12 +59,12 @@ forcecopy:
 	scp ${RBF} @${TARGETHOST}:${PREFIX}.rbf
 
 copy_all: copy
-	cd c++ ; make copy ; make copy_sources ; make copy_extra
+	cd c++ ; make copy ; make copy_sources
 	cd python ; make copy_sources ; make copy_misc
 	cd tests ; make copy
 
 copy_all_img: copy_img
-	cd c++ ; make copy_img ; make copy_sources_img ; make copy_extra_img
+	cd c++ ; make copy_img ; make copy_sources_img
 	cd python ; make copy_sources_img
 	cd tests ; make copy_img
 
