@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this work (hardware, FPGA bitstreams/IP, or control software) in your research, please cite it using the metadata below."
+type: software
+title: "PulsePins: Open-hardware digital pulse sequencer for time-resolved experiments"
+version: "1.0"
+doi: 10.5281/zenodo.17903233
+date-released: "2025-12-11"
+url: "https://github.com/rokzitko/PulsePins"
+repository-code: "https://github.com/rokzitko/PulsePins"
+license: "MIT"
+authors:
+  - family-names: "Žitko"
+    given-names: "Rok"
+    affiliation: "Jožef Stefan Institute"
+    orcid: "https://orcid.org/0000-0002-0525-4056"
+keywords:
+  - "pulse sequencer"
+  - "FPGA"
+  - "run-length encoding"
+  - "control systems"
+abstract: >
+  PulsePins is an open-hardware digital pulse sequencer designed for time-resolved experiments in physics.
+  It uses a run-length encoded pulse representation to stream long, complex pulse patterns efficiently.
+  The repository contains FPGA designs, reusable IP cores, hardware design files (schematics, PCB layout),
+  and control software.
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.17903232
+    description: "Concept DOI (all versions)"
+  - type: url
+    value: "http://auger.ijs.si/pulsepins/site/"
+    description: "Project documentation site"
