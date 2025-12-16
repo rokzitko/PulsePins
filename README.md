@@ -54,6 +54,10 @@ PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit 
 * Generation of periodic signals (repetitive bit patterns) or pseudorandom sequences for communications testing.
 * Burn-in and stress testing.
 
+## Documentation
+
+[Project webpage](http://auger.ijs.si/pulsepins/site/)
+
 ## License
 
 This project is released under the MIT License. You may use, copy, modify, merge, publish, distribute, sublicense,
