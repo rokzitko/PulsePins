@@ -98,6 +98,10 @@ class fifo {
        std::cout << prefix << "fill=" << std::dec << fill << std::endl;
      return fill;
    }
+   void status_report(const bool verbose = false, std::string prefix = ""s) {
+     if (verbose)
+       std::cout << prefix << "status=" << status_str() << std::endl;
+   }
    auto fill() const {
      return lfill.read();
    }

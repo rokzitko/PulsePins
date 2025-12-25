@@ -395,6 +395,33 @@ class tests {
      return rc;
    }
 
+   int test16() {
+     std::cout << "test16 - periodic signals with periods linear in pin index" << std::endl;
+     const auto cycles = parse_uint32(input, "-cycles", "1024");
+     const auto c = parse_count(input, "-c", "5000000");
+     if (verb.verbose) {
+       std::cout << "cycles=" << cycles << std::endl;
+       std::cout << "c=" << c << std::endl;
+     }
+     for (size_t i = 0; cycles == 0 || i < cycles; i++) {
+       value_t v = 0;
+       for (int j = 0; j < WIDTH_DATA; j++)
+         if (i % (j+1) == 0) // flip periodically! period: 1,2,3,4,...
+           v += 1UL << j;
+       const el e {c, BitFlip(v)};
+       fifo.out(e);
+       if (i == max_size-1)
+         sc.trigger_force();
+       if (verb.veryverbose && i > max_size && i % 100 == 0) {
+         fifo.report();
+         s.sc.status_report();
+       }
+     }
+     if (verb.verbose)
+       s.sc.status_report();
+     return 0;
+   }
+
    // ****  Complex tests
    int test19() {
      std::cout << "test19 - pseudorandom number test (xoroshift128+)" << std::endl;
@@ -563,6 +590,9 @@ class tests {
        break;
      case 15:
        rc = test15();
+       break;
+     case 16:
+       rc = test16();
        break;
      case 19:
        rc = test19();
