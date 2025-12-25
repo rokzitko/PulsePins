@@ -1,0 +1,88 @@
+# Testing the I2C interface exposed on GPIO port (Qwiic connector on ppshield_pmod)
+
+# https://emlogic.no/2025/06/accessing-i2c-devices-from-userspace-in-linux/
+
+-l
+    Output a list of installed busses.
+
+# i2cdetect -l
+i2c-1i2c       Synopsys DesignWare I2C adapter I2C adapter
+i2c-2i2c       Synopsys DesignWare I2C adapter I2C adapter
+i2c-0i2c       Synopsys DesignWare I2C adapter I2C adapter
+
+-F
+    Display the list of functionalities implemented by the adapter and exit. 
+
+#  i2cdetect -F 1
+Functionalities implemented by /dev/i2c-1:
+I2C                              yes
+SMBus Quick Command              no
+SMBus Send Byte                  yes
+SMBus Receive Byte               yes
+SMBus Write Byte                 yes
+SMBus Read Byte                  yes
+SMBus Write Word                 yes
+SMBus Read Word                  yes
+SMBus Process Call               no
+SMBus Block Write                yes
+SMBus Block Read                 yes
+SMBus Block Process Call         no
+SMBus PEC                        no
+I2C Block Write                  yes
+I2C Block Read                   yes
+
+-y
+    Disable interactive mode. By default, i2cdetect will wait for a confirmation from the user before messing with the I2C bus. When this flag is used, it will perform the operation directly. This is mainly meant to be used in scripts. 
+
+# i2cdetect -y 1
+Warning: Can't use SMBus Quick Write command, will skip some addresses
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:
+10:
+20:
+30: -- -- -- -- -- -- -- --
+40:
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+60:
+70:
+
+-a
+    Force scanning of non-regular addresses. Not recommended. 
+
+-r
+    Use SMBus "read byte" commands for probing (by default, the command used is the one believed to be the safest for each address). Not recommended. This is known to lock SMBus on various write-only chips (most notably clock chips at address 0x69). 
+
+# i2cdetect -y -a -r 1
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+40: -- -- -- -- -- -- -- -- 48 -- -- -- -- -- -- --
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+70: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+# NOTE: 48 corresponds to an externally connected TMP117 temperature sensor
+
+# i2cdump -y 1 0x48
+No size specified (using byte-data access)
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+00: 0b 02 60 80 00 0d 0f 00 31 00 00 00 00 00 00 01    ??`?.??.1......?
+10: XX 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    X...............
+20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+40: 0b 02 60 80 00 0d 0f 00 31 00 00 00 00 00 00 01    ??`?.??.1......?
+50: XX 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    X...............
+60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+80: 0b 02 60 80 00 0d 0f 00 31 00 00 00 00 00 00 01    ??`?.??.1......?
+90: XX 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    X...............
+a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+c0: 0b 02 60 80 00 0d 0f 00 31 00 00 00 00 00 00 01    ??`?.??.1......?
+d0: XX 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    X...............
+e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+
+I2C/tmp117.py --interval 60
