@@ -84,7 +84,7 @@ protected:
     // For derived classes: add commands to tree
     void add_node(const std::vector<std::string>& path,
                   std::function<std::string(const std::string&)> set_handler = {},
-                  std::function<std::string()> query_handler = {}) 
+                  std::function<std::string()> query_handler = {})
     {
         auto node = root_;
         for (size_t i = 0; i < path.size(); ++i) {
@@ -229,4 +229,3 @@ protected:
             });
     }
 };
-

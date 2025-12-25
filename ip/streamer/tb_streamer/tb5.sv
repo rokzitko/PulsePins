@@ -55,7 +55,7 @@ initial begin
   #1
   input_data <= { 32'h0, 32'h6, 32'h12345678 }; // 6 elements
   input_valid <= 1;
-  #1 
+  #1
   input_data <= { 32'b1_0000_0000_0000_0000, 32'h1, 32'hffffffff }; // retrig
   input_valid <= 1;
   #1
@@ -64,7 +64,7 @@ initial begin
   #1
   input_data <= { 32'h0, 32'h6, 32'h87654321 }; // 6 elements
   input_valid <= 1;
-  #1 
+  #1
   input_data <= { 32'h4, 32'h1, 32'hffffffff }; // final
   input_valid <= 1;
   #1

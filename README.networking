@@ -19,5 +19,5 @@ iface eth0 inet static
      netmask 255.255.255.0
      broadcast 192.168.0.255
      gateway 192.168.0.1
-     
+
 See also https://unix.stackexchange.com/questions/128439/good-detailed-explanation-of-etc-network-interfaces-syntax

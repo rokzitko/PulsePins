@@ -11,7 +11,7 @@ i2c-2i2c       Synopsys DesignWare I2C adapter I2C adapter
 i2c-0i2c       Synopsys DesignWare I2C adapter I2C adapter
 
 -F
-    Display the list of functionalities implemented by the adapter and exit. 
+    Display the list of functionalities implemented by the adapter and exit.
 
 #  i2cdetect -F 1
 Functionalities implemented by /dev/i2c-1:
@@ -32,7 +32,7 @@ I2C Block Write                  yes
 I2C Block Read                   yes
 
 -y
-    Disable interactive mode. By default, i2cdetect will wait for a confirmation from the user before messing with the I2C bus. When this flag is used, it will perform the operation directly. This is mainly meant to be used in scripts. 
+    Disable interactive mode. By default, i2cdetect will wait for a confirmation from the user before messing with the I2C bus. When this flag is used, it will perform the operation directly. This is mainly meant to be used in scripts.
 
 # i2cdetect -y 1
 Warning: Can't use SMBus Quick Write command, will skip some addresses
@@ -47,10 +47,10 @@ Warning: Can't use SMBus Quick Write command, will skip some addresses
 70:
 
 -a
-    Force scanning of non-regular addresses. Not recommended. 
+    Force scanning of non-regular addresses. Not recommended.
 
 -r
-    Use SMBus "read byte" commands for probing (by default, the command used is the one believed to be the safest for each address). Not recommended. This is known to lock SMBus on various write-only chips (most notably clock chips at address 0x69). 
+    Use SMBus "read byte" commands for probing (by default, the command used is the one believed to be the safest for each address). Not recommended. This is known to lock SMBus on various write-only chips (most notably clock chips at address 0x69).
 
 # i2cdetect -y -a -r 1
      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f

@@ -368,7 +368,7 @@ class combiner {
    void report() {
      std::cout << "---- Combiner report ----" << std::endl;
      const auto cc = get_cfg();
-     std::cout << "Combiner setting: 0x" << std::hex << cc << " " << 
+     std::cout << "Combiner setting: 0x" << std::hex << cc << " " <<
        to_string(static_cast<comb_mode>(cc & MODE_MASK)) << std::endl;
      if (c != cc)
        throw std::runtime_error("Unexpected combiner configuration setting.");

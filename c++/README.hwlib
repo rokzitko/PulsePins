@@ -1,4 +1,3 @@
 Intel SoC FPGA HWLIB is avaiable from https://github.com/altera-opensource/intel-socfpga-hwlib
 
 HWLIBS_ROOT environment variable must point to those files
-

@@ -37,7 +37,7 @@ initial begin
   reset <= 0;
   #12;
   signal <= 1;
-  
+
   #2;
   //assert(result == 3) else $fatal;
 
@@ -51,4 +51,3 @@ initial begin
 end
 
 endmodule: hello_world
-

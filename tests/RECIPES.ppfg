@@ -15,7 +15,7 @@ POZOR: At 100M-100M: buffer_error, because of 1-bubble implementation
 # Duty cycle
 ./ppfg -pll 10M-100M -cont -trig -veryverbose -period 1ms -duty 1
 ./ppfg -pll 10M-100M -cont -trig -veryverbose -period 1ms -duty 5
- 
+
 # Different base frequencies
 ./ppfg -veryverbose -pll 1M-100M -cont -trig
 ./ppfg -veryverbose -pll 50M-100M -cont -trig

@@ -47,4 +47,3 @@ initial begin
 end
 
 endmodule: hello_world
-

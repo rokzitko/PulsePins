@@ -564,7 +564,7 @@ int main(int argc, char *argv[])
   };
 
   int rc = 0;
-  if (auto it = actions.find(progname); it != actions.end()) {  
+  if (auto it = actions.find(progname); it != actions.end()) {
     rc = it->second(input, argc, argv, v);
   } else {
     std::cerr << "Unknown program name: " << progname << "\n";

@@ -78,7 +78,7 @@ class pll {
      F << " bandwidth=" << std::hex << BW.read();
      F << " charge pump=" << std::hex << CP.read() << std::endl;
    }
-   // ex=true: execute the reconfiguration; ex=false: part of a longer sequences of 
+   // ex=true: execute the reconfiguration; ex=false: part of a longer sequences of
    void set_N(const int val, const bool ex) { // val = Total_div
      if (ex) setmode(pll_mode::waitrequest);
      assert(val >= 1 && val < 512);

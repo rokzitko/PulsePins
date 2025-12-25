@@ -127,8 +127,8 @@ auto seq_once(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count_
 // Map target servo angle (degrees) to PWM frequency and duty cycle
 // angle_min, angle_max define the servo range (deg)
 // pulse_min, pulse_max define the pulse width range (s)
-std::pair<double, double> servo_pwm_params(double angle, 
-                                           double angle_min = 0.0, 
+std::pair<double, double> servo_pwm_params(double angle,
+                                           double angle_min = 0.0,
                                            double angle_max = 180.0,
                                            double pulse_min = 1e-3,    // 1.0 ms
                                            double pulse_max = 2e-3)    // 2.0 ms

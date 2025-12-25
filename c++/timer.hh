@@ -26,6 +26,6 @@ public:
 
 // Example:
 //    Timer t;
-//    std::cout << "Elapsed: " 
-//              << t.elapsed<std::chrono::milliseconds>().count() 
+//    std::cout << "Elapsed: "
+//              << t.elapsed<std::chrono::milliseconds>().count()
 //              << " ms\n";

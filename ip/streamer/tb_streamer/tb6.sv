@@ -31,8 +31,8 @@ always @(posedge clk) begin
   $strobe("t=%8.3f q_p=%b q_m=%b used=%d fifo_empty=%b state=%d armed=%b activated=%b used_o=%d q=%h valid=%b wr_last=%b done=%b qout=%h qout_valid=%b",
     $realtime,
     dut.ct0.q_pattern, dut.ct0.q_mask, dut.ct0.used, dut.ct0.fifo_empty, dut.ct0.state,
-    dut.trigger_armed, dut.trigger_activated, dut.used_o, 
-    dut.fifo0.q, dut.fifo0.valid, dut.fifo0.wr_last, 
+    dut.trigger_armed, dut.trigger_activated, dut.used_o,
+    dut.fifo0.q, dut.fifo0.valid, dut.fifo0.wr_last,
     dut.done,
     dut.fifo0.qout, dut.fifo0.qout_valid
 );
@@ -57,7 +57,7 @@ initial begin
   #1
   input_data <= { 32'h0, 32'h6, 32'h87654321 }; // 6 elements
   input_valid <= 1;
-  #1 
+  #1
   input_data <= { 32'h4, 32'h1, 32'hffffffff }; // final
   input_valid <= 1;
   #1

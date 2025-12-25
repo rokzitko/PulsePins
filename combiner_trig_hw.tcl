@@ -3,21 +3,21 @@
 # DO NOT MODIFY
 
 
-# 
+#
 # combiner_trig "combiner_trig" v1.0
 # Rok Zitko 2025.09.15.20:51:46
 # Multiplexer/combiner_trig
-# 
+#
 
-# 
+#
 # request TCL package from ACDS 16.1
-# 
+#
 package require -exact qsys 16.1
 
 
-# 
+#
 # module combiner_trig
-# 
+#
 set_module_property DESCRIPTION Multiplexer/combiner_trig
 set_module_property NAME combiner_trig
 set_module_property VERSION 1.0
@@ -33,9 +33,9 @@ set_module_property ALLOW_GREYBOX_GENERATION false
 set_module_property REPORT_HIERARCHY false
 
 
-# 
+#
 # file sets
-# 
+#
 add_fileset QUARTUS_SYNTH QUARTUS_SYNTH "" ""
 set_fileset_property QUARTUS_SYNTH TOP_LEVEL combiner_trig
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
@@ -43,19 +43,19 @@ set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file combiner_trig.sv SYSTEMVERILOG PATH ip/combiner_trig/combiner_trig.sv TOP_LEVEL_FILE
 
 
-# 
+#
 # parameters
-# 
+#
 
 
-# 
+#
 # display items
-# 
+#
 
 
-# 
+#
 # connection point avs_s0
-# 
+#
 add_interface avs_s0 avalon end
 set_interface_property avs_s0 addressUnits WORDS
 set_interface_property avs_s0 associatedClock clock
@@ -91,9 +91,9 @@ set_interface_assignment avs_s0 embeddedsw.configuration.isNonVolatileStorage 0
 set_interface_assignment avs_s0 embeddedsw.configuration.isPrintableDevice 0
 
 
-# 
+#
 # connection point clock
-# 
+#
 add_interface clock clock end
 set_interface_property clock clockRate 0
 set_interface_property clock ENABLED true
@@ -104,9 +104,9 @@ set_interface_property clock SVD_ADDRESS_GROUP ""
 
 add_interface_port clock clock_clk clk Input 1
 
-# 
+#
 # connection point clk
-# 
+#
 add_interface clk clock end
 set_interface_property clock clockRate 0
 set_interface_property clock ENABLED true
@@ -117,9 +117,9 @@ set_interface_property clock SVD_ADDRESS_GROUP ""
 
 add_interface_port clk clk clk Input 1
 
-# 
+#
 # connection point reset
-# 
+#
 add_interface reset reset end
 set_interface_property reset associatedClock clock
 set_interface_property reset synchronousEdges DEASSERT
@@ -132,9 +132,9 @@ set_interface_property reset SVD_ADDRESS_GROUP ""
 add_interface_port reset reset_reset reset Input 1
 
 
-# 
+#
 # connection point input
-# 
+#
 add_interface in conduit end
 set_interface_property in associatedClock clk
 set_interface_property in associatedReset ""
@@ -150,9 +150,9 @@ add_interface_port in in3 in3 Input 11
 add_interface_port in in4 in4 Input 11
 
 
-# 
+#
 # connection point output
-# 
+#
 add_interface out conduit end
 set_interface_property out associatedClock clk
 set_interface_property out associatedReset ""

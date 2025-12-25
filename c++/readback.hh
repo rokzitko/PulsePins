@@ -49,7 +49,7 @@ class readback
        reset();
      }
 
-   readback(const InputParser &input, 
+   readback(const InputParser &input,
             FPGA &fpga) :
      readback(fpga.dev_h2f,  FIFO_RL_OUT_BASE, FIFO_RL_IN_CSR_BASE, RL_ENCODER_IF_BASE, fpga.v) {
        // Default mode = 1 (valid/clk)

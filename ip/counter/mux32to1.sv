@@ -15,4 +15,3 @@ module mux32to1 (
 endmodule
 
 `default_nettype wire
-

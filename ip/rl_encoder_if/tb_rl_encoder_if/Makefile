@@ -9,4 +9,3 @@ test1:
 clean:
 	rm -f tb SUCCESS transcript
 	rm -rf work
-

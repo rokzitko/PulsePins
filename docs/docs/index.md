@@ -144,7 +144,7 @@ To enable the output buffers, the output enable (``oe``) must be set high.
 
 ## Clocks and clock domains
 
-PulsePins generates two clocks using the PLL: core clock and internal data streaming clock. 
+PulsePins generates two clocks using the PLL: core clock and internal data streaming clock.
 The default frequency of the core clock (core_clk) is 100MHz. The internal data
 streaming clock (streamer_clk) also has a default frequency of 100MHz; this corresponds to 10ns
 timing resolution for digital level updates. There is no length limit on the pulse duration, it is only limited by the clock.
@@ -208,7 +208,7 @@ pins (defined in ``pulsepins.sv``):
 |           | 2     |            | <font color="Cyan">PPCLK1</font>      | External crystal clock 1 (for future use) |
 |           | 3     |            | <font color="Cyan">PPCLK2</font>      | External crystal clock 2 (for future use) |
 |           | 35:4  | D[7:4] for qout[3:0]     | <font color="red">streamer_qout</font> | Data output, qout[31:0] |
- 
+
 Note that the table contains the "index" within the GPIO arrays, not the pin numbers on headers. The signals marked by
 (out) and with the description "as seen by the streamer core" are output signals for monitoring. See the section on
 the _trigger combiner_ module about mixing external, internal and on-board switch/button triggering signals.
@@ -267,7 +267,7 @@ trigger occurs.
 Trigger combiner is a hardware circuit that accepts trigger inputs and control signals from
 multiple sources. The source ports are named
 
-* _internal_ (INT): software defined using a PIO interface, 
+* _internal_ (INT): software defined using a PIO interface,
 * _external_ (EXT): connected through GPIO pins to connectors on a [ppboard](ppboards.md),
 * _miscellaneous_ (MISC): pushbuttons and switches; detailed in the following.
 
@@ -319,7 +319,7 @@ streamer_qout_valid is asserted at the next rising edge of streamer_clk. The dat
  * at the rising edges of streamer_strobe
 
 Streamer strobe is asserted in the middle of the period (i.e., when streamer_clk is deasserted,
-thus out of phase with the clock). 
+thus out of phase with the clock).
 
 The first approach (using _valid_ semantics) is potentially more reliable at high frequencies,
 because the signal is guaranteed to be settled at the rising edges of streamer_clk; there is no
@@ -370,4 +370,3 @@ only the 32-bit version (32-bit for both data and count registers) is distribute
 PulsePins is easily portable to other Altera/Intel FPGA solutions and it has been tested, for example, on Arria 10
 FPGAs for driving 10Gbps transceivers, specifically on [Terasic HAN
 Pilot](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=1133), reaching 100ps timing accuracy.
-

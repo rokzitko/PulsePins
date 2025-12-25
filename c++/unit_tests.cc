@@ -342,7 +342,7 @@ TEST_CASE("stripUnderscores") {
 TEST_CASE("parseuint32_t") {
   CHECK(parse_uint32_t("42") == 42);
   CHECK(parse_uint32_t("0xff") == 255);
-  CHECK(parse_uint32_t("0xFF") == 255);  
+  CHECK(parse_uint32_t("0xFF") == 255);
   CHECK(parse_uint32_t("0b10000000") == 128);
   CHECK(parse_uint32_t("0b11111111") == 255);
   CHECK(parse_uint32_t("077") == 63); // octal!

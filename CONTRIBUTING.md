@@ -8,21 +8,21 @@ By submitting a contribution (code, documentation, hardware design files, etc.),
 
 ## Ways to contribute
 
-- **Bug reports**  
-  - Use the GitHub "Issues" tab.  
+- **Bug reports**
+  - Use the GitHub "Issues" tab.
   - Describe the problem clearly and minimally:
     - Steps to reproduce
     - Expected vs. actual behaviour
     - Environment (OS, compiler/tool versions, FPGA board revision, etc.)
 
-- **Feature requests / design proposals**  
+- **Feature requests / design proposals**
   - Open an issue before starting major work.
   - Briefly describe:
     - The problem you want to solve
     - The proposed solution or interface
     - Any alternatives you considered
 
-- **Pull requests (PRs)**  
+- **Pull requests (PRs)**
   - For small fixes (typos, small bug fixes), you can submit a PR directly.
   - For larger changes, link the PR to a corresponding issue.
   - Keep PRs focused: one logical change per PR where possible.
@@ -45,7 +45,7 @@ If in doubt, prefer clarity and maintainability over cleverness.
 
 ## Developer Certificate of Origin (DCO)
 
-This project uses the **Developer Certificate of Origin (DCO) 1.1**.  
+This project uses the **Developer Certificate of Origin (DCO) 1.1**.
 The DCO is a simple statement that you, as a contributor, have the right to submit your work and that you license it under the same terms as this project.
 
 The full text of the DCO is available at:

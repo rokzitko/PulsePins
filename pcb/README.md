@@ -2,4 +2,3 @@ KiCAD design files for printed-circuit boards ("ppshields"). These are just refe
 testing. The idea is that users modify these designs for their particular needs.
 
 * ppshield_pmod: ppshield with PMOD interfaces
-

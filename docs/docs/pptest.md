@@ -171,7 +171,7 @@ infinite stream is generated.
 
 Continuous test. Starts up two threads, one filling the decoder queue, one reading back from the readback encoder.
 The two are compared in real time. If ``-v`` is zero, the tests runs indefinitely. If ``-v`` is finite, the value
-counts up from zero to this maximum value (excluded). 
+counts up from zero to this maximum value (excluded).
 
 Additional parameters:
 

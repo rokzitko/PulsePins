@@ -21,7 +21,7 @@ reg avs_s0_read;
 reg avs_s0_write;
 wire [31:0] avs_s0_readdata;
 reg [31:0] avs_s0_writedata;
- 
+
 counter_if dut (
   .clk,
   .reset,

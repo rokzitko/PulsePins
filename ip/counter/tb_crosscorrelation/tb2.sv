@@ -79,21 +79,21 @@ initial begin
   #1;
   ctr <= result;
   #1;
-  
+
   addr <= 1;
   #1;
   c1 <= result;
   #1;
   x = $itor(c1)/($itor(ctr)-1.0);
   $display("x=%f", x);
-  
+
   addr <= 2;
   #1;
   c2 <= result;
   #1;
-  
-  
-  
+
+
+
   #2 $finish;
 end
 

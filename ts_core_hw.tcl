@@ -3,21 +3,21 @@
 # DO NOT MODIFY
 
 
-# 
+#
 # ts_core "ts_core" v1.0
 # Rok Zitko 2025.11.04.20:15:13
 # Timestamping core, output using Avalon ST
-# 
+#
 
-# 
+#
 # request TCL package from ACDS 16.1
-# 
+#
 package require -exact qsys 16.1
 
 
-# 
+#
 # module ts_core
-# 
+#
 set_module_property DESCRIPTION "Timestamping core, output using Avalon ST"
 set_module_property NAME ts_core
 set_module_property VERSION 1.0
@@ -33,9 +33,9 @@ set_module_property ALLOW_GREYBOX_GENERATION false
 set_module_property REPORT_HIERARCHY false
 
 
-# 
+#
 # file sets
-# 
+#
 add_fileset QUARTUS_SYNTH QUARTUS_SYNTH "" ""
 set_fileset_property QUARTUS_SYNTH TOP_LEVEL ts_core
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
@@ -43,9 +43,9 @@ set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file ts_core.sv SYSTEM_VERILOG PATH ip/ts_core/ts_core.sv TOP_LEVEL_FILE
 
 
-# 
+#
 # parameters
-# 
+#
 add_parameter CTR_W INTEGER 64
 set_parameter_property CTR_W DEFAULT_VALUE 64
 set_parameter_property CTR_W DISPLAY_NAME CTR_W
@@ -55,14 +55,14 @@ set_parameter_property CTR_W ALLOWED_RANGES -2147483648:2147483647
 set_parameter_property CTR_W HDL_PARAMETER true
 
 
-# 
+#
 # display items
-# 
+#
 
 
-# 
+#
 # connection point clock
-# 
+#
 add_interface clock clock end
 set_interface_property clock clockRate 0
 set_interface_property clock ENABLED true
@@ -74,9 +74,9 @@ set_interface_property clock SVD_ADDRESS_GROUP ""
 add_interface_port clock clk clk Input 1
 
 
-# 
+#
 # connection point reset
-# 
+#
 add_interface reset reset end
 set_interface_property reset associatedClock clock
 set_interface_property reset synchronousEdges DEASSERT
@@ -89,9 +89,9 @@ set_interface_property reset SVD_ADDRESS_GROUP ""
 add_interface_port reset reset reset Input 1
 
 
-# 
+#
 # connection point avalon_streaming_source_0
-# 
+#
 add_interface avalon_streaming_source_0 avalon_streaming start
 set_interface_property avalon_streaming_source_0 associatedClock clock
 set_interface_property avalon_streaming_source_0 associatedReset reset
@@ -111,9 +111,9 @@ add_interface_port avalon_streaming_source_0 aso_data data Output "((CTR_W-1)) -
 add_interface_port avalon_streaming_source_0 aso_ready ready Input 1
 
 
-# 
+#
 # connection point avalon_streaming_source_1
-# 
+#
 add_interface avalon_streaming_source_1 avalon_streaming start
 set_interface_property avalon_streaming_source_1 associatedClock clock
 set_interface_property avalon_streaming_source_1 associatedReset reset
@@ -133,9 +133,9 @@ add_interface_port avalon_streaming_source_1 asoA_data data Output "((CTR_W-1)) 
 add_interface_port avalon_streaming_source_1 asoA_ready ready Input 1
 
 
-# 
+#
 # connection point conduit_end
-# 
+#
 add_interface conduit_end conduit end
 set_interface_property conduit_end associatedClock clock
 set_interface_property conduit_end associatedReset ""
@@ -147,4 +147,3 @@ set_interface_property conduit_end SVD_ADDRESS_GROUP ""
 
 add_interface_port conduit_end sig sig Input 1
 add_interface_port conduit_end sigA sigA Input 1
-

@@ -153,4 +153,3 @@ module presence_detector_async_posedge #(
         end
     end
 endmodule
-

@@ -380,7 +380,7 @@ int compare(const std::string what, const uint64_t value, const uint64_t expecte
 
 #define test_equal(a, b) compare(std::string(#a), a, b)
 
-auto counter_seq1() 
+auto counter_seq1()
 {
   Sequence seq;
   seq.push_back(el(1, 0));

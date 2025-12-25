@@ -87,4 +87,3 @@ module pulse_gen_timebase #(
 endmodule
 
 `default_nettype wire
-

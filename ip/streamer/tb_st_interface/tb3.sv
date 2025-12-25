@@ -85,7 +85,7 @@ initial begin
 
    for (i = 1; i <= 1000; i++) begin
       //      control   counter   data
-      // rnd = { 32'b0, $urandom, $urandom }; 
+      // rnd = { 32'b0, $urandom, $urandom };
 
       control = $urandom;
       control = control & (32'hF0); // random bit mode
@@ -112,7 +112,7 @@ initial begin
        release dut.st0.rl0.curr_cnt;
      end
   end
-end 
+end
 
 initial begin
   trigger_force_ext <= 0;

@@ -17,4 +17,3 @@ module mux32to2 (
 endmodule
 
 `default_nettype wire
-

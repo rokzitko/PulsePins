@@ -29,7 +29,7 @@ wire [`WIDTH_DATA-1:0] initial_value = 0;
 
 always @(posedge clk) begin
   $strobe("t=%8.3f ctr=%h data=%h rdreq_i=%b empty_i=%b in_v_d=%b curr_value=%h curr_cnt=%d out_data=%h out_wrreq=%b in_rdreq=%b used_o=%d",
-    $realtime, dut.counter, dut.data, dut.rdreq_i, dut.empty_i, dut.in_valid_data, 
+    $realtime, dut.counter, dut.data, dut.rdreq_i, dut.empty_i, dut.in_valid_data,
     dut.rl0.curr_value, dut.rl0.curr_cnt,
     dut.rl0.out_data, dut.rl0.out_wrreq, dut.rl0.in_rdreq, dut.used_o
 );

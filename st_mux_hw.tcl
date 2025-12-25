@@ -3,21 +3,21 @@
 # DO NOT MODIFY
 
 
-# 
+#
 # st_mux "st_mux" v1.0
 # Rok Zitko 2025.10.04.17:18:53
 # Avalon ST 2:1 multiplexer
-# 
+#
 
-# 
+#
 # request TCL package from ACDS 16.1
-# 
+#
 package require -exact qsys 16.1
 
 
-# 
+#
 # module st_mux
-# 
+#
 set_module_property DESCRIPTION "Avalon ST 2:1 multiplexer"
 set_module_property NAME st_mux
 set_module_property VERSION 1.0
@@ -33,9 +33,9 @@ set_module_property ALLOW_GREYBOX_GENERATION false
 set_module_property REPORT_HIERARCHY false
 
 
-# 
+#
 # file sets
-# 
+#
 add_fileset QUARTUS_SYNTH QUARTUS_SYNTH "" ""
 set_fileset_property QUARTUS_SYNTH TOP_LEVEL st_mux_if
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
@@ -43,19 +43,19 @@ set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file st_mux_if.sv SYSTEM_VERILOG PATH ip/st_mux/st_mux_if.sv TOP_LEVEL_FILE
 
 
-# 
+#
 # parameters
-# 
+#
 
 
-# 
+#
 # display items
-# 
+#
 
 
-# 
+#
 # connection point clock
-# 
+#
 add_interface clock clock end
 set_interface_property clock clockRate 0
 set_interface_property clock ENABLED true
@@ -67,9 +67,9 @@ set_interface_property clock SVD_ADDRESS_GROUP ""
 add_interface_port clock clk clk Input 1
 
 
-# 
+#
 # connection point reset
-# 
+#
 add_interface reset reset end
 set_interface_property reset associatedClock clock
 set_interface_property reset synchronousEdges DEASSERT
@@ -82,9 +82,9 @@ set_interface_property reset SVD_ADDRESS_GROUP ""
 add_interface_port reset reset reset Input 1
 
 
-# 
+#
 # connection point avalon_streaming_source_0
-# 
+#
 add_interface avalon_streaming_source_0 avalon_streaming start
 set_interface_property avalon_streaming_source_0 associatedClock clock
 set_interface_property avalon_streaming_source_0 associatedReset reset
@@ -105,9 +105,9 @@ add_interface_port avalon_streaming_source_0 aso_channel channel Output 1
 add_interface_port avalon_streaming_source_0 aso_ready ready Input 1
 
 
-# 
+#
 # connection point s0
-# 
+#
 add_interface s0 avalon end
 set_interface_property s0 addressUnits WORDS
 set_interface_property s0 associatedClock clock
@@ -142,9 +142,9 @@ set_interface_assignment s0 embeddedsw.configuration.isNonVolatileStorage 0
 set_interface_assignment s0 embeddedsw.configuration.isPrintableDevice 0
 
 
-# 
+#
 # connection point avalon_streaming_sink_1
-# 
+#
 add_interface avalon_streaming_sink_1 avalon_streaming end
 set_interface_property avalon_streaming_sink_1 associatedClock clock
 set_interface_property avalon_streaming_sink_1 associatedReset reset
@@ -165,9 +165,9 @@ add_interface_port avalon_streaming_sink_1 asi_channel1 channel Input 1
 add_interface_port avalon_streaming_sink_1 asi_ready1 ready Output 1
 
 
-# 
+#
 # connection point avalon_streaming_sink_2
-# 
+#
 add_interface avalon_streaming_sink_2 avalon_streaming end
 set_interface_property avalon_streaming_sink_2 associatedClock clock
 set_interface_property avalon_streaming_sink_2 associatedReset reset
@@ -186,4 +186,3 @@ add_interface_port avalon_streaming_sink_2 asi_channel2 channel Input 1
 add_interface_port avalon_streaming_sink_2 asi_data2 data Input 32
 add_interface_port avalon_streaming_sink_2 asi_ready2 ready Output 1
 add_interface_port avalon_streaming_sink_2 asi_valid2 valid Input 1
-

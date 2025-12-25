@@ -52,7 +52,7 @@ using namespace std::string_literals;
 
 inline uint32_t chars_to_uint32(const char buffer[4])
 {
-  const uint32_t num = 
+  const uint32_t num =
     (uint32_t)buffer[0] << 24 |
     (uint32_t)buffer[1] << 16 |
     (uint32_t)buffer[2] << 8  |

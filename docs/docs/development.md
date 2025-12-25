@@ -26,8 +26,8 @@ I like to use the following symbols to annotated my TO DO lists:
       rl_encoder_if/ # IP for the RTE encoder engine
       tagger/        # IP for the time tagger
     c++/             # C++ source code for API, pptool
-    python/          # Python binding                           
-                                
+    python/          # Python binding
+
 
 ### Documentation
 

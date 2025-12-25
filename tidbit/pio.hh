@@ -33,8 +33,8 @@ class pio_out_bits: public pio {
  protected:
    loc bset, bclear;
  public:
-   pio_out_bits(mm &dev, std::uintptr_t base) : 
-     pio(dev, base), 
+   pio_out_bits(mm &dev, std::uintptr_t base) :
+     pio(dev, base),
      bset(dev.get_loc(base, 0x04*4)),
      bclear(dev.get_loc(base, 0x04*5)) {}
    void write(const uint32_t q) {

@@ -202,13 +202,13 @@ class streamer_control
    }
 
    void wait_to_complete(const Verbosity &v, const uint64_t max_cnt = 10000) { // 10s maximum wait time by default
-     if (v.veryverbose) 
+     if (v.veryverbose)
        std::cout << "Waiting for streamer to complete" << std::endl;
      uint64_t cnt = 0;
      while (!(done() || buffer_error()) && cnt < max_cnt) { usleep(1000); cnt++; }
      if (cnt == max_cnt && v.verbose)
        std::cout << "wait_to_complete(): timeout exceeded while waiting for completion." << std::endl;
-     if (v.veryverbose) 
+     if (v.veryverbose)
        status_report();
    }
 

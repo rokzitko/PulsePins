@@ -29,7 +29,7 @@ always @(posedge clk) begin
       counter <= counter + 1;
 
     // synchronous heartbeat output
-    if ((counter < PULSE_TICKS) || 
+    if ((counter < PULSE_TICKS) ||
         (counter >= (PULSE_TICKS + GAP_TICKS) &&
         counter <  (2*PULSE_TICKS + GAP_TICKS)))
        heartbeat <= 1'b1;

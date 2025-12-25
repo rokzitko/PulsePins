@@ -32,7 +32,7 @@ reg dout_ready;
 always @(posedge clk) begin
   $strobe("t=%8.3f r=%b ctr=%h count=%h d=%h d_v=%b d_ry=%b | p=%b d=%b s=%b r=%b | i=%d j=%2d | send=%b replay_fire=%b dout=%h dout_v=%b", $realtime, reset,
     dut.control, dut.counter, dut.data, din_valid, din_ready,
-    dut.pass, dut.discard, dut.store, dut.replay, 
+    dut.pass, dut.discard, dut.store, dut.replay,
     dut.i,dut.j,
     dut.send, dut.replay_fire,
     dout, dout_valid

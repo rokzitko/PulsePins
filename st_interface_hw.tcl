@@ -3,21 +3,21 @@
 # DO NOT MODIFY
 
 
-# 
+#
 # st_interface "st_interface" v1.0
 #  2020.06.12.18:15:28
-# 
-# 
+#
+#
 
-# 
+#
 # request TCL package from ACDS 16.1
-# 
+#
 package require -exact qsys 16.1
 
 
-# 
+#
 # module st_interface
-# 
+#
 set_module_property DESCRIPTION "Parallel data streamer"
 set_module_property NAME st_interface
 set_module_property VERSION 1.0
@@ -33,9 +33,9 @@ set_module_property ALLOW_GREYBOX_GENERATION false
 set_module_property REPORT_HIERARCHY false
 
 
-# 
+#
 # file sets
-# 
+#
 add_fileset QUARTUS_SYNTH QUARTUS_SYNTH "" ""
 set_fileset_property QUARTUS_SYNTH TOP_LEVEL st_interface
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS true
@@ -67,27 +67,27 @@ add_fileset_file chain_trigger.sv SYSTEMVERILOG PATH ip/streamer/chain_trigger.s
 add_fileset_file prng.sv SYSTEMVERILOG PATH ip/streamer/prng.sv
 
 
-# 
+#
 # parameters
-# 
+#
 
 
-# 
+#
 # module assignments
-# 
+#
 set_module_assignment embeddedsw.dts.compatible dev,st_interface
 set_module_assignment embeddedsw.dts.group leds,st_if
 set_module_assignment embeddedsw.dts.vendor dsa
 
 
-# 
+#
 # display items
-# 
+#
 
 
-# 
+#
 # connection point clock
-# 
+#
 add_interface clock clock end
 set_interface_property clock clockRate 0
 set_interface_property clock ENABLED true
@@ -99,9 +99,9 @@ set_interface_property clock SVD_ADDRESS_GROUP ""
 add_interface_port clock clk clk Input 1
 
 
-# 
+#
 # connection point reset
-# 
+#
 add_interface reset reset end
 set_interface_property reset associatedClock clock
 set_interface_property reset synchronousEdges DEASSERT
@@ -114,9 +114,9 @@ set_interface_property reset SVD_ADDRESS_GROUP ""
 add_interface_port reset reset reset Input 1
 
 
-# 
+#
 # connection point avalon_streaming_sink_0
-# 
+#
 add_interface avalon_streaming_sink_0 avalon_streaming end
 set_interface_property avalon_streaming_sink_0 associatedClock clock
 set_interface_property avalon_streaming_sink_0 associatedReset reset
@@ -172,9 +172,9 @@ set_interface_assignment s0 embeddedsw.configuration.isNonVolatileStorage 0
 set_interface_assignment s0 embeddedsw.configuration.isPrintableDevice 0
 
 
-# 
+#
 # connection point conduit_end
-# 
+#
 add_interface conduit_end conduit end
 set_interface_property conduit_end associatedClock clock
 set_interface_property conduit_end associatedReset ""

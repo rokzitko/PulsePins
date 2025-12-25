@@ -69,7 +69,7 @@ always @(posedge clk or posedge reset)
    q2 <= q1;
 	q3 <= q2;
    r  <= q3;
-  end	
+  end
 endmodule
 
 `default_nettype wire // turn implicit nets on again to avoid side-effects

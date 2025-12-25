@@ -60,4 +60,3 @@ module avalon_st_source_bfm #(
   endtask
 
 endmodule
-

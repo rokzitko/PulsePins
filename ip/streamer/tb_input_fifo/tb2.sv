@@ -30,7 +30,7 @@ logic full;
 logic empty;
 
 always @(posedge clk) begin
-  $strobe("t=%8.3f reset=%b wrreq=%b rdreq=%b q=%d empty=%b full=%b used1=%d dout_valid=%b used2=%d", 
+  $strobe("t=%8.3f reset=%b wrreq=%b rdreq=%b q=%d empty=%b full=%b used1=%d dout_valid=%b used2=%d",
     $realtime, reset, wrreq, rdreq, q, empty, full, dut.used1, dut.dout_valid, dut.used2);
 end
 

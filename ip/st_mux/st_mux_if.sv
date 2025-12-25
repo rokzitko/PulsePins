@@ -68,7 +68,7 @@ always_ff @(posedge clk) begin
     endcase
   end
 end
-                  
+
 always_ff @(posedge clk) begin
   if (reset) begin
     avs_s0_readdata <= 0;
@@ -82,7 +82,7 @@ always_ff @(posedge clk) begin
     endcase
   end
 end
-            
+
 endmodule: st_mux_if
 
 `default_nettype wire

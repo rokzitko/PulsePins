@@ -162,4 +162,3 @@ readback (defined in ``readback.hh``)
 st_mux (defined in ``st_mux.hh``)
 
 trigger (defined in ``trigger.hh``)
-

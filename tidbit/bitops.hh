@@ -15,4 +15,3 @@
 #define BITMASK_FLIP(x,y) ((x) ^= (y))
 #define BITMASK_CHECK_ALL(x,y) (((x) & (y)) == (y))   // warning: evaluates y twice
 #define BITMASK_CHECK_ANY(x,y) ((x) & (y))
-

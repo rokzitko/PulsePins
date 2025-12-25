@@ -23,7 +23,7 @@ always @(posedge clk) begin
   $strobe("t=%8.3f d=%4h wr=%b | co=%h ctr=%h d=%h din_valid=%b din_ready=%b | pass=%b di=%b store=%b replay=%b | i=%d j=%d dout=%4h valid=%h | used2=%d q=%4h rdreq=%b empty=%b", $realtime,
     data, wrreq,
     dut.proc.control, dut.proc.counter, dut.proc.data, dut.proc.din_valid, dut.proc.din_ready,
-    dut.proc.pass, dut.proc.discard, dut.proc.store, dut.proc.replay, 
+    dut.proc.pass, dut.proc.discard, dut.proc.store, dut.proc.replay,
     dut.proc.i, dut.proc.j,
     dut.proc.dout, dut.proc.dout_valid,
     dut.used2,

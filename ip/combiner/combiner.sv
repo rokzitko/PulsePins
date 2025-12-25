@@ -46,7 +46,7 @@ localparam [WIDTH_MODE-1:0] SEL1 = 4'd0, SEL2 = 4'd1, SEL3 = 4'd2, SEL4 = 4'd3, 
 `define B_FORCE3 19
 `define B_FORCE4 20
 
-// true = put the value in valueo on the output port o instead of the computed value 
+// true = put the value in valueo on the output port o instead of the computed value
 logic forceo;
 assign forceo = cfg[`B_FORCEo];
 

@@ -20,4 +20,3 @@ module sig_mux #(
 endmodule
 
 `default_nettype wire
-

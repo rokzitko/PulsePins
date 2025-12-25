@@ -51,7 +51,7 @@ class tests {
      auto c = parse_count(input, "-c", "1");
      auto v0 = parse_value(input, "-v0", "0");
      auto vmax = parse_value(input, "-v", "0b11");
-     for (value_t v = v0; v < vmax; v++) 
+     for (value_t v = v0; v < vmax; v++)
        elements.push_back(el(c, v));
      return send_and_trig(fifo, sc, rb, ctr, elements, input, force_trigger, verb);
    }

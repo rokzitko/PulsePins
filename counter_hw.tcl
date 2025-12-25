@@ -3,21 +3,21 @@
 # DO NOT MODIFY
 
 
-# 
+#
 # counter "counter" v1.0
 # Rok Zitko 2025.11.01.20:12:39
 # Measure basic statistics on digital lines
-# 
+#
 
-# 
+#
 # request TCL package from ACDS 16.1
-# 
+#
 package require -exact qsys 16.1
 
 
-# 
+#
 # module counter
-# 
+#
 set_module_property DESCRIPTION "Measure basic statistics on digital lines"
 set_module_property NAME counter
 set_module_property VERSION 1.0
@@ -33,9 +33,9 @@ set_module_property ALLOW_GREYBOX_GENERATION false
 set_module_property REPORT_HIERARCHY false
 
 
-# 
+#
 # file sets
-# 
+#
 add_fileset QUARTUS_SYNTH QUARTUS_SYNTH "" ""
 set_fileset_property QUARTUS_SYNTH TOP_LEVEL counter_if
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
@@ -53,9 +53,9 @@ add_fileset_file cdc.v VERILOG PATH ip/counter/cdc.v
 add_fileset_file counter_if.sv SYSTEM_VERILOG PATH ip/counter/counter_if.sv TOP_LEVEL_FILE
 
 
-# 
+#
 # parameters
-# 
+#
 add_parameter width_data INTEGER 32
 set_parameter_property width_data DEFAULT_VALUE 32
 set_parameter_property width_data DISPLAY_NAME width_data
@@ -76,14 +76,14 @@ set_parameter_property width_addr UNITS None
 set_parameter_property width_addr HDL_PARAMETER true
 
 
-# 
+#
 # display items
-# 
+#
 
 
-# 
+#
 # connection point clock
-# 
+#
 add_interface clock clock end
 set_interface_property clock clockRate 0
 set_interface_property clock ENABLED true
@@ -95,9 +95,9 @@ set_interface_property clock SVD_ADDRESS_GROUP ""
 add_interface_port clock clk clk Input 1
 
 
-# 
+#
 # connection point reset
-# 
+#
 add_interface reset reset end
 set_interface_property reset associatedClock clock
 set_interface_property reset synchronousEdges DEASSERT
@@ -110,9 +110,9 @@ set_interface_property reset SVD_ADDRESS_GROUP ""
 add_interface_port reset reset reset Input 1
 
 
-# 
+#
 # connection point s0
-# 
+#
 add_interface s0 avalon end
 set_interface_property s0 addressUnits WORDS
 set_interface_property s0 associatedClock clock
@@ -147,9 +147,9 @@ set_interface_assignment s0 embeddedsw.configuration.isNonVolatileStorage 0
 set_interface_assignment s0 embeddedsw.configuration.isPrintableDevice 0
 
 
-# 
+#
 # connection point conduit_end
-# 
+#
 add_interface conduit_end conduit end
 set_interface_property conduit_end associatedClock clock
 set_interface_property conduit_end associatedReset ""
@@ -162,4 +162,3 @@ set_interface_property conduit_end SVD_ADDRESS_GROUP ""
 add_interface_port conduit_end d data Input 32
 add_interface_port conduit_end d_clk clock Input 1
 add_interface_port conduit_end d_valid valid Input 1
-
