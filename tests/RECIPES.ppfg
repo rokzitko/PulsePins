@@ -1,59 +1,59 @@
 POZOR: At 100M-100M: buffer_error, because of 1-bubble implementation
 
 # Generate f_clk/2=500kHz, e.g. for f_clk=1MHz:
-./ppfg -pll 1M-100M -cont -trig
+./ppfg -core_pll 1M -cont -trig
 
 # 5MHz
-./ppfg -pll 10M-100M -cont -trig
+./ppfg -core_pll 10M -cont -trig
 
 # 2.5MHz
-./ppfg -pll 10M-100M -cont -trig -veryverbose -period 400ns
+./ppfg -core_pll 10M -cont -trig -veryverbose -period 400ns
 
 # 1MHz
-./ppfg -pll 10M-100M -cont -trig -veryverbose -period 1ms
+./ppfg -core_pll 10M -cont -trig -veryverbose -period 1ms
 
 # Duty cycle
-./ppfg -pll 10M-100M -cont -trig -veryverbose -period 1ms -duty 1
-./ppfg -pll 10M-100M -cont -trig -veryverbose -period 1ms -duty 5
+./ppfg -core_pll 10M -cont -trig -veryverbose -period 1ms -duty 1
+./ppfg -core_pll 10M -cont -trig -veryverbose -period 1ms -duty 5
 
 # Different base frequencies
-./ppfg -veryverbose -pll 1M-100M -cont -trig
-./ppfg -veryverbose -pll 50M-100M -cont -trig
-./ppfg -veryverbose -pll 10M-100M -cont -trig
+./ppfg -veryverbose -core_pll 1M -cont -trig
+./ppfg -veryverbose -core_pll 50M -cont -trig
+./ppfg -veryverbose -core_pll 10M -cont -trig
 
 10Hz flashing:
-./ppfg -veryverbose -pll 10M-100M -cont -trig -freq 10Hz
+./ppfg -veryverbose -core_pll 10M -cont -trig -freq 10Hz
 
 # Burst mode
 ./ppreset
-./ppfg -veryverbose -pll 10M-100M -burst 3 -period 1ms -trig -veryverbose
+./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose
 
 # -start0
-./ppfg -veryverbose -pll 10M-100M -burst 3 -period 1ms -trig -veryverbose -start0
+./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -start0
 
 # -t (final value)
-./ppfg -veryverbose -pll 10M-100M -burst 3 -period 1ms -trig -veryverbose -t 0xFF
+./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -t 0xFF
 
 # -n_max; with auto trigger just two repetitions of the same burst
-./ppfg -veryverbose -pll 10M-100M -burst 3 -period 1ms -trig -veryverbose -n_max 2
+./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 2
 
 # Delay between trigger and burst; here autotriggered, thus time-separated burst sequences
-./ppfg -veryverbose -pll 10M-100M -burst 3 -period 1ms -trig -veryverbose -n_max 2 -delay 100ms
+./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 2 -delay 100ms
 
 # Bursts forever...
-./ppfg -veryverbose -pll 10M-100M -burst 3 -period 1ms -trig -veryverbose -n_max 0 -delay 10ms
+./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 0 -delay 10ms
 
 # Trigger contol
-./ppfg -veryverbose -trig_misc -pio 0b000_0000_0000 -pll 10M-100M -burst 3 -freq 1000Hz -trig
-./ppfg -veryverbose -trig_std -pio 0b001_0000_0000 -pll 10M-100M -cont -trig -freq 100kHz
+./ppfg -veryverbose -trig_misc -pio 0b000_0000_0000 -core_pll 10M -burst 3 -freq 1000Hz -trig
+./ppfg -veryverbose -trig_std -pio 0b001_0000_0000 -core_pll 10M -cont -trig -freq 100kHz
 
 # Burst, pb trigger (right button)
-./ppfg -veryverbose -trig_misc -pll 10M-100M -burst 3 -period 1ms
+./ppfg -veryverbose -trig_misc -core_pll 10M -burst 3 -period 1ms
 
 # Burst, external trigger
 
 # servo pwm, angle to 135o
- ./ppfg -pll 10M-100M -cont -trig -veryverbose -servo 135
+ ./ppfg -core_pll 10M -cont -trig -veryverbose -servo 135
 
 # Gating
 ./ppfg -cont -trig -veryverbose -period 1us -gate t:b11111111 -trig_misc
