@@ -1,8 +1,8 @@
-site_name: PulsePins RLE-Streamer
+site_name: PulsePins Pulse Sequencer
 repo_url: https://github.com/rokzitko/pulsepins
 nav:
+  - Sequencer: index.md
   - Hardware:
-    - Electronics: index.md
     - ppboards sheilds: ppboards.md
     - Technicalities : details.md
   - API:
@@ -24,7 +24,9 @@ nav:
     - Readback : readback.md
   - Development: development.md
   - About: about.md
-theme: readthedocs
+theme:
+   name: readthedocs
+   favicon: img/favicon.ico
 markdown_extensions:
   - attr_list
 extra_css:

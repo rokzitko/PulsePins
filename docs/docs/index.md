@@ -23,7 +23,7 @@ scheduled updates of signals (digital; analog via DAC boards; oscillatory via DD
 distributed both as modifiable source code (Verilog, C++, Python), allowing adaptation to users’
 individual needs, and as a pre-built SD-card image for a quick start.
 
-This document serves as the reference and user manual for PulsePins. It details low-level implementation details,
+This web site serves as the reference and user manual for PulsePins. It provides low-level implementation details,
 interfacing with the hard processor system (HPS), API, software library (C++ and Python interfaces), and testing tools. Timing diagrams are also provided.
 
 ![PulsePins diagram](img/PulsePins.001.png){: style="height:300px"}
