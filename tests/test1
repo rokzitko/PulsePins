@@ -1,5 +1,5 @@
 #!/bin/sh
-set -ex
+source defs.sh
 
 pptest 1 -check
 

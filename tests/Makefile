@@ -4,7 +4,7 @@ TARGETHOST ?= de10nano
 
 copy:
 	ssh $(TARGETHOST) "mkdir -p tests"
-	scp run_all_tests run_all_tests_forever run_PLL @$(TARGETHOST):
+	scp run_all_tests run_all_tests_forever run_PLL defs.sh @$(TARGETHOST):
 	scp test* sequence.* @$(TARGETHOST):tests/
 
 IMGROOT=../image/ext/home/root

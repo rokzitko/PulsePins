@@ -1,6 +1,6 @@
 #!/bin/bash
 #Replay tests - large counts
-set -ex
+source defs.sh
 
 export INT_PLL=50M
 

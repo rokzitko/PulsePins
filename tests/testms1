@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+source defs.sh
 ppmstest 1 -veryverbose -check -trig -mode 1
 ppmstest 1 -check -trig -mode 2
 ppmstest 1 -check -trig -mode 3

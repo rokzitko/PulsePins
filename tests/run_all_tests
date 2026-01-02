@@ -35,7 +35,7 @@ for my $t (glob "./test*") {
   next if defined($skip_re) && $t =~ /$skip_re/;  # user-specified skips
 
   my $test = basename($t);
-  print "Running $t [$test]...\n";
+  print "\nRunning $t [$test]...\n";
   system("bash", "-o", "pipefail", "-c", "$t 2>&1 | tee $logdir/report.$test");
   my $rc = $? >> 8;   # extract exit code
   print "rc=$rc\n" if $rc != 0;

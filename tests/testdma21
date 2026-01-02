@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+source defs.sh
 time ppdmatest 21 -c 10 -v 44739241
 time ppdmatest 21 -c 10 -v 5000000
 time ppdmatest 21 -c 10 -v 500000

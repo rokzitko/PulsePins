@@ -1,3 +1,3 @@
 #!/bin/bash
-set -ex
+source defs.sh
 ppcounter -test1 -veryverbose -check

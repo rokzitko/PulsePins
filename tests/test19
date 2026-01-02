@@ -1,5 +1,5 @@
 #!/bin/sh
-set -ex
+source defs.sh
 pptest 19 -c 10
 pptest 19 -c 100
 pptest 19 -c 512

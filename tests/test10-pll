@@ -1,6 +1,6 @@
 #!/bin/bash
 # Replay tests
-set -ex
+source defs.sh
 
 pptest 10 -v 2 -c 100 -repetitions 2048 -nr_replays 1 -check -core_pll 10M
 pptest 10 -v 2 -c 40 -repetitions 2048 -nr_replays 1 -check -core_pll 10M

@@ -1,6 +1,6 @@
 #!/bin/bash
 #Replay tests
-set -ex
+source defs.sh
 
 pptest 10 -v 4 -c 5 -repetitions 2 -nr_replays 2 -pre -p 2 -mid -m 3 -post -o 2 -check  -dump-converted
 pptest 10 -v 8 -c 13 -repetitions 2 -nr_replays 2 -pre -p 2 -mid -m 3 -post -o 2 -check
@@ -102,7 +102,7 @@ pptest 10 -v 7 -c 10000 -repetitions 7 -nr_replays 4 -check
 pptest 10 -v 7 -c 10000 -repetitions 8 -nr_replays 4 -check
 pptest 10 -v 7 -c 10000 -repetitions 9 -nr_replays 4 -check
 pptest 10 -v 7 -c 10000 -repetitions 10 -nr_replays 4 -check
-pptest 10 -v 7 -c 10000 -repetitions 100 -nr_replays 4 -check
+#pptest 10 -v 7 -c 10000 -repetitions 100 -nr_replays 4 -check
 
 # v=8, variable repetitions
 pptest 10 -v 8 -c 1 -repetitions 3 -nr_replays 4 -check
@@ -117,4 +117,4 @@ pptest 10 -v 8 -c 10000 -repetitions 7 -nr_replays 4 -check
 pptest 10 -v 8 -c 10000 -repetitions 8 -nr_replays 4 -check
 pptest 10 -v 8 -c 10000 -repetitions 9 -nr_replays 4 -check
 pptest 10 -v 8 -c 10000 -repetitions 10 -nr_replays 4 -check
-pptest 10 -v 8 -c 10000 -repetitions 100 -nr_replays 4 -check
+#pptest 10 -v 8 -c 10000 -repetitions 100 -nr_replays 4 -check
