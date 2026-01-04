@@ -1,0 +1,57 @@
+#!/bin/bash
+source defs.sh
+
+ppdmatest 4 -c 100000 -v 1 -check
+ppdmatest 4 -c 100000 -v 9 -check
+ppdmatest 4 -c 100000 -v 90 -check
+ppdmatest 4 -c 100000 -v 510 -check
+
+ppdmatest 4 -c 10000 -v 1 -check
+ppdmatest 4 -c 10000 -v 9 -check
+ppdmatest 4 -c 10000 -v 90 -check
+ppdmatest 4 -c 10000 -v 510 -check
+
+ppdmatest 4 -c 1000 -v 1 -check
+ppdmatest 4 -c 1000 -v 9 -check
+ppdmatest 4 -c 1000 -v 90 -check
+ppdmatest 4 -c 1000 -v 510 -check
+
+ppdmatest 4 -c 100 -v 1 -check
+ppdmatest 4 -c 100 -v 9 -check
+ppdmatest 4 -c 100 -v 90 -check
+
+ppdmatest 4 -c 10 -v 1 -check
+ppdmatest 4 -c 10 -v 9 -check
+ppdmatest 4 -c 10 -v 90 -check
+
+ppdmatest 4 -c 1 -v 1 -check
+ppdmatest 4 -c 1 -v 9 -check
+ppdmatest 4 -c 1 -v 90 -check
+
+
+ppdmatest 4 -rnd -c 100000 -v 1 -check
+ppdmatest 4 -rnd -c 100000 -v 9 -check
+ppdmatest 4 -rnd -c 100000 -v 90 -check
+ppdmatest 4 -rnd -c 100000 -v 510 -check
+
+ppdmatest 4 -rnd -c 10000 -v 1 -check
+ppdmatest 4 -rnd -c 10000 -v 9 -check
+ppdmatest 4 -rnd -c 10000 -v 90 -check
+ppdmatest 4 -rnd -c 10000 -v 510 -check
+
+ppdmatest 4 -rnd -c 1000 -v 1 -check
+ppdmatest 4 -rnd -c 1000 -v 9 -check
+ppdmatest 4 -rnd -c 1000 -v 90 -check
+ppdmatest 4 -rnd -c 1000 -v 510 -check
+
+ppdmatest 4 -rnd -c 100 -v 1 -check
+ppdmatest 4 -rnd -c 100 -v 9 -check
+ppdmatest 4 -rnd -c 100 -v 90 -check
+
+ppdmatest 4 -rnd -c 10 -v 1 -check
+ppdmatest 4 -rnd -c 10 -v 9 -check
+ppdmatest 4 -rnd -c 10 -v 90 -check
+
+ppdmatest 4 -rnd -c 1 -v 1 -check
+ppdmatest 4 -rnd -c 1 -v 9 -check
+ppdmatest 4 -rnd -c 1 -v 90 -check

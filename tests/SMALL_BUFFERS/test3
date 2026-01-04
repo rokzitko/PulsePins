@@ -1,0 +1,12 @@
+#!/bin/sh
+source defs.sh
+
+pptest 3 -c 10 -v0 30 -v 42 -check
+pptest 3 -c 5 -v0 3 -v 200 -check
+pptest 3 -c 1 -v0 2 -v 4 -check
+
+pptest 3 -c 1 -v 1 -check
+pptest 3 -c 10 -v 10 -check
+pptest 3 -c 100 -v 100 -check
+
+pptest 3 -c 500_000_000 -veryverbose -verbosecheck -check

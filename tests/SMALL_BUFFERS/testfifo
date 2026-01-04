@@ -1,0 +1,6 @@
+#!/bin/sh
+# Tests that depend on FIFO buffer being sufficiently large.
+source defs.sh
+
+# Max size that still fits the input FIFO buffers
+pptest 8 -c 120000 -v 629 -check -dump-converted

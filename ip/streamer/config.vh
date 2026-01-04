@@ -17,9 +17,28 @@
 `define WIDTH_TRIGGER_CONTROL 16
 `define P_FIFO_TRIGGER 8 // 2^p=256
 
+// Only one of the following settings should be defined
+//`define SMALL_BUFFERS
+`define STANDARD_BUFFERS
+//`define BIG_BUFFERS
+
+`ifdef SMALL_BUFFERS
+`define P_FIFO_IN1 6  // 2^p=64
+`define P_FIFO_IN2 8  // 2^p=256
+`define P_FIFO_OUT 10 // 2^p=1024
+`endif
+
+`ifdef STANDARD_BUFFERS
 `define P_FIFO_IN1 10 // 2^p=1024
 `define P_FIFO_IN2 11 // 2^p=2048
 `define P_FIFO_OUT 12 // 2^p=4096
+`endif
+
+`ifdef BIG_BUFFERS
+`define P_FIFO_IN1 10 // 2^p=1024
+`define P_FIFO_IN2 12 // 2^p=4096
+`define P_FIFO_OUT 14 // 2^p=16384
+`endif
 
 // Memory
 `define MEMORY_POSITIONS 8

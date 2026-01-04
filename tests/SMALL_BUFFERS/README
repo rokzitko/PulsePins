@@ -1,0 +1,1 @@
+Set of tests for reduced buffer sizes (SMALL_BUFFERS in ip/streamer/config.vh)
