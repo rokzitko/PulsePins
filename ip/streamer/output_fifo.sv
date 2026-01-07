@@ -19,6 +19,7 @@ parameter int length = 2**p
 input wire wrclk,              // clock for writing data to FIFO
 input wire rdclk,              // clock for reading data from FIFO
 input wire reset,              // reset FIFO and buffer underflow logic
+input wire rdrst,              // reset in the rdclk clock domain
 
 input wire [width-1:0] data,   // input data + control register
 input wire wrreq,              // if 1, data is written to FIFO each time wrclk is asserted
@@ -49,7 +50,7 @@ always_ff @(posedge wrclk) begin
 end
 
 always_ff @(posedge rdclk) begin
-  if (reset) begin
+  if (rdrst) begin
     ctr_out <= '0;
   end else begin
     if (rdreq) begin  // all reads
@@ -104,7 +105,7 @@ assign is_prng      = control[`BIT_PRNG];           // randomize the output valu
 
 // 'done' signal logic: 'done' signal indicates a successful completion of the RL decoding process, i.e., if there were no buffer underflows
 always_ff @(posedge rdclk) begin
-  if (reset)
+  if (rdrst)
     done <= 0;
   else if (rdreq && is_last && !buffer_error)
     // 'done' is asserted when the terminator event is encountered at the output of the FIFO, but only if there was no buffer underflow.
@@ -113,7 +114,7 @@ always_ff @(posedge rdclk) begin
 end
 
 always_ff @(posedge rdclk) begin
-  if (reset)
+  if (rdrst)
     retrig_requested <= 0;
   else if (rdreq && is_retrig)
     retrig_requested <= 1;
@@ -123,7 +124,7 @@ end
 
 // 'buffer_error' signal logic: triggered if the output FIFO buffer is emptied before the completion of the RL decoding process
 always_ff @(posedge rdclk) begin
-  if (reset)
+  if (rdrst)
     buffer_error <= 0;
   else if (rdreq && is_data && !done && empty)
     buffer_error <= 1;
@@ -132,7 +133,7 @@ end
 logic [63:0] rnd;
 prng_xoroshiro128plus prng(
  .clk(rdclk),
- .rst_n(!reset),
+ .rst_n(~rdrst),
  .en(1'b1),
  .reseed(1'b0),
  .rnd(rnd),
@@ -155,9 +156,9 @@ always_ff @(posedge rdclk) begin
 end
 
 // 'strobe_enable' logic: asserted when data are requested (rdreq=1) and available (empty!=1). Deasserted when
-// the terminating element of the sequence is encountered (done=1) or if reset is triggered (reset=1).
+// the terminating element of the sequence is encountered (done=1) or if reset is triggered (rdrst=1).
 always_ff @(posedge rdclk) begin
-  if (rdreq && !empty && !reset && !done)
+  if (rdreq && !empty && !rdrst && !done)
     strobe_enable <= 1'b1;
   else
     strobe_enable <= 1'b0;

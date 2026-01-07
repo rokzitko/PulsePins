@@ -22,7 +22,8 @@ input wire [width_control-1:0] control, // bit 1 for the last trigger condition 
 input wire wrreq,                       // write the trigger condition to FIFO
 
 // triggering + status signals
-input wire clk,                         // clock for reading from the trigger condition FIFO (output domain clock)
+input wire clk,                         // clock for reading from the trigger condition FIFO (streamer_clk)
+input wire rst,                         // reset signal in streamer_clk clock domain
 input wire [width-1:0] i,               // trigger input signals
 input wire trigger_enable,              // trigger logic enabled (trigger events ignored if not high)
 input wire trigger_force,               // (internal or external) trigger force (or'ed in st_interface.sv)
@@ -31,9 +32,9 @@ output wire armed,                      // asserted when waiting for the trigger
 output reg o                            // output
 );
 
-// reset: clears FIFO, resets and_trigger, state -> IDLE
-// trigger_reset: resets and_trigger, state -> IDLE
-// (internal) and_trigger_reset: resets the and_trigger (for next trigger event)
+// reset: clears FIFO
+// rst & trigger_reset: reset and_trigger, state -> IDLE
+// (internal) and_trigger_reset: resets and_trigger (for next trigger event)
 
 logic rdreq; // request for next trigger condition to be read from FIFO
 logic [width-1:0] q_pattern; // output from trigger FIFO
@@ -80,7 +81,7 @@ logic and_trigger_reset; // internal reset for and_trigger (controlled by the st
 
 and_trigger at (
   .clk(clk),
-  .reset(reset | and_trigger_reset | trigger_reset),
+  .reset(rst | and_trigger_reset | trigger_reset),
   .i(i),
   .pattern(q_pattern),
   .mask(q_mask),
@@ -112,8 +113,8 @@ assign is_last = q_control[`BIT_TRIGGER_FINAL]; // this trigger condition is the
 assign armed = (state == S_WAIT); // armed = waiting for trigger
 
 // trigger_reset must be asynchronous (necesarry for proper operation of retriggering; cf. test15)
-always_ff @(posedge clk or posedge reset or posedge trigger_reset or posedge trigger_force) begin
-  if (reset)
+always_ff @(posedge clk or posedge rst or posedge trigger_reset or posedge trigger_force) begin
+  if (rst)
     state <= S_IDLE;
   else if (trigger_reset)
     state <= S_IDLE;

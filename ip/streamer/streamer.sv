@@ -26,10 +26,10 @@ module streamer
  input wire gate_enable,                    // enable signal
  input wire [width_data-1:0] initial_value, // initial value for qout
 
- input wire output_clk,                     // clock for data streaming
+ input wire streamer_clk,                     // clock for data streaming
  output wire [width_data-1:0] qout,         // output stream
  output wire qout_valid,                    // valid/enable for qout
- output wire strobe,                        // strobe signal for output stream (out of phase relative to output_clk)
+ output wire strobe,                        // strobe signal for output stream (out of phase relative to streamer_clk)
  output wire strobe_enable,                 // (for debugging)
  output wire buffer_error,                  // goes high in case of output buffer underflow
  output wire done,                          // goes high when streaming is complete
@@ -135,6 +135,13 @@ rl_decoder rl0 (
     .out_almost_full(out_almost_full) // backpressure
 );
 
+logic streamer_rst; // reset in streamer_clk domain
+sync_bit_3stage sb_inst(
+ .clk_dest(streamer_clk),
+ .async_in(reset),
+ .sync_out(streamer_rst)
+);
+
 assign out_q = {out_control, out_data};
 
 logic [`P_FIFO_OUT:0] used_o; // used in testbenches (will be optimized away during synthesis)
@@ -153,7 +160,8 @@ output_fifo fifo0 (
     .qout(qout_fifo),
     .qout_valid(qout_valid),
     .rdreq(rdreq),
-    .rdclk(output_clk),
+    .rdclk(streamer_clk),
+    .rdrst(streamer_rst),
     .strobe(strobe),
     .strobe_enable(strobe_enable),
     .done(done),
@@ -168,8 +176,8 @@ output_fifo fifo0 (
 assign rdreq = trigger_activated && gate_enable; // streaming out if the trigger is activated & gate enabled
 
 logic trigger_latch;
-always_ff @(posedge output_clk) begin
-  if (reset) begin
+always_ff @(posedge streamer_clk) begin
+  if (streamer_rst) begin
     trigger_latch <= 0;
   end else if (trigger_activated) begin
     trigger_latch <= 1;
@@ -193,7 +201,8 @@ chain_trigger ct0 (
     .control(control[`WIDTH_TRIGGER_CONTROL-1:0]),
     .wrreq(in_valid_chain),
 
-    .clk(output_clk),
+    .clk(streamer_clk),
+    .rst(streamer_rst),
     .i(trigger_in),
     .trigger_enable(trigger_enable),
     .trigger_force(trigger_force),

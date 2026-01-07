@@ -141,17 +141,7 @@ localparam integer STREAMER_CLK_FREQ_HZ = 100_000_000;
 `ifdef INTERNAL_CLK
    assign streamer_clk = int_clk;
 `elsif EXTERNAL_CLK
-   // Route the clock signal applied to the EXT_CLKp pin to the regional clock network.
-   // As documented elsewhere, dynamic switching is not feasible on DE10-Nano, the clock is
-   // chosen statically at the synthesis time.
-   altclkctrl #(
-    .clock_type("GLOBAL CLOCK"),
-    .number_of_clocks(1)
-   ) altclkctrl_inst (
-    .inclk({EXT_CLKp}),
-    .ena(1'b1),
-    .outclk(streamer_clk)
-   );
+   assign streamer_clk = EXT_CLKp;
 `elsif EXTERNAL_CLK_CLEAN
    logic ext_clk_pll_locked;
    // Simple PLL instantiation for jitter attenuation
@@ -518,8 +508,12 @@ heartbeat #(
  .heartbeat(heartbeat)
 );
 
-logic reset_scd; // reset synchronized to the stream_clk clock domain
-sync_bit sb(.clk_dest(streamer_clk), .async_in(reset), .sync_out(reset_scd));
+logic streamer_rst; // reset synchronized to the stream_clk clock domain
+sync_bit_3stage sb(
+ .clk_dest(streamer_clk),
+ .async_in(reset),
+ .sync_out(streamer_rst)
+);
 
 logic activity;
 presence_detector_async_posedge #(
@@ -527,7 +521,7 @@ presence_detector_async_posedge #(
  .WINDOW_MS(200)    // active if signal has at least one posedge within 200 ms
 ) u_activity_monitor (
  .clk(streamer_clk),
- .reset(reset_scd),
+ .reset(streamer_rst),
  .sig_in(streamer_qout_strobe),
  .active(activity)
 );

@@ -4,6 +4,8 @@
 `ifndef RL_CONFIG_VH
 `define RL_CONFIG_VH
 
+//`define WEIRD_CLOCK
+
 package cfg;
  parameter int WIDTH_AVS = 32;
  parameter int WIDTH_DATA = 32;

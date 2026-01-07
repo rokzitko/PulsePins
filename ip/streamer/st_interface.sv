@@ -92,7 +92,7 @@ streamer st0 (
 .input_data(input_data),
 .input_valid(asi_valid),
 .input_ready(asi_ready),
-.output_clk(streamer_clk),
+.streamer_clk(streamer_clk),
 .gate_enable(gate_enable),
 .initial_value(initial_value),
 .qout(qout_streamer),
