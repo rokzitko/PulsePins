@@ -500,12 +500,18 @@ int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
                PIO_CFG_BASE);
   const double timeout = parse_double(input, "-timeout", "0"); // timeout for reading new events from FIFO timestamp buffer
   const bool read_pps = true; // always read pulse-per-second reference
+  if (input.exists("-pps_in"))
+    ts.sel_pps_in();
+  if (input.exists("-pps_xtal"))
+    ts.sel_pps_xtal();
   std::thread ts_pps;
   if (read_pps)
     ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&ts, timeout](){ return ts.read_with_timeout(timeout); });
   const bool read_sigA = input.exists("-sigA"); // enable reading signal A
   const auto selA = parse_uint32(input, "-selA", "0"); // select the source for signal A
   ts.selA(selA);
+  if (v.verbose)
+    std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
   std::thread ts_sigA;
   if (read_sigA)
     ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, timeout](){ return ts.readA_with_timeout(timeout); });

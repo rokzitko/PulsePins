@@ -11,13 +11,37 @@ constexpr int TS_SEL_PULSE_1MS = 7;
 constexpr int TS_SEL_PULSE_10MS = 6;
 constexpr int TS_SEL_PULSE_100MS = 5;
 constexpr int TS_SEL_PULSE_1S = 4;
-constexpr int TS_SEL_PIO_AIX_IN0 = 3;
+constexpr int TS_SEL_PIO_AUX_IN0 = 3;
 constexpr int TS_SEL_EXT_TRIGGER_IN0 = 2;
 constexpr int TS_SEL_STREAMER_TRIGGER_IN0 = 1;
 constexpr int TS_SEL_STREAMER_TRIGGER_ACTIVATED = 0;
 
 constexpr int CFG_TS_SEL_PPS = 1;
 constexpr int CFG_TS_SEL_SIGA_MUX_OFFSET = 2;
+
+std::string sel_str(int sel)
+{
+  switch (sel) {
+  case TS_SEL_PULSE_1MS:
+    return "pulse 1ms";
+  case TS_SEL_PULSE_10MS:
+    return "pulse 10ms";
+  case TS_SEL_PULSE_100MS:
+    return "pulse 100ms";
+  case TS_SEL_PULSE_1S:
+    return "pulse 1s";
+  case TS_SEL_PIO_AUX_IN0:
+    return "aux in 0";
+  case TS_SEL_EXT_TRIGGER_IN0:
+    return "ext trig 0";
+  case TS_SEL_STREAMER_TRIGGER_IN0:
+    return "trigger in0";
+  case  TS_SEL_STREAMER_TRIGGER_ACTIVATED:
+    return "trigger activated";
+  default:
+    return "INVALID";
+  }
+}
 
 class timestamp {
  private:
@@ -49,18 +73,26 @@ class timestamp {
      }
 
    void sel_pps_xtal() {
-     pio_cfg.clear(CFG_TS_SEL_PPS);
+     pio_cfg.clear(1 << CFG_TS_SEL_PPS);
    }
 
    void sel_pps_in() {
-     pio_cfg.set(CFG_TS_SEL_PPS);
+     pio_cfg.set(1 << CFG_TS_SEL_PPS);
    }
 
    void selA(const int i) {
      assert(0 <= i && i <= 7);
      pio_cfg.clear((1 << 2) + (1 << 3) + (1 << 4));
      pio_cfg.set(i << 2);
-     std::cout << "cfg=" << std::bitset<12>(pio_cfg.read()) << std::endl;
+   }
+
+   std::string get_cfg() {
+     const auto cfg = pio_cfg.read();
+     std::stringstream ss;
+     ss << ((cfg & CFG_TS_SEL_PPS) ? "PPS_IN" : "PPS_XTAL");
+     const int i = (cfg >> 2) & 0x7;
+     ss << " " << "sel=[" << sel_str(i) << "]";
+     return ss.str();
    }
 
    // Returns true if there are elements to be read back.
