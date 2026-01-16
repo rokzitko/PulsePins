@@ -1,0 +1,11 @@
+7   .i( { pulse_1ms,
+6         pulse_10ms,
+5         pulse_100ms,
+4         pulse_1s,
+3         pio_aux_in[0],
+2         ext_trigger_in[0],
+1         streamer_trigger_in[0],
+0         streamer_trigger_activated } ),
+
+ppts -sigA -selA 4 -pps_in
+ppts -sigA -selA 0 -pps_in

@@ -1,0 +1,5 @@
+Indefinitely long generation of PRNG on all outputs:
+pptest 19 -c 0
+
+Set update frequency:
+pptest 19 -c 0 -int_pll 100k
