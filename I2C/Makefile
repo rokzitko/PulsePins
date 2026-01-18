@@ -1,7 +1,7 @@
 .PHONY: copy
 
 DIR=I2C/
-FILES=$(wildcard *.py)
+FILES=$(wildcard *.py) README
 copy:
 	ssh $(TARGETHOST) mkdir -p $(DIR)
 	scp $(FILES) @$(TARGETHOST):$(DIR)
