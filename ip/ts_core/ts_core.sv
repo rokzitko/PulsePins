@@ -55,7 +55,7 @@ module ts_core #(
       sA2 <= 1'b0;
     end else begin
       sA1 <= sigA;
-      sA2 <= s1;
+      sA2 <= sA1;
     end
   end
 

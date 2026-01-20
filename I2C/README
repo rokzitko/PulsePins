@@ -1,0 +1,7 @@
+i2cdetect -l
+
+sudo i2cdetect -y 1
+
+sudo i2cdetect -y -r 1
+
+sudo i2cdetect -y -r -a 1
