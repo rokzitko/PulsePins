@@ -89,7 +89,7 @@ class timestamp {
    std::string get_cfg() {
      const auto cfg = pio_cfg.read();
      std::stringstream ss;
-     ss << ((cfg & CFG_TS_SEL_PPS) ? "PPS_IN" : "PPS_XTAL");
+     ss << ((cfg & (1 << CFG_TS_SEL_PPS)) ? "PPS_IN" : "PPS_XTAL");
      const int i = (cfg >> 2) & 0x7;
      ss << " " << "sel=[" << sel_str(i) << "]";
      return ss.str();
