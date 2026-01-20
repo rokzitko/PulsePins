@@ -521,6 +521,63 @@ int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
   return 0;
 }
 
+#include "zip_aggregator.hh"
+#include "PID.hh"
+
+int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+{
+  FPGA fpga(v);
+  rstmgr rm;
+  rm.s2f_reset(); // FPGA fabric reset
+  timestamp ts(fpga.dev_h2f,
+               fpga.dev_lw,
+               FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
+               FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
+               PIO_CFG_BASE);
+  const double timeout = parse_double(input, "-timeout", "0"); // timeout for reading new events from FIFO timestamp buffer
+  if (input.exists("-pps_in"))
+    ts.sel_pps_in();
+  if (input.exists("-pps_xtal"))
+    ts.sel_pps_xtal();
+  const auto selA = parse_uint32(input, "-selA", "0"); // select the source for signal A
+  ts.selA(selA);
+  if (v.verbose)
+    std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
+  const auto kp = parse_double(input, "-kp", "0.01"); // proportional
+  const auto ki = parse_double(input, "-ki", "0.1"); // integral
+  PID pid(kp,ki);
+  size_t cnt = 0;
+  int64_t diff_prev = 0;
+  ZipAggregator<uint64_t, uint64_t> agg
+  (
+      [&cnt, &diff_prev, &pid](const uint64_t &a, const uint64_t &b) {
+        const int64_t diff = int64_t(b)-int64_t(a);
+        const int64_t Delta = (cnt > 0 ? diff_prev-diff : 0);
+        const auto control = pid.update(Delta);
+        lockcout.lock();
+        std::cout << "pair: A=" << a << "  B=" << b << "  diff=" << diff << "  Delta=" << Delta << "  control=" << control << "\n";
+        lockcout.unlock();
+        cnt++;
+        diff_prev = diff;
+      },
+      /*max_depth_per_queue=*/8
+  );
+  auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&ts, &agg, timeout](){
+    const auto A = ts.read_with_timeout(timeout);
+    agg.submitA(A);
+    return A;
+  });
+  auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, &agg, timeout](){
+    const auto B = ts.readA_with_timeout(timeout);
+    agg.submitB(B);
+    return B;
+  });
+  ts_pps.join();
+  ts_sigA.join();
+  std::cout << "All done, exiting." << std::endl;
+  return 0;
+}
+
 int pphelloworld(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
   FPGA fpga(v);
@@ -566,6 +623,7 @@ int main(int argc, char *argv[])
     {"ppread", ppread},
     {"ppcounter", ppcounter},
     {"ppts", ppts},
+    {"ppgpsdo", ppgpsdo},
     {"pphelloworld", pphelloworld}
   };
 

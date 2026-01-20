@@ -34,7 +34,8 @@ endif
 TARGETS = pptool ppserver
 
 # Symlinks to pptool
-SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts pphelloworld
+SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
+           ppgpsdo pphelloworld
 
 build: pptool ppserver unit_tests
 
