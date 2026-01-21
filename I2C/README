@@ -5,3 +5,9 @@ sudo i2cdetect -y 1
 sudo i2cdetect -y -r 1
 
 sudo i2cdetect -y -r -a 1
+
+Note: scripts require smbus2: pip3 install smbus2
+
+Fix version number in gpg-1.13.1_unknown-py3.8.egg-info
+/usr/lib/python3.8/site-packages/gpg-1.13.1_unknown-py3.8.egg-info
+erase "-unknown"
