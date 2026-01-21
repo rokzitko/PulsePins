@@ -1,3 +1,4 @@
+#pragma once
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -10,7 +11,7 @@
 #include <thread>
 #include <utility>
 
-template <class A, class B>
+template <typename A, typename B>
 class ZipAggregator {
 public:
     using Task = std::function<void(const A&, const B&)>;
