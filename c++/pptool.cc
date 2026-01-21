@@ -578,6 +578,33 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
   return 0;
 }
 
+#include "MCP9808.hh"
+
+int pptemp(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+{
+  Args args;
+  MCP9808::print_csv_header(args, std::cout);
+  MCP9808 sensor(args.bus, args.addr, args.reopen);
+  int n = 0;
+  while (true) {
+    try {
+      const double t_c = sensor.read_temp_c();
+      std::cout << MCP9808::format_line(args, t_c) << "\n";
+      std::cout.flush();
+    } catch (const std::system_error& e) {
+      if (args.quiet_errors) {
+        MCP9808::emit_quiet_error_placeholder(args, std::cout, std::cerr);
+      } else {
+        throw;
+      }
+    }
+    ++n;
+    if (args.count && n >= args.count) break;
+    if (args.delay > 0.0)
+      std::this_thread::sleep_for(std::chrono::duration<double>(args.delay));
+  }
+}
+
 int pphelloworld(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
   FPGA fpga(v);
@@ -624,6 +651,7 @@ int main(int argc, char *argv[])
     {"ppcounter", ppcounter},
     {"ppts", ppts},
     {"ppgpsdo", ppgpsdo},
+    {"pptemp", pptemp},
     {"pphelloworld", pphelloworld}
   };
 
