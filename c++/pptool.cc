@@ -603,6 +603,7 @@ int pptemp(const InputParser &input, int argc, char *argv[], const Verbosity &v)
     if (args.delay > 0.0)
       std::this_thread::sleep_for(std::chrono::duration<double>(args.delay));
   }
+  return 0;
 }
 
 int pphelloworld(const InputParser &input, int argc, char *argv[], const Verbosity &v)
