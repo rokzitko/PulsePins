@@ -35,31 +35,35 @@ module ts_core #(
   // ============================================================
   // Synchronize and edge-detect the asynchronous input
   // ============================================================
-  reg s1, s2;
+  reg s1, s2, s3;
   always_ff @(posedge clk) begin
     if (reset) begin
       s1 <= 1'b0;
       s2 <= 1'b0;
+      s3 <= 1'b0;
     end else begin
       s1 <= sig;
       s2 <= s1;
+      s3 <= s2;
     end
   end
 
-  wire signal_rise = s1 & ~s2;
+  wire signal_rise = s2 & ~s3;
 
-  reg sA1, sA2;
+  reg sA1, sA2, sA3;
   always_ff @(posedge clk) begin
     if (reset) begin
       sA1 <= 1'b0;
       sA2 <= 1'b0;
+      sA3 <= 1'b0;
     end else begin
       sA1 <= sigA;
       sA2 <= sA1;
+      sA3 <= sA2;
     end
   end
 
-  wire signalA_rise = sA1 & ~sA2;
+  wire signalA_rise = sA2 & ~sA3;
 
   // ============================================================
   // Capture timestamp on rising edge
