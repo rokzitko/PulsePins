@@ -524,6 +524,11 @@ int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 #include "zip_aggregator.hh"
 #include "PID.hh"
 
+// signum function (-1, 0, 1), returns int
+template <typename T> int sgn(T val) {
+  return (T(0) < val) - (val < T(0));
+}
+
 int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
   FPGA fpga(v);
@@ -545,15 +550,18 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
     std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
   const auto kp = parse_double(input, "-kp", "0.01"); // proportional
   const auto ki = parse_double(input, "-ki", "0.1"); // integral
+  int64_t clip = parse_uint64(input, "-clip", "1000"); // clip large error values
+  int64_t reject = parse_uint64(input, "-reject", "10000"); // reject large error values (e.g. spurious edges detected)
   PID pid(kp,ki);
   size_t cnt = 0;
   int64_t diff_prev = 0;
   ZipAggregator<uint64_t, uint64_t> agg
   (
-      [&cnt, &diff_prev, &pid](const uint64_t &a, const uint64_t &b) {
+      [&cnt, &diff_prev, &pid, clip, reject](const uint64_t &a, const uint64_t &b) {
         const int64_t diff = int64_t(b)-int64_t(a);
         const int64_t Delta = (cnt > 0 ? diff_prev-diff : 0);
-        const auto control = pid.update(Delta);
+        const int64_t clippedDelta = (abs(Delta) < clip ? Delta : clip*sgn(Delta));
+        const auto control = (abs(Delta) < reject ? pid.update(clippedDelta) : pid.getControl());
         lockcout.lock();
         std::cout << "pair: A=" << a << "  B=" << b << "  diff=" << diff << "  Delta=" << Delta << "  control=" << control << "\n";
         lockcout.unlock();
