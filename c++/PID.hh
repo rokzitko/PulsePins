@@ -22,9 +22,27 @@ public:
      kd_ = kd;
    }
 
+   // Limits for the control signal (clamp to [umin:umax]).
    void setLimits(double umin, double umax) {
      umin_ = umin;
      umax_ = umax;
+   }
+
+   void setDeadband(double dp, double di = 0.0) {
+     dp_ = dp;
+     di_ = di;
+   }
+
+   void setDeadBandP(double dp) {
+     dp_ = dp;
+   }
+
+   void setDeadBandI(double di) {
+     di_ = di;
+   }
+
+   void seteps(double eps = 0.0) {
+     eps_ = eps;
    }
 
    void reset(double integrator = 0.0) {
@@ -49,10 +67,10 @@ public:
      t_prev_ = now;
      // Derivative on error (default kd_=0; keep it that way unless you have a reason)
      const double de = (e - e_prev_) / dt;
-     const double p  = kp_ * e;
+     const double p  = kp_ * (e > dp_ ? e : 0.0);
      const double d  = kd_ * de;
      // Tentative integrate
-     const double i_candidate = i_ + ki_ * e * dt;
+     const double i_candidate = (1.0-eps_) * i_ + ki_ * (e > di_ ? e : 0.0) * dt;
      const double u_unsat = p + i_candidate + d;
      const double u_sat   = clamp(u_unsat, umin_, umax_);
      // Anti-windup (conditional integration):
@@ -80,6 +98,8 @@ public:
 
 private:
    double kp_, ki_, kd_;
+   double dp_{0.0}, di_{0.0}; // deadband
+   double eps_{0.0}; // leaky integrator epsilon
    double umin_, umax_;
    double i_{0.0};
    double e_prev_{0.0};

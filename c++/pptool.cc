@@ -552,7 +552,12 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
   const auto ki = parse_double(input, "-ki", "0.1"); // integral
   int64_t clip = parse_uint64(input, "-clip", "1000"); // clip large error values
   int64_t reject = parse_uint64(input, "-reject", "10000"); // reject large error values (e.g. spurious edges detected)
+  const auto dp = parse_uint32(input, "-dp", "0"); // deadband for P
+  const auto di = parse_uint32(input, "-di", "0"); // deadband for I
+  const auto eps = parse_double(input, "-eps", "0.0"); // epsilon for leaky integration
   PID pid(kp,ki);
+  pid.setDeadband(dp, di);
+  pid.seteps(eps);
   size_t cnt = 0;
   int64_t diff_prev = 0;
   ZipAggregator<uint64_t, uint64_t> agg
