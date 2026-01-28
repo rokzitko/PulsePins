@@ -67,10 +67,10 @@ public:
      t_prev_ = now;
      // Derivative on error (default kd_=0; keep it that way unless you have a reason)
      const double de = (e - e_prev_) / dt;
-     const double p  = kp_ * (e > dp_ ? e : 0.0);
+     const double p  = kp_ * (abs(e) > dp_ ? e : 0.0);
      const double d  = kd_ * de;
      // Tentative integrate
-     const double i_candidate = (1.0-eps_) * i_ + ki_ * (e > di_ ? e : 0.0) * dt;
+     const double i_candidate = (1.0-eps_) * i_ + ki_ * (abs(e) > di_ ? e : 0.0) * dt;
      const double u_unsat = p + i_candidate + d;
      const double u_sat   = clamp(u_unsat, umin_, umax_);
      // Anti-windup (conditional integration):
