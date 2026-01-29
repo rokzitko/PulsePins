@@ -1,0 +1,9 @@
+10 MHz OXCO connected to EXT CLK
+1pps from GPS receiver connected to PPS input
+DAC output from PP_PMOD to frequency control of OXCO
+
+-kp, -ki: P and I parameters
+-dp, -di: deadband for P and I (to handle TDS quantization errors)
+-k, -l: k, l coefficients for converting control signal to DAC voltage
+
+ppgpsdo -selA 5 -pps_in -kp 0 -dp 2 -ki 0.1 -di 1 -k 2.55 -l -0.01 -eps 0.00001

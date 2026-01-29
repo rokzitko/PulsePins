@@ -523,11 +523,57 @@ int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 
 #include "zip_aggregator.hh"
 #include "PID.hh"
+#include "DAC.hh"
 
 // signum function (-1, 0, 1), returns int
 template <typename T> int sgn(T val) {
   return (T(0) < val) - (val < T(0));
 }
+
+#include <limits>
+#include <algorithm>
+
+class linear {
+ protected:
+   double k = 0.0;
+   double l = 0.0;
+   double ymin = -std::numeric_limits<double>::max();
+   double ymax = std::numeric_limits<double>::max();
+
+ public:
+   linear() {}
+
+   linear(double _k, double _l) {
+     k = _k; l = _l;
+   }
+
+   linear (double _k, double _l, double _ymin, double _ymax) {
+     k = _k; l = _l; ymin = _ymin; ymax = _ymax;
+   }
+
+   double y(const double x) {
+     double y = k+l*x;
+     return std::clamp(y, ymin, ymax);
+   }
+
+   std::string settings() {
+     std::stringstream s;
+     s << "Linear model, y=k*x+l: k=" << k << " l=" << l;
+     if (ymin != -std::numeric_limits<double>::max()) s << "; ymin=" << ymin;
+     if (ymax != +std::numeric_limits<double>::max()) s << "; ymax=" << ymax;
+     return s.str();
+   }
+};
+
+class dac_linear : public linear {
+ public:
+   void parse(const InputParser &input) {
+     k = parse_double(input, "-k", "2.6");   // v_out=k+l*control, k = constant part
+     l = parse_double(input, "-l", "-0.01"); // l = slope
+     ymin = parse_double(input, "-vmin", "0.0");
+     ymax = parse_double(input, "-vmax", "5.0");
+   }
+};
 
 int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
@@ -558,18 +604,33 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
   PID pid(kp,ki);
   pid.setDeadband(dp, di);
   pid.seteps(eps);
+  const int bus = 1;
+  I2CDevice dev(bus);
+  const uint8_t addr = 0x4C;
+  AD5693 dac(dev, addr);
+  const int gain = 2; // do not change
+  const bool disable_ref = false; // do not change
+  const double vref = 2.5; // do not change
+  dac.write_control(gain == 2, disable_ref);
+  dac.set_voltage(2.6, vref, gain);
+  dac_linear convert;
+  convert.parse(input);
+  if (v.verbose) std::cout << convert.settings() << std::endl;
   size_t cnt = 0;
   int64_t diff_prev = 0;
   ZipAggregator<uint64_t, uint64_t> agg
   (
-      [&cnt, &diff_prev, &pid, clip, reject](const uint64_t &a, const uint64_t &b) {
+      [&cnt, &diff_prev, &pid, &dac, clip, reject, &convert, vref](const uint64_t &a, const uint64_t &b) {
         const int64_t diff = int64_t(b)-int64_t(a);
         const int64_t Delta = (cnt > 0 ? diff_prev-diff : 0);
         const int64_t clippedDelta = (abs(Delta) < clip ? Delta : clip*sgn(Delta));
         const auto control = (abs(Delta) < reject ? pid.update(clippedDelta) : pid.getControl());
+        const double vout = convert.y(control);
         lockcout.lock();
-        std::cout << "pair: A=" << a << "  B=" << b << "  diff=" << diff << "  Delta=" << Delta << "  control=" << control << "\n";
+        std::cout << "pair: A=" << std::dec << a << "  B=" << b << "  diff=" << diff <<
+          "  Delta=" << Delta << "  control=" << control << "  vout=" << vout << "\n";
         lockcout.unlock();
+        dac.set_voltage(vout, vref, gain);
         cnt++;
         diff_prev = diff;
       },
