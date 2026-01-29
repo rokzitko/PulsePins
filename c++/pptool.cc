@@ -488,6 +488,31 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
   }
 }
 
+// Similar to ts_reader(), but no output for ctr>=silent_after
+void ts_silent_reader(const InputParser &input, std::string label, std::function<uint64_t()> read, size_t silent_after = 0)
+{
+  try {
+    uint64_t previous = 0;
+    const auto nr = parse_uint64(input, "-nr", "0");      // 0 = infinity
+    for (uint64_t ctr = 0; nr == 0 || ctr <= nr; ctr++) { // null + nr more
+      const auto current = read();
+      if (ctr < silent_after) {
+        lockcout.lock();
+        std::cout << label << " ctr=" << with_underscores(ctr) << " ts=" << with_underscores(current);
+        if (ctr) {
+          const auto diff = current-previous;
+          std::cout << " diff=" << with_underscores(diff);
+        }
+        std::cout << std::endl;
+        lockcout.unlock();
+      }
+      previous = current;
+    }
+  } catch (const std::runtime_error &e) {
+    std::cout << "Exception: " << e.what() << std::endl;
+  }
+}
+
 int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
   FPGA fpga(v);
@@ -575,6 +600,30 @@ class dac_linear : public linear {
    }
 };
 
+// Averages over N input values, then performs some action on the result
+template <typename T>
+  class Averager {
+   private:
+     T sum {0};
+     size_t ctr {0};
+     size_t nr {0};
+     std::function<void(T)> fnc;
+
+   public:
+     Averager(size_t _nr, std::function<void(T)> _fnc) : nr(_nr), fnc(std::move(_fnc)) {}
+
+     void add(T x) {
+       sum += x;
+       ctr++;
+       if (ctr == nr) {
+         T avg = sum/nr;
+         fnc(avg);
+         sum = 0;
+         ctr = 0;
+       }
+     }
+};
+
 int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
   FPGA fpga(v);
@@ -596,14 +645,17 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
     std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
   const auto kp = parse_double(input, "-kp", "0.01"); // proportional
   const auto ki = parse_double(input, "-ki", "0.1"); // integral
-  int64_t clip = parse_uint64(input, "-clip", "1000"); // clip large error values
-  int64_t reject = parse_uint64(input, "-reject", "10000"); // reject large error values (e.g. spurious edges detected)
-  const auto dp = parse_uint32(input, "-dp", "0"); // deadband for P
-  const auto di = parse_uint32(input, "-di", "0"); // deadband for I
+  const int64_t clip = parse_uint64(input, "-clip", "1000"); // clip large error values
+  const int64_t reject = parse_uint64(input, "-reject", "10000"); // reject large error values (e.g. spurious edges detected)
+  const auto dp = parse_double(input, "-dp", "0"); // deadband for P
+  const auto di = parse_double(input, "-di", "0"); // deadband for I
   const auto eps = parse_double(input, "-eps", "0.0"); // epsilon for leaky integration
+  const size_t silent_after = 20;
+  const size_t very_silent_after = 100;
   PID pid(kp,ki);
   pid.setDeadband(dp, di);
   pid.seteps(eps);
+  if (v.verbose) std::cout << pid.settings() << std::endl;
   const int bus = 1;
   I2CDevice dev(bus);
   const uint8_t addr = 0x4C;
@@ -618,34 +670,50 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
   if (v.verbose) std::cout << convert.settings() << std::endl;
   size_t cnt = 0;
   int64_t diff_prev = 0;
+  const size_t avg = parse_uint32(input, "-avg", "1");
+  // Accepts integer-value differences in counts and averages them; result is used to update the PID
+  Averager<double> av(avg, [&pid, &convert, &dac, vref, gain](double avgDelta) {
+    const auto control = pid.update(avgDelta);
+    const double vout = convert.y(control);
+    lockcout.lock();
+    std::cout << "avgDelta=" << avgDelta <<
+      " control=" << std::setprecision(6) << control <<
+      " vout=" << std::setprecision(6) << vout << std::endl;
+    lockcout.unlock();
+    dac.set_voltage(vout, vref, gain);
+  });
+  // Aggregator accepts timestamps from two counters and calculates the difference in counts (phase), and passes
+  // that to the averager
   ZipAggregator<uint64_t, uint64_t> agg
   (
-      [&cnt, &diff_prev, &pid, &dac, clip, reject, &convert, vref](const uint64_t &a, const uint64_t &b) {
+      [&cnt, &diff_prev, clip, reject, very_silent_after, &av](const uint64_t &a, const uint64_t &b) {
         const int64_t diff = int64_t(b)-int64_t(a);
         const int64_t Delta = (cnt > 0 ? diff_prev-diff : 0);
-        const int64_t clippedDelta = (abs(Delta) < clip ? Delta : clip*sgn(Delta));
-        const auto control = (abs(Delta) < reject ? pid.update(clippedDelta) : pid.getControl());
-        const double vout = convert.y(control);
-        lockcout.lock();
-        std::cout << "pair: A=" << std::dec << a << "  B=" << b << "  diff=" << diff <<
-          "  Delta=" << Delta << "  control=" << control << "  vout=" << vout << "\n";
-        lockcout.unlock();
-        dac.set_voltage(vout, vref, gain);
+        if (cnt < very_silent_after) {
+          lockcout.lock();
+          std::cout << "pair: A=" << std::dec << a << "  B=" << b << "  diff=" << diff <<
+            "  Delta=" << Delta << std::endl;
+          lockcout.unlock();
+        }
+        if (cnt > 0 && abs(Delta) < reject) {
+          const int64_t clippedDelta = (abs(Delta) < clip ? Delta : clip*sgn(Delta));
+          av.add(clippedDelta);
+        }
         cnt++;
         diff_prev = diff;
       },
       /*max_depth_per_queue=*/8
   );
-  auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&ts, &agg, timeout](){
+  auto ts_pps  = std::thread(ts_silent_reader, std::ref(input), "PPS", [&ts, &agg, timeout](){
     const auto A = ts.read_with_timeout(timeout);
     agg.submitA(A);
     return A;
-  });
-  auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, &agg, timeout](){
+  }, silent_after);
+  auto ts_sigA = std::thread(ts_silent_reader, std::ref(input), "sigA", [&ts, &agg, timeout](){
     const auto B = ts.readA_with_timeout(timeout);
     agg.submitB(B);
     return B;
-  });
+  }, silent_after);
   ts_pps.join();
   ts_sigA.join();
   std::cout << "All done, exiting." << std::endl;

@@ -2,6 +2,7 @@
 #include <chrono>
 #include <algorithm>
 #include <limits>
+#include <cmath> // std::abs!
 
 inline double clamp(double x, double lo, double hi) {
   return std::max(lo, std::min(x, hi));
@@ -45,6 +46,16 @@ public:
      eps_ = eps;
    }
 
+   std::string settings() {
+     std::stringstream ss;
+     ss << "PID parameters: p=" << kp_ << " i=" << ki_ << " d=" << di_;
+     if (dp_ > 0.0 || di_ > 0.0)
+       ss << " Deadband: dp=" << dp_ << " di=" << di_;;
+     if (eps_ > 0.0)
+       ss << " Leaky integrator: eps=" << eps_;
+     return ss.str();
+   }
+
    void reset(double integrator = 0.0) {
      i_ = integrator;
      e_prev_ = 0.0;
@@ -67,10 +78,10 @@ public:
      t_prev_ = now;
      // Derivative on error (default kd_=0; keep it that way unless you have a reason)
      const double de = (e - e_prev_) / dt;
-     const double p  = kp_ * (abs(e) > dp_ ? e : 0.0);
+     const double p  = kp_ * (std::abs(e) > dp_ ? e : 0.0);
      const double d  = kd_ * de;
      // Tentative integrate
-     const double i_candidate = (1.0-eps_) * i_ + ki_ * (abs(e) > di_ ? e : 0.0) * dt;
+     const double i_candidate = (1.0-eps_) * i_ + ki_ * (std::abs(e) > di_ ? e : 0.0) * dt;
      const double u_unsat = p + i_candidate + d;
      const double u_sat   = clamp(u_unsat, umin_, umax_);
      // Anti-windup (conditional integration):
@@ -88,6 +99,7 @@ public:
        i_ = i_candidate;
      }
      e_prev_ = e;
+     if (verbose) std::cout << "dt=" << std::setprecision(8) << dt << " e=" << e << " i=" << i_ << std::endl;
      control = clamp(p + i_ + d, umin_, umax_);
      return control;
    }
@@ -106,4 +118,5 @@ private:
    bool has_t_{false};
    Clock::time_point t_prev_{};
    double control{0.0};
+   bool verbose = false;
 };
