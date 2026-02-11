@@ -12,4 +12,8 @@ executable. The exact functionality depends on the executable called.
 * [pptrig](pptrig.md)
 * [ppqout](ppqout.md)
 * [ppaux](ppaux.md)
+* [ppcounter](ppcounter.md)
+* [ppts](ppts.md)
+* [ppgpsdo](ppgpsdo.md)
+* [pptemp](pptemp.md)
 * [pphelloworld](pphelloworld.md)
