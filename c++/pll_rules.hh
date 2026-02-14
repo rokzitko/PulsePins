@@ -33,5 +33,13 @@ std::vector<std::pair<std::string, std::string>> pll_rules = {
   {"5M",   "20,20,10"},
   {"1M",   "50,20,20"},
   {"100k", "100,20,100"},
-  {"10k",  "500,20,200"}
+  {"10k",  "500,20,200"},
+  {"ih",    "3,71,13"},  // 91.0256 MHz
+  {"il",    "5,79,17"},  // 46.4706 MHz
+  {"i2h",   "7,223,17"}, // 93.6975 MHz
+  {"i2l",   "9,271,23"}  // 65.4589 MHz
 };
+
+// Ratio ih/il is 6035/3081 ~ 1.95878.
+// Ratio i2h/i2l is 46161/32249 (see pll_calc.nb).
+// These combinations represent an approximant for an incommensurate frequency ratio.
