@@ -137,7 +137,7 @@ set_interface_property s0 PORT_NAME_MAP ""
 set_interface_property s0 CMSIS_SVD_VARIABLES ""
 set_interface_property s0 SVD_ADDRESS_GROUP ""
 
-add_interface_port s0 avs_s0_address address Input 1
+add_interface_port s0 avs_s0_address address Input 2
 add_interface_port s0 avs_s0_read read Input 1
 add_interface_port s0 avs_s0_write write Input 1
 add_interface_port s0 avs_s0_readdata readdata Output 32

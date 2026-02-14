@@ -198,8 +198,15 @@ int send_and_trig(Transport &tr,
     std::cout << red << "Buffer error detected." << rst << std::endl;
     rc |= 64;
   }
-  port_t crc32 = sc.get_crc32();
-  std::cout << "send_and_trig(): CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32 << std::endl;
+  const auto crc32sc = sc.get_crc32(); // CRC of transmitted stream
+  const auto crc32rb = rb.get_crc32(); // CRC computed by the readback logic
+  std::cout << "send_and_trig(): CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32sc;
+  if (crc32sc == crc32rb) {
+    std::cout << green << " OK" << rst << std::endl;
+  } else {
+    std::cout << red << " Mismatch in readback CRC. Got=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32rb << rst << std::endl;
+    rc |= 128;
+  }
   return rc;
 }
 

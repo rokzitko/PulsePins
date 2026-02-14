@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2025 Rok Zitko
+// Copyright (c) 2026 Rok Zitko
 
 // Avalon-ST/MM interface for RL encoder
 
@@ -15,7 +15,7 @@ output wire [cfg::WIDTH_TOTAL-1:0] aso_data,
 output wire aso_valid,
 input wire aso_ready,
 
-input wire avs_s0_address,
+input wire [1:0] avs_s0_address,
 input wire avs_s0_read,
 input wire avs_s0_write,
 output reg [cfg::WIDTH_AVS-1:0] avs_s0_readdata,
@@ -30,7 +30,7 @@ input wire qin_clk
 logic rdreq;         // handshaking signal
 logic empty;         // 1 if the FIFO buffer is empty
 logic reset_counter; // reset rl_encoder; clears the FIFO
-logic mode;          // 0 = valid, 1 = strobe
+logic mode;          // 0 = valid, 1 = strobe [only works if WEIRD_CLOCK is defined]
 
 logic [cfg::WIDTH_DATA+cfg::WIDTH_COUNTER-1:0] j;
 logic overflow;
@@ -82,13 +82,26 @@ always_ff @(posedge input_clk) begin
   end
 end
 
+// CRC
+logic [31:0] crc_out;
+logic        crc_valid;
+
+crc32 crc32_inst (
+ .clk(input_clk),
+ .reset(reset | reset_counter),
+ .data_en(is_valid),
+ .data_in(qin[31:0]),
+ .crc_out(crc_out),
+ .crc_valid(crc_valid)
+);
+
 always_ff @(posedge clk) begin
   if (reset) begin
     reset_counter <= 0;
   end else if (avs_s0_write) begin
     unique case (avs_s0_address)
-      1'b0: {reset_counter} <= avs_s0_writedata[0];
-      1'b1: {mode}          <= avs_s0_writedata[0];
+      2'b00: {reset_counter} <= avs_s0_writedata[0];
+      2'b01: {mode}          <= avs_s0_writedata[0];
     endcase
   end
 end
@@ -98,8 +111,9 @@ always_ff @(posedge clk) begin
     avs_s0_readdata <= 0;
   end else if (avs_s0_read) begin
     unique case (avs_s0_address)
-      1'b0: avs_s0_readdata <= { overflow, mode, reset_counter, empty };
-      1'b1: avs_s0_readdata <= counter;
+      2'b00: avs_s0_readdata <= { overflow, mode, reset_counter, empty };
+      2'b01: avs_s0_readdata <= counter;
+      2'b10: avs_s0_readdata <= crc_out;
     endcase
   end
 end

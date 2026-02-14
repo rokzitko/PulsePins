@@ -29,6 +29,7 @@ class readback
    loc lmode;                   // readback mode port
    loc lstatus;                 // status port
    loc lcounter;                // pulse counter port
+   loc lcrc32;                  // CRC port
    const Verbosity &v;
    std::ostream &F = std::cout; // output stream for messages
    std::string prefix = "C ";   // prefix for element reporting
@@ -44,6 +45,7 @@ class readback
      lmode(dev.get_loc(control_base, 4)),    // w
      lstatus(dev.get_loc(control_base)),     // r
      lcounter(dev.get_loc(control_base, 4)), // r
+     lcrc32(dev.get_loc(control_base, 8)),   // r
      v(_v)
      {
        reset();
@@ -93,15 +95,21 @@ class readback
      lmode.write(m);
    }
 
+   port_t get_crc32() {
+     return lcrc32.read();
+   }
+
    void status_report() {
      const auto s = lstatus.read();
      const auto c = lcounter.read();
+     const auto crc32 = lcrc32.read();
      std::cout << "Readback status: ";
      if (s & 1) std::cout << yellow << "{empty} " << rst;;
      if (s & 2) std::cout << red << "{reset} " << rst;
      std::cout << (s & 4 ? "{mode=strobe} " : "{mode=clk/valid} ");
      if (s & 8) std::cout << red << "{overflow} " << rst;
-     std::cout << " counter=" << std::dec << c << std::endl;
+     std::cout << " counter=" << std::dec << c;
+     std::cout << " CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32 << std::endl;
    }
 
    // Returns true if during the readback the encoder attempted to write to a full FIFO. This implies
