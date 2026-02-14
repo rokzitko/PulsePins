@@ -2,16 +2,24 @@ The network interface is configured in /etc/network/interfaces
 
 By default, DHCP is used to setup the eth interface.
 
-The MAC address can be change as follows:
+All units come with the same default MAC address: HWaddr D6:7D:AE:B3:0E:BA
+
+The MAC address can be changed as follows:
 
 auto eth0
 iface eth0 inet dhcp
      hwaddress ether 02:xx:xx:xx:xx:xx
 
 Choose a locally administered MAC: set the second least significant bit of the first octet (e.g. 02:xx:xx:xx:xx:xx is
-fine) to avoid collisions with real vendor MACs.
+fine) to avoid collisions with real vendor MACs. For example:
 
-Statis address can be set up as follows:
+02:1A:3C:7E:90:11
+02:1A:3C:7E:90:12
+02:1A:3C:7E:90:13
+02:1A:3C:7E:90:14
+02:1A:3C:7E:90:15
+
+Static address can be set up as follows:
 
 iface eth0 inet static
      address 192.168.0.42
