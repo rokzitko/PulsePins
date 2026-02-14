@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2025 Rok Zitko
+// Copyright (c) 2026 Rok Zitko
 
 // Streamer interface
 
@@ -125,7 +125,7 @@ logic [31:0] crc_out;
 logic        crc_valid;
 
 crc32 crc32_inst (
- .clk(clk),
+ .clk(streamer_clk),
  .reset(reset | reset_streamer),
  .data_en(qout_valid),
  .data_in(qout),
