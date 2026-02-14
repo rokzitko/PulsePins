@@ -39,6 +39,7 @@ class streamer_control
      initial_value,    // initial value of the output (w)
      lgating,          // gating control & status (r&w)
      overflow,         // overflow flags (r)
+     crc32,            // CRC (r)
      input_fifo1_ctr_in_l,
      input_fifo1_ctr_in_h,
      input_fifo1_ctr_out_l,
@@ -67,6 +68,7 @@ class streamer_control
      initial_value(dev.get_loc(base, INIT_VAL*4)),      // (w)
      lgating(dev.get_loc(base, GATING_W*4)),            // (r&w)
      overflow(dev.get_loc(base, OVERFLOW*4)),           // (r)
+     crc32(dev.get_loc(base, CRC32*4)),                 // (r)
      input_fifo1_ctr_in_l  (dev.get_loc(base, INPUT_FIFO1_CTR_IN_L*4)),
      input_fifo1_ctr_in_h  (dev.get_loc(base, INPUT_FIFO1_CTR_IN_H*4)),
      input_fifo1_ctr_out_l (dev.get_loc(base, INPUT_FIFO1_CTR_OUT_L*4)),
@@ -91,6 +93,10 @@ class streamer_control
 
    port_t get_overflow() {
      return overflow.read();
+   }
+
+   port_t get_crc32() {
+     return crc32.read();
    }
 
    // Output signal on the device pins

@@ -1,0 +1,4 @@
+#!/bin/bash
+expected=CBF43926
+got=$(printf "123456789" | ./crc32)
+test "$got" = "$expected" && echo "OK ($got)" || { echo "FAIL: got $got expected $expected"; exit 1; }

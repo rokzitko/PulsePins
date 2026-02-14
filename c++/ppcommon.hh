@@ -198,6 +198,8 @@ int send_and_trig(Transport &tr,
     std::cout << red << "Buffer error detected." << rst << std::endl;
     rc |= 64;
   }
+  port_t crc32 = sc.get_crc32();
+  std::cout << "send_and_trig(): CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32 << std::endl;
   return rc;
 }
 

@@ -119,6 +119,20 @@ streamer st0 (
 .input_fifo_overflow_out(input_fifo_overflow_out)
 );
 
+logic [31:0] data_in;
+
+logic [31:0] crc_out;
+logic        crc_valid;
+
+crc32 crc32_inst (
+ .clk(clk),
+ .reset(reset | reset_streamer),
+ .data_en(qout_valid),
+ .data_in(qout),
+ .crc_out(crc_out),
+ .crc_valid(crc_valid)
+);
+
 always_ff @(posedge clk) begin
   if (reset) begin
     qout_select <= 0;
@@ -154,6 +168,7 @@ always_ff @(posedge clk) begin
       `EXT_TRIG_CTRL: avs_s0_readdata <= $bits(avs_s0_readdata)'({ trigger_reset_ext, trigger_force_ext, trigger_enable_ext });
       `GATING_R:      avs_s0_readdata <= $bits(avs_s0_readdata)'({ gate_enable, gate_signal, gate_in, gate_mask, gate_in_en, gating });
       `OVERFLOW:      avs_s0_readdata <= $bits(avs_s0_readdata)'({ input_fifo_overflow_out, input_fifo_overflow_in});
+      `CRC32:         avs_s0_readdata <= crc_out;
       `ST_INF1_IN_L:  avs_s0_readdata <= input_fifo1_ctr_in[31:0];
       `ST_INF1_IN_H:  avs_s0_readdata <= input_fifo1_ctr_in[63:32];
       `ST_INF1_OUT_L: avs_s0_readdata <= input_fifo1_ctr_out[31:0];

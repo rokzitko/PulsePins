@@ -1,0 +1,2 @@
+#!/bin/bash
+printf '7856341278563412' | xxd -r -p | ./crc32

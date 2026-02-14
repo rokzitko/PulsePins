@@ -85,6 +85,7 @@
 `define EXT_TRIG_CTRL 5'b00011
 `define QOUT          5'b00100
 `define OVERFLOW      5'b00101
+`define CRC32         5'b00110
 `define GATING_R      5'b00111
 `define ST_INF1_IN_L  5'b01000
 `define ST_INF1_IN_H  5'b01001

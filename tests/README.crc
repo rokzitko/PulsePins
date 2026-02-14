@@ -1,0 +1,11 @@
+./pptest 2 -veryverbose -check -v 0x00
+CRC=0x2144df1c
+
+./pptest 2 -veryverbose -check -v 0x00 -c 2
+CRC=0x6522df69
+
+./pptest 2 -veryverbose -check -v 0x12345678 -c 1
+CRC=0xaf6d87d2
+
+./pptest 2 -veryverbose -check -v 0x12345678 -c 2
+CRC=0x51705056

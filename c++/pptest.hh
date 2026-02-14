@@ -30,6 +30,11 @@ class tests {
    Verbosity &verb;
 
    // **** Basic tests for streaming out data
+   int test0() {
+     std::cout << "There is nothing to do!" << std::endl;
+     return 0;
+   }
+
    int test1() {
      std::cout << "test1 - empty sequence" << std::endl;
      Sequence elements;
@@ -544,7 +549,7 @@ class tests {
      int rc = 0;
      switch (test) {
      case 0:
-       std::cout << "There is nothing to do!" << std::endl;
+       rc = test0();
        break;
      case 1:
        rc = test1();

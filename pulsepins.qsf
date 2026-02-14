@@ -607,6 +607,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/activity_monitor.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/reset.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/pulse_gen_timebase.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/sig_mux.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/crc32.sv
 set_global_assignment -name SYSTEMVERILOG_FILE pulsepins.sv
 set_global_assignment -name QIP_FILE base_hps/synthesis/base_hps.qip
 
