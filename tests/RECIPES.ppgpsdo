@@ -7,3 +7,10 @@ DAC output from PP_PMOD to frequency control of OXCO
 -k, -l: k, l coefficients for converting control signal to DAC voltage
 
 ppgpsdo -selA 5 -pps_in -kp 0 -dp 2 -ki 0.1 -di 1 -k 2.55 -l -0.01 -eps 0.00001
+
+ppgpsdo -selA 5 -pps_in -kp 0 -dp 0 -ki 0.01 -di 0.05 -k 2.6 -l -0.1 -avg 20
+
+ppgpsdo -selA 5 -pps_in -kp 0 -dp 0 -ki 0.01 -di 0.05 -k 2.6 -l -0.1 -avg 20 | tee /var/volatile/gpsdo.log
+ppgpsdo -selA 5 -pps_in -kp 0 -dp 0 -ki 0.01 -di 0.1  -k 2.6 -l -0.1 -avg 10
+
+Caveat: it is difficult to achieve anything better than 1ppb stability with this approach.
