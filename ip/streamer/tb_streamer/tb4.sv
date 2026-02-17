@@ -15,7 +15,7 @@ reg reset;
 initial clk = 1;
 always #0.5 clk = ~clk;
 
-wire output_clk = clk;
+wire streamer_clk = clk;
 
 initial begin
   reset <= 1;
@@ -46,7 +46,7 @@ logic gate_enable;
 assign gate_enable = 1'b1;
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value, .trigger_enable, .trigger_force,
-             .output_clk, .qout, .qout_valid(valid), .gate_enable, .stop(0),
+             .streamer_clk, .qout, .qout_valid(valid), .gate_enable, .stop(0),
              .stop_on_buffer_error(0)
              );
 
@@ -71,6 +71,7 @@ initial begin
   trigger_force <= 0;
   #30;
   trigger_force <= 1;
+  #1;
   #1;
   #1step;
   assert(qout == 32'hffffffff) else $fatal;

@@ -39,7 +39,7 @@ streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_val
   .trigger_enable(1'b1),
   .trigger_force(1'b0),
   .trigger_reset(1'b0),
-  .output_clk(clk) // required for the offloading elements from trigger queue
+  .streamer_clk(clk) // required for the offloading elements from trigger queue
 );
 
 initial begin

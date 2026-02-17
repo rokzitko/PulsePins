@@ -18,7 +18,7 @@ always #0.5 clk = ~clk;
 
 initial begin
   reset <= 1;
-  #1 reset <= 0;
+  #2 reset <= 0;
 end
 
 parameter int width = `WIDTH_TRIGGER;
@@ -33,6 +33,7 @@ logic wrreq;
 logic trigger_enable;
 logic trigger_force;
 logic trigger_reset;
+logic retrig;
 logic armed;
 logic o;
 
@@ -40,6 +41,7 @@ chain_trigger dut(
  .clk,
  .wrclk,
  .reset,
+ .rst(reset),
  .i,
  .pattern,
  .mask,
@@ -48,6 +50,7 @@ chain_trigger dut(
  .trigger_enable,
  .trigger_force,
  .trigger_reset,
+ .retrig,
  .armed,
  .o);
 
@@ -68,6 +71,7 @@ initial begin
   trigger_enable <= 1;
   trigger_force <= 0;
   trigger_reset <= 0;
+  retrig <= 0;
 
   #5;
 
@@ -141,7 +145,7 @@ initial begin
 end
 
 initial begin
-  #50.1
+  #51.1
   assert(o == 0) else $fatal;
 end
 
