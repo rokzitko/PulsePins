@@ -22,7 +22,7 @@ enum class pll_mode { waitrequest, polling };
 class pll {
  private:
    loc mode, status, start, N, M, C, C0, C1, K, BW, CP;
-   bool verbose = true;
+   bool verbose = false;
    std::ostream &F = std::cout;
    int X = 32;
  public:
