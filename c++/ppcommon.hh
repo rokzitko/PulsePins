@@ -136,6 +136,7 @@ int send_and_trig(Transport &tr,
 
   const double timeout = readback_timeout(input);
 
+  bool rb_failure = false;
   if (input.exists("-check")) {
     convert(elements);
     // no-strobe handling?
@@ -144,9 +145,11 @@ int send_and_trig(Transport &tr,
       elements.dump(std::cout, "% ");
     usleep(10);
     if (v.veryverbose) rb.check_fill_status();
-    int successful = rb.check(elements, timeout);
-    if (!successful)
+    const auto successful = rb.check(elements, timeout);
+    if (!successful) {
+      rb_failure = true;
       rc |= 1;
+    }
   }
 
   if (input.exists("-read")) {
@@ -201,12 +204,20 @@ int send_and_trig(Transport &tr,
   const auto crc32sc = sc.get_crc32(); // CRC of transmitted stream
   const auto crc32rb = rb.get_crc32(); // CRC computed by the readback logic
   std::cout << "send_and_trig(): CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32sc;
-  if (crc32sc == crc32rb) {
+  const bool crcOK = crc32sc == crc32rb;
+  if (crcOK) {
     std::cout << green << " OK" << rst << std::endl;
   } else {
     std::cout << red << " Mismatch in readback CRC. Got=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32rb << rst << std::endl;
     rc |= 128;
   }
+  // Conundrum: what to do if CRC checks OK, but readback reports errors? Most likely this indicates a readback error rather than a streaming
+  // error. Readback errors can certainly happen, for a number of reasons, not all related to hardware malfunction (e.g. buffer overflows in
+  // transmission of results to ARM core).
+  // The default is to report such events as errors, but the user can also decide to ignore them.
+  if (crcOK && rb_failure)
+    if (input.exists("-ignore_rb_error_if_crc_ok") || envVarExists("PP_IGNORE_RB_ERROR_IF_CRC_OK"))
+      rc &= ~1;
   return rc;
 }
 
