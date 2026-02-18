@@ -1,0 +1,4 @@
+basic_counter.sv:
+clk, high_low, addr, result: system clock domain (ref_clk)
+d_clk, d, d_reset, d_valid, d_latch: data clock domain (int_clk)
+overflow: latched
