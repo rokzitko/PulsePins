@@ -42,8 +42,9 @@ logic [width_addr-1:0] addr;
 logic [width_data-1:0] d_reg;
 logic d_valid_reg;
 
-always_ff @(posedge clk) begin
-  if (reset) begin
+// TODO: we only need to register a subset (d0, d1, d2) -> (d0_reg, d1_reg, d2_reg)
+always_ff @(posedge d_clk) begin
+  if (d_reset) begin
     d_reg <= '0;
     d_valid_reg <= 0;
   end else begin
@@ -78,10 +79,10 @@ logic overflow_bc;
 basic_counter bc (
   .clk(clk),
   .d_clk(d_clk),
-  .reset(d_reset),
+  .d_reset(d_reset),
   .d(d0),
-  .valid(d_valid_reg),
-  .latch(d_latch),
+  .d_valid(d_valid_reg),
+  .d_latch(d_latch),
   .high_low(high_low),
   .addr(addr[2:0]),
   .result(result_bc),
