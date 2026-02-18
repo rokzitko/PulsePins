@@ -376,7 +376,7 @@ class tests {
      std::cout << "test15 - retriggering" << std::endl;
      Sequence elements;
      const auto cycles = parse_uint32(input, "-cycles", "10");
-     const auto c = parse_count(input, "-c", "1000000");
+     const auto c = parse_count(input, "-c", "1000000"); // appropriate number depends on streamer_clk frequency
      const auto v = parse_count(input, "-v", "1");
      const auto p = parse_trigger(input, "-p", "0b01");
      const auto m = parse_trigger(input, "-m", "0b01");
