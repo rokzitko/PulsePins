@@ -186,12 +186,8 @@ end
 
 assign qout = trigger_latch ? qout_fifo : initial_value;
 
-logic trigger_o;
-
-logic retrig_requested_pulse;
-level_to_pulse ltp0(.i(retrig_requested), .o(retrig_requested_pulse), .clk(clk), .reset(reset));
-logic trigger_reset_0;
-assign trigger_reset_0 = trigger_reset | retrig_requested_pulse;
+logic retrig;
+assign retrig = retrig_requested && trigger_o;
 
 chain_trigger ct0 (
     .wrclk(clk),
@@ -206,7 +202,8 @@ chain_trigger ct0 (
     .i(trigger_in),
     .trigger_enable(trigger_enable),
     .trigger_force(trigger_force),
-    .trigger_reset(trigger_reset_0),
+    .trigger_reset(trigger_reset),
+    .retrig(retrig),
     .armed(trigger_armed),
     .o(trigger_o)
     );

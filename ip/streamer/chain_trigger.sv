@@ -28,6 +28,7 @@ input wire [width-1:0] i,               // trigger input signals
 input wire trigger_enable,              // trigger logic enabled (trigger events ignored if not high)
 input wire trigger_force,               // (internal or external) trigger force (or'ed in st_interface.sv)
 input wire trigger_reset,               // trigger reset
+input wire retrig,                      // asserted when retrig element is encountered at the output FIFO buffer out port
 output wire armed,                      // asserted when waiting for the trigger condition
 output reg o                            // output
 );
@@ -112,11 +113,10 @@ logic is_last;
 assign is_last = q_control[`BIT_TRIGGER_FINAL]; // this trigger condition is the last in a chain
 assign armed = (state == S_WAIT); // armed = waiting for trigger
 
-// trigger_reset must be asynchronous (necesarry for proper operation of retriggering; cf. test15)
-always_ff @(posedge clk or posedge rst or posedge trigger_reset or posedge trigger_force) begin
+always_ff @(posedge clk) begin
   if (rst)
     state <= S_IDLE;
-  else if (trigger_reset)
+  else if (trigger_reset || retrig)
     state <= S_IDLE;
   else if (trigger_force) // overrides everything (except reset signals)
     state <= S_TRIGGERED;

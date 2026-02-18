@@ -38,6 +38,9 @@ output reg [widthstat-1:0] ctr_in, // elements clocked in
 output reg [widthstat-1:0] ctr_out // elements clocked out
 );
 
+logic rdreq_nrr; // rdreq if no retrig_requested
+assign rdreq_nrr = rdreq && ~retrig_requested;
+
 // Statistics counters
 always_ff @(posedge wrclk) begin
   if (reset) begin
@@ -53,7 +56,7 @@ always_ff @(posedge rdclk) begin
   if (rdrst) begin
     ctr_out <= '0;
   end else begin
-    if (rdreq) begin  // all reads
+    if (rdreq_nrr) begin  // all reads
       ctr_out <= ctr_out + 1;
     end
   end
@@ -83,7 +86,7 @@ inst1
  .rdclk   (rdclk),
  .data    (data),
  .wrreq   (wrreq),
- .rdreq   (rdreq),
+ .rdreq   (rdreq_nrr),
  .aclr    (reset),
  .q       (qc),
  .rdempty (empty),
@@ -141,18 +144,21 @@ prng_xoroshiro128plus prng(
 );
 
 logic valid, wr_last;
-assign valid   = rdreq && is_data && !empty && !done && !retrig_requested && !is_no_strobe;
+assign valid   = rdreq && is_data && !empty && !done && !retrig_requested && !is_no_strobe; // XXX: retrig_requested needed?
 assign wr_last = rdreq && is_last && !empty && !done;
 
 always_ff @(posedge rdclk) begin
-   qout_valid <= valid;
-   if (valid || wr_last)
-      if (is_prng)
-        qout <= rnd[widthq-1:0];
-      else
-        qout <= q;
-   else
+  if (rdrst) begin
+    qout <= 0;
+    qout_valid <= 0;
+  end else begin
+    if (valid || wr_last) begin
+      qout <= (is_prng ? rnd[widthq-1:0] : q);
+     end else begin
       qout <= qout; // this allows to keep the "final value" in the output register
+    end
+    qout_valid <= valid;
+  end
 end
 
 // 'strobe_enable' logic: asserted when data are requested (rdreq=1) and available (empty!=1). Deasserted when
