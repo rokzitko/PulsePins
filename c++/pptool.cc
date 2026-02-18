@@ -463,40 +463,19 @@ int ppread(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 }
 
 #include "timestamp.hh"
+#include "format_with_dispatch.hh"
 
 std::mutex lockcout;
 
-void ts_reader(const InputParser &input, std::string label, std::function<uint64_t()> read)
+// If 'silent_after' is positive, only up to 'silent_after' readings are reported.
+void ts_reader(const InputParser &input, std::string label, std::function<uint64_t()> read, long long silent_after = -1)
 {
   try {
     uint64_t previous = 0;
-    const auto nr = parse_uint64(input, "-nr", "0");      // 0 = infinity
-    for (uint64_t ctr = 0; nr == 0 || ctr <= nr; ctr++) { // null + nr more
+    const long long nr = parse_uint64(input, "-nr", "0");      // 0 = infinity
+    for (long long ctr = 0; nr == 0 || ctr <= nr; ctr++) { // null + nr more
       const auto current = read();
-      lockcout.lock();
-      std::cout << label << " ctr=" << with_underscores(ctr) << " ts=" << with_underscores(current);
-      if (ctr) {
-        const auto diff = current-previous;
-        std::cout << " diff=" << with_underscores(diff);
-      }
-      std::cout << std::endl;
-      lockcout.unlock();
-      previous = current;
-    }
-  } catch (const std::runtime_error &e) {
-    std::cout << "Exception: " << e.what() << std::endl;
-  }
-}
-
-// Similar to ts_reader(), but no output for ctr>=silent_after
-void ts_silent_reader(const InputParser &input, std::string label, std::function<uint64_t()> read, size_t silent_after = 0)
-{
-  try {
-    uint64_t previous = 0;
-    const auto nr = parse_uint64(input, "-nr", "0");      // 0 = infinity
-    for (uint64_t ctr = 0; nr == 0 || ctr <= nr; ctr++) { // null + nr more
-      const auto current = read();
-      if (ctr < silent_after) {
+      if (silent_after >= 0 && ctr < silent_after) {
         lockcout.lock();
         std::cout << label << " ctr=" << with_underscores(ctr) << " ts=" << with_underscores(current);
         if (ctr) {
@@ -531,7 +510,7 @@ int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
     ts.sel_pps_xtal();
   std::thread ts_pps;
   if (read_pps)
-    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&ts, timeout](){ return ts.read_with_timeout(timeout); });
+    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&ts, timeout](){ return ts.read_with_timeout(timeout); }, -1);
   const bool read_sigA = input.exists("-sigA"); // enable reading signal A
   const auto selA = parse_uint32(input, "-selA", "0"); // select the source for signal A
   ts.selA(selA);
@@ -539,7 +518,7 @@ int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
     std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
   std::thread ts_sigA;
   if (read_sigA)
-    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, timeout](){ return ts.readA_with_timeout(timeout); });
+    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, timeout](){ return ts.readA_with_timeout(timeout); }, -1);
   if (read_pps) ts_pps.join();
   if (read_sigA) ts_sigA.join();
   std::cout << "All done, exiting." << std::endl;
@@ -704,12 +683,12 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
       },
       /*max_depth_per_queue=*/8
   );
-  auto ts_pps  = std::thread(ts_silent_reader, std::ref(input), "PPS", [&ts, &agg, timeout](){
+  auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&ts, &agg, timeout](){
     const auto A = ts.read_with_timeout(timeout);
     agg.submitA(A);
     return A;
   }, silent_after);
-  auto ts_sigA = std::thread(ts_silent_reader, std::ref(input), "sigA", [&ts, &agg, timeout](){
+  auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, &agg, timeout](){
     const auto B = ts.readA_with_timeout(timeout);
     agg.submitB(B);
     return B;
