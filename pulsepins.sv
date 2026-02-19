@@ -90,10 +90,10 @@ module pulsepins(
     input                       GPI0GPIO12, // ext_trigger_reset
     input                       GPI0GPIO13, // gate_in
     input [`WIDTH_TRIGGER-1:0]  GPI0TRIG,   // ext_trigger_in
-    output                      GPI0GPIO22, // streamer_trigger_enable
-    output                      GPI0GPIO23, // streamer_trigger_force
-    output                      GPI0GPIO24, // streamer_trigger_reset
-    output                      GPI0GPIO25, // streamer_trigger_in[0]
+    output                      GPI0GPIO22, // extra (setA: streamer_trigger_enable)
+    output                      GPI0GPIO23, // extra (setA: streamer_trigger_force)
+    output                      GPI0GPIO24, // extra (setA: streamer_trigger_reset)
+    output                      GPI0GPIO25, // extra (setA: streamer_trigger_in[0])
     inout                       GPI0GPIO26, // SCL
     inout                       GPI0GPIO27, // SDA
     inout  [`WIDTH_AUX-1:0]     GPI0AUX,    // AUX I/O
@@ -621,11 +621,49 @@ assign gate_in            = GPI0GPIO13;
 logic [`WIDTH_TRIGGER-1:0] ext_trigger_in;
 assign ext_trigger_in = GPI0TRIG;
 
+// GPIO0GPIO[25:22] are extra signals that may be configures in various ways.
+// Default is setA.
+//`define EXTRA_SETA
+`define EXTRA_SETB
+
+`ifdef EXTRA_SETA
 // trigger control and signals as seen by the streamer core [OUTPUT]
 assign GPI0GPIO22 = streamer_trigger_enable;         // D12~d4 (yellow)
 assign GPI0GPIO23 = streamer_trigger_force;          // D13~d5 (green)
 assign GPI0GPIO24 = streamer_trigger_reset;          // D14~d6 (blue)
 assign GPI0GPIO25 = streamer_trigger_in[0];          // D15~d7 (violet)
+`endif
+
+`ifdef EXTRA_SETB
+wire rnd1, rnd2, rnd3, rnd4;
+assign GPI0GPIO22 = rnd1;
+assign GPI0GPIO23 = rnd2;
+assign GPI0GPIO24 = rnd3;
+assign GPI0GPIO25 = rnd4;
+
+rand_signal_gen #(
+  .MIN_PERIOD_CYCLES (1),
+  .MAX_PERIOD_CYCLES (100),
+  .SEED              (32'h1234_5678)
+) rand1 (
+  .clk    (ref_clk), // 50MHz, period = 20ns
+  .reset  (reset),
+  .oe     ('1),
+  .signal (rnd1)
+);
+
+rand_signal_gen #(
+  .MIN_PERIOD_CYCLES (100),
+  .MAX_PERIOD_CYCLES (10_000_000),
+  .SEED              (32'h1234_5678)
+) rand2 (
+  .clk    (ref_clk),
+  .reset  (reset),
+  .oe     ('1),
+  .signal (rnd2)
+);
+
+`endif
 
 // I2C
 ALT_IOBUF i2c1_scl_iobuf   (
