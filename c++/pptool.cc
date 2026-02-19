@@ -466,24 +466,30 @@ int ppread(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 #include "format_with_dispatch.hh"
 
 std::mutex lockcout;
+#define LOCKCOUT(z) { lockcout.lock(); z; lockcout.unlock(); }
+
+#include "format.hh"
 
 // If 'silent_after' is positive, only up to 'silent_after' readings are reported.
 void ts_reader(const InputParser &input, std::string label, std::function<uint64_t()> read, long long silent_after = -1)
 {
+  long long ctr = 0;
+  uint64_t current = 0;
+  uint64_t previous = 0;
+  FormatDispatch d;
+  d['l'] = [label](std::string_view t) { return setw_l(label, t); };
+  d['t'] = [](std::string_view t) { return timestamp_iso8601_utc_ms(); };
+  d['c'] = [&ctr](std::string_view t) { return setw_l(with_underscores(ctr), t); };
+  d['s'] = [&current](std::string_view t) { return setw_l(with_underscores(current), t); };
+  d['d'] = [&ctr, &current, &previous](std::string_view t) { return setw_l(ctr ? with_underscores(current-previous) : "", t); };
+  d['D'] = [&ctr, &current, &previous](std::string_view t) { return setw_l(ctr ? "diff=" + with_underscores(current-previous) : "", t); };
+  std::string fmt = "%4l  %t  ctr=%10c  ts=%15s  %15D";
   try {
-    uint64_t previous = 0;
     const long long nr = parse_uint64(input, "-nr", "0");      // 0 = infinity
-    for (long long ctr = 0; nr == 0 || ctr <= nr; ctr++) { // null + nr more
-      const auto current = read();
-      if (silent_after >= 0 && ctr < silent_after) {
-        lockcout.lock();
-        std::cout << label << " ctr=" << with_underscores(ctr) << " ts=" << with_underscores(current);
-        if (ctr) {
-          const auto diff = current-previous;
-          std::cout << " diff=" << with_underscores(diff);
-        }
-        std::cout << std::endl;
-        lockcout.unlock();
+    for (ctr = 0; nr == 0 || ctr <= nr; ctr++) { // null + nr more
+      current = read();
+      if (silent_after < 0 || ctr < silent_after) {
+        LOCKCOUT( std::cout << format_with_dispatch(fmt, d) << std::endl; )
       }
       previous = current;
     }
