@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2025 Rok Zitko
+// Copyright (c) 2025,2026 Rok Zitko
 
 // Runtime-length encoder
 
@@ -13,21 +13,22 @@ module rl_encoder
  parameter fifo_p        = 9,
  parameter fifo_length   = 2**fifo_p
 )(
- input  wire clk,
- input  wire reset,
+ input  wire clk,   // clock for reading RLE elecments from the FIFO buffer
+ input  wire reset, // reset in clk clock domain
 
- input  wire mode,
+ input  wire mode,  // 1 = use data_clk; 0 = use strobe pulses for clocking in data
 
  input  wire [width_data-1:0] data,
- input  wire                  valid,
+ input  wire                  valid,  // must be asserted for valid data even when strobe is used (mode=0)
  input  wire                  strobe,
  input  wire                  data_clk,
 
+ // Interface
  output wire [width_data+width_counter-1:0] element,
  output wire empty,
  input  wire rdreq,
 
- output reg overflow
+ output reg overflow  // FIFO buffer overflow error detection
 );
 
   logic input_clk;
@@ -36,6 +37,13 @@ module rl_encoder
   `else
      assign input_clk = data_clk;
   `endif
+
+  logic reset_iclk; // reset in input_clk clock domain
+  sync_bit_3stage sb_inst(
+     .clk_dest(input_clk),
+     .async_in(reset),
+     .sync_out(reset_iclk)
+   );
 
   logic                       have_run;
   logic [width_data-1:0]      run_value;
@@ -59,8 +67,8 @@ module rl_encoder
   // valid dropped -> flush pending run
   wire flush_event = (~valid);
 
-  always_ff @(posedge input_clk or posedge reset) begin
-    if (reset) begin
+  always_ff @(posedge input_clk or posedge reset_iclk) begin
+    if (reset_iclk) begin
       have_run  <= 1'b0;
       run_value <= {width_data{1'b0}};
       run_count <= {width_counter{1'b0}};
@@ -135,9 +143,10 @@ module rl_encoder
    .wrusedw(used)
   );
 
-  // Detect overflows (latch)
+  // Detect overflows (latch). This typically indicates that we are not reading the data from the
+  // FIFO buffer fast enough.
   always_ff @(posedge input_clk) begin
-    if (reset) begin
+    if (reset_iclk) begin
       overflow <= 0;
     end else
       if (full & wrreq) begin
