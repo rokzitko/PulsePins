@@ -509,7 +509,7 @@ int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
                FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
                PIO_CFG_BASE);
   const double timeout = parse_double(input, "-timeout", "0"); // timeout for reading new events from FIFO timestamp buffer
-  const bool read_pps = true; // always read pulse-per-second reference
+  const bool read_pps = !input.exists("-nopps"); // pulse-per-second reference can be disabled using -nopps
   if (input.exists("-pps_in"))
     ts.sel_pps_in();
   if (input.exists("-pps_xtal"))

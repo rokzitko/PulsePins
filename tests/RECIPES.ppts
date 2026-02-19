@@ -7,5 +7,18 @@
 1         streamer_trigger_in[0],
 0         streamer_trigger_activated } ),
 
+-nopps: disable reference timestamping (pulse-per-second)
+-pps_in   : use the PPS input (default)
+-pps_xtal : use the internally generated PPS clock
+
+-sigA : enable timestamping for input A
+-selA : choose source for input A
+
 ppts -sigA -selA 4 -pps_in
 ppts -sigA -selA 0 -pps_in
+
+# PPS, sigA every second
+ppts -nr 150 -selA 6 -sigA
+
+# Signal applied to trig input (on SMA with jumper or on PMOD w/o jumper), e.g. from the on-board random source
+ppts -selA 2 -sigA -nopps
