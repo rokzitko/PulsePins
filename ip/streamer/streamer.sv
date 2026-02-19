@@ -186,6 +186,8 @@ end
 
 assign qout = trigger_latch ? qout_fifo : initial_value;
 
+wire trigger_o;
+
 logic retrig;
 assign retrig = retrig_requested && trigger_o;
 
