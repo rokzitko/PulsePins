@@ -95,6 +95,25 @@ constexpr auto max_size =
   - 2*almost_shift  // because we are using almostfull for stalling
   + 1;
 
+inline constexpr int RC_OK = 0;
+inline constexpr int RC_ERROR_CHECK = 1;
+inline constexpr int RC_ERROR_QOUT_FINAL = 2;
+inline constexpr int RC_ERROR_FIFO_CTR = 8;
+inline constexpr int RC_ERROR_OVERFLOW_FIFO = 16;
+inline constexpr int RC_ERROR_OVERFLOW_RB = 32;
+inline constexpr int RC_ERROR_BUFFER_ERROR = 64;
+inline constexpr int RC_ERROR_CRC_MISMATCH = 128;
+
+void sleep_1ms()
+{
+  usleep(1000); // 1ms delay
+}
+
+void sleep(const double delay) // time in seconds
+{
+  usleep(1000 * 1000 * delay);
+}
+
 // Send a test sequence 'elements' to streamer 'fifo' and use readback 'rb' for testing equivalence (if -check command line argument is used).
 template<typename Transport, typename Convert>
 int send_and_trig(Transport &tr,
@@ -107,7 +126,7 @@ int send_and_trig(Transport &tr,
                   const Verbosity &v,
                   Convert convert)
 {
-  int rc = 0; // return code, 0 indicates no error
+  int rc = RC_OK;
   const value_t final = input.exists("-t") ? parse_value(input, "-t", "0") : random_value();
   elements.push_back(el(final)); // add the terminator element with a specified final data value
   if (v.veryverbose) elements.dump(std::cout, "| ");
@@ -120,11 +139,11 @@ int send_and_trig(Transport &tr,
   sc.status_report();
   if (v.veryverbose) tr.report();
   if (force_trigger) {
-    usleep(100);
+    usleep(100); // XXX: really needed?
     if (v.verbose) std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
     if (input.exists("-delay")) {
       const double delay = parse_time(input, "-delay", "0"); // in seconds
-      usleep(1000 * 1000 * delay);
+      sleep(delay);
     }
     sc.trigger_force();
     sc.status_report();
@@ -143,17 +162,17 @@ int send_and_trig(Transport &tr,
     drop_count0(elements);
     if (v.veryverbose && input.exists("-dump-converted"))
       elements.dump(std::cout, "% ");
-    usleep(10);
+    usleep(10); // XXX
     if (v.veryverbose) rb.check_fill_status();
     const auto successful = rb.check(elements, timeout);
     if (!successful) {
       rb_failure = true;
-      rc |= 1;
+      rc |= RC_ERROR_CHECK;
     }
   }
 
   if (input.exists("-read")) {
-    usleep(10);
+    usleep(10); // XXX
     if (v.veryverbose) rb.check_fill_status();
     rb.read_all(timeout);
   }
@@ -162,7 +181,7 @@ int send_and_trig(Transport &tr,
     return rc;
 
   sc.wait_to_complete(v);
-  usleep(1000); // 1ms delay
+  sleep_1ms();
   value_t final_qout = sc.get_qout();
   const bool match = final_qout == final;
   std::cout << "send_and_trig(): Final qout=" << "0x" << std::hex << final_qout << "=" << std::dec << final_qout;
@@ -171,35 +190,35 @@ int send_and_trig(Transport &tr,
   } else {
     if (!(envVarExists("PP_IGNORE_QOUT_FINAL") || input.exists("-pp_ignore_qout_final"))) {
       std::cout << red << " Mismatch: expecting 0x" << std::hex << final << rst << std::endl;
-      rc |= 2;
+      rc |= RC_ERROR_QOUT_FINAL;
     }
   }
   sc.statistics();
   if (sc.get_input_fifo1_ctr_in() != sc.get_input_fifo1_ctr_out()) {
     std::cout << red << "Mismatch in the streamer input FIFO1 detected." << rst << std::endl;
-    rc |= 8;
+    rc |= RC_ERROR_FIFO_CTR;
   }
   if (sc.get_input_fifo2_ctr_in() != sc.get_input_fifo2_ctr_out()) {
     std::cout << red << "Mismatch in the streamer input FIFO2 detected." << rst << std::endl;
-    rc |= 8;
+    rc |= RC_ERROR_FIFO_CTR;
   }
   if (sc.get_output_fifo_ctr_in() != sc.get_output_fifo_ctr_out()) {
     std::cout << red << "Mismatch in the streamer output FIFO detected." << rst << std::endl;
-    rc |= 8;
+    rc |= RC_ERROR_FIFO_CTR;
   }
   if (sc.get_overflow()) {
     std::cout << red << "Input FIFO overflow detected." << rst << std::endl;
-    rc |= 16;
+    rc |= RC_ERROR_OVERFLOW_FIFO;
   }
   if (rb.overflow()) {
     std::cout << red << "Readback overflow detected." << rst << std::endl;
-    rc |= 32;
+    rc |= RC_ERROR_OVERFLOW_RB;
   }
   ctr.latch_all();
   ctr.short_report();
   if (sc.buffer_error()) {
     std::cout << red << "Buffer error detected." << rst << std::endl;
-    rc |= 64;
+    rc |= RC_ERROR_BUFFER_ERROR;
   }
   const auto crc32sc = sc.get_crc32(); // CRC of transmitted stream
   const auto crc32rb = rb.get_crc32(); // CRC computed by the readback logic
@@ -209,7 +228,7 @@ int send_and_trig(Transport &tr,
     std::cout << green << " OK" << rst << std::endl;
   } else {
     std::cout << red << " Mismatch in readback CRC. Got=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32rb << rst << std::endl;
-    rc |= 128;
+    rc |= RC_ERROR_CRC_MISMATCH;
   }
   // Conundrum: what to do if CRC checks OK, but readback reports errors? Most likely this indicates a readback error rather than a streaming
   // error. Readback errors can certainly happen, for a number of reasons, not all related to hardware malfunction (e.g. buffer overflows in
@@ -217,7 +236,7 @@ int send_and_trig(Transport &tr,
   // The default is to report such events as errors, but the user can also decide to ignore them.
   if (crcOK && rb_failure)
     if (input.exists("-ignore_rb_error_if_crc_ok") || envVarExists("PP_IGNORE_RB_ERROR_IF_CRC_OK"))
-      rc &= ~1;
+      rc &= ~RC_ERROR_CHECK;
   return rc;
 }
 
