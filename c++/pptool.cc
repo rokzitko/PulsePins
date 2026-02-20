@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2025 Rok Zitko
+// Copyright (c) 2025, 2026 Rok Zitko
 
 // pptool main() is here...
 
@@ -794,6 +794,13 @@ int main(int argc, char *argv[])
     std::cerr << "\n";
     rc = 1;   // nonzero error code for unknown case
   }
+
+  double exit_delay = 0;
+  if (envVarExists("PP_EXIT_DELAY"))
+    exit_delay = 1.0;
+  if (input.exists("-exit_delay"))
+    exit_delay = parse_time(input, "-exit_delay", "1.0");
+  std::this_thread::sleep_for(std::chrono::microseconds(long(1000000*exit_delay)));
 
   return rc;
 }
