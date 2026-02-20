@@ -139,7 +139,6 @@ int send_and_trig(Transport &tr,
   sc.status_report();
   if (v.veryverbose) tr.report();
   if (force_trigger) {
-    usleep(100); // XXX: really needed?
     if (v.verbose) std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
     if (input.exists("-delay")) {
       const double delay = parse_time(input, "-delay", "0"); // in seconds
@@ -162,7 +161,6 @@ int send_and_trig(Transport &tr,
     drop_count0(elements);
     if (v.veryverbose && input.exists("-dump-converted"))
       elements.dump(std::cout, "% ");
-    usleep(10); // XXX
     if (v.veryverbose) rb.check_fill_status();
     const auto successful = rb.check(elements, timeout);
     if (!successful) {
@@ -172,7 +170,6 @@ int send_and_trig(Transport &tr,
   }
 
   if (input.exists("-read")) {
-    usleep(10); // XXX
     if (v.veryverbose) rb.check_fill_status();
     rb.read_all(timeout);
   }
