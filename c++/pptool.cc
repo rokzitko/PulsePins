@@ -797,7 +797,7 @@ int main(int argc, char *argv[])
 
   double exit_delay = 0;
   if (envVarExists("PP_EXIT_DELAY"))
-    exit_delay = 1.0;
+    exit_delay = envDouble("PP_EXIT_DELAY").value_or(1.0);
   if (input.exists("-exit_delay"))
     exit_delay = parse_time(input, "-exit_delay", "1.0");
   std::this_thread::sleep_for(std::chrono::microseconds(long(1000000*exit_delay)));
