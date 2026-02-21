@@ -47,6 +47,21 @@ class InputParser {
      tokens.push_back(s1);
      tokens.push_back(s2);
    }
+   std::optional<std::string> first_arg() const {
+     if (tokens.size() > 0)
+       return tokens.front();
+     else
+       return std::nullopt;
+   }
+   std::optional<int> first_arg_int() const {
+     if (tokens.size() > 0) {
+       auto s = tokens.front();
+       auto c = s.front();
+       if (isdigit(c))
+         return std::stoi(s);
+     }
+     return std::nullopt;
+   }
  private:
    std::vector<std::string> tokens;
 };
