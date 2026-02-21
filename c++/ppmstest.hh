@@ -24,13 +24,13 @@ class mstests {
    qout &q;
    readback &rb;
    pio_out &pio_trig_int;
-   InputParser &input;
-   Verbosity &verb;
+   const InputParser &input;
+   const Verbosity &verb;
 
-   mstests(multistreamer &_ms, qout &_q, readback &_rb, pio_out &_pio_trig_int, InputParser &_input, Verbosity &_v) :
+   mstests(multistreamer &_ms, qout &_q, readback &_rb, pio_out &_pio_trig_int, const InputParser &_input, const Verbosity &_v) :
           ms(_ms), q(_q), rb(_rb), pio_trig_int(_pio_trig_int), input(_input), verb(_v) {}
 
-   static void trig1(pio_out &p, InputParser &input) {
+   static void trig1(pio_out &p, const InputParser &input) {
      if (input.exists("-trig")) {
        const int delay = 100*1000;
        usleep(delay);
@@ -41,7 +41,7 @@ class mstests {
      }
    }
 
-   int test1(multistreamer &ms, qout &q, readback &rb, InputParser &input, pio_out &pio) {
+   int test1(multistreamer &ms, qout &q, readback &rb, const InputParser &input, pio_out &pio) {
      std::cout << "test1 - one or another" << std::endl;
      const auto c = parse_count(input, "-c", "10");
      auto prepare = [&](int i, basic_streamer &st) {

@@ -7,25 +7,22 @@
 #include "ppmisc.hh"
 #include "pptest.hh"
 
-int pptool(InputParser &input, int argc, char *argv[], Verbosity &v)
+// First command line argument is the test number (pptest, ppmstest, ppdmatest)
+auto get_test_number(const InputParser &input)
+{
+  return input.first_arg_int().value_or(1);
+}
+
+int pptool(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   std::cout << "Done." << std::endl;
   return RC_OK;
 }
 
-// First command line argument is the test number (pptest, ppmstest, ppdmatest)
-auto get_test_number(int argc, char *argv[])
+int pptest(InputParser &input, const Verbosity &v)
 {
-  int test = 1;
-  if (argc >= 2 && isdigit(argv[1][0]))
-    test = atoi(argv[1]);
-  return test;
-}
-
-int pptest(InputParser &input, int argc, char *argv[], Verbosity &v)
-{
-  const int test = get_test_number(argc, argv);
+  const int test = get_test_number(input);
   int rc = RC_OK; // return code
   try {
     FPGA fpga(input, v);
@@ -53,9 +50,9 @@ int pptest(InputParser &input, int argc, char *argv[], Verbosity &v)
 
 #include "ppmstest.hh"
 
-int ppmstest(InputParser &input, int argc, char *argv[], Verbosity &v)
+int ppmstest(InputParser &input, const Verbosity &v)
 {
-  const int test = get_test_number(argc, argv);
+  const int test = get_test_number(input);
   int rc = RC_OK; // return code
   try {
     FPGA fpga(input, v);
@@ -80,9 +77,9 @@ int ppmstest(InputParser &input, int argc, char *argv[], Verbosity &v)
 
 #include "ppdmatest.hh"
 
-int ppdmatest(InputParser &input, int argc, char *argv[], Verbosity &v)
+int ppdmatest(InputParser &input, const Verbosity &v)
 {
-  const int test = get_test_number(argc, argv);
+  const int test = get_test_number(input);
   int rc = RC_OK; // return code
   try {
     FPGA fpga(input, v);
@@ -117,7 +114,7 @@ std::pair<trigger_t, trigger_t> get_trigger_pm(const InputParser &input, const b
 }
 
 // Frequency generator
-int ppfg(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int ppfg(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   streamer s(input, fpga); // must be called first to setup the PLL
@@ -223,7 +220,7 @@ count_t calc_duration_nr(const double duration_req,
   return nr;
 }
 
-int ppdelay(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int ppdelay(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   streamer s(input, fpga);
@@ -245,7 +242,7 @@ int ppdelay(const InputParser &input, int argc, char *argv[], const Verbosity &v
   return RC_OK;
 }
 
-int ppreset(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int ppreset(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   streamer s(input, fpga); // reset is performed in streamer constructor
@@ -253,7 +250,7 @@ int ppreset(const InputParser &input, int argc, char *argv[], const Verbosity &v
   return RC_OK;
 }
 
-int pptrig(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int pptrig(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   streamer s(input, fpga);
@@ -276,7 +273,7 @@ int pptrig(const InputParser &input, int argc, char *argv[], const Verbosity &v)
   return RC_OK;
 }
 
-int ppqout(const InputParser &input, int argc, char *argv[], const Verbosity &verb)
+int ppqout(const InputParser &input, const Verbosity &verb)
 {
   FPGA fpga(input, verb);
   multistreamer s(input, fpga);
@@ -396,7 +393,7 @@ int ppqout(const InputParser &input, int argc, char *argv[], const Verbosity &ve
   return RC_OK;
 }
 
-int ppaux(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int ppaux(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   pio_in pio_aux(fpga.dev_lw, PIO_AUX_BASE);
@@ -428,7 +425,7 @@ int ppaux(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 
 #include "counter.hh"
 
-int ppcounter(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int ppcounter(const InputParser &input, const Verbosity &v)
 {
   int rc = 0;
   FPGA fpga(input, v);
@@ -453,7 +450,7 @@ int ppcounter(const InputParser &input, int argc, char *argv[], const Verbosity 
   return rc;
 }
 
-int ppread(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int ppread(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v, false);       // false=do not automatically assert the output enable signal
   if (input.exists("-oe")) { // if -oe not specified, leave as is!
@@ -505,7 +502,7 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
   }
 }
 
-int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int ppts(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   rstmgr rm;
@@ -616,7 +613,7 @@ template <typename T>
      }
 };
 
-int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int ppgpsdo(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   rstmgr rm;
@@ -714,7 +711,7 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
 
 #include "MCP9808.hh"
 
-int pptemp(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int pptemp(const InputParser &input, const Verbosity &v)
 {
   Args args;
   MCP9808::print_csv_header(args, std::cout);
@@ -740,7 +737,7 @@ int pptemp(const InputParser &input, int argc, char *argv[], const Verbosity &v)
   return RC_OK;
 }
 
-int pphelloworld(const InputParser &input, int argc, char *argv[], const Verbosity &v)
+int pphelloworld(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   streamer s(input, fpga);
@@ -791,7 +788,7 @@ int main(int argc, char *argv[])
   }
   set_clk(input, fpga);
 
-  static const std::map<std::string, std::function<int(InputParser&,int,char*[],Verbosity&)>> actions{
+  static const std::map<std::string, std::function<int(InputParser&,Verbosity&)>> actions{
     {"pptool", pptool},
     {"pptest", pptest},
     {"ppmstest", ppmstest},
@@ -812,7 +809,7 @@ int main(int argc, char *argv[])
 
   int rc = RC_OK;
   if (auto it = actions.find(progname); it != actions.end()) {
-    rc = it->second(input, argc, argv, v);
+    rc = it->second(input, v);
   } else {
     std::cerr << "Unknown program name: " << progname << "\n";
     std::cerr << "Available modes:";
