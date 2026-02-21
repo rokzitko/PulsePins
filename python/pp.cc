@@ -184,10 +184,10 @@ NB_MODULE(pp, m) {
   nb::class_<hpsled>(m, "hpsled");
 
   nb::class_<FPGA>(m, "FPGA")
-    .def(nb::init<const Verbosity &, bool>(),
+    .def(nb::init<const InputParser &, const Verbosity &, bool>(),
+         nb::arg("input"),
          nb::arg("verbosity"),
-         nb::arg("oe") = true,
-         nb::keep_alive<1, 2>()
+         nb::arg("oe") = true
         )
 //    .def_prop_ro("mgr", &FPGA::mgr)
     .def("status", &FPGA::status)

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2025 Rok Zitko
+// Copyright (c) 2025,2026 Rok Zitko
 
 // Low-level interface to FPGA; holds memory-map objects
 
@@ -35,9 +35,9 @@ static_assert(ALT_FPGAMGR_BASE == ALT_FPGAMGR_OFST);
 
 class MGR {
  private:
-  loc stat;
-  loc gpin, gpout;
-  const Verbosity &v;
+   loc stat;
+   loc gpin, gpout; // ARM<->FPGA general purpose 32-bit I/O ports, gp_io and gp_out
+   const Verbosity &v;
 
  public:
   MGR(mm &dev_fpgamgr, const Verbosity &_v) :
@@ -47,6 +47,7 @@ class MGR {
      v(_v)
      {}
 
+   // Read status bits in gp_in port
    auto status() const {
      const auto s = stat.read();
      if (v.verbose) {
@@ -107,11 +108,13 @@ class FPGA {
    mm dev_lw, dev_h2f, dev_hps, dev_sysmgr, dev_fpgamgr;
    hpsled led;
    MGR mgr;
+   uint32_t cfg = 0; // current value on gp_out (configuration bits)
    pio_out_bits pio_cfg; // oe signal
    Elapsed elapsed;
+   const InputParser &input;
    const Verbosity &v;
 
-   FPGA(const Verbosity &_v, const bool oe = true) :
+   FPGA(const InputParser &_input, const Verbosity &_v, const bool oe = true) :
      dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE),
      dev_h2f(HPSFPGA_OFST, H2F_RANGE),
      dev_hps(HPS_REGS_OFST, HPS_REGS_RANGE),
@@ -121,6 +124,7 @@ class FPGA {
      mgr(dev_fpgamgr, _v),
      pio_cfg(dev_lw, PIO_CFG_BASE),
      elapsed(dev_lw, PIO_ELAPSED_BASE),
+     input(_input),
      v(_v)
      {
        if (oe) // if false, leave as is
@@ -156,5 +160,32 @@ class FPGA {
 
    void output_enable(const bool oe = false) {
      pio_cfg.write_at(0, oe);
+   }
+
+   void sel_clk(uint32_t sel) {
+     sel &= 3; // only bits 0 and 1 are relevant for sel_clk
+     cfg = (cfg | 3) + sel;
+     if (v.verbose) {
+       std::cout << "Setting clock select bits (sel_clk) to " << std::bitset<2>(sel) << ".";
+       switch (sel) {
+       case 0:
+         std::cout << " streamer_clk=int_clk" << std::endl;
+         break;
+       case 1:
+         std::cout << " streamer_clk=ext_clk" << std::endl;
+         break;
+       default:
+         std::cout << " WARNING: invalid setting." << std::endl;
+       }
+     }
+     mgr.gpio_write(cfg);
+   }
+
+   void sel_clk_int() {
+     sel_clk(0);
+   }
+
+   void sel_clk_ext() {
+     sel_clk(1);
    }
 };

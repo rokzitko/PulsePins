@@ -129,6 +129,20 @@ public:
      BIT_CLEAR(state, 6);
      rstmgr_miscmodrst.write(state);
    }
+
+   void s2f_hold_reset(const bool verbose = true) {
+     if (verbose) std::cout << "Putting FPGA in reset." << std::endl;
+     auto state = rstmgr_miscmodrst.read();
+     BIT_SET(state, 6);
+     rstmgr_miscmodrst.write(state);
+   }
+
+   void s2f_release_reset(const bool verbose = true) {
+     if (verbose) std::cout << "Releasing FPGA from reset." << std::endl;
+     auto state = rstmgr_miscmodrst.read();
+     BIT_CLEAR(state, 6);
+     rstmgr_miscmodrst.write(state);
+   }
 };
 
 class timeit {

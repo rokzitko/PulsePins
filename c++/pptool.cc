@@ -7,6 +7,13 @@
 #include "ppmisc.hh"
 #include "pptest.hh"
 
+int pptool(InputParser &input, int argc, char *argv[], Verbosity &v)
+{
+  FPGA fpga(input, v);
+  std::cout << "Done." << std::endl;
+  return RC_OK;
+}
+
 // First command line argument is the test number (pptest, ppmstest, ppdmatest)
 auto get_test_number(int argc, char *argv[])
 {
@@ -19,9 +26,9 @@ auto get_test_number(int argc, char *argv[])
 int pptest(InputParser &input, int argc, char *argv[], Verbosity &v)
 {
   const int test = get_test_number(argc, argv);
-  int rc = 0; // return code
+  int rc = RC_OK; // return code
   try {
-    FPGA fpga(v);
+    FPGA fpga(input, v);
     streamer s(input, fpga);
     trigger tr(input, fpga);
     readback rb(input, fpga);
@@ -38,7 +45,7 @@ int pptest(InputParser &input, int argc, char *argv[], Verbosity &v)
   }
   if (input.exists("-ignore-errors") && (rc != 0)) {
     std::cout << "WARNING: Ignoring errors, return code reset to zero." << std::endl;
-    rc = 0;
+    rc = RC_OK;
   }
   std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
   return rc;
@@ -49,9 +56,9 @@ int pptest(InputParser &input, int argc, char *argv[], Verbosity &v)
 int ppmstest(InputParser &input, int argc, char *argv[], Verbosity &v)
 {
   const int test = get_test_number(argc, argv);
-  int rc = 0; // return code
+  int rc = RC_OK; // return code
   try {
-    FPGA fpga(v);
+    FPGA fpga(input, v);
     multistreamer s(input, fpga);
     qout q(input, v, fpga);
     readback rb(input, fpga);
@@ -65,7 +72,7 @@ int ppmstest(InputParser &input, int argc, char *argv[], Verbosity &v)
   }
   if (input.exists("-ignore-errors") && (rc != 0)) {
     std::cout << "WARNING: Ignoring errors, return code reset to zero." << std::endl;
-    rc = 0;
+    rc = RC_OK;
   }
   std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
   return rc;
@@ -76,9 +83,9 @@ int ppmstest(InputParser &input, int argc, char *argv[], Verbosity &v)
 int ppdmatest(InputParser &input, int argc, char *argv[], Verbosity &v)
 {
   const int test = get_test_number(argc, argv);
-  int rc = 0; // return code
+  int rc = RC_OK; // return code
   try {
-    FPGA fpga(v);
+    FPGA fpga(input, v);
     dma_streamer s(input, fpga);
     readback rb(input, fpga);
     counter ctr(input, fpga);
@@ -90,7 +97,7 @@ int ppdmatest(InputParser &input, int argc, char *argv[], Verbosity &v)
   }
   if (input.exists("-ignore-errors") && (rc != 0)) {
     std::cout << "WARNING: Ignoring errors, return code reset to zero." << std::endl;
-    rc = 0;
+    rc = RC_OK;
   }
   std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
   return rc;
@@ -112,7 +119,7 @@ std::pair<trigger_t, trigger_t> get_trigger_pm(const InputParser &input, const b
 // Frequency generator
 int ppfg(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   streamer s(input, fpga); // must be called first to setup the PLL
 
   // Determine signal lengths based on period/frequency and duty cycle settings
@@ -195,7 +202,7 @@ int ppfg(const InputParser &input, int argc, char *argv[], const Verbosity &v)
     }
   }
   std::cout << "All done, exiting." << std::endl;
-  return 0;
+  return RC_OK;
 }
 
 count_t calc_duration_nr(const double duration_req,
@@ -218,7 +225,7 @@ count_t calc_duration_nr(const double duration_req,
 
 int ppdelay(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   streamer s(input, fpga);
   trigger tr(input, fpga);
   const auto [p, m] = get_trigger_pm(input, v.verbose);
@@ -235,20 +242,20 @@ int ppdelay(const InputParser &input, int argc, char *argv[], const Verbosity &v
   if (v.veryverbose) seq.dump(std::cout, "| ");
   s.fifo.send_sequence(seq);
   s.sc.trigger_enable();
-  return 0;
+  return RC_OK;
 }
 
 int ppreset(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   streamer s(input, fpga); // reset is performed in streamer constructor
   std::cout << "All done, exiting." << std::endl;
-  return 0;
+  return RC_OK;
 }
 
 int pptrig(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   streamer s(input, fpga);
   trigger tr(input, fpga);
   pio_out pio_trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE); // for testing internal trigger path
@@ -266,12 +273,12 @@ int pptrig(const InputParser &input, int argc, char *argv[], const Verbosity &v)
   if (input.exists("-debug"))
     s.sc.monitor_ext_trig();
   std::cout << "All done, exiting." << std::endl;
-  return 0;
+  return RC_OK;
 }
 
 int ppqout(const InputParser &input, int argc, char *argv[], const Verbosity &verb)
 {
-  FPGA fpga(verb);
+  FPGA fpga(input, verb);
   multistreamer s(input, fpga);
   qout q(input, verb, fpga);
   if (input.exists("-self_test")) {
@@ -386,12 +393,12 @@ int ppqout(const InputParser &input, int argc, char *argv[], const Verbosity &ve
       std::cout << green << "SUCCESS." << rst << std::endl;
     return rc;
   }
-  return 0;
+  return RC_OK;
 }
 
 int ppaux(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   pio_in pio_aux(fpga.dev_lw, PIO_AUX_BASE);
   const auto nr = parse_uint64(input, "-nr", "0");            // 0 = infinity
   const auto wait = parse_double(input, "-wait", "0.5");      // in seconds
@@ -416,7 +423,7 @@ int ppaux(const InputParser &input, int argc, char *argv[], const Verbosity &v)
     usleep(int(wait * 1000 * 1000));
   }
   std::cout << "All done, exiting." << std::endl;
-  return 0;
+  return RC_OK;
 }
 
 #include "counter.hh"
@@ -424,7 +431,7 @@ int ppaux(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 int ppcounter(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
   int rc = 0;
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   streamer s(input, fpga);
   counter ctr(input, fpga);
   ctr.reset_all();
@@ -448,7 +455,7 @@ int ppcounter(const InputParser &input, int argc, char *argv[], const Verbosity 
 
 int ppread(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v, false);       // false=do not automatically assert the output enable signal
+  FPGA fpga(input, v, false);       // false=do not automatically assert the output enable signal
   if (input.exists("-oe")) { // if -oe not specified, leave as is!
     const bool oe = parse_bool(input, "-oe", "0");
     fpga.output_enable(oe);
@@ -459,7 +466,7 @@ int ppread(const InputParser &input, int argc, char *argv[], const Verbosity &v)
   const double timeout = readback_timeout(input);
   rb.read_all(timeout);
   std::cout << "All done, exiting." << std::endl;
-  return 0;
+  return RC_OK;
 }
 
 #include "timestamp.hh"
@@ -500,7 +507,7 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
 
 int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   rstmgr rm;
   rm.s2f_reset(); // FPGA fabric reset
   timestamp ts(fpga.dev_h2f,
@@ -528,7 +535,7 @@ int ppts(const InputParser &input, int argc, char *argv[], const Verbosity &v)
   if (read_pps) ts_pps.join();
   if (read_sigA) ts_sigA.join();
   std::cout << "All done, exiting." << std::endl;
-  return 0;
+  return RC_OK;
 }
 
 #include "zip_aggregator.hh"
@@ -611,7 +618,7 @@ template <typename T>
 
 int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   rstmgr rm;
   rm.s2f_reset(); // FPGA fabric reset
   timestamp ts(fpga.dev_h2f,
@@ -702,7 +709,7 @@ int ppgpsdo(const InputParser &input, int argc, char *argv[], const Verbosity &v
   ts_pps.join();
   ts_sigA.join();
   std::cout << "All done, exiting." << std::endl;
-  return 0;
+  return RC_OK;
 }
 
 #include "MCP9808.hh"
@@ -730,12 +737,12 @@ int pptemp(const InputParser &input, int argc, char *argv[], const Verbosity &v)
     if (args.delay > 0.0)
       std::this_thread::sleep_for(std::chrono::duration<double>(args.delay));
   }
-  return 0;
+  return RC_OK;
 }
 
 int pphelloworld(const InputParser &input, int argc, char *argv[], const Verbosity &v)
 {
-  FPGA fpga(v);
+  FPGA fpga(input, v);
   streamer s(input, fpga);
   Sequence seq;
   seq.push_back(el(500, ~0).store(0));
@@ -746,7 +753,24 @@ int pphelloworld(const InputParser &input, int argc, char *argv[], const Verbosi
   s.fifo.send_sequence(seq);
   s.sc.trigger_force();
   std::cout << "All done, exiting. All outputs are toggling with frequency f_clk/1000." << std::endl;
-  return 0;
+  return RC_OK;
+}
+
+// Note: the reset is not performed here if the clock is not explicitly specified by either
+// -int_clk or -ext_clk switch.
+void set_clk(const InputParser &input, FPGA &fpga)
+{
+  rstmgr rm;
+  if (envVarExists("PP_INT_CLK") || input.exists("-int_clk")) {
+    rm.s2f_hold_reset();
+    fpga.sel_clk_int();
+    rm.s2f_release_reset();
+  } else
+  if (envVarExists("PP_EXT_CLK") || input.exists("-ext_clk")) {
+    rm.s2f_hold_reset();
+    fpga.sel_clk_ext();
+    rm.s2f_release_reset();
+  }
 }
 
 int main(int argc, char *argv[])
@@ -760,12 +784,15 @@ int main(int argc, char *argv[])
   RealtimeScheduler rt;
   if (v.veryverbose)
     std::cout << "Scheduler: " << rt.report() << std::endl;
+  FPGA fpga(input, v);
   if (v.veryverbose) {
-    FPGA fpga(v);
     fpga.mgr.status();
     fpga.status();
   }
+  set_clk(input, fpga);
+
   static const std::map<std::string, std::function<int(InputParser&,int,char*[],Verbosity&)>> actions{
+    {"pptool", pptool},
     {"pptest", pptest},
     {"ppmstest", ppmstest},
     {"ppdmatest", ppdmatest},
@@ -783,7 +810,7 @@ int main(int argc, char *argv[])
     {"pphelloworld", pphelloworld}
   };
 
-  int rc = 0;
+  int rc = RC_OK;
   if (auto it = actions.find(progname); it != actions.end()) {
     rc = it->second(input, argc, argv, v);
   } else {
@@ -792,10 +819,10 @@ int main(int argc, char *argv[])
     for (auto const& [name, _] : actions)
       std::cerr << " " << name;
     std::cerr << "\n";
-    rc = 1;   // nonzero error code for unknown case
+    rc = RC_UNKNOWN_CASE;
   }
 
-  double exit_delay = 0;
+  double exit_delay = 0.0;
   if (envVarExists("PP_EXIT_DELAY"))
     exit_delay = envDouble("PP_EXIT_DELAY").value_or(1.0);
   if (input.exists("-exit_delay"))

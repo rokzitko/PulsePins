@@ -104,6 +104,8 @@ inline constexpr int RC_ERROR_OVERFLOW_RB = 32;
 inline constexpr int RC_ERROR_BUFFER_ERROR = 64;
 inline constexpr int RC_ERROR_CRC_MISMATCH = 128;
 
+inline constexpr int RC_UNKNOWN_CASE = 4;
+
 void sleep_1ms()
 {
   usleep(1000); // 1ms delay

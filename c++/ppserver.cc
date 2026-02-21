@@ -29,7 +29,7 @@ public:
      ScpiSessionBase(std::move(socket)),
      input(_input),
      v(_v),
-     fpga(v),
+     fpga(input, v),
      s(input, fpga),
      rb(input, fpga),
      ctr(input, fpga)

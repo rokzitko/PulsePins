@@ -388,6 +388,8 @@ def test_Verbosity():
    v.verbosecheck = True
 
 def test_FPGA():
+   params = ["-test"]
+   input = pp.InputParser(params)
    v = pp.Verbosity()
    v.veryverbose = True
    v.verbosecheck = True
