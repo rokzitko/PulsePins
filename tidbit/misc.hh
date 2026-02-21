@@ -26,6 +26,10 @@
 #include <unordered_map>
 #include <cctype>
 #include <cstdlib>
+#include <optional>
+#include <cerrno>
+#include <system_error>
+#include <charconv>
 
 #include "parser.hh"
 
@@ -372,6 +376,51 @@ inline uint32_t sra(uint32_t value, unsigned int shamt) {
 
 bool envVarExists(const std::string &name) {
   return std::getenv(name.c_str()) != nullptr;
+}
+
+std::optional<double> envDouble(std::string_view name)
+{
+  const char* s = std::getenv(name.data());
+  if (!s) return std::nullopt;
+
+  errno = 0;
+  char* end = nullptr;
+  double v = std::strtod(s, &end);
+
+  if (end == s) return std::nullopt;              // no conversion
+  if (*end != '\0') return std::nullopt;          // trailing junk
+  if (errno == ERANGE) return std::nullopt;       // overflow/undeerflow
+  if (!std::isfinite(v)) return std::nullopt;     // optional policy
+  return v;
+}
+
+std::optional<long long> envInt(std::string_view name, int base = 10)
+{
+  const char* s = std::getenv(name.data());
+  if (!s) return std::nullopt;
+
+  long long v{};
+  const char* begin = s;
+  const char* end   = s;
+  while (*end) ++end; // find NUL
+
+  auto [ptr, ec] = std::from_chars(begin, end, v, base);
+  if (ec != std::errc{} || ptr != end) return std::nullopt; // reject trailing junk
+  return v;
+}
+
+std::optional<bool> envBool(std::string_view name)
+{
+  const char* s = std::getenv(name.data());
+  if (!s) return std::nullopt;
+
+  std::string t{s};
+  std::transform(t.begin(), t.end(), t.begin(),
+                 [](unsigned char c){ return (char)std::tolower(c); });
+
+  if (t == "1" || t == "true" || t == "yes" || t == "on")  return true;
+  if (t == "0" || t == "false"|| t == "no"  || t == "off") return false;
+  return std::nullopt;
 }
 
 // Helper: trim trailing zeros and decimal point
