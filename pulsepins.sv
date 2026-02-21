@@ -12,6 +12,7 @@
 `define INTERNAL_CLK
 //`define EXTERNAL_CLK
 //`define EXTERNAL_CLK_CLEAN
+//`define SELECT_CLK
 
 `define WIDTH_DATA         32
 `define WIDTH_TRIGGER      8
@@ -159,6 +160,18 @@ localparam integer STREAMER_CLK_FREQ_HZ = 100_000_000;
     my_pll.clk0_phase_shift = "0",
     my_pll.operation_mode = "NORMAL",
     my_pll.compensate_clock = "CLK0";
+`elsif SELECT_CLK
+    wire sel_clk = 1'b0;
+    wire clk_ena = 1'b1;
+    altclkctrl #(
+    .clock_type("GLOBAL CLOCK"),
+    .ena_register_mode("none")
+    ) u_clkctrl (
+    .inclk     ({2'b00, EXT_CLKp, int_clk}),
+    .clkselect ({1'b0, sel_clk}),
+    .ena       (clk_ena),
+    .outclk    (streamer_clk)
+    );
 `else
     assign streamer_clk = 0;
 `endif
