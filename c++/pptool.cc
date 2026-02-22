@@ -20,7 +20,8 @@ int pptool(const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-int pptest(InputParser &input, const Verbosity &v)
+
+int pptest(const InputParser &input, const Verbosity &v)
 {
   const int test = get_test_number(input);
   int rc = RC_OK; // return code
@@ -40,17 +41,12 @@ int pptest(InputParser &input, const Verbosity &v)
   catch (const char *e) {
     std::cout << "exception: " << e << std::endl;
   }
-  if (input.exists("-ignore-errors") && (rc != 0)) {
-    std::cout << "WARNING: Ignoring errors, return code reset to zero." << std::endl;
-    rc = RC_OK;
-  }
-  std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
   return rc;
 }
 
 #include "ppmstest.hh"
 
-int ppmstest(InputParser &input, const Verbosity &v)
+int ppmstest(const InputParser &input, const Verbosity &v)
 {
   const int test = get_test_number(input);
   int rc = RC_OK; // return code
@@ -67,17 +63,12 @@ int ppmstest(InputParser &input, const Verbosity &v)
   catch (const char *e) {
     std::cout << "exception: " << e << std::endl;
   }
-  if (input.exists("-ignore-errors") && (rc != 0)) {
-    std::cout << "WARNING: Ignoring errors, return code reset to zero." << std::endl;
-    rc = RC_OK;
-  }
-  std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
   return rc;
 }
 
 #include "ppdmatest.hh"
 
-int ppdmatest(InputParser &input, const Verbosity &v)
+int ppdmatest(const InputParser &input, const Verbosity &v)
 {
   const int test = get_test_number(input);
   int rc = RC_OK; // return code
@@ -92,11 +83,6 @@ int ppdmatest(InputParser &input, const Verbosity &v)
   catch (const char *e) {
     std::cout << "exception: " << e << std::endl;
   }
-  if (input.exists("-ignore-errors") && (rc != 0)) {
-    std::cout << "WARNING: Ignoring errors, return code reset to zero." << std::endl;
-    rc = RC_OK;
-  }
-  std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
   return rc;
 }
 
@@ -152,7 +138,7 @@ int ppfg(const InputParser &input, const Verbosity &v)
   s.sc.set_gating_from_string(input.get_string("-gate", ""));
   if (input.exists("-gate_debug")) {
     for (;;) {
-      usleep(100*1000);
+      sleep(0.1);
       std::cout << "Gate: " << s.sc.gate_status_string() << std::endl;
     }
   }
@@ -198,7 +184,6 @@ int ppfg(const InputParser &input, const Verbosity &v)
       }
     }
   }
-  std::cout << "All done, exiting." << std::endl;
   return RC_OK;
 }
 
@@ -246,7 +231,6 @@ int ppreset(const InputParser &input, const Verbosity &v)
 {
   FPGA fpga(input, v);
   streamer s(input, fpga); // reset is performed in streamer constructor
-  std::cout << "All done, exiting." << std::endl;
   return RC_OK;
 }
 
@@ -269,7 +253,6 @@ int pptrig(const InputParser &input, const Verbosity &v)
   }
   if (input.exists("-debug"))
     s.sc.monitor_ext_trig();
-  std::cout << "All done, exiting." << std::endl;
   return RC_OK;
 }
 
@@ -291,7 +274,7 @@ int ppqout(const InputParser &input, const Verbosity &verb)
   s.s2.sc.qout_set(parse_value(input, "-q2", "0"));
   s.s3.sc.qout_set(parse_value(input, "-q3", "0"));
   s.s4.sc.qout_set(parse_value(input, "-q4", "0"));
-  usleep(1);
+  sleep_1us();
   auto report = [](const std::string s, const value_t v) {
     std::cout << "qout(" << s << ")=0x" << std::hex << std::setfill('0') << v << " " << std::bitset<WIDTH_DATA>(v) << std::endl;
   };
@@ -417,9 +400,8 @@ int ppaux(const InputParser &input, const Verbosity &v)
       F << s << '\n';
     else
       std::cout << s << std::endl;
-    usleep(int(wait * 1000 * 1000));
+    sleep(wait);
   }
-  std::cout << "All done, exiting." << std::endl;
   return RC_OK;
 }
 
@@ -446,7 +428,6 @@ int ppcounter(const InputParser &input, const Verbosity &v)
   ctr.report();
   if (input.exists("-test1") && input.exists("-check"))
     rc = counter_test1(ctr);
-  std::cout << "All done, exiting." << std::endl;
   return rc;
 }
 
@@ -462,7 +443,6 @@ int ppread(const InputParser &input, const Verbosity &v)
     rb.check_fill_status();
   const double timeout = readback_timeout(input);
   rb.read_all(timeout);
-  std::cout << "All done, exiting." << std::endl;
   return RC_OK;
 }
 
@@ -531,7 +511,6 @@ int ppts(const InputParser &input, const Verbosity &v)
     ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, timeout](){ return ts.readA_with_timeout(timeout); }, -1);
   if (read_pps) ts_pps.join();
   if (read_sigA) ts_sigA.join();
-  std::cout << "All done, exiting." << std::endl;
   return RC_OK;
 }
 
@@ -705,7 +684,6 @@ int ppgpsdo(const InputParser &input, const Verbosity &v)
   }, silent_after);
   ts_pps.join();
   ts_sigA.join();
-  std::cout << "All done, exiting." << std::endl;
   return RC_OK;
 }
 
@@ -731,8 +709,7 @@ int pptemp(const InputParser &input, const Verbosity &v)
     }
     ++n;
     if (args.count && n >= args.count) break;
-    if (args.delay > 0.0)
-      std::this_thread::sleep_for(std::chrono::duration<double>(args.delay));
+    if (args.delay > 0.0) sleep(args.delay);
   }
   return RC_OK;
 }
@@ -749,7 +726,7 @@ int pphelloworld(const InputParser &input, const Verbosity &v)
     seq.dump(std::cout, "| ");
   s.fifo.send_sequence(seq);
   s.sc.trigger_force();
-  std::cout << "All done, exiting. All outputs are toggling with frequency f_clk/1000." << std::endl;
+  std::cout << "All outputs are now toggling with frequency f_clk/1000." << std::endl;
   return RC_OK;
 }
 
@@ -788,7 +765,7 @@ int main(int argc, char *argv[])
   }
   set_clk(input, fpga);
 
-  static const std::map<std::string, std::function<int(InputParser&,Verbosity&)>> actions{
+  static const std::map<std::string, std::function<int(const InputParser&,const Verbosity&)>> actions{
     {"pptool", pptool},
     {"pptest", pptest},
     {"ppmstest", ppmstest},
@@ -809,14 +786,21 @@ int main(int argc, char *argv[])
 
   int rc = RC_OK;
   if (auto it = actions.find(progname); it != actions.end()) {
-    rc = it->second(input, v);
+    try {
+      rc = it->second(input, v);
+      std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
+    }
+    catch (const char *e) {
+      std::cout << "exception: " << e << std::endl;
+      rc = RC_EXCEPTION;
+    }
   } else {
     std::cerr << "Unknown program name: " << progname << "\n";
     std::cerr << "Available modes:";
     for (auto const& [name, _] : actions)
       std::cerr << " " << name;
     std::cerr << "\n";
-    rc = RC_UNKNOWN_CASE;
+    rc = RC_INVALID_ARG;
   }
 
   double exit_delay = 0.0;
@@ -824,7 +808,12 @@ int main(int argc, char *argv[])
     exit_delay = envDouble("PP_EXIT_DELAY").value_or(1.0);
   if (input.exists("-exit_delay"))
     exit_delay = parse_time(input, "-exit_delay", "1.0");
-  std::this_thread::sleep_for(std::chrono::microseconds(long(1000000*exit_delay)));
+  sleep(exit_delay);
+
+  if (input.exists("-ignore-errors") && (rc != 0)) {
+    std::cout << "WARNING: Ignoring errors, return code reset to zero." << std::endl;
+    rc = RC_OK;
+  }
 
   return rc;
 }
