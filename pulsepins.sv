@@ -140,6 +140,7 @@ localparam integer REF_CLK_FREQ_HZ = 50_000_000;
 localparam integer STREAMER_CLK_FREQ_HZ = 100_000_000;
 
 wire [1:0] sel_clk; // used in SELECT_CLK case
+wire clk_ena;
 
 `ifdef INTERNAL_CLK
    assign streamer_clk = int_clk;
@@ -163,12 +164,11 @@ wire [1:0] sel_clk; // used in SELECT_CLK case
     my_pll.operation_mode = "NORMAL",
     my_pll.compensate_clock = "CLK0";
 `elsif SELECT_CLK
-    wire clk_ena = 1'b1;
     altclkctrl #(
     .clock_type("GLOBAL CLOCK"),
     .ena_register_mode("none")
     ) u_clkctrl (
-    .inclk     ({1'b0, int_clk, 1'b0, EXT_CLKp}),
+    .inclk     ({int_clk, '0, EXT_CLKp, '0}), // fitter may change order! test with "pptool -clk N"
     .clkselect (sel_clk),
     .ena       (clk_ena),
     .outclk    (streamer_clk)
@@ -507,7 +507,10 @@ assign gp_in[6] = rst_out;
 assign gp_in[7] = reset_out;
 assign gp_in[31:8] = 0;
 
-assign sel_clk = gp_out[1:0];
+// Clock source switching
+assign sel_clk = gp_out[1:0]; // bits [0:1] control clock source
+assign clk_ena = 'b1;
+//assign clk_ena = gp_out[2];   // note: on power-up, clock is disabled
 
 logic oe; // output enable
 assign oe = pio_cfg[`CFG_OE];

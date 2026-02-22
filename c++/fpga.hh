@@ -162,16 +162,19 @@ class FPGA {
      pio_cfg.write_at(0, oe);
    }
 
+   static const int ch_ext = 2;
+   static const int ch_int = 0;
+
    void sel_clk(uint32_t sel) {
      sel &= 3; // only bits 0 and 1 are relevant for sel_clk
      cfg = (cfg | 3) + sel;
      if (v.verbose) {
        std::cout << "Setting clock select bits (sel_clk) to " << std::bitset<2>(sel) << ".";
        switch (sel) {
-       case 1:
+       case ch_ext:
          std::cout << " streamer_clk=ext_clk" << std::endl;
          break;
-       case 3:
+       case ch_int:
          std::cout << " streamer_clk=int_clk" << std::endl;
          break;
        default:
@@ -182,10 +185,10 @@ class FPGA {
    }
 
    void sel_clk_ext() {
-     sel_clk(1);
+     sel_clk(ch_ext);
    }
 
    void sel_clk_int() {
-     sel_clk(3);
+     sel_clk(ch_int);
    }
 };
