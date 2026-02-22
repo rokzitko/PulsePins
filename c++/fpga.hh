@@ -168,10 +168,10 @@ class FPGA {
      if (v.verbose) {
        std::cout << "Setting clock select bits (sel_clk) to " << std::bitset<2>(sel) << ".";
        switch (sel) {
-       case 0:
+       case 1:
          std::cout << " streamer_clk=ext_clk" << std::endl;
          break;
-       case 2:
+       case 3:
          std::cout << " streamer_clk=int_clk" << std::endl;
          break;
        default:
@@ -181,11 +181,11 @@ class FPGA {
      mgr.gpio_write(cfg);
    }
 
-   void sel_clk_int() {
-     sel_clk(2);
+   void sel_clk_ext() {
+     sel_clk(1);
    }
 
-   void sel_clk_ext() {
-     sel_clk(0);
+   void sel_clk_int() {
+     sel_clk(3);
    }
 };

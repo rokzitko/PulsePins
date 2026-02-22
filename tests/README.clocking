@@ -5,3 +5,8 @@ export INT_PLL=50M
 Core PLL is the clock for the FPGA streamer circuit (decoder). Internal PLL generates the clock for clocking out the date from the output FIFO buffer, i.e., it's a "data clock.
 
 CORE_PLL=100M and INT_PLL=10M pass all tests.
+
+
+pptest 2 -int_clk -int_pll 25M -veryverbose -check
+pptest 2 -ext_clk -veryverbose -check
+pptest 2 -clk 2 -veryverbose -check
