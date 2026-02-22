@@ -21,6 +21,7 @@
 
 #include "tidbit.hh"
 #include "misc.hh"
+#include "delay.hh"
 #include "parser.hh"
 #include "fpga.hh"
 #include "elements.hh"
@@ -96,25 +97,15 @@ constexpr auto max_size =
   + 1;
 
 inline constexpr int RC_OK = 0;
-inline constexpr int RC_ERROR_CHECK = 1;
-inline constexpr int RC_ERROR_QOUT_FINAL = 2;
-inline constexpr int RC_ERROR_FIFO_CTR = 8;
-inline constexpr int RC_ERROR_OVERFLOW_FIFO = 16;
+inline constexpr int RC_EXCEPTION = 1;
+inline constexpr int RC_INVALID_ARG = 2;
+inline constexpr int RC_ERROR_CHECK = 4;
+inline constexpr int RC_ERROR_QOUT_FINAL = 4;
+inline constexpr int RC_ERROR_CRC_MISMATCH = 8;
+inline constexpr int RC_ERROR_BUFFER_ERROR = 16;
+inline constexpr int RC_ERROR_FIFO_CTR = 32;
+inline constexpr int RC_ERROR_OVERFLOW_FIFO = 32;
 inline constexpr int RC_ERROR_OVERFLOW_RB = 32;
-inline constexpr int RC_ERROR_BUFFER_ERROR = 64;
-inline constexpr int RC_ERROR_CRC_MISMATCH = 128;
-
-inline constexpr int RC_UNKNOWN_CASE = 4;
-
-void sleep_1ms()
-{
-  usleep(1000); // 1ms delay
-}
-
-void sleep(const double delay) // time in seconds
-{
-  usleep(1000 * 1000 * delay);
-}
 
 // Send a test sequence 'elements' to streamer 'fifo' and use readback 'rb' for testing equivalence (if -check command line argument is used).
 template<typename Transport, typename Convert>
