@@ -169,10 +169,10 @@ class FPGA {
        std::cout << "Setting clock select bits (sel_clk) to " << std::bitset<2>(sel) << ".";
        switch (sel) {
        case 0:
-         std::cout << " streamer_clk=int_clk" << std::endl;
-         break;
-       case 1:
          std::cout << " streamer_clk=ext_clk" << std::endl;
+         break;
+       case 2:
+         std::cout << " streamer_clk=int_clk" << std::endl;
          break;
        default:
          std::cout << " WARNING: invalid setting." << std::endl;
@@ -182,10 +182,10 @@ class FPGA {
    }
 
    void sel_clk_int() {
-     sel_clk(0);
+     sel_clk(2);
    }
 
    void sel_clk_ext() {
-     sel_clk(1);
+     sel_clk(0);
    }
 };
