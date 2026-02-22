@@ -24,7 +24,7 @@ class tests {
    counter &ctr;
    pio_out &pio;
    trigger_ext &trig_ext;
-   InputParser &input;
+   const InputParser &input;
    streamer_fifo &fifo;  // s.fifo
    streamer_control &sc; // s.sc
    const Verbosity &verb;
@@ -258,7 +258,7 @@ class tests {
    }
 
    // **** Triggering tests
-   static void trig12(pio_out &p, InputParser &input) {
+   static void trig12(pio_out &p, const InputParser &input) {
      if (input.exists("-trig")) {
        constexpr int delay = 100*1000;
        usleep(delay);
@@ -284,7 +284,7 @@ class tests {
      return rc;
    }
 
-   static void trig13(pio_out &pio, InputParser &input) {
+   static void trig13(pio_out &pio, const InputParser &input) {
      if (input.exists("-trig")) {
        auto p = parse_trigger(input, "-p", "0b01");
        auto r = parse_trigger(input, "-r", "0b10");
@@ -317,7 +317,7 @@ class tests {
      return rc;
    }
 
-   static void trig14(pio_out &pio, InputParser &input) {
+   static void trig14(pio_out &pio, const InputParser &input) {
      if (input.exists("-trig")) {
        const auto cycles = parse_uint32(input, "-cycles", "10");
        const auto p = parse_trigger(input, "-p", "0b01");
@@ -541,7 +541,7 @@ class tests {
      return rc;
    }
 
-   tests(streamer &_s, readback &_rb, counter &_ctr, pio_out &_pio, trigger_ext &_trig_ext, InputParser &_input, const Verbosity &_v) :
+   tests(streamer &_s, readback &_rb, counter &_ctr, pio_out &_pio, trigger_ext &_trig_ext, const InputParser &_input, const Verbosity &_v) :
      s(_s), rb(_rb), ctr(_ctr), pio(_pio), trig_ext(_trig_ext), input(_input), fifo(s.fifo), sc(s.sc), verb(_v) {}
 
    int run(int test) {
