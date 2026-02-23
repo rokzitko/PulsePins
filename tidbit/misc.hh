@@ -29,7 +29,9 @@
 #include <optional>
 #include <cerrno>
 #include <system_error>
-#include <charconv>
+
+//#include <charconv>    // C++17
+#include "from_chars.hh" // C++11
 
 #include "parser.hh"
 
@@ -404,8 +406,8 @@ std::optional<long long> envInt(std::string_view name, int base = 10)
   const char* end   = s;
   while (*end) ++end; // find NUL
 
-  auto [ptr, ec] = std::from_chars(begin, end, v, base);
-  if (ec != std::errc{} || ptr != end) return std::nullopt; // reject trailing junk
+  auto [ptr, ec] = charconv11::from_chars(begin, end, v, base);
+  if (ec != charconv11::errc{} || ptr != end) return std::nullopt; // reject trailing junk
   return v;
 }
 
