@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// PulsePins, Rok Zitko, 2020-2025
+// PulsePins, Rok Zitko, 2020-2026
 
 // Parts derived from rsyocto (c) Robin Sebastian (https://github.com/robseb/rsyocto).
 // Licensed under the MIT license.
@@ -12,7 +12,8 @@
 //`define INTERNAL_CLK
 //`define EXTERNAL_CLK
 //`define EXTERNAL_CLK_CLEAN
-`define SELECT_CLK
+//`define SELECT_CLK
+`define SELECT_CLK_CLEAN
 
 `define WIDTH_DATA         32
 `define WIDTH_TRIGGER      8
@@ -139,6 +140,24 @@ localparam integer REF_CLK_FREQ_HZ = 50_000_000;
 // Nominal streamer clock frequency (100MHz by default)
 localparam integer STREAMER_CLK_FREQ_HZ = 100_000_000;
 
+logic ext_clk_pll_locked;
+logic clean_clk;
+// Simple PLL instantiation for jitter attenuation
+altpll my_pll (
+  .inclk      ({1'b0, EXT_CLKp}), // inclk[0] is used, tie off [1]
+  .areset     (reset),
+  .clk        (clean_clk),     // regenerated clock
+  .locked     (ext_clk_pll_locked)
+);
+defparam
+  my_pll.bandwidth_type = "LOW",
+  my_pll.inclk0_input_frequency = 100000, // input period in ps (10 MHz = 100,000 ps)
+  my_pll.clk0_divide_by = 1,
+  my_pll.clk0_multiply_by = 1,
+  my_pll.clk0_phase_shift = "0",
+  my_pll.operation_mode = "NORMAL",
+  my_pll.compensate_clock = "CLK0";
+
 wire [1:0] sel_clk; // used in SELECT_CLK case
 wire clk_ena;
 
@@ -147,28 +166,23 @@ wire clk_ena;
 `elsif EXTERNAL_CLK
    assign streamer_clk = EXT_CLKp;
 `elsif EXTERNAL_CLK_CLEAN
-   logic ext_clk_pll_locked;
-   // Simple PLL instantiation for jitter attenuation
-   altpll my_pll (
-    .inclk      ({1'b0, EXT_CLKp}), // inclk[0] is used, tie off [1]
-    .areset     (reset),
-    .clk        (streamer_clk),     // regenerated clock
-   .locked     (ext_clk_pll_locked)
-  );
-   defparam
-    my_pll.bandwidth_type = "LOW",
-    my_pll.inclk0_input_frequency = 100000, // input period in ps (10 MHz = 100,000 ps)
-    my_pll.clk0_divide_by = 1,
-    my_pll.clk0_multiply_by = 1,
-    my_pll.clk0_phase_shift = "0",
-    my_pll.operation_mode = "NORMAL",
-    my_pll.compensate_clock = "CLK0";
+   assign streamer_clk = clean_clk;
 `elsif SELECT_CLK
     altclkctrl #(
     .clock_type("GLOBAL CLOCK"),
     .ena_register_mode("none")
     ) u_clkctrl (
     .inclk     ({int_clk, '0, EXT_CLKp, '0}), // fitter may change order! test with "pptool -clk N"
+    .clkselect (sel_clk),
+    .ena       (clk_ena),
+    .outclk    (streamer_clk)
+    );
+`elsif SELECT_CLK_CLEAN
+   altclkctrl #(
+    .clock_type("GLOBAL CLOCK"),
+    .ena_register_mode("none")
+    ) u_clkctrl (
+    .inclk     ({int_clk, clean_clk, '0, '0}), // fitter may change order! test with "pptool -clk N"
     .clkselect (sel_clk),
     .ena       (clk_ena),
     .outclk    (streamer_clk)

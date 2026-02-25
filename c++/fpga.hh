@@ -162,8 +162,16 @@ class FPGA {
      pio_cfg.write_at(0, oe);
    }
 
+#define SELECT_CLK_CLEAN
+
+#ifdef SELECT_CLK
    static const int ch_ext = 2;
    static const int ch_int = 0;
+#endif
+#ifdef SELECT_CLK_CLEAN
+   static const int ch_ext = 3;
+   static const int ch_int = 1;
+#endif
 
    void sel_clk(uint32_t sel) {
      sel &= 3; // only bits 0 and 1 are relevant for sel_clk
