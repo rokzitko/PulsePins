@@ -1,5 +1,5 @@
 #!/bin/bash
-ppserver &
+ppscpi &
 sleep .1
 RESPONSE=$(echo "TEST1" | nc localhost 5025 2>/dev/null)
 sleep .1

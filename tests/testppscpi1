@@ -1,14 +1,9 @@
 #!/bin/bash
-ppserver &
+ppscpi &
 sleep .1
-RESPONSE=$(nc localhost 5025 2>/dev/null <<'EOF'
-*IDN?
-CHECK ON
-SEQ d 10 0xff d 5 0x00 d 2 0b0101 f
-STREAM
-TERMINATE
-EOF
-)
+RESPONSE=$(echo "*IDN?" | nc localhost 5025 2>/dev/null)
+sleep .1
+echo "TERMINATE" | nc localhost 5025
 
 RED="\033[31m"
 GREEN="\033[32m"
@@ -16,7 +11,7 @@ YELLOW="\033[33m"
 RST="\033[0m"
 
 echo "Reponse: $RESPONSE"
-if [[ $RESPONSE == *"SUCCESS"* ]]; then
+if [[ $RESPONSE == *"PulsePins"* ]]; then
   echo -e "${GREEN}SUCCESS${RST}"
   exit 0
 else

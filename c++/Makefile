@@ -31,18 +31,18 @@ ifeq ($(GCC_VERSION),8)
 endif
 
 # Targets that run on DE10 board
-TARGETS = pptool ppserver
+TARGETS = pptool ppscpi
 
 # Symlinks to pptool
 SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
            ppgpsdo pptemp ppread pphelloworld
 
-build: pptool ppserver unit_tests
+build: pptool ppscpi unit_tests
 
 pptool: pptool.o
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB)
 
-ppserver: ppserver.o
+ppscpi: ppscpi.o
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB)
 
 HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h)
@@ -53,7 +53,7 @@ unit_tests: unit_tests.cc $(HEADERS)
 pptool.o : pptool.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
-ppserver.o : ppserver.cc ../hps_0.h $(HEADERS)
+ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 .PHONY: clean copy
