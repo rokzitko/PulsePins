@@ -7,6 +7,12 @@
 #include "ppmisc.hh"
 #include "pptest.hh"
 
+#define HAS_SERVER
+
+#ifdef HAS_SERVER
+#include "ppserver.hh"
+#endif
+
 // First command line argument is the test number (pptest, ppmstest, ppdmatest)
 auto get_test_number(const InputParser &input)
 {
@@ -772,6 +778,17 @@ int main(int argc, char *argv[])
     fpga.status();
   }
   set_clk(input, fpga);
+#ifdef HAS_SERVER
+  if (input.exists("-server")) {
+    // Bind to a specific interface IP, e.g. "127.0.0.1" or "192.168.1.10".
+    // If you want "all interfaces", use "0.0.0.0".
+    const auto ip = input.get_string("-ip", "0.0.0.0");
+    const auto port = input.get_uint32("-port", "5555");
+    const auto protocol = input.exists("-udp") ? Proto::UDP : Proto::TCP;
+    LineServer server(ip, port, protocol, process_line);
+    server.start();
+  }
+#endif
 
   static const std::map<std::string, std::function<int(const InputParser&,const Verbosity&)>> actions{
     {"pptool", pptool},
