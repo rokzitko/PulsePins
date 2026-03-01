@@ -1,0 +1,2 @@
+#!/bin/bash
+socat -u TCP-LISTEN:1000,reuseaddr,fork STDOUT
