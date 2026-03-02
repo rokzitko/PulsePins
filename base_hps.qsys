@@ -296,6 +296,22 @@
          type = "String";
       }
    }
+   element freq_meter_0
+   {
+      datum _sortIndex
+      {
+         value = "41";
+         type = "int";
+      }
+   }
+   element freq_meter_0.avalon_slave_0
+   {
+      datum baseAddress
+      {
+         value = "192";
+         type = "String";
+      }
+   }
    element hps_0
    {
       datum _sortIndex
@@ -869,6 +885,11 @@
    internal="counter_q.conduit_end"
    type="conduit"
    dir="end" />
+ <interface
+   name="freq_meter_0_conduit_end"
+   internal="freq_meter_0.conduit_end"
+   type="conduit"
+   dir="end" />
  <interface name="hps_0_can0" internal="hps_0.can0" />
  <interface name="hps_0_ddr" internal="hps_0.memory" type="conduit" dir="end" />
  <interface
@@ -1033,13 +1054,13 @@
   <parameter name="numch_" value="8" />
   <parameter name="sclk_freq" value="12.5" />
  </module>
- <module name="clk_0" kind="clock_source" version="24.1" enabled="1">
+ <module name="clk_0" kind="clock_source" version="21.1" enabled="1">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="true" />
   <parameter name="inputClockFrequency" value="0" />
   <parameter name="resetSynchronousEdges" value="NONE" />
  </module>
- <module name="clk_1" kind="clock_source" version="24.1" enabled="1">
+ <module name="clk_1" kind="clock_source" version="21.1" enabled="1">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="false" />
   <parameter name="inputClockFrequency" value="100000000" />
@@ -1052,7 +1073,7 @@
   <parameter name="width_bus" value="32" />
   <parameter name="width_data" value="32" />
  </module>
- <module name="fifo_1" kind="altera_avalon_fifo" version="24.1" enabled="1">
+ <module name="fifo_1" kind="altera_avalon_fifo" version="21.1" enabled="1">
   <parameter name="avalonMMAvalonMMDataWidth" value="32" />
   <parameter name="avalonMMAvalonSTDataWidth" value="32" />
   <parameter name="bitsPerSymbol" value="8" />
@@ -1073,7 +1094,7 @@
   <parameter name="useRegister" value="false" />
   <parameter name="useWriteControl" value="true" />
  </module>
- <module name="fifo_2" kind="altera_avalon_fifo" version="24.1" enabled="1">
+ <module name="fifo_2" kind="altera_avalon_fifo" version="21.1" enabled="1">
   <parameter name="avalonMMAvalonMMDataWidth" value="32" />
   <parameter name="avalonMMAvalonSTDataWidth" value="32" />
   <parameter name="bitsPerSymbol" value="8" />
@@ -1094,7 +1115,7 @@
   <parameter name="useRegister" value="false" />
   <parameter name="useWriteControl" value="true" />
  </module>
- <module name="fifo_3" kind="altera_avalon_fifo" version="24.1" enabled="1">
+ <module name="fifo_3" kind="altera_avalon_fifo" version="21.1" enabled="1">
   <parameter name="avalonMMAvalonMMDataWidth" value="32" />
   <parameter name="avalonMMAvalonSTDataWidth" value="32" />
   <parameter name="bitsPerSymbol" value="8" />
@@ -1115,7 +1136,7 @@
   <parameter name="useRegister" value="false" />
   <parameter name="useWriteControl" value="true" />
  </module>
- <module name="fifo_4" kind="altera_avalon_fifo" version="24.1" enabled="1">
+ <module name="fifo_4" kind="altera_avalon_fifo" version="21.1" enabled="1">
   <parameter name="avalonMMAvalonMMDataWidth" value="32" />
   <parameter name="avalonMMAvalonSTDataWidth" value="32" />
   <parameter name="bitsPerSymbol" value="8" />
@@ -1136,7 +1157,7 @@
   <parameter name="useRegister" value="false" />
   <parameter name="useWriteControl" value="true" />
  </module>
- <module name="fifo_rl" kind="altera_avalon_fifo" version="24.1" enabled="1">
+ <module name="fifo_rl" kind="altera_avalon_fifo" version="21.1" enabled="1">
   <parameter name="avalonMMAvalonMMDataWidth" value="32" />
   <parameter name="avalonMMAvalonSTDataWidth" value="32" />
   <parameter name="bitsPerSymbol" value="32" />
@@ -1160,7 +1181,7 @@
  <module
    name="fifo_ts_pps"
    kind="altera_avalon_fifo"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="avalonMMAvalonMMDataWidth" value="32" />
   <parameter name="avalonMMAvalonSTDataWidth" value="32" />
@@ -1185,7 +1206,7 @@
  <module
    name="fifo_ts_sigA"
    kind="altera_avalon_fifo"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="avalonMMAvalonMMDataWidth" value="32" />
   <parameter name="avalonMMAvalonSTDataWidth" value="32" />
@@ -1207,7 +1228,9 @@
   <parameter name="useRegister" value="false" />
   <parameter name="useWriteControl" value="true" />
  </module>
- <module name="hps_0" kind="altera_hps" version="24.1" enabled="1">
+ <module name="freq_meter_0" kind="freq_meter" version="1.0" enabled="1">
+ </module>
+ <module name="hps_0" kind="altera_hps" version="21.1" enabled="1">
   <parameter name="ABSTRACT_REAL_COMPARE_TEST" value="false" />
   <parameter name="ABS_RAM_MEM_INIT_FILENAME" value="meminit" />
   <parameter name="ACV_PHY_CLK_ADD_FR_PHASE" value="0.0" />
@@ -1737,7 +1760,7 @@
   <parameter name="usb_mp_clk_div" value="0" />
   <parameter name="use_default_mpu_clk" value="true" />
  </module>
- <module name="led_pio" kind="altera_avalon_pio" version="24.1" enabled="1">
+ <module name="led_pio" kind="altera_avalon_pio" version="21.1" enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="false" />
   <parameter name="bitModifyingOutReg" value="false" />
   <parameter name="captureEdge" value="false" />
@@ -1754,7 +1777,7 @@
  <module
    name="mm_clock_crossing_bridge_0"
    kind="altera_avalon_mm_clock_crossing_bridge"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="ADDRESS_UNITS" value="SYMBOLS" />
   <parameter name="ADDRESS_WIDTH" value="10" />
@@ -1768,7 +1791,7 @@
   <parameter name="SYSINFO_ADDR_WIDTH" value="10" />
   <parameter name="USE_AUTO_ADDRESS_WIDTH" value="1" />
  </module>
- <module name="msgdma_1" kind="altera_msgdma" version="24.1" enabled="1">
+ <module name="msgdma_1" kind="altera_msgdma" version="21.1" enabled="1">
   <parameter name="AUTO_DESCRIPTOR_READ_MASTER_ADDRESS_MAP" value="" />
   <parameter
      name="AUTO_DESCRIPTOR_READ_MASTER_ADDRESS_WIDTH"
@@ -1811,7 +1834,7 @@
   <parameter name="TRANSFER_TYPE">Full Word Accesses Only</parameter>
   <parameter name="USE_FIX_ADDRESS_WIDTH" value="1" />
  </module>
- <module name="pb_pio" kind="altera_avalon_pio" version="24.1" enabled="1">
+ <module name="pb_pio" kind="altera_avalon_pio" version="21.1" enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="false" />
   <parameter name="bitModifyingOutReg" value="false" />
   <parameter name="captureEdge" value="false" />
@@ -1825,7 +1848,7 @@
   <parameter name="simDrivenValue" value="0" />
   <parameter name="width" value="2" />
  </module>
- <module name="pio_aux" kind="altera_avalon_pio" version="24.1" enabled="1">
+ <module name="pio_aux" kind="altera_avalon_pio" version="21.1" enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="false" />
   <parameter name="bitModifyingOutReg" value="true" />
   <parameter name="captureEdge" value="false" />
@@ -1839,7 +1862,7 @@
   <parameter name="simDrivenValue" value="0" />
   <parameter name="width" value="8" />
  </module>
- <module name="pio_cfg" kind="altera_avalon_pio" version="24.1" enabled="1">
+ <module name="pio_cfg" kind="altera_avalon_pio" version="21.1" enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="false" />
   <parameter name="bitModifyingOutReg" value="true" />
   <parameter name="captureEdge" value="false" />
@@ -1856,7 +1879,7 @@
  <module
    name="pio_elapsed"
    kind="altera_avalon_pio"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="false" />
   <parameter name="bitModifyingOutReg" value="false" />
@@ -1874,7 +1897,7 @@
  <module
    name="pio_trig_int"
    kind="altera_avalon_pio"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="false" />
   <parameter name="bitModifyingOutReg" value="true" />
@@ -1892,7 +1915,7 @@
  <module
    name="pio_trig_monitor"
    kind="altera_avalon_pio"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="true" />
   <parameter name="bitModifyingOutReg" value="true" />
@@ -1907,7 +1930,7 @@
   <parameter name="simDrivenValue" value="0" />
   <parameter name="width" value="32" />
  </module>
- <module name="pll_core_clk" kind="altera_pll" version="24.1" enabled="1">
+ <module name="pll_core_clk" kind="altera_pll" version="21.1" enabled="1">
   <parameter name="debug_print_output" value="false" />
   <parameter name="debug_use_rbc_taf_method" value="false" />
   <parameter name="device" value="5CSEBA6U23I7" />
@@ -2110,7 +2133,7 @@
   <parameter name="gui_switchover_mode">Automatic Switchover</parameter>
   <parameter name="gui_use_locked" value="true" />
  </module>
- <module name="pll_int_clk" kind="altera_pll" version="24.1" enabled="1">
+ <module name="pll_int_clk" kind="altera_pll" version="21.1" enabled="1">
   <parameter name="debug_print_output" value="false" />
   <parameter name="debug_use_rbc_taf_method" value="false" />
   <parameter name="device" value="5CSEBA6U23I7" />
@@ -2316,7 +2339,7 @@
  <module
    name="pll_reconfig_core_clk"
    kind="altera_pll_reconfig"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="ENABLE_BYTEENABLE" value="false" />
   <parameter name="ENABLE_MIF" value="false" />
@@ -2326,7 +2349,7 @@
  <module
    name="pll_reconfig_int_clk"
    kind="altera_pll_reconfig"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="ENABLE_BYTEENABLE" value="false" />
   <parameter name="ENABLE_MIF" value="false" />
@@ -2336,7 +2359,7 @@
  <module
    name="reset_bridge_0"
    kind="altera_reset_bridge"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="ACTIVE_LOW_RESET" value="0" />
   <parameter name="AUTO_CLK_CLOCK_RATE" value="100000000" />
@@ -2347,7 +2370,7 @@
  <module
    name="reset_controller_0"
    kind="altera_reset_controller"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="MIN_RST_ASSERTION_TIME" value="3" />
   <parameter name="NUM_RESET_INPUTS" value="2" />
@@ -2380,7 +2403,7 @@
  <module name="st_interface_3" kind="st_interface" version="1.0" enabled="1" />
  <module name="st_interface_4" kind="st_interface" version="1.0" enabled="1" />
  <module name="st_mux_1" kind="st_mux" version="1.0" enabled="1" />
- <module name="sw_pio" kind="altera_avalon_pio" version="24.1" enabled="1">
+ <module name="sw_pio" kind="altera_avalon_pio" version="21.1" enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="false" />
   <parameter name="bitModifyingOutReg" value="false" />
   <parameter name="captureEdge" value="false" />
@@ -2397,28 +2420,28 @@
  <module
    name="sysid"
    kind="altera_avalon_sysid_qsys"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="id" value="-842982180" />
  </module>
  <module
    name="sysid_h2f"
    kind="altera_avalon_sysid_qsys"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="id" value="305441741" />
  </module>
  <module
    name="sysid_qsys_0"
    kind="altera_avalon_sysid_qsys"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="id" value="35" />
  </module>
  <module
    name="sysid_qsys_1"
    kind="altera_avalon_sysid_qsys"
-   version="24.1"
+   version="21.1"
    enabled="1">
   <parameter name="id" value="2" />
  </module>
@@ -2427,7 +2450,16 @@
  </module>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
+   start="hps_0.h2f_axi_master"
+   end="freq_meter_0.avalon_slave_0">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x00c0" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="combiner_trig.avs_s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2436,7 +2468,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="combiner_qout.avs_s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2445,7 +2477,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="sysid_h2f.control_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -2454,7 +2486,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="msgdma_1.csr">
   <parameter name="arbitrationPriority" value="1" />
@@ -2463,7 +2495,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="msgdma_1.descriptor_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -2472,7 +2504,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_1.in">
   <parameter name="arbitrationPriority" value="1" />
@@ -2481,7 +2513,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_2.in">
   <parameter name="arbitrationPriority" value="1" />
@@ -2490,7 +2522,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_3.in">
   <parameter name="arbitrationPriority" value="1" />
@@ -2499,7 +2531,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_4.in">
   <parameter name="arbitrationPriority" value="1" />
@@ -2508,7 +2540,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_1.in_csr">
   <parameter name="arbitrationPriority" value="1" />
@@ -2517,7 +2549,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_rl.in_csr">
   <parameter name="arbitrationPriority" value="1" />
@@ -2526,7 +2558,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_2.in_csr">
   <parameter name="arbitrationPriority" value="1" />
@@ -2535,7 +2567,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_3.in_csr">
   <parameter name="arbitrationPriority" value="1" />
@@ -2544,7 +2576,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_4.in_csr">
   <parameter name="arbitrationPriority" value="1" />
@@ -2553,7 +2585,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_ts_pps.in_csr">
   <parameter name="arbitrationPriority" value="1" />
@@ -2562,7 +2594,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_ts_sigA.in_csr">
   <parameter name="arbitrationPriority" value="1" />
@@ -2571,7 +2603,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_rl.out">
   <parameter name="arbitrationPriority" value="1" />
@@ -2580,7 +2612,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_ts_pps.out">
   <parameter name="arbitrationPriority" value="1" />
@@ -2589,7 +2621,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="fifo_ts_sigA.out">
   <parameter name="arbitrationPriority" value="1" />
@@ -2598,7 +2630,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="st_interface_1.s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2607,7 +2639,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="rl_encoder_if.s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2616,7 +2648,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="st_interface_2.s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2625,7 +2657,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="st_interface_3.s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2634,7 +2666,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="st_interface_4.s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2643,7 +2675,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="st_mux_1.s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2652,7 +2684,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_axi_master"
    end="counter_q.s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2661,7 +2693,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="adc_ltc2308.adc_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -2670,7 +2702,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="sysid.control_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -2679,7 +2711,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="sysid_qsys_0.control_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -2688,7 +2720,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="sysid_qsys_1.control_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -2697,7 +2729,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="mm_clock_crossing_bridge_0.s0">
   <parameter name="arbitrationPriority" value="1" />
@@ -2706,7 +2738,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="led_pio.s1">
   <parameter name="arbitrationPriority" value="1" />
@@ -2715,7 +2747,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="pb_pio.s1">
   <parameter name="arbitrationPriority" value="1" />
@@ -2724,7 +2756,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="sw_pio.s1">
   <parameter name="arbitrationPriority" value="1" />
@@ -2733,7 +2765,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="pio_trig_int.s1">
   <parameter name="arbitrationPriority" value="1" />
@@ -2742,7 +2774,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="pio_trig_monitor.s1">
   <parameter name="arbitrationPriority" value="1" />
@@ -2751,7 +2783,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="pio_aux.s1">
   <parameter name="arbitrationPriority" value="1" />
@@ -2760,7 +2792,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="pio_cfg.s1">
   <parameter name="arbitrationPriority" value="1" />
@@ -2769,7 +2801,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="hps_0.h2f_lw_axi_master"
    end="pio_elapsed.s1">
   <parameter name="arbitrationPriority" value="1" />
@@ -2778,7 +2810,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="mm_clock_crossing_bridge_0.m0"
    end="pll_reconfig_core_clk.mgmt_avalon_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -2787,7 +2819,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="mm_clock_crossing_bridge_0.m0"
    end="pll_reconfig_int_clk.mgmt_avalon_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -2796,7 +2828,7 @@
  </connection>
  <connection
    kind="avalon"
-   version="24.1"
+   version="21.1"
    start="msgdma_1.mm_read"
    end="hps_0.f2h_sdram0_data">
   <parameter name="arbitrationPriority" value="1" />
@@ -2805,272 +2837,277 @@
  </connection>
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="st_mux_1.avalon_streaming_source_0"
    end="st_interface_1.avalon_streaming_sink_0" />
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="rl_encoder_if.avalon_streaming_source_0"
    end="fifo_rl.in" />
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="ts_core_pps.avalon_streaming_source_0"
    end="fifo_ts_pps.in" />
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="ts_core_pps.avalon_streaming_source_1"
    end="fifo_ts_sigA.in" />
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="fifo_2.out"
    end="st_interface_2.avalon_streaming_sink_0" />
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="fifo_3.out"
    end="st_interface_3.avalon_streaming_sink_0" />
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="fifo_4.out"
    end="st_interface_4.avalon_streaming_sink_0" />
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="fifo_1.out"
    end="st_mux_1.avalon_streaming_sink_1" />
  <connection
    kind="avalon_streaming"
-   version="24.1"
+   version="21.1"
    start="msgdma_1.st_source"
    end="st_mux_1.avalon_streaming_sink_2" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="clk_0.clk"
    end="mm_clock_crossing_bridge_0.m0_clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="clk_0.clk"
    end="pll_core_clk.refclk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="clk_0.clk"
    end="pll_int_clk.refclk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="reset_bridge_0.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="reset_controller_0.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="sysid.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="led_pio.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="pb_pio.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="sw_pio.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="adc_ltc2308.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="pio_trig_int.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="pio_trig_monitor.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="pio_aux.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="pio_cfg.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="sysid_qsys_0.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="sysid_qsys_1.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="sysid_h2f.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="pio_elapsed.clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="clk_1.clk_in" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="fifo_1.clk_in" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="fifo_2.clk_in" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="fifo_3.clk_in" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="fifo_4.clk_in" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="fifo_rl.clk_in" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="fifo_ts_pps.clk_in" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="fifo_ts_sigA.clk_in" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="combiner_trig.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="st_interface_1.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="msgdma_1.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="st_mux_1.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="st_interface_2.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="st_interface_3.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="st_interface_4.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="rl_encoder_if.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="combiner_qout.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="counter_q.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="ts_core_pps.clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
+   start="pll_core_clk.outclk0"
+   end="freq_meter_0.clock_sink" />
+ <connection
+   kind="clock"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="hps_0.f2h_axi_clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="hps_0.f2h_sdram0_clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="hps_0.h2f_axi_clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="hps_0.h2f_lw_axi_clock" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="pll_reconfig_int_clk.mgmt_clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="pll_reconfig_core_clk.mgmt_clk" />
  <connection
    kind="clock"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.outclk0"
    end="mm_clock_crossing_bridge_0.s0_clk" />
  <connection
    kind="conduit"
-   version="24.1"
+   version="21.1"
    start="pll_reconfig_core_clk.reconfig_from_pll"
    end="pll_core_clk.reconfig_from_pll">
   <parameter name="endPort" value="" />
@@ -3081,7 +3118,7 @@
  </connection>
  <connection
    kind="conduit"
-   version="24.1"
+   version="21.1"
    start="pll_reconfig_int_clk.reconfig_from_pll"
    end="pll_int_clk.reconfig_from_pll">
   <parameter name="endPort" value="" />
@@ -3092,7 +3129,7 @@
  </connection>
  <connection
    kind="conduit"
-   version="24.1"
+   version="21.1"
    start="pll_core_clk.reconfig_to_pll"
    end="pll_reconfig_core_clk.reconfig_to_pll">
   <parameter name="endPort" value="" />
@@ -3103,7 +3140,7 @@
  </connection>
  <connection
    kind="conduit"
-   version="24.1"
+   version="21.1"
    start="pll_reconfig_int_clk.reconfig_to_pll"
    end="pll_int_clk.reconfig_to_pll">
   <parameter name="endPort" value="" />
@@ -3114,204 +3151,209 @@
  </connection>
  <connection
    kind="interrupt"
-   version="24.1"
+   version="21.1"
    start="hps_0.f2h_irq0"
    end="msgdma_1.csr_irq">
   <parameter name="irqNumber" value="1" />
  </connection>
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="clk_0.clk_reset"
    end="reset_bridge_0.in_reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="clk_0.clk_reset"
    end="mm_clock_crossing_bridge_0.m0_reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="clk_0.clk_reset"
    end="pll_core_clk.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="clk_0.clk_reset"
    end="pll_int_clk.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="clk_1.clk_in_reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="pll_reconfig_core_clk.mgmt_reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="pll_reconfig_int_clk.mgmt_reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="sysid.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="led_pio.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="pb_pio.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="sw_pio.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="adc_ltc2308.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="pio_trig_int.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="pio_aux.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="pio_trig_monitor.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="pio_cfg.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="sysid_qsys_0.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="sysid_qsys_1.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="sysid_h2f.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="st_interface_1.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="st_mux_1.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="rl_encoder_if.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="combiner_trig.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="combiner_qout.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="st_interface_2.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="st_interface_3.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="st_interface_4.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="counter_q.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="ts_core_pps.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="pio_elapsed.reset" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="fifo_1.reset_in" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="fifo_rl.reset_in" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="fifo_2.reset_in" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="fifo_3.reset_in" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="fifo_4.reset_in" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="fifo_ts_pps.reset_in" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="fifo_ts_sigA.reset_in" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="msgdma_1.reset_n" />
  <connection
    kind="reset"
-   version="24.1"
+   version="21.1"
+   start="reset_bridge_0.out_reset"
+   end="freq_meter_0.reset_sink" />
+ <connection
+   kind="reset"
+   version="21.1"
    start="reset_bridge_0.out_reset"
    end="mm_clock_crossing_bridge_0.s0_reset" />
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />

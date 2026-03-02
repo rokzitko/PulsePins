@@ -1,5 +1,5 @@
 *.o
 pptool
-ppserver
+ppscpi
 unit_tests
 ._*

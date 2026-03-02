@@ -13,6 +13,8 @@
 #include "ppserver.hh"
 #endif
 
+#include "freq_meter.hh"
+
 // First command line argument is the test number (pptest, ppmstest, ppdmatest)
 auto get_test_number(const InputParser &input)
 {
@@ -761,6 +763,32 @@ void set_clk(const InputParser &input, FPGA &fpga)
   }
 }
 
+int ppfreq(const InputParser &input, const Verbosity &v) {
+  FPGA fpga(input, v);
+  pp_freq_meter fm(input, fpga, false); // false = don't wait
+  if (input.exists("-gate_time")) {
+    auto gate_time = parse_time(input, "-gate_time", "1s");
+    fm.meter.set_gate_time(gate_time);
+  } else {
+    auto gate_len = parse_uint32(input, "-gate_len", "500000");
+    fm.meter.set_gate_len(gate_len);
+  }
+  size_t ctr;
+  FormatDispatch d;
+  d['t'] = [](std::string_view t) { return timestamp_iso8601_utc_ms(); };
+  d['c'] = [&ctr](std::string_view t) { return setw_l(with_underscores(ctr), t); };
+  d['e'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(0), t); };
+  d['i'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(1), t); };
+  d['s'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(2), t); };
+  std::string fmt = "%t %e";
+  const long long nr = parse_uint64(input, "-nr", "0");      // 0 = infinity
+  for (ctr = 0; ctr <= nr || nr == 0; ctr++) {
+    fm.meter.wait_one_gate_time();
+    std::cout << format_with_dispatch(fmt, d) << std::endl;
+  }
+  return RC_OK;
+}
+
 int main(int argc, char *argv[])
 {
   auto progname = get_program_name(argc, argv);
@@ -778,12 +806,15 @@ int main(int argc, char *argv[])
     fpga.status();
   }
   set_clk(input, fpga);
+  pp_freq_meter fm(input, fpga);
+  fm.report();
+
 #ifdef HAS_SERVER
   if (input.exists("-server")) {
     // Bind to a specific interface IP, e.g. "127.0.0.1" or "192.168.1.10".
     // If you want "all interfaces", use "0.0.0.0".
     const auto ip = input.get_string("-ip", "0.0.0.0");
-    const auto port = input.get_uint32("-port", "5555");
+    const auto port = input.get_uint32("-port", 5555);
     const auto protocol = input.exists("-udp") ? Proto::UDP : Proto::TCP;
     LineServer server(ip, port, protocol, process_line);
     server.start();
@@ -806,6 +837,7 @@ int main(int argc, char *argv[])
     {"ppts", ppts},
     {"ppgpsdo", ppgpsdo},
     {"pptemp", pptemp},
+    {"ppfreq", ppfreq},
     {"pphelloworld", pphelloworld}
   };
 

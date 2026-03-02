@@ -322,6 +322,10 @@ logic [`WIDTH_DATA-1:0] counter_q_input_data;
 logic counter_q_input_clock;
 logic counter_q_input_valid;
 
+logic [3:0] freq_meter_0_conduit_end_signal;
+logic freq_meter_0_conduit_end_clock;
+logic freq_meter_0_conduit_end_reset;
+
 logic ts_core_pps_sig;
 logic ts_core_pps_sigA;
 
@@ -499,6 +503,10 @@ base_hps u0 (
 .counter_q_input_clock(counter_q_input_clock),
 .counter_q_input_valid(counter_q_input_valid),
 
+.freq_meter_0_conduit_end_signal(freq_meter_0_conduit_end_signal),
+.freq_meter_0_conduit_end_clock(freq_meter_0_conduit_end_clock),
+.freq_meter_0_conduit_end_reset(freq_meter_0_conduit_end_reset),
+
 .ts_core_pps_conduit_end_sig(ts_core_pps_sig),
 .ts_core_pps_conduit_end_sigA(ts_core_pps_sigA),
 
@@ -558,6 +566,13 @@ presence_detector_async_posedge #(
  .sig_in(streamer_qout_strobe),
  .active(activity)
 );
+
+assign freq_meter_0_conduit_end_signal[0] = clean_clk;    // external clock after PLL cleaning
+assign freq_meter_0_conduit_end_signal[1] = int_clk;      // internal clock generate by the PLL
+assign freq_meter_0_conduit_end_signal[2] = streamer_clk; // currently selected streamer clock
+assign freq_meter_0_conduit_end_signal[3] = core_clk;     // PulsePins core clock
+assign freq_meter_0_conduit_end_clock = ref_clk;          // 50MHz xtal clock
+assign freq_meter_0_conduit_end_reset = reset;            // reset in the ref_clk clock domain
 
 // Onboard LEDs on DE10-Nano
 // Recall: LEDs are not inverted, they show signals as they are.

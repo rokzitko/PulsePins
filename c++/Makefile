@@ -35,7 +35,7 @@ TARGETS = pptool ppscpi
 
 # Symlinks to pptool
 SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
-           ppgpsdo pptemp ppread pphelloworld
+           ppgpsdo pptemp ppfreq ppread pphelloworld
 
 build: pptool ppscpi unit_tests
 
