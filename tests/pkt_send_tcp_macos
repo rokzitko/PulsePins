@@ -1,0 +1,2 @@
+#!/bin/bash
+printf 'print(123)\n' | nc -N $TARGETHOST 5555

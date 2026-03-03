@@ -7,7 +7,12 @@
 #include "ppmisc.hh"
 #include "pptest.hh"
 
+#define HAS_LUA
 #define HAS_SERVER
+
+#ifdef HAS_LUA
+#include "lua.hh"
+#endif
 
 #ifdef HAS_SERVER
 #include "ppserver.hh"
@@ -27,7 +32,6 @@ int pptool(const InputParser &input, const Verbosity &v)
   std::cout << "Done." << std::endl;
   return RC_OK;
 }
-
 
 int pptest(const InputParser &input, const Verbosity &v)
 {
@@ -789,6 +793,8 @@ int ppfreq(const InputParser &input, const Verbosity &v) {
   return RC_OK;
 }
 
+bool exit_flag = false; // for handling exit requests when waiting (-wait)
+
 int main(int argc, char *argv[])
 {
   auto progname = get_program_name(argc, argv);
@@ -808,16 +814,25 @@ int main(int argc, char *argv[])
   set_clk(input, fpga);
   pp_freq_meter fm(input, fpga);
   fm.report();
-
+#ifdef HAS_LUA
+  lua_processor luna(input, v, fpga);
+  luna.test();
+  luna.process_line("print(\"hello\")");
+#endif
 #ifdef HAS_SERVER
+  std::unique_ptr<LineServer> server;
+  std::thread server_thread;
   if (input.exists("-server")) {
     // Bind to a specific interface IP, e.g. "127.0.0.1" or "192.168.1.10".
     // If you want "all interfaces", use "0.0.0.0".
     const auto ip = input.get_string("-ip", "0.0.0.0");
     const auto port = input.get_uint32("-port", 5555);
     const auto protocol = input.exists("-udp") ? Proto::UDP : Proto::TCP;
-    LineServer server(ip, port, protocol, process_line);
-    server.start();
+    if (v.verbose)
+      std::cout << "Binding server to " << (protocol == Proto::UDP ? "UDP" : "TCP") << " port " << port << " @ " << ip << std::endl;
+    server = std::make_unique<LineServer>(ip, port, protocol,
+                                          [&luna](const std::string &line){ luna.process_line(line); });
+    server_thread = std::thread([&] { server->start(); });
   }
 #endif
 
@@ -859,6 +874,16 @@ int main(int argc, char *argv[])
     std::cerr << "\n";
     rc = RC_INVALID_ARG;
   }
+
+  if (input.exists("-wait")) {  // wait forever
+    std::cout << "Waiting for exit." << std::endl;
+    while (!exit_flag)
+      sleep_1ms();
+    std::cout << "Exiting." << std::endl;
+  }
+
+  if (server) server->stop();
+  if (server_thread.joinable()) server_thread.join();
 
   double exit_delay = 0.0;
   if (envVarExists("PP_EXIT_DELAY"))

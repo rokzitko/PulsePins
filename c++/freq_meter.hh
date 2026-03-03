@@ -90,6 +90,9 @@ class pp_freq_meter {
    const InputParser &input;
    FPGA &fpga;
 
+   static constexpr auto cli_rescale = "-freq_rescale";
+   static constexpr auto env_rescale = "PP_FREQ_RESCALE";
+
  public:
    freq_meter meter;
 
@@ -98,6 +101,8 @@ class pp_freq_meter {
      input(_input),
      fpga(_fpga),
      meter(fpga.dev_h2f, FREQ_METER_0_BASE) {
+       if (envVarExists(env_rescale) || input.exists(cli_rescale))
+         meter.set_correction_factor(parse_double(input, cli_rescale, get_env(env_rescale)));
        const auto n_ch = meter.get_n_ch();
        assert(n_ch == 4);
        if (wait)

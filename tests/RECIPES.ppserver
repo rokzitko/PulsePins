@@ -1,0 +1,2 @@
+pptool -server -tcp -wait
+pptool -server -udp -wait
