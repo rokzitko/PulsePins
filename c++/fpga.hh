@@ -116,6 +116,7 @@ class FPGA {
    Elapsed elapsed;
    const InputParser &input;
    const Verbosity &v;
+   inline static std::atomic<bool> constructed {false};
    std::mutex m;
 
    FPGA(const InputParser &_input, const Verbosity &_v, const bool oe = false) :
@@ -131,6 +132,11 @@ class FPGA {
      input(_input),
      v(_v)
      {
+       bool expected = false;
+       if (!constructed.compare_exchange_strong(expected, true,
+                                                std::memory_order_acq_rel)) {
+         throw std::logic_error("FPGA: second instance construction attempted");
+       }
        if (oe) // if false, leave as is
          output_enable(true);
        // blink on-board diagnostic LED on startup
@@ -139,11 +145,17 @@ class FPGA {
        led.off();
      }
 
-   ~FPGA() {
-      if (v.veryverbose) {
-        std::cout << "Elapsed time (since last reset): " << elapsed.seconds() << std::endl;
-      }
+   ~FPGA() noexcept {
+     if (v.veryverbose) {
+       std::cout << "Elapsed time (since last reset): " << elapsed.seconds() << std::endl;
+     }
+     constructed.store(false, std::memory_order_release);
    }
+
+   FPGA(const FPGA&)            = delete;
+   FPGA& operator=(const FPGA&) = delete;
+   FPGA(FPGA&&)                 = delete;
+   FPGA& operator=(FPGA&&)      = delete;
 
    auto status() const {
      auto s = mgr.gpio_read();
