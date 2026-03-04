@@ -45,7 +45,7 @@ int pptest(FPGA &fpga, const InputParser &input, const Verbosity &v)
     pio_out pio_trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE); // Used for trigger circuit testing
     pio_trig_int.write(0); // no trigger signals present initially
     trigger_ext trig_ext(fpga.dev_lw, PIO_TRIG_MONITOR_BASE);
-    tests t(s, rb, ctr, pio_trig_int, trig_ext, input, v);
+    tests t(fpga, s, rb, ctr, pio_trig_int, trig_ext, input, v);
     rc = t.run(test);
   }
   catch (const char *e) {

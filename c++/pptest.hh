@@ -13,12 +13,9 @@
 #include "parser.hh"
 #include "sequence.hh"
 
-// For coordinating FPGA access from multiple threads
-bool use_locks = true;
-std::mutex mx;
-
 class tests {
  public:
+   FPGA &fpga;
    streamer &s;
    readback &rb;
    counter &ctr;
@@ -28,6 +25,7 @@ class tests {
    streamer_fifo &fifo;  // s.fifo
    streamer_control &sc; // s.sc
    const Verbosity &verb;
+   bool use_locks = true;
 
    // **** Basic tests for streaming out data
    int test0() {
@@ -443,14 +441,15 @@ class tests {
 
    static const size_t polling_sleep_time = 10;
 
-   static void writer(streamer_fifo &fifo, streamer_control &sc, const InputParser &input, const Verbosity &v, Sequence &elements) {
+   static void writer(FPGA &fpga, streamer_fifo &fifo, streamer_control &sc, const InputParser &input,
+                      const Verbosity &v, Sequence &elements, const bool use_locks) {
      const auto max_block_len = parse_count(input, "-c", "1000000");
      const auto nr = parse_value(input, "-v", "0"); // 0 = infinity
      value_t value = 0;
      const bool rnd = input.exists("-rnd");
      value_t previous_value = 0; // for randomized tests to prevent collisions
      for (unsigned long i = 0; nr == 0 || i < nr; i++) {
-       if (use_locks) mx.lock();
+       if (use_locks) fpga.lock();
        if (rnd) {
          do {
            value = random_u32();
@@ -463,18 +462,19 @@ class tests {
        elements.push_back(e);
        if (i == 10)
          sc.trigger_force();
-       if (use_locks) mx.unlock();
+       if (use_locks) fpga.unlock();
        usleep(polling_sleep_time);
        previous_value = value;
      }
      auto e = el();
-     if (use_locks) mx.lock();
+     if (use_locks) fpga.lock();
      fifo.out(e, v.verbose);
-     if (use_locks) mx.unlock();
+     if (use_locks) fpga.unlock();
      //  elements.push_back(e);
    }
 
-   static int reader(readback &rb, const InputParser &input, const Verbosity &v, Sequence &elements) {
+   static int reader(FPGA &fpga, readback &rb, const InputParser &input,
+                     const Verbosity &v, Sequence &elements, const bool use_locks) {
      const int reporting_period = parse_uint32(input, "-report", "1"); // seconds
      Throttler thr(reporting_period);
      Timer t;
@@ -482,7 +482,7 @@ class tests {
      uint64_t len = 0; // can get big!
      size_t n_error = 0;
      while (1) {
-       if (use_locks) mx.lock();
+       if (use_locks) fpga.lock();
        auto fill = rb.filled();
        if (fill > 0) {
          auto e = rb.read();
@@ -501,7 +501,7 @@ class tests {
          });
          fill = rb.filled();
        }
-       if (use_locks) mx.unlock();
+       if (use_locks) fpga.unlock();
        usleep(polling_sleep_time);
        if (n && elements.empty()) {
          std::cout << "Checker report: " << n_error << " errors for " << n << " elements checked, error ratio=" << double(n_error)/n << std::endl;
@@ -519,8 +519,8 @@ class tests {
        use_locks = false;
        if (verb.verbose) std::cout << "Locking disabled." << std::endl;
      }
-     std::thread wr(writer, std::ref(fifo), std::ref(sc), std::ref(input), std::ref(verb), std::ref(elements));
-     auto rc = std::async(std::launch::async, reader, std::ref(rb), std::ref(input), std::ref(verb), std::ref(elements));
+     std::thread wr(writer, std::ref(fpga), std::ref(fifo), std::ref(sc), std::ref(input), std::ref(verb), std::ref(elements), use_locks);
+     auto rc = std::async(std::launch::async, reader, std::ref(fpga), std::ref(rb), std::ref(input), std::ref(verb), std::ref(elements), use_locks);
      wr.join();
      return rc.get();
    }
@@ -541,8 +541,8 @@ class tests {
      return rc;
    }
 
-   tests(streamer &_s, readback &_rb, counter &_ctr, pio_out &_pio, trigger_ext &_trig_ext, const InputParser &_input, const Verbosity &_v) :
-     s(_s), rb(_rb), ctr(_ctr), pio(_pio), trig_ext(_trig_ext), input(_input), fifo(s.fifo), sc(s.sc), verb(_v) {}
+   tests(FPGA &_fpga, streamer &_s, readback &_rb, counter &_ctr, pio_out &_pio, trigger_ext &_trig_ext, const InputParser &_input, const Verbosity &_v) :
+     fpga(_fpga), s(_s), rb(_rb), ctr(_ctr), pio(_pio), trig_ext(_trig_ext), input(_input), fifo(s.fifo), sc(s.sc), verb(_v) {}
 
    int run(int test) {
      std::cout << "Requested test " << std::dec << test << std::endl;
