@@ -9,6 +9,9 @@
 #include <iomanip>
 #include <bitset>
 #include <unistd.h>
+#include <mutex>
+#include <atomic>
+#include <stdexcept>
 
 #include "socal/alt_fpgamgr.h"
 
@@ -113,8 +116,9 @@ class FPGA {
    Elapsed elapsed;
    const InputParser &input;
    const Verbosity &v;
+   std::mutex m;
 
-   FPGA(const InputParser &_input, const Verbosity &_v, const bool oe = true) :
+   FPGA(const InputParser &_input, const Verbosity &_v, const bool oe = false) :
      dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE),
      dev_h2f(HPSFPGA_OFST, H2F_RANGE),
      dev_hps(HPS_REGS_OFST, HPS_REGS_RANGE),
@@ -158,7 +162,7 @@ class FPGA {
      return s;
    }
 
-   void output_enable(const bool oe = false) {
+   void output_enable(const bool oe = true) {
      pio_cfg.write_at(0, oe);
    }
 
@@ -198,5 +202,9 @@ class FPGA {
 
    void sel_clk_int() {
      sel_clk(ch_int);
+   }
+
+   auto acquire_lock() {
+     return std::unique_lock<std::mutex>(m);
    }
 };

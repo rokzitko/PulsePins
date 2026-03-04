@@ -26,19 +26,17 @@ auto get_test_number(const InputParser &input)
   return input.first_arg_int().value_or(1);
 }
 
-int pptool(const InputParser &input, const Verbosity &v)
+int pptool(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   std::cout << "Done." << std::endl;
   return RC_OK;
 }
 
-int pptest(const InputParser &input, const Verbosity &v)
+int pptest(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   const int test = get_test_number(input);
   int rc = RC_OK; // return code
   try {
-    FPGA fpga(input, v);
     streamer s(input, fpga);
     trigger tr(input, fpga);
     readback rb(input, fpga);
@@ -58,12 +56,11 @@ int pptest(const InputParser &input, const Verbosity &v)
 
 #include "ppmstest.hh"
 
-int ppmstest(const InputParser &input, const Verbosity &v)
+int ppmstest(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   const int test = get_test_number(input);
   int rc = RC_OK; // return code
   try {
-    FPGA fpga(input, v);
     multistreamer s(input, fpga);
     qout q(input, v, fpga);
     readback rb(input, fpga);
@@ -80,12 +77,11 @@ int ppmstest(const InputParser &input, const Verbosity &v)
 
 #include "ppdmatest.hh"
 
-int ppdmatest(const InputParser &input, const Verbosity &v)
+int ppdmatest(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   const int test = get_test_number(input);
   int rc = RC_OK; // return code
   try {
-    FPGA fpga(input, v);
     dma_streamer s(input, fpga);
     readback rb(input, fpga);
     counter ctr(input, fpga);
@@ -112,9 +108,8 @@ std::pair<trigger_t, trigger_t> get_trigger_pm(const InputParser &input, const b
 }
 
 // Frequency generator
-int ppfg(const InputParser &input, const Verbosity &v)
+int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   streamer s(input, fpga); // must be called first to setup the PLL
 
   // Determine signal lengths based on period/frequency and duty cycle settings
@@ -217,9 +212,8 @@ count_t calc_duration_nr(const double duration_req,
   return nr;
 }
 
-int ppdelay(const InputParser &input, const Verbosity &v)
+int ppdelay(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   streamer s(input, fpga);
   trigger tr(input, fpga);
   const auto [p, m] = get_trigger_pm(input, v.verbose);
@@ -239,16 +233,14 @@ int ppdelay(const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-int ppreset(const InputParser &input, const Verbosity &v)
+int ppreset(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   streamer s(input, fpga); // reset is performed in streamer constructor
   return RC_OK;
 }
 
-int pptrig(const InputParser &input, const Verbosity &v)
+int pptrig(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   streamer s(input, fpga);
   trigger tr(input, fpga);
   pio_out pio_trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE); // for testing internal trigger path
@@ -268,9 +260,8 @@ int pptrig(const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-int ppqout(const InputParser &input, const Verbosity &verb)
+int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
 {
-  FPGA fpga(input, verb);
   multistreamer s(input, fpga);
   qout q(input, verb, fpga);
   if (input.exists("-self_test")) {
@@ -388,9 +379,8 @@ int ppqout(const InputParser &input, const Verbosity &verb)
   return RC_OK;
 }
 
-int ppaux(const InputParser &input, const Verbosity &v)
+int ppaux(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   pio_in pio_aux(fpga.dev_lw, PIO_AUX_BASE);
   const auto nr = parse_uint64(input, "-nr", "0");            // 0 = infinity
   const auto wait = parse_double(input, "-wait", "0.5");      // in seconds
@@ -419,10 +409,9 @@ int ppaux(const InputParser &input, const Verbosity &v)
 
 #include "counter.hh"
 
-int ppcounter(const InputParser &input, const Verbosity &v)
+int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   int rc = 0;
-  FPGA fpga(input, v);
   streamer s(input, fpga);
   counter ctr(input, fpga);
   ctr.reset_all();
@@ -443,9 +432,8 @@ int ppcounter(const InputParser &input, const Verbosity &v)
   return rc;
 }
 
-int ppread(const InputParser &input, const Verbosity &v)
+int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v, false);       // false=do not automatically assert the output enable signal
   if (input.exists("-oe")) { // if -oe not specified, leave as is!
     const bool oe = parse_bool(input, "-oe", "0");
     fpga.output_enable(oe);
@@ -494,9 +482,8 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
   }
 }
 
-int ppts(const InputParser &input, const Verbosity &v)
+int ppts(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   rstmgr rm;
   rm.s2f_reset(); // FPGA fabric reset
   timestamp ts(fpga.dev_h2f,
@@ -604,9 +591,8 @@ template <typename T>
      }
 };
 
-int ppgpsdo(const InputParser &input, const Verbosity &v)
+int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   rstmgr rm;
   rm.s2f_reset(); // FPGA fabric reset
   timestamp ts(fpga.dev_h2f,
@@ -701,7 +687,7 @@ int ppgpsdo(const InputParser &input, const Verbosity &v)
 
 #include "MCP9808.hh"
 
-int pptemp(const InputParser &input, const Verbosity &v)
+int pptemp(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   Args args;
   MCP9808::print_csv_header(args, std::cout);
@@ -726,9 +712,8 @@ int pptemp(const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-int pphelloworld(const InputParser &input, const Verbosity &v)
+int pphelloworld(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
-  FPGA fpga(input, v);
   streamer s(input, fpga);
   Sequence seq;
   seq.push_back(el(500, ~0).store(0));
@@ -767,8 +752,7 @@ void set_clk(const InputParser &input, FPGA &fpga)
   }
 }
 
-int ppfreq(const InputParser &input, const Verbosity &v) {
-  FPGA fpga(input, v);
+int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
   pp_freq_meter fm(input, fpga, false); // false = don't wait
   if (input.exists("-gate_time")) {
     auto gate_time = parse_time(input, "-gate_time", "1s");
@@ -836,7 +820,7 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  static const std::map<std::string, std::function<int(const InputParser&,const Verbosity&)>> actions{
+  static const std::map<std::string, std::function<int(FPGA &, const InputParser&, const Verbosity&)>> actions{
     {"pptool", pptool},
     {"pptest", pptest},
     {"ppmstest", ppmstest},
@@ -859,7 +843,7 @@ int main(int argc, char *argv[])
   int rc = RC_OK;
   if (auto it = actions.find(progname); it != actions.end()) {
     try {
-      rc = it->second(input, v);
+      rc = it->second(fpga, input, v);
       std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
     }
     catch (const char *e) {
