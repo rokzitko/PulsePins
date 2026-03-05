@@ -97,6 +97,12 @@ class lua_processor {
          return 1; // number of return values
        });
        lua_setglobal(L, "get_capture");
+       lua_push_function_object(L, [&](lua_State *L) -> int {
+         int p = luaL_checknumber(L, 1);
+         fpga.trig_int.trig(p);
+         return 0;
+       });
+       lua_setglobal(L, "trig");
      }
 
    ~lua_processor() {
