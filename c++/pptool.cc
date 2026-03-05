@@ -42,10 +42,9 @@ int pptest(FPGA &fpga, const InputParser &input, const Verbosity &v)
     readback rb(input, fpga);
     counter ctr(input, fpga);
     ctr.reset_all();
-    pio_out pio_trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE); // Used for trigger circuit testing
-    pio_trig_int.write(0); // no trigger signals present initially
+    trigger_int trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE);
     trigger_ext trig_ext(fpga.dev_lw, PIO_TRIG_MONITOR_BASE);
-    tests t(fpga, s, rb, ctr, pio_trig_int, trig_ext, input, v);
+    tests t(fpga, s, rb, ctr, trig_int, trig_ext, input, v);
     rc = t.run(test);
   }
   catch (const char *e) {
@@ -64,9 +63,8 @@ int ppmstest(FPGA &fpga, const InputParser &input, const Verbosity &v)
     multistreamer s(input, fpga);
     qout q(input, v, fpga);
     readback rb(input, fpga);
-    pio_out pio_trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE);
-    pio_trig_int.write(0); // no trigger signals present initially
-    mstests t(s, q, rb, pio_trig_int, input, v);
+    trigger_int trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE);
+    mstests t(s, q, rb, trig_int, input, v);
     rc = t.run(test);
   }
   catch (const char *e) {
@@ -243,9 +241,9 @@ int pptrig(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   streamer s(input, fpga);
   trigger tr(input, fpga);
-  pio_out pio_trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE); // for testing internal trigger path
+  trigger_int trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE, false);
   auto p = parse_uint32(input, "-pio", "0");
-  pio_trig_int.write(p);
+  trig_int.write(p);
   if (v.veryverbose) {
     auto report = [](std::string s, value_t v) {
       std::cout << "tr(" << s << ")=0x" << std::hex << std::setfill('0') << std::setw(2) << (v && 0xFF) << " " << std::bitset<WIDTH_TRIGGER>(v) << std::endl;

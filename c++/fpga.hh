@@ -36,6 +36,8 @@ static_assert(ALT_FPGAMGR_BASE == ALT_FPGAMGR_OFST);
 #include "memory.hh"
 #include "verbosity.hh"
 
+class trigger;
+
 class MGR {
  private:
    loc stat;

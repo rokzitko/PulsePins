@@ -174,12 +174,12 @@ int send_and_trig(Transport &tr,
   sleep_1ms();
   value_t final_qout = sc.get_qout();
   const bool match = final_qout == final;
-  std::cout << "send_and_trig(): Final qout=" << "0x" << std::hex << final_qout << "=" << std::dec << final_qout;
+  std::cout << "send_and_trig(): Final qout=" << hex8(final_qout) << " [" << dec13(final_qout) << "]";
   if (match) {
     std::cout << " OK" << std::endl;
   } else {
     if (!(envVarExists("PP_IGNORE_QOUT_FINAL") || input.exists("-pp_ignore_qout_final"))) {
-      std::cout << red << " Mismatch: expecting 0x" << std::hex << final << rst << std::endl;
+      std::cout << red << " Mismatch: expecting " << hex8(final) << rst << std::endl;
       rc |= RC_ERROR_QOUT_FINAL;
     }
   }

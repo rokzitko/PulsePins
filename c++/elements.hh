@@ -13,6 +13,7 @@
 #include "tidbit.hh"
 #include "misc.hh"
 #include "config.h"
+#include "format.hh"
 
 // Element types: regular (value update), trigger conditions, replay, sequence terminator, retrigger, random
 enum class el_type { regular, trigger, replay, final, retrig, prng };
@@ -23,20 +24,6 @@ const std::string finalstring = "(final)"s;
 const std::string retrigstring = "(retrig)"s;
 const std::string triggerstring = "(trigger)"s;
 const std::string prngstring = "(PRNG)"s;
-
-// uint32_t as 0x00112233, zero padded
-std::string hex8(uint32_t x) {
-  std::stringstream ss;
-  ss << "0x" << std::setw(8) << std::setfill('0') << std::hex << x;
-  return ss.str();
-}
-
-// uint32_t as 1_234_567_890, right aligned
-std::string dec13(uint32_t x) {
-  std::stringstream ss;
-  ss << std::setw(13) << std::setfill(' ') << with_underscores(x);
-  return ss.str();
-}
 
 // base wrapper class for storing the count value
 class Counter {

@@ -19,7 +19,7 @@ class tests {
    streamer &s;
    readback &rb;
    counter &ctr;
-   pio_out &pio;
+   trigger_int &trig_int;
    trigger_ext &trig_ext;
    const InputParser &input;
    streamer_fifo &fifo;  // s.fifo
@@ -256,14 +256,14 @@ class tests {
    }
 
    // **** Triggering tests
-   static void trig12(pio_out &p, const InputParser &input) {
+   static void trig12(trigger_int &trig_int, const InputParser &input) {
      if (input.exists("-trig")) {
        constexpr int delay = 100*1000;
        usleep(delay);
-       p.write(1);
+       trig_int.write(1);
        std::cout << "## Trigger sequence emitted." << std::endl;
        usleep(delay);
-       p.write(0);
+       trig_int.write(0);
      }
    }
 
@@ -276,24 +276,24 @@ class tests {
      auto c = parse_count(input, "-c", "1");
      auto v = parse_value(input, "-v", "0b11");
      elements.push_back(el(c, v));
-     std::thread trig(trig12, std::ref(pio), std::ref(input));
+     std::thread trig(trig12, std::ref(trig_int), std::ref(input));
      int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb);
      trig.join();
      return rc;
    }
 
-   static void trig13(pio_out &pio, const InputParser &input) {
+   static void trig13(trigger_int &trig_int, const InputParser &input) {
      if (input.exists("-trig")) {
        auto p = parse_trigger(input, "-p", "0b01");
        auto r = parse_trigger(input, "-r", "0b10");
        constexpr int delay = 200*1000;
        usleep(delay);
-       pio.write(p);
+       trig_int.write(p);
        usleep(delay);
-       pio.write(r);
+       trig_int.write(r);
        std::cout << "## Trigger sequence emitted." << std::endl;
        usleep(delay);
-       pio.write(0);
+       trig_int.write(0);
      }
    }
 
@@ -309,13 +309,13 @@ class tests {
      auto c = parse_count(input, "-c", "1");
      auto v = parse_value(input, "-v", "0b11");
      elements.push_back(el(c, v));
-     std::thread trig(trig13, std::ref(pio), std::ref(input));
+     std::thread trig(trig13, std::ref(trig_int), std::ref(input));
      int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb);
      trig.join();
      return rc;
    }
 
-   static void trig14(pio_out &pio, const InputParser &input) {
+   static void trig14(trigger_int &trig_int, const InputParser &input) {
      if (input.exists("-trig")) {
        const auto cycles = parse_uint32(input, "-cycles", "10");
        const auto p = parse_trigger(input, "-p", "0b01");
@@ -323,13 +323,13 @@ class tests {
        const auto delay = parse_uint32(input, "-delay", "10000");
        for (uint32_t i = 0; i < cycles; i++) {
          usleep(delay);
-         pio.write(p);
+         trig_int.write(p);
          usleep(delay);
-         pio.write(r);
+         trig_int.write(r);
        }
        std::cout << "## Trigger sequence emitted." << std::endl;
        usleep(delay);
-       pio.write(0);
+       trig_int.write(0);
      }
    }
 
@@ -348,13 +348,13 @@ class tests {
      const auto c = parse_count(input, "-c", "1");
      const auto v = parse_value(input, "-v", "0b11");
      elements.push_back(el(c, v));
-     std::thread trig(trig14, std::ref(pio), std::ref(input));
+     std::thread trig(trig14, std::ref(trig_int), std::ref(input));
      const int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb);
      trig.join();
      return rc;
    }
 
-   static void trig15(pio_out &pio, const InputParser &input) {
+   static void trig15(trigger_int &trig_int, const InputParser &input) {
      if (input.exists("-trig")) {
        const auto cycles = parse_uint32(input, "-cycles", "10");
        const auto p = parse_trigger(input, "-p", "0b01");
@@ -362,11 +362,11 @@ class tests {
        const auto delay = parse_uint32(input, "-delay", "100000"); // 100ms
        for (uint32_t i = 0; i < cycles; i++) {
          usleep(delay);
-         pio.write(i % 2 == 0 ? p : r);
+         trig_int.write(i % 2 == 0 ? p : r);
        }
        std::cout << "## Trigger sequence emitted." << std::endl;
        usleep(delay);
-       pio.write(0);
+       trig_int.write(0);
      }
    }
 
@@ -392,7 +392,7 @@ class tests {
        if (i < cycles-1)
          elements.push_back(el(Retrig{}));
      }
-     std::thread trig(trig15, std::ref(pio), std::ref(input));
+     std::thread trig(trig15, std::ref(trig_int), std::ref(input));
      const int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb);
      trig.join();
      return rc;
@@ -547,8 +547,8 @@ class tests {
      return rc;
    }
 
-   tests(FPGA &_fpga, streamer &_s, readback &_rb, counter &_ctr, pio_out &_pio, trigger_ext &_trig_ext, const InputParser &_input, const Verbosity &_v) :
-     fpga(_fpga), s(_s), rb(_rb), ctr(_ctr), pio(_pio), trig_ext(_trig_ext), input(_input), fifo(s.fifo), sc(s.sc), verb(_v) {}
+   tests(FPGA &_fpga, streamer &_s, readback &_rb, counter &_ctr, trigger_int &_trig_int, trigger_ext &_trig_ext, const InputParser &_input, const Verbosity &_v) :
+     fpga(_fpga), s(_s), rb(_rb), ctr(_ctr), trig_int(_trig_int), trig_ext(_trig_ext), input(_input), fifo(s.fifo), sc(s.sc), verb(_v) {}
 
    int run(int test) {
      std::cout << "Requested test " << std::dec << test << std::endl;
