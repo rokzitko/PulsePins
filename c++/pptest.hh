@@ -441,13 +441,17 @@ class tests {
 
    static const size_t polling_sleep_time = 10;
 
+   // Writes to the streamer, and adds the same elements to Sequence 'elements' for verification in a
+   // separate thread. See function reader() below.
    static void writer(FPGA &fpga, streamer_fifo &fifo, streamer_control &sc, const InputParser &input,
                       const Verbosity &v, Sequence &elements, const bool use_locks) {
-     const auto max_block_len = parse_count(input, "-c", "1000000");
      const auto nr = parse_value(input, "-v", "0"); // 0 = infinity
      value_t value = 0;
      const bool rnd = input.exists("-rnd");
      value_t previous_value = 0; // for randomized tests to prevent collisions
+     const bool log_len = input.exists("-log_len");
+     const auto min_len = parse_count(input, "-cmin", "1");
+     const auto max_len = parse_count(input, "-c", "1000000");
      for (unsigned long i = 0; nr == 0 || i < nr; i++) {
        if (use_locks) fpga.lock();
        if (rnd) {
@@ -457,7 +461,9 @@ class tests {
        } else {
          value = i;
        }
-       el e{(random_u32() % max_block_len) + 1, value}; // blocks of random length
+       // blocks of random length
+       count_t len = (log_len ? random_log_uniform(min_len, max_len) : random_lin_uniform(min_len, max_len));
+       el e{len, value};
        fifo.out(e, v.verbose);
        elements.push_back(e);
        if (i == 10)

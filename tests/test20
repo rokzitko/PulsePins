@@ -7,3 +7,5 @@ pptest 20 -c 100_000 -v 2_000 -rnd -quiet
 pptest 20 -c 10_000 -v 20_000 -rnd -quiet
 # Long test! 100s for 100MHz streaming clock
 pptest 20 -c 100_000 -v 200_000 -rnd -quiet
+# Log distribution
+pptest 20 -c 50_000_000 -cmin 10000 -v 50 -rnd -log_len -quiet

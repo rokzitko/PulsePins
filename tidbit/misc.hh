@@ -356,6 +356,20 @@ uint32_t random_u32() {
   return gen();  // already uniform over [0, 2^32-1]
 }
 
+uint32_t random_log_uniform(uint32_t min_len, uint32_t max_len) {
+  if (!(min_len > 0) || !(max_len > min_len))
+    throw std::invalid_argument("Require 0 < min_len < max_len.");
+  // u in [0,1): divide by 2^32
+  constexpr double inv_2p32 = 1.0 / 4294967296.0; // 2^32
+  const double u = static_cast<double>(random_u32()) * inv_2p32;
+  // x = min_len * (max_len/min_len)^u
+  return min_len * std::exp(u * std::log(double(max_len) / double(min_len)));
+}
+
+uint32_t random_lin_uniform(uint32_t min_len, uint32_t max_len) {
+  return (random_u32() % max_len) + min_len;
+}
+
 // Shift Left Logical (SLL)
 inline uint32_t sll(uint32_t value, unsigned int shamt) {
   return (shamt < 32) ? (value << shamt) : 0u;
