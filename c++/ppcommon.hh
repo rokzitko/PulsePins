@@ -34,6 +34,8 @@
 #include "realtime.hh"
 #include "combiner.hh"
 #include "trigger.hh"
+#include "trigger_ext.hh"
+#include "trigger_int.hh"
 #include "qout.hh"
 #include "st_mux.hh"
 #include "pll_clk.hh"
