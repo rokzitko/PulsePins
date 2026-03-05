@@ -35,6 +35,8 @@ static_assert(ALT_FPGAMGR_BASE == ALT_FPGAMGR_OFST);
 #include "tidbit.hh"
 #include "memory.hh"
 #include "verbosity.hh"
+#include "trigger_int.hh"
+#include "trigger_ext.hh"
 
 class MGR {
  private:
@@ -118,6 +120,8 @@ class FPGA {
    const Verbosity &v;
    inline static std::atomic<bool> constructed {false};
    std::mutex m;
+   trigger_int trig_int;
+   trigger_ext trig_ext;
 
    FPGA(const InputParser &_input, const Verbosity &_v, const bool oe = false) :
      dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE),
@@ -130,7 +134,9 @@ class FPGA {
      pio_cfg(dev_lw, PIO_CFG_BASE),
      elapsed(dev_lw, PIO_ELAPSED_BASE),
      input(_input),
-     v(_v)
+     v(_v),
+     trig_int(dev_lw, PIO_TRIG_INT_BASE),
+     trig_ext(dev_lw, PIO_TRIG_MONITOR_BASE)
      {
        bool expected = false;
        if (!constructed.compare_exchange_strong(expected, true,

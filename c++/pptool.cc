@@ -42,9 +42,7 @@ int pptest(FPGA &fpga, const InputParser &input, const Verbosity &v)
     readback rb(input, fpga);
     counter ctr(input, fpga);
     ctr.reset_all();
-    trigger_int trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE);
-    trigger_ext trig_ext(fpga.dev_lw, PIO_TRIG_MONITOR_BASE);
-    tests t(fpga, s, rb, ctr, trig_int, trig_ext, input, v);
+    tests t(fpga, s, rb, ctr, input, v);
     rc = t.run(test);
   }
   catch (const char *e) {

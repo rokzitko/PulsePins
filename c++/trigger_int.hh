@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include "pio.hh"
+#include "config.h"
+
 constexpr uint32_t set_low8(uint32_t x, uint8_t b) noexcept {
       return (x & 0xFFFFFF00u) | static_cast<uint32_t>(b);
 }

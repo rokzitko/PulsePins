@@ -547,8 +547,8 @@ class tests {
      return rc;
    }
 
-   tests(FPGA &_fpga, streamer &_s, readback &_rb, counter &_ctr, trigger_int &_trig_int, trigger_ext &_trig_ext, const InputParser &_input, const Verbosity &_v) :
-     fpga(_fpga), s(_s), rb(_rb), ctr(_ctr), trig_int(_trig_int), trig_ext(_trig_ext), input(_input), fifo(s.fifo), sc(s.sc), verb(_v) {}
+   tests(FPGA &_fpga, streamer &_s, readback &_rb, counter &_ctr, const InputParser &_input, const Verbosity &_v) :
+     fpga(_fpga), s(_s), rb(_rb), ctr(_ctr), trig_int(fpga.trig_int), trig_ext(fpga.trig_ext), input(_input), fifo(s.fifo), sc(s.sc), verb(_v) {}
 
    int run(int test) {
      std::cout << "Requested test " << std::dec << test << std::endl;
