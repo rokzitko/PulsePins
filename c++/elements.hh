@@ -24,6 +24,20 @@ const std::string retrigstring = "(retrig)"s;
 const std::string triggerstring = "(trigger)"s;
 const std::string prngstring = "(PRNG)"s;
 
+// uint32_t as 0x00112233, zero padded
+std::string hex8(uint32_t x) {
+  std::stringstream ss;
+  ss << "0x" << std::setw(8) << std::setfill('0') << std::hex << x;
+  return ss.str();
+}
+
+// uint32_t as 1_234_567_890, right aligned
+std::string dec13(uint32_t x) {
+  std::stringstream ss;
+  ss << std::setw(13) << std::setfill(' ') << with_underscores(x);
+  return ss.str();
+}
+
 // base wrapper class for storing the count value
 class Counter {
  protected:
@@ -34,7 +48,7 @@ class Counter {
    count_t count() const noexcept { return c; }
    virtual std::string count_str() const {
      std::stringstream ss;
-     ss << "count=0x" << std::hex << count() << " [" << std::dec << count() << "]";
+     ss << "count=" << hex8(count()) << " [" << dec13(count()) << "]";
      return ss.str();
    }
    virtual control_t control_bits() const { return 0; } // corresponding control bits (that need to be or'd in)
@@ -85,7 +99,7 @@ class Value
    value_t value() const { return v; }
    virtual std::string value_str() const{
      std::stringstream ss;
-     ss << "value=0x" << std::hex << value() << " [" << std::dec << value() << "] ";
+     ss << "value=" << hex8(value()) << " [" << dec13(value()) << "]";
      return ss.str();
    }
    virtual value_t result(const value_t v_prev) const { return v; }
