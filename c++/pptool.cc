@@ -139,9 +139,10 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
 
   // Gate settings
   s.sc.set_gating_from_string(input.get_string("-gate", ""));
+  const double delay_between_readings = 0.1; // in seconds
   if (input.exists("-gate_debug")) {
     for (;;) {
-      sleep(0.1);
+      sleep(delay_between_readings);
       std::cout << "Gate: " << s.sc.gate_status_string() << std::endl;
     }
   }
@@ -273,7 +274,6 @@ int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
   s.s2.sc.qout_set(parse_value(input, "-q2", "0"));
   s.s3.sc.qout_set(parse_value(input, "-q3", "0"));
   s.s4.sc.qout_set(parse_value(input, "-q4", "0"));
-  sleep_1us();
   auto report = [](const std::string s, const value_t v) {
     std::cout << "qout(" << s << ")=0x" << std::hex << std::setfill('0') << v << " " << std::bitset<WIDTH_DATA>(v) << std::endl;
   };

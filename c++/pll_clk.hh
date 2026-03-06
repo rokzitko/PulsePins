@@ -12,7 +12,7 @@
 #include "pll_rules.hh"
 #include "parser.hh"
 
-// PLL clocks. It uses environment variables (CORE|INT)_PLL, or the -(core|int)_pll command line switch.
+// PLL clocks. It uses environment variables PP_(CORE|INT)_PLL, or the -(core|int)_pll command line switch.
 // Command line switch takes precedence.
 
 constexpr int pll_delay = 2*1000;  // 2ms delay for things to settle (docs say 500us is worst case)
@@ -27,7 +27,7 @@ class pll_core_clk {
      core_clk(fpga.dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
 
    void set_core_clk(const InputParser &input, const Verbosity &v) {
-     core_clk.set_from_string(applyReplacement(input.get_string("-core_pll", get_env("CORE_PLL")), pll_rules));
+     core_clk.set_from_string(applyReplacement(input.get_string("-core_pll", get_env("PP_CORE_PLL")), pll_rules));
      if (input.exists("-core_pll_charge_pump"))
        core_clk.set_charge_pump(input.get_uint32("-core_pll_charge_pump", 1));
      if (input.exists("-core_pll_bandwidth"))
@@ -50,7 +50,7 @@ class pll_int_clk {
      int_clk(fpga.dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
 
    void set_int_clk(const InputParser &input, const Verbosity &v) {
-     int_clk.set_from_string(applyReplacement(input.get_string("-int_pll", get_env("INT_PLL")), pll_rules));
+     int_clk.set_from_string(applyReplacement(input.get_string("-int_pll", get_env("PP_INT_PLL")), pll_rules));
      if (input.exists("-int_pll_charge_pump"))
        int_clk.set_charge_pump(input.get_uint32("-int_pll_charge_pump", 1));
      if (input.exists("-int_pll_bandwidth"))

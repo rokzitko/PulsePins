@@ -85,6 +85,11 @@ class freq_meter {
    }
 };
 
+constexpr int METER_EXT_CLK = 0;
+constexpr int METER_INT_CLK = 1;
+constexpr int METER_STREAMER_CLK = 2;
+constexpr int METER_CORE_CLK = 3;
+
 class pp_freq_meter {
  private:
    const InputParser &input;
@@ -107,12 +112,13 @@ class pp_freq_meter {
        assert(n_ch == 4);
        if (wait)
          meter.wait_one_gate_time();
+       fpga.set_streamer_clk(meter.read_freq(METER_STREAMER_CLK));
      }
 
    void report() {
-     std::cout << "ext_clk      " << meter.read_freq_str(0) << std::endl;
-     std::cout << "int_clk      " << meter.read_freq_str(1) << std::endl;
-     std::cout << "streamer_clk " << meter.read_freq_str(2) << std::endl;
-     std::cout << "core_clk     " << meter.read_freq_str(3) << std::endl;
+     std::cout << "ext_clk      " << meter.read_freq_str(METER_EXT_CLK) << std::endl;
+     std::cout << "int_clk      " << meter.read_freq_str(METER_INT_CLK) << std::endl;
+     std::cout << "streamer_clk " << meter.read_freq_str(METER_STREAMER_CLK) << std::endl;
+     std::cout << "core_clk     " << meter.read_freq_str(METER_CORE_CLK) << std::endl;
    }
 };

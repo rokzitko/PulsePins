@@ -24,6 +24,7 @@ class ReadbackException : std::exception {
 class readback
 {
  private:
+   FPGA &fpga;
    fifo f;
    loc lcontrol;                // control interface port (reset signal)
    loc lmode;                   // readback mode port
@@ -35,29 +36,30 @@ class readback
    std::string prefix = "C ";   // prefix for element reporting
 
  public:
-   readback(const mm &dev,
+   readback(FPGA &_fpga,
+            const mm &dev,
             const std::uintptr_t base,
             const std::uintptr_t csr_base,
-            const std::uintptr_t control_base,
-            const Verbosity &_v) :
+            const std::uintptr_t control_base) :
+     fpga(_fpga),
      f(dev, base, csr_base),
      lcontrol(dev.get_loc(control_base)),    // w
      lmode(dev.get_loc(control_base, 4)),    // w
      lstatus(dev.get_loc(control_base)),     // r
      lcounter(dev.get_loc(control_base, 4)), // r
      lcrc32(dev.get_loc(control_base, 8)),   // r
-     v(_v)
+     v(fpga.v)
      {
        reset();
      }
 
    readback(const InputParser &input,
-            FPGA &fpga) :
-     readback(fpga.dev_h2f,  FIFO_RL_OUT_BASE, FIFO_RL_IN_CSR_BASE, RL_ENCODER_IF_BASE, fpga.v) {
+            FPGA &_fpga) :
+     readback(_fpga, _fpga.dev_h2f, FIFO_RL_OUT_BASE, FIFO_RL_IN_CSR_BASE, RL_ENCODER_IF_BASE) {
        // Default mode = 1 (valid/clk)
-       // Override with the environment variable RBMODE or with the command line switch -rbmode.
+       // Override with the environment variable PP_RBMODE or with the command line switch -rbmode.
        // Command line switch takes precedence.
-       std::string rbmode = if_nonempty_or(get_env("RBMODE"), "1");
+       std::string rbmode = if_nonempty_or(get_env("PP_RBMODE"), "1");
        mode(parse_uint32(input, "-rbmode", rbmode));
      }
 
@@ -83,7 +85,7 @@ class readback
      uint32_t mask = 0b1;
      BITMASK_SET(control, mask);
      lcontrol.write(control);
-     usleep(10);
+     fpga.wait_for_N_streamer_clk_periods(5);
      BITMASK_CLEAR(control, mask);
      lcontrol.write(control);
      clear_fifo();

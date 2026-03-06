@@ -126,7 +126,7 @@ class timestamp {
        auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
        if (timeout > 0.0 && elapsed.count() > abs(timeout))
          throw std::runtime_error("Timeout.");
-       usleep(100);
+       usleep(100); // don't hose CPU in poll loop
      }
      return read();
    }
@@ -138,7 +138,7 @@ class timestamp {
        auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
        if (timeout > 0.0 && elapsed.count() > abs(timeout))
          throw std::runtime_error("Timeout.");
-       usleep(100);
+       usleep(100); // don't hose CPU in poll loop
      }
      return readA();
    }

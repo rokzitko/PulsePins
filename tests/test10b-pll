@@ -2,7 +2,7 @@
 #Replay tests - large counts
 source defs.sh
 
-export INT_PLL=50M
+export PP_INT_PLL=50M
 
 pptest 10 -v 1 -c 10000 -repetitions 5000 -nr_replays 1 -check -verbosecheck -mid -post
 

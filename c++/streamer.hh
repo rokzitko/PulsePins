@@ -175,7 +175,7 @@ class streamer_control
          << (ctrl & EXT_TRIG_CTRL_ENABLE ? " [enable]" : "")
          << (ctrl & EXT_TRIG_CTRL_FORCE  ? " [force]"  : "")
          << (ctrl & EXT_TRIG_CTRL_RESET  ? " [reset]"  : "") << std::endl;
-       usleep(100*1000);
+       usleep(100*1000); // reasonable delay for "real-time" monitoring on console
      }
    }
 

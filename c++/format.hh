@@ -1,18 +1,22 @@
 #pragma once
 
-#include <charconv>
 #include <string_view>
 #include <system_error>  // std::errc
 #include <optional>
+#include <cstdlib>
+#include <cerrno>
+#include <climits>
 
 std::optional<int> to_int(std::string_view sv) {
-  int value{};
-  const char* first = sv.data();
-  const char* last  = first + sv.size();
-  auto [ptr, ec] = std::from_chars(first, last, value, 10);
-  // Require full consumption (no trailing junk) and success
-  if (ec == std::errc{} && ptr == last) return value;
-  return std::nullopt;
+  std::string s(sv);
+  char* end = nullptr;
+  errno = 0;
+  long value = std::strtol(s.c_str(), &end, 10);
+  if (end == s.c_str() || *end != '\0' || errno == ERANGE ||
+      value < INT_MIN || value > INT_MAX) {
+    return std::nullopt;
+  }
+  return static_cast<int>(value);
 }
 
 std::string setw_l(std::string s, std::string_view w) {

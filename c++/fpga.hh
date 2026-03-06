@@ -122,6 +122,7 @@ class FPGA {
    std::mutex m;
    trigger_int trig_int;
    trigger_ext trig_ext;
+   double streamer_clk = -1.0; // measured streamer clock frequency in Hz
 
    FPGA(const InputParser &_input, const Verbosity &_v, const bool oe = false) :
      dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE),
@@ -138,18 +139,22 @@ class FPGA {
      trig_int(dev_lw, PIO_TRIG_INT_BASE),
      trig_ext(dev_lw, PIO_TRIG_MONITOR_BASE)
      {
+       // Ensure that only a single instance of class FPGA exists
        bool expected = false;
        if (!constructed.compare_exchange_strong(expected, true,
                                                 std::memory_order_acq_rel)) {
          throw std::logic_error("FPGA: second instance construction attempted");
        }
-       if (oe) // if false, leave as is
+       if (oe) // if oe=false, leave output_enable signal as is
          output_enable(true);
-       // blink on-board diagnostic LED on startup
-       led.on();
-       usleep(10*1000); // 10ms
-       led.off();
+       blink_led(); // on-board led blinks on startup
      }
+
+   void blink_led() {
+     led.on();
+     usleep(10*1000); // 10ms
+     led.off();
+   }
 
    ~FPGA() noexcept {
      if (v.veryverbose) {
@@ -222,6 +227,7 @@ class FPGA {
      sel_clk(ch_int);
    }
 
+   // Global FPGA lock
    void lock() {
      m.lock();
    }
@@ -232,5 +238,29 @@ class FPGA {
 
    auto acquire_lock() {
      return std::unique_lock<std::mutex>(m);
+   }
+
+   void set_streamer_clk(const double hz) {
+     if (hz < 0.0)
+       throw std::runtime_error("Streamer clock frequency should be a positive quantity.");
+     streamer_clk = hz;
+   }
+
+   // Streaming clock frequency [Hz]
+   double streamer_freq() const {
+     if (streamer_clk < 0.0)
+       throw std::runtime_error("Streamer clock not measured yet.");
+     return streamer_clk;
+   }
+
+   // Streaming clock period [s]
+   double streamer_period() const {
+     return 1.0/streamer_freq();
+   }
+
+   void wait_for_N_streamer_clk_periods(int N) const {
+     uint32_t delay = 1000000UL * streamer_period(); // in microseconds
+     for (int i = 0; i < N; i++)
+       usleep(delay);
    }
 };

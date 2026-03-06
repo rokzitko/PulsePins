@@ -334,7 +334,7 @@ class counter {
 
    void reset_all() {
      lctrl.write(1);
-     usleep(10); // reset is synchronous, thus this should be longer than the period of streaming clock
+     fpga.wait_for_N_streamer_clk_periods(2);  // reset is synchronous, thus this should be longer than the period of streaming clock
      lctrl.write(0);
    }
 
