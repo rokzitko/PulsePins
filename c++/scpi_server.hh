@@ -73,6 +73,7 @@ protected:
     tcp::socket socket_;
     boost::asio::streambuf buffer_;
     std::shared_ptr<ScpiNode> root_;
+    bool verbose = true;
 
     // Status system
     std::deque<std::string> error_queue_;
@@ -164,6 +165,8 @@ protected:
             }
         }
 
+        if (verbose) std::cout << "Executing [" << line << "]" << std::endl;
+
         // Execute
         std::string resp;
         if (is_query) {
@@ -174,6 +177,8 @@ protected:
             else if (node->query_handler) push_error("Query form required", QUERY_ERROR);
             else push_error("Command error: no action", COMMAND_ERROR);
         }
+
+        if (verbose) std::cout << "Responding [" << resp << "]" << std::endl;
         if (!resp.empty()) write(resp);
     }
 

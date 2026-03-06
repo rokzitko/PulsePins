@@ -1,6 +1,6 @@
 #!/bin/bash
 ppscpi &
-sleep .1
+sleep .2
 RESPONSE=$(echo "TEST1" | nc localhost 5025 2>/dev/null)
 sleep .1
 echo "TERMINATE" | nc localhost 5025

@@ -1,6 +1,9 @@
 #!/bin/bash
+# Note 1: we are making two separate connections
+# Note 2: we need to sleep long enough so that the clock ferquency measurement is performed
+
 ppscpi &
-sleep .1
+sleep .2
 RESPONSE=$(echo "*IDN?" | nc localhost 5025 2>/dev/null)
 sleep .1
 echo "TERMINATE" | nc localhost 5025

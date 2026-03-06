@@ -1,6 +1,6 @@
 #!/bin/bash
 ppscpi &
-sleep .1
+sleep .2
 RESPONSE=$(nc localhost 5025 2>/dev/null <<'EOF'
 *IDN?
 CHECK ON

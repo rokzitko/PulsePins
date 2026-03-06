@@ -11,6 +11,8 @@
 #include "ppcommon.hh"
 #include "ppmisc.hh"
 #include "verbosity.hh"
+#include "freq_meter.hh"
+#include "clk.hh"
 
 class TerminateSession : public std::exception {
    std::string message;
@@ -25,11 +27,11 @@ class TerminateSession : public std::exception {
 
 class PPSession : public ScpiSessionBase {
 public:
-   explicit PPSession(tcp::socket socket, const InputParser &_input, const Verbosity &_v) :
+   explicit PPSession(tcp::socket socket, const InputParser &_input, FPGA &_fpga, const Verbosity &_v) :
      ScpiSessionBase(std::move(socket)),
      input(_input),
+     fpga(_fpga),
      v(_v),
-     fpga(input, v),
      s(input, fpga),
      rb(input, fpga),
      ctr(input, fpga)
@@ -38,8 +40,8 @@ public:
      }
 private:
    const InputParser &input;
+   FPGA &fpga;
    const Verbosity &v;
-   FPGA fpga;
    streamer s;
    readback rb;
    counter ctr;
@@ -140,13 +142,15 @@ private:
 class PPServer : public ScpiServerBase {
  private:
    const InputParser &input;
+   FPGA &fpga;
    const Verbosity &v;
  public:
-   PPServer(boost::asio::io_context &io, unsigned short port, InputParser &_input, const Verbosity &_v)
-     : ScpiServerBase(io, port), input(_input), v(_v) {}
+   PPServer(boost::asio::io_context &io, unsigned short port, const InputParser &_input, FPGA &_fpga, const Verbosity &_v)
+     : ScpiServerBase(io, port), input(_input), fpga(_fpga), v(_v) {}
  protected:
    std::shared_ptr<ScpiSessionBase> make_session(tcp::socket socket) override {
-     return std::make_shared<PPSession>(std::move(socket), input, v);
+     std::cout << "Connection from " << socket.remote_endpoint().address().to_string() << std::endl;
+     return std::make_shared<PPSession>(std::move(socket), input, fpga, v);
    }
 };
 
@@ -161,9 +165,13 @@ int main(int argc, char *argv[]) {
   RealtimeScheduler rt;
   if (v.veryverbose)
     std::cout << "Scheduler: " << rt.report() << std::endl;
+  FPGA fpga(input, v);
+  set_clk(input, fpga);
+  pp_freq_meter fm(input, fpga);
+  fm.report();
   try {
     boost::asio::io_context io;
-    PPServer server(io, server_port, input, v);
+    PPServer server(io, server_port, input, fpga, v);
     std::cout << "ppserver running on port " << server_port << std::endl;
     io.run();
   } catch (std::exception& e) {
