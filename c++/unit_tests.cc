@@ -14,6 +14,7 @@
 #include "elements.hh"
 #include "sequence.hh"
 #include "streamer.hh"
+#include "vcd_parser.hh"
 
 count_t get_count(const Counter &x) { return x.count(); }
 control_t get_control_bits(const Counter &x) { return x.control_bits(); }
@@ -349,4 +350,21 @@ TEST_CASE("parseuint32_t") {
   CHECK(parse_uint32_t("8'hFF") == 255);
   CHECK(parse_uint32_t("12'o777") == 511);
   CHECK(parse_uint32_t("'b1010") == 10);
+}
+
+TEST_CASE("VCD parser") {
+  std::ifstream F("unit_tests_input/test1.vcd");
+  CHECK(F);
+  auto v = parseVcdUpdates(F, "outs");
+  CHECK(v.size() == 5);
+  CHECK(v[0].value == 0);
+  CHECK(v[0].count == 0);
+  CHECK(v[1].value == 4096);
+  CHECK(v[1].count == 1);
+  CHECK(v[2].value == 0);
+  CHECK(v[2].count == 3);
+  CHECK(v[3].value == 15);
+  CHECK(v[3].count == 13);
+  CHECK(v[4].value == 14);
+  CHECK(v[4].count == 33);
 }

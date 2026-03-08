@@ -10,6 +10,7 @@
 #include <deque>
 
 #include "elements.hh"
+#include "vcd_parser.hh"
 
 // Extended version of a standard library deque of el objects
 class Sequence : public std::deque<el> {
