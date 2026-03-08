@@ -30,7 +30,7 @@ TEST_CASE("counter class") {
   CHECK(c1.control_bits() == 0);
   CHECK(get_control_bits(c1) == 0);
   CHECK(c1.desc() == "");
-  CHECK(contains(c1.count_str(), "[10]"));
+  CHECK(contains(c1.count_str(), "[           10]"));
 }
 
 TEST_CASE("strobe class") {
@@ -41,7 +41,7 @@ TEST_CASE("strobe class") {
   CHECK(c1.control_bits() == STROBE);
   CHECK(get_control_bits(c1) == STROBE);
   CHECK(c1.desc() == strobestring);
-  CHECK(contains(c1.count_str(), "[10]"));
+  CHECK(contains(c1.count_str(), "[           10]"));
 }
 
 TEST_CASE("no_strobe class") {
@@ -52,7 +52,7 @@ TEST_CASE("no_strobe class") {
   CHECK(c1.control_bits() == NOSTROBE);
   CHECK(get_control_bits(c1) == NOSTROBE);
   CHECK(c1.desc() == nostrobestring);
-  CHECK(contains(c1.count_str(), "[10]"));
+  CHECK(contains(c1.count_str(), "[           10]"));
 }
 
 value_t get_value(const Value &x) { return x.value(); }
@@ -73,7 +73,7 @@ TEST_CASE("BitLoad class") {
   CHECK(v1.result(0xff) == v);
   CHECK(get_result(v1, 0x00) == v);
   CHECK(get_result(v1, 0xff) == v);
-  CHECK(contains(v1.value_str(), "[42]"));
+  CHECK(contains(v1.value_str(), "[           42]"));
 }
 
 TEST_CASE("BitSet class") {
@@ -89,7 +89,7 @@ TEST_CASE("BitSet class") {
   CHECK(v1.result(1) == (v | 1));
   CHECK(get_result(v1, 0x00) == v);
   CHECK(get_result(v1, 0x01) == (v | 1));
-  CHECK(contains(v1.value_str(), "[42]"));
+  CHECK(contains(v1.value_str(), "[           42]"));
 }
 
 TEST_CASE("BitClear class") {
@@ -107,7 +107,7 @@ TEST_CASE("BitClear class") {
   CHECK(get_result(v1, 0x00) == 0);
   CHECK(get_result(v1, 0x01) == 1);
   CHECK(get_result(v1, v) == 0);
-  CHECK(contains(v1.value_str(), "[42]"));
+  CHECK(contains(v1.value_str(), "[           42]"));
 }
 
 TEST_CASE("BitFlip class") {
@@ -125,7 +125,7 @@ TEST_CASE("BitFlip class") {
   CHECK(get_result(v1, 0x00) == v);
   CHECK(get_result(v1, 0x01) == (v|1));
   CHECK(get_result(v1, v) == 0);
-  CHECK(contains(v1.value_str(), "[42]"));
+  CHECK(contains(v1.value_str(), "[           42]"));
 }
 
 TEST_CASE("el general constructor 1") {
@@ -137,8 +137,8 @@ TEST_CASE("el general constructor 1") {
   CHECK(e.count() == c);
   CHECK(e.value() == v);
   CHECK(e.control() == 0);
-  CHECK(contains(e.desc(), "[10]"));
-  CHECK(contains(e.desc(), "[42]"));
+  CHECK(contains(e.desc(), "[           10]"));
+  CHECK(contains(e.desc(), "[           42]"));
 }
 
 TEST_CASE("el general constructor 2") {
@@ -151,8 +151,8 @@ TEST_CASE("el general constructor 2") {
   CHECK(e.count() == c);
   CHECK(e.value() == v);
   CHECK(e.control() == y);
-  CHECK(contains(e.desc(), "[10]"));
-  CHECK(contains(e.desc(), "[42]"));
+  CHECK(contains(e.desc(), "[           10]"));
+  CHECK(contains(e.desc(), "[           42]"));
 }
 
 TEST_CASE("el terminate constructor") {
@@ -184,8 +184,8 @@ TEST_CASE("el regular element constructor, load") {
   CHECK(!e.is_final());
   CHECK(e.is_regular());
   CHECK(contains(e.desc(), bitloadstring));
-  CHECK(contains(e.desc(), "[10]"));
-  CHECK(contains(e.desc(), "[42]"));
+  CHECK(contains(e.desc(), "[           10]"));
+  CHECK(contains(e.desc(), "[           42]"));
 }
 
 TEST_CASE("el regular element constructor, set") {
@@ -198,8 +198,8 @@ TEST_CASE("el regular element constructor, set") {
   CHECK(!e.is_final());
   CHECK(e.is_regular());
   CHECK(contains(e.desc(), bitsetstring));
-  CHECK(contains(e.desc(), "[10]"));
-  CHECK(contains(e.desc(), "[42]"));
+  CHECK(contains(e.desc(), "[           10]"));
+  CHECK(contains(e.desc(), "[           42]"));
 }
 
 TEST_CASE("el regular element constructor, clear") {
@@ -212,8 +212,8 @@ TEST_CASE("el regular element constructor, clear") {
   CHECK(!e.is_final());
   CHECK(e.is_regular());
   CHECK(contains(e.desc(), bitclearstring));
-  CHECK(contains(e.desc(), "[10]"));
-  CHECK(contains(e.desc(), "[42]"));
+  CHECK(contains(e.desc(), "[           10]"));
+  CHECK(contains(e.desc(), "[           42]"));
 }
 
 TEST_CASE("el regular element constructor, flip") {
@@ -226,8 +226,8 @@ TEST_CASE("el regular element constructor, flip") {
   CHECK(!e.is_final());
   CHECK(e.is_regular());
   CHECK(contains(e.desc(), bitflipstring));
-  CHECK(contains(e.desc(), "[10]"));
-  CHECK(contains(e.desc(), "[42]"));
+  CHECK(contains(e.desc(), "[           10]"));
+  CHECK(contains(e.desc(), "[           42]"));
 }
 
 TEST_CASE("el regular element constructor, strobe") {
@@ -241,8 +241,8 @@ TEST_CASE("el regular element constructor, strobe") {
   CHECK(e.is_regular());
   CHECK(contains(e.desc(), bitloadstring));
   CHECK(contains(e.desc(), strobestring));
-  CHECK(contains(e.desc(), "[10]"));
-  CHECK(contains(e.desc(), "[42]"));
+  CHECK(contains(e.desc(), "[           10]"));
+  CHECK(contains(e.desc(), "[           42]"));
 }
 
 TEST_CASE("el regular element constructor, nostrobe") {
@@ -256,8 +256,8 @@ TEST_CASE("el regular element constructor, nostrobe") {
   CHECK(e.is_regular());
   CHECK(contains(e.desc(), bitloadstring));
   CHECK(contains(e.desc(), nostrobestring));
-  CHECK(contains(e.desc(), "[10]"));
-  CHECK(contains(e.desc(), "[42]"));
+  CHECK(contains(e.desc(), "[           10]"));
+  CHECK(contains(e.desc(), "[           42]"));
 }
 
 TEST_CASE("trigger constructor") {
