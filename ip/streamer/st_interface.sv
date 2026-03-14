@@ -12,7 +12,7 @@ input wire clk,
 input wire reset,
 
 // Avalon-ST bus for streaming data
-input wire [`WIDTH_TOTAL-1:0] asi_data,
+input wire [WIDTH_TOTAL-1:0] asi_data,
 input wire asi_valid,
 output wire asi_ready,
 
@@ -20,14 +20,14 @@ output wire asi_ready,
 input wire [4:0] avs_s0_address,
 input wire avs_s0_read,
 input wire avs_s0_write,
-output reg [`WIDTH_AVS-1:0] avs_s0_readdata,
-input wire [`WIDTH_AVS-1:0] avs_s0_writedata,
+output reg [WIDTH_AVS-1:0] avs_s0_readdata,
+input wire [WIDTH_AVS-1:0] avs_s0_writedata,
 
 // Clock
 input wire streamer_clk,              // clock in the output domain
 
 // Output
-output wire [`WIDTH_DATA-1:0] qout,   // output
+output wire [WIDTH_DATA-1:0] qout,   // output
 output wire qout_valid,               // valid/enable
 output wire qout_strobe,              // strobe (pulses when valid data is available on qout bus)
 output wire strobe_enable,            // active when strobe pulses are occuring (can be used to trigger capturing devices for debugging)
@@ -35,7 +35,7 @@ output wire done,                     // goes high when streaming has successful
 output wire buffer_error,             // goes high if an underflow error occurs
 
 // Trigger signals
-input wire [`WIDTH_TRIGGER-1:0] trigger_in,
+input wire [WIDTH_TRIGGER-1:0] trigger_in,
 input wire trigger_enable_ext,
 input wire trigger_force_ext,
 input wire trigger_reset_ext,
@@ -46,7 +46,7 @@ output wire trigger_activated,
 input wire gate_in
 );
 
-logic [`WIDTH_TOTAL-1:0] input_data;
+logic [WIDTH_TOTAL-1:0] input_data;
 
 swap_endianness_96 sw(.in(asi_data),
                       .out(input_data));
@@ -57,15 +57,15 @@ logic trigger_force_int;        // force trigger (trigger even if the trigger co
 logic trigger_reset_int;        // reset trigger
 logic stop;                     // stop streaming
 logic qout_select;              // 0 = output from streamer, 1 = output from qout_override
-logic [`WIDTH_DATA-1:0] initial_value;
+logic [WIDTH_DATA-1:0] initial_value;
 
 logic full_i;                          // input FIFO full
-logic [`WIDTH_DATA-1:0] qout_streamer; // output from the RL decoder (streamer)
-logic [`WIDTH_DATA-1:0] qout_override; // signal from the control circuit output
+logic [WIDTH_DATA-1:0] qout_streamer; // output from the RL decoder (streamer)
+logic [WIDTH_DATA-1:0] qout_override; // signal from the control circuit output
 
 logic gating;      // if true, streaming can be halted in the absence of gate signal
 logic gate_in_en;  // if true, gate_in is used as the gating signal
-logic [`WIDTH_TRIGGER-1:0] gate_mask; // mask for selecting which trigger_in bits are used for gating
+logic [WIDTH_TRIGGER-1:0] gate_mask; // mask for selecting which trigger_in bits are used for gating
 
 logic gate_signal; // the gate signal can be activated either through gate_in or trigger_in signals
 assign gate_signal = (gate_in_en ? gate_in : 1'b0) | |(gate_mask & trigger_in);
@@ -76,13 +76,12 @@ assign gate_enable = (gating ? gate_signal : 1'b1);
 logic stop_on_buffer_error; // if true, trigger_activated deasserted if buffer_error goes high
 
 // Statistics
-localparam int widthstat = 64; // statistics counters bit width
-logic [widthstat-1:0] input_fifo1_ctr_in;
-logic [widthstat-1:0] input_fifo1_ctr_out;
-logic [widthstat-1:0] input_fifo2_ctr_in;
-logic [widthstat-1:0] input_fifo2_ctr_out;
-logic [widthstat-1:0] output_fifo_ctr_in;
-logic [widthstat-1:0] output_fifo_ctr_out;
+logic [WIDTH_STAT-1:0] input_fifo1_ctr_in;
+logic [WIDTH_STAT-1:0] input_fifo1_ctr_out;
+logic [WIDTH_STAT-1:0] input_fifo2_ctr_in;
+logic [WIDTH_STAT-1:0] input_fifo2_ctr_out;
+logic [WIDTH_STAT-1:0] output_fifo_ctr_in;
+logic [WIDTH_STAT-1:0] output_fifo_ctr_out;
 logic input_fifo_overflow_in;
 logic input_fifo_overflow_out;
 
@@ -147,11 +146,11 @@ always_ff @(posedge clk) begin
     gate_in_en <= 0;
     gate_mask <= 0;
   end else if (avs_s0_write) begin
-    unique case (avs_s0_address)
-      `IF_CTRL:       {stop_on_buffer_error, qout_select, trigger_reset_int, reset_streamer, trigger_enable_int, trigger_force_int, stop} <= avs_s0_writedata[5:0];
-      `INIT_VAL:      initial_value[`WIDTH_AVS-1:0] <= avs_s0_writedata;
-      `QOUT_OVERRIDE: qout_override[`WIDTH_AVS-1:0] <= avs_s0_writedata;
-      `GATING_W:      {gate_mask, gate_in_en, gating} <= avs_s0_writedata[`WIDTH_TRIGGER+2-1:0];
+    unique case (st_if_w_t'(avs_s0_address))
+      IF_CTRL:       {stop_on_buffer_error, qout_select, trigger_reset_int, reset_streamer, trigger_enable_int, trigger_force_int, stop} <= avs_s0_writedata[5:0];
+      INIT_VAL:      initial_value[WIDTH_AVS-1:0] <= avs_s0_writedata;
+      QOUT_OVERRIDE: qout_override[WIDTH_AVS-1:0] <= avs_s0_writedata;
+      GATING_W:      {gate_mask, gate_in_en, gating} <= avs_s0_writedata[WIDTH_TRIGGER+2-1:0];
     endcase
   end
 end
@@ -160,27 +159,27 @@ always_ff @(posedge clk) begin
   if (reset) begin
     avs_s0_readdata <= 0;
   end else if (avs_s0_read) begin
-    unique case (avs_s0_address)
-      `IF_STATUS:     avs_s0_readdata <= $bits(avs_s0_readdata)'({ trigger_armed, trigger_activated, done, buffer_error});
-      `QOUT:          avs_s0_readdata <= qout[`WIDTH_AVS-1:0]; // 32 bit
-      `QOUT_STREAMER: avs_s0_readdata <= qout_streamer[`WIDTH_AVS-1:0]; // 32 bit
-      `EXT_TRIG_IN:   avs_s0_readdata <= $bits(avs_s0_readdata)'(trigger_in);
-      `EXT_TRIG_CTRL: avs_s0_readdata <= $bits(avs_s0_readdata)'({ trigger_reset_ext, trigger_force_ext, trigger_enable_ext });
-      `GATING_R:      avs_s0_readdata <= $bits(avs_s0_readdata)'({ gate_enable, gate_signal, gate_in, gate_mask, gate_in_en, gating });
-      `OVERFLOW:      avs_s0_readdata <= $bits(avs_s0_readdata)'({ input_fifo_overflow_out, input_fifo_overflow_in});
-      `CRC32:         avs_s0_readdata <= crc_out;
-      `ST_INF1_IN_L:  avs_s0_readdata <= input_fifo1_ctr_in[31:0];
-      `ST_INF1_IN_H:  avs_s0_readdata <= input_fifo1_ctr_in[63:32];
-      `ST_INF1_OUT_L: avs_s0_readdata <= input_fifo1_ctr_out[31:0];
-      `ST_INF1_OUT_H: avs_s0_readdata <= input_fifo1_ctr_out[63:32];
-      `ST_INF2_IN_L:  avs_s0_readdata <= input_fifo2_ctr_in[31:0];
-      `ST_INF2_IN_H:  avs_s0_readdata <= input_fifo2_ctr_in[63:32];
-      `ST_INF2_OUT_L: avs_s0_readdata <= input_fifo2_ctr_out[31:0];
-      `ST_INF2_OUT_H: avs_s0_readdata <= input_fifo2_ctr_out[63:32];
-      `ST_OUTF_IN_L:  avs_s0_readdata <= output_fifo_ctr_in[31:0];
-      `ST_OUTF_IN_H:  avs_s0_readdata <= output_fifo_ctr_in[63:32];
-      `ST_OUTF_OUT_L: avs_s0_readdata <= output_fifo_ctr_out[31:0];
-      `ST_OUTF_OUT_H: avs_s0_readdata <= output_fifo_ctr_out[63:32];
+    unique case (st_if_r_t'(avs_s0_address))
+      IF_STATUS:     avs_s0_readdata <= $bits(avs_s0_readdata)'({ trigger_armed, trigger_activated, done, buffer_error});
+      QOUT:          avs_s0_readdata <= qout[WIDTH_AVS-1:0]; // 32 bit
+      QOUT_STREAMER: avs_s0_readdata <= qout_streamer[WIDTH_AVS-1:0]; // 32 bit
+      EXT_TRIG_IN:   avs_s0_readdata <= $bits(avs_s0_readdata)'(trigger_in);
+      EXT_TRIG_CTRL: avs_s0_readdata <= $bits(avs_s0_readdata)'({ trigger_reset_ext, trigger_force_ext, trigger_enable_ext });
+      GATING_R:      avs_s0_readdata <= $bits(avs_s0_readdata)'({ gate_enable, gate_signal, gate_in, gate_mask, gate_in_en, gating });
+      OVERFLOW:      avs_s0_readdata <= $bits(avs_s0_readdata)'({ input_fifo_overflow_out, input_fifo_overflow_in});
+      CRC32:         avs_s0_readdata <= crc_out;
+      ST_INF1_IN_L:  avs_s0_readdata <= input_fifo1_ctr_in[31:0];
+      ST_INF1_IN_H:  avs_s0_readdata <= input_fifo1_ctr_in[63:32];
+      ST_INF1_OUT_L: avs_s0_readdata <= input_fifo1_ctr_out[31:0];
+      ST_INF1_OUT_H: avs_s0_readdata <= input_fifo1_ctr_out[63:32];
+      ST_INF2_IN_L:  avs_s0_readdata <= input_fifo2_ctr_in[31:0];
+      ST_INF2_IN_H:  avs_s0_readdata <= input_fifo2_ctr_in[63:32];
+      ST_INF2_OUT_L: avs_s0_readdata <= input_fifo2_ctr_out[31:0];
+      ST_INF2_OUT_H: avs_s0_readdata <= input_fifo2_ctr_out[63:32];
+      ST_OUTF_IN_L:  avs_s0_readdata <= output_fifo_ctr_in[31:0];
+      ST_OUTF_IN_H:  avs_s0_readdata <= output_fifo_ctr_in[63:32];
+      ST_OUTF_OUT_L: avs_s0_readdata <= output_fifo_ctr_out[31:0];
+      ST_OUTF_OUT_H: avs_s0_readdata <= output_fifo_ctr_out[63:32];
       default:        avs_s0_readdata <= 0;
     endcase
   end

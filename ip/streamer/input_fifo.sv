@@ -8,28 +8,26 @@
 
 module input_fifo
 #(
- parameter int width = `WIDTH_TOTAL,
- parameter int widthstat = 64,           // statistics counters bit width
- parameter int p1 = `P_FIFO_IN1,
- parameter int p2 = `P_FIFO_IN2
+ parameter int p1 = P_FIFO_IN1,
+ parameter int p2 = P_FIFO_IN2
 )(
  input wire clk,
  input wire reset,
 
  // input side
- input wire [width-1:0] data,
+ input wire [WIDTH_TOTAL-1:0] data,
  input wire wrreq,
  output wire full,
 
  // output side
- output wire [width-1:0] q,
+ output wire [WIDTH_TOTAL-1:0] q,
  input wire rdreq,
  output wire empty,
 
- output reg [widthstat-1:0] ctr1_in,  // FIFO 1, elements clocked in
- output reg [widthstat-1:0] ctr1_out, // FIFO 1, elements clocked out
- output reg [widthstat-1:0] ctr2_in,  // FIFO 2, elements clocked in
- output reg [widthstat-1:0] ctr2_out, // FIFO 2, elements clocked out
+ output reg [WIDTH_STAT-1:0] ctr1_in,  // FIFO 1, elements clocked in
+ output reg [WIDTH_STAT-1:0] ctr1_out, // FIFO 1, elements clocked out
+ output reg [WIDTH_STAT-1:0] ctr2_in,  // FIFO 2, elements clocked in
+ output reg [WIDTH_STAT-1:0] ctr2_out, // FIFO 2, elements clocked out
  output reg overflow_in,
  output reg overflow_out
 );
@@ -40,8 +38,8 @@ localparam int almost_shift = 16;
 
 logic rdempty;                 // FIFO 1 empty
 logic din_ready;               // preprocessor ready to receive (rdreq to FIFO 1)
-logic [width-1:0] din;         // output from FIFO 1, emitted to preprocessor
-logic [width-1:0] dout;        // output from preprocessor, input to FIFO 2
+logic [WIDTH_TOTAL-1:0] din;         // output from FIFO 1, emitted to preprocessor
+logic [WIDTH_TOTAL-1:0] dout;        // output from preprocessor, input to FIFO 2
 logic dout_valid;              // valid output from preprocessor
 
 logic [p1-1:0] used1;
@@ -108,7 +106,7 @@ scfifo
 #(
 .intended_device_family("CycloneV"),
 .lpm_numwords(length1),
-.lpm_width(width),
+.lpm_width(WIDTH_TOTAL),
 .lpm_widthu(p1),
 .lpm_showahead("ON"),            // show-ahead mode: data becomes available on output port q before rdreq is asserted
 .add_ram_output_register("OFF"), // buffer output from FIFO's RAM block, allowing higher clock frequencies (on Cyclone, only unregistered q output is supported in Show-ahead mode)
@@ -151,7 +149,7 @@ scfifo
 #(
 .intended_device_family("CycloneV"),
 .lpm_numwords(length2),
-.lpm_width(width),
+.lpm_width(WIDTH_TOTAL),
 .lpm_widthu(p2),
 .lpm_showahead("ON"),            // show-ahead mode: data becomes available on output port q before rdreq is asserted
 .add_ram_output_register("OFF"), // buffer output from FIFO's RAM block, allowing higher clock frequencies (on Cyclone, only unregistered q output is supported in Show-ahead mode)

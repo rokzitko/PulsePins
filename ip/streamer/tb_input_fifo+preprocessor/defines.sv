@@ -1,9 +1,9 @@
 localparam [31:0] PASS = 0;
-localparam [31:0] NOPASS = 1 << `BIT_NOPASS;
-localparam [31:0] TERMINATE = 1 << `BIT_TERMINATE;
-localparam [31:0] STORE0 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (0 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE1 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (1 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE2 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (2 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE3 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (3 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE4 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (4 << `BIT_POSITIONS_LO);
-localparam [31:0] REPLAY = (1 << `BIT_NOPASS) + (1 << `BIT_REPLAY);
+localparam [31:0] NOPASS = 1 << BIT_NOPASS;
+localparam [31:0] TERMINATE = 1 << BIT_TERMINATE;
+localparam [31:0] STORE0 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (0 << BIT_POSITIONS_LO);
+localparam [31:0] STORE1 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (1 << BIT_POSITIONS_LO);
+localparam [31:0] STORE2 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (2 << BIT_POSITIONS_LO);
+localparam [31:0] STORE3 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (3 << BIT_POSITIONS_LO);
+localparam [31:0] STORE4 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (4 << BIT_POSITIONS_LO);
+localparam [31:0] REPLAY = (1 << BIT_NOPASS) + (1 << BIT_REPLAY);

@@ -21,7 +21,7 @@ initial begin
 end
 
 // Interface
-reg [`WIDTH_TOTAL-1:0] input_data;
+reg [WIDTH_TOTAL-1:0] input_data;
 reg input_valid;
 wire input_ready;
 
@@ -29,12 +29,12 @@ always @(posedge clk) begin
   $strobe("t=%8.3f q_p=%b q_m=%b usd=%d fifoemp=%b st=%d armd=%b activ'd=%b used_o=%d dn=%b retrigreq=%b retrig=%b qo=%h va=%b",
     $realtime,
     dut.ct0.q_pattern[2:0], dut.ct0.q_mask[2:0], dut.ct0.used, dut.ct0.fifo_empty, dut.ct0.state,
-    dut.trigger_armed, dut.trigger_activated, dut.used_o, dut.done, dut.retrig_requested, dut.retrig,
+    dut.trigger_armed, dut.trigger_activated, dut.fifo0.used, dut.done, dut.retrig_requested, dut.retrig,
     dut.fifo0.qout, dut.fifo0.qout_valid
 );
 end
 
-reg [`WIDTH_TRIGGER-1:0] trigger_in;
+reg [WIDTH_TRIGGER-1:0] trigger_in;
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
   .initial_value('0),

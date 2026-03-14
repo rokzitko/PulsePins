@@ -21,9 +21,9 @@ initial begin
   #1 reset <= 0;
 end
 
-logic [`WIDTH_TRIGGER-1:0] i;
-logic [`WIDTH_TRIGGER-1:0] pattern;
-logic [`WIDTH_TRIGGER-1:0] mask;
+logic [WIDTH_TRIGGER-1:0] i;
+logic [WIDTH_TRIGGER-1:0] pattern;
+logic [WIDTH_TRIGGER-1:0] mask;
 logic trigger_enable;
 logic o;
 

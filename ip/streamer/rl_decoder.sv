@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2025 Rok Zitko
+// Copyright (c) 2025-2026 Rok Zitko
 
 // Runlength decoder core
 
@@ -7,58 +7,55 @@
 `include "config.vh"
 
 // Show-ahead input FIFO (in_valid/rdreq) -> masked RLE decode -> throttled output FIFO
-module rl_decoder #(
-  parameter int DATA_W    = `WIDTH_DATA,
-  parameter int CONTROL_W = `WIDTH_CONTROL,
-  parameter int CNT_W     = `WIDTH_COUNTER
-)(
+module rl_decoder
+(
   input  wire                     clk,
   input  wire                     reset,          // active-high async reset
 
   // Input FIFO (show-ahead semantics)
   input  wire                     in_valid,       // tuple valid (not empty)
-  input  wire [DATA_W-1:0]        in_data,
-  input  wire [CONTROL_W-1:0]     in_control,     // carried through, unmodified
-  input  wire [CNT_W-1:0]         in_counter,     // repeat count
+  input  wire [WIDTH_DATA-1:0]    in_data,
+  input  wire [WIDTH_CONTROL-1:0] in_control,     // carried through, unmodified
+  input  wire [WIDTH_COUNTER-1:0] in_counter,     // repeat count
   input  wire [3:0]               in_opmode,      // 00 load, 01 clear, 10 set, 11 flip, etc.
   output reg                      in_rdreq,       // pop current tuple on next clk
 
   // Output FIFO (throttled)
   input  wire                     out_almost_full,
-  output reg [DATA_W-1:0]         out_data,
-  output reg [CONTROL_W-1:0]      out_control,
+  output reg [WIDTH_DATA-1:0]         out_data,
+  output reg [WIDTH_CONTROL-1:0]      out_control,
   output reg                      out_wrreq,
 
   // Initial previous value for the very first effective run
-  input  wire [DATA_W-1:0]        initial_data
+  input  wire [WIDTH_DATA-1:0]        initial_data
 );
 
   // ---- op(mode) application: combines previous output with incoming data ----
-  function automatic logic [DATA_W-1:0]
-  apply_op(input logic [DATA_W-1:0] prev,
-           input logic [DATA_W-1:0] dat,
+  function automatic logic [WIDTH_DATA-1:0]
+  apply_op(input logic [WIDTH_DATA-1:0] prev,
+           input logic [WIDTH_DATA-1:0] dat,
            input logic [3:0]        opmode);
-    unique case (opmode)
-      `BITLOAD:  apply_op = dat;           // load
-      `BITSET:   apply_op = prev |  dat;   // set   bits in mask (OR)
-      `BITCLEAR: apply_op = prev & ~dat;   // clear bits in mask
-      `BITFLIP:  apply_op = prev ^  dat;   // flip  bits in mask (XOR)
-      `BITNOT:   apply_op = ~prev;         // invert all bits
-      `BITAND:   apply_op = prev & dat;    // bitwise AND
-      `BITOR:    apply_op = prev | dat;    // bitwise OR (same as BITSET)
-      `BITXOR:   apply_op = prev ^ dat;    // bitwise XOR (same as BITFLIP)
-      `BITXNOR:  apply_op = prev ^~ dat;   // bitwise XNOR (equivalence)
-      `BITSLL:   apply_op = prev << dat;   // shift left logical
-      `BITSRL:   apply_op = prev >> dat;   // shift right logical
+    unique case (bit_op_t'(opmode))
+      BITLOAD:  apply_op = dat;           // load
+      BITSET:   apply_op = prev |  dat;   // set   bits in mask (OR)
+      BITCLEAR: apply_op = prev & ~dat;   // clear bits in mask
+      BITFLIP:  apply_op = prev ^  dat;   // flip  bits in mask (XOR)
+      BITNOT:   apply_op = ~prev;         // invert all bits
+      BITAND:   apply_op = prev & dat;    // bitwise AND
+      BITOR:    apply_op = prev | dat;    // bitwise OR (same as BITSET)
+      BITXOR:   apply_op = prev ^ dat;    // bitwise XOR (same as BITFLIP)
+      BITXNOR:  apply_op = prev ^~ dat;   // bitwise XNOR (equivalence)
+      BITSLL:   apply_op = prev << dat;   // shift left logical
+      BITSRL:   apply_op = prev >> dat;   // shift right logical
       default:   apply_op = dat;           // BITLOAD
     endcase
   endfunction
 
   // ---- State ----
-  logic [DATA_W-1:0]    prev_value;      // last emitted element
-  logic [DATA_W-1:0]    curr_value;      // value being repeated
-  logic [CNT_W-1:0]     curr_cnt;        // remaining repeats
-  logic [CONTROL_W-1:0] curr_control;    // pass-through control for this run
+  logic [WIDTH_DATA-1:0]    prev_value;      // last emitted element
+  logic [WIDTH_DATA-1:0]    curr_value;      // value being repeated
+  logic [WIDTH_COUNTER-1:0] curr_cnt;        // remaining repeats
+  logic [WIDTH_CONTROL-1:0] curr_control;    // pass-through control for this run
 
   // Convenience
   wire can_emit = (curr_cnt != '0) && !out_almost_full;

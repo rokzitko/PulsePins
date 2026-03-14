@@ -65,7 +65,7 @@ always @(posedge clk) begin
   $strobe("t=%8.3f asi_valid=%b asi_ready=%b fifo wrreq=%b y=%h c=%h v=%h trigger force=%b armed=%b act=%b qout=%h qout_valid=%b used=%d st_en=%b",
     $realtime, asi_valid, asi_ready, dut.st0.fifo_i.wrreq, dut.st0.control,
     dut.st0.counter, dut.st0.data, trigger_force_ext, trigger_armed, trigger_activated,
-    qout, qout_valid, dut.st0.used_o, strobe_enable
+    qout, qout_valid, dut.st0.fifo0.used, strobe_enable
   );
 end
 

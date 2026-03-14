@@ -21,11 +21,11 @@ initial begin
 end
 
 // Interface
-reg [`WIDTH_TOTAL-1:0] din;
+reg [WIDTH_TOTAL-1:0] din;
 reg din_valid;
 wire din_ready;
 
-wire [`WIDTH_TOTAL-1:0] dout;
+wire [WIDTH_TOTAL-1:0] dout;
 wire dout_valid;
 reg dout_ready;
 
@@ -57,12 +57,12 @@ initial begin
 end
 
 localparam [31:0] PASS = 0;
-localparam [31:0] NOPASS = 1 << `BIT_NOPASS;
-localparam [31:0] STORE0 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (0 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE1 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (1 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE2 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (2 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE3 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (3 << `BIT_POSITIONS_LO);
-localparam [31:0] REPLAY = (1 << `BIT_NOPASS) + (1 << `BIT_REPLAY);
+localparam [31:0] NOPASS = 1 << BIT_NOPASS;
+localparam [31:0] STORE0 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (0 << BIT_POSITIONS_LO);
+localparam [31:0] STORE1 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (1 << BIT_POSITIONS_LO);
+localparam [31:0] STORE2 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (2 << BIT_POSITIONS_LO);
+localparam [31:0] STORE3 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (3 << BIT_POSITIONS_LO);
+localparam [31:0] REPLAY = (1 << BIT_NOPASS) + (1 << BIT_REPLAY);
 
 initial begin
   din_valid <= 0;
@@ -164,7 +164,7 @@ initial begin
 
   #1
   din_valid <= 1;
-  din <= { REPLAY, 32'h0001, 32'(`MEMORY_POSITIONS) }; // replay 1 times, length=max [F]
+  din <= { REPLAY, 32'h0001, 32'(MEMORY_POSITIONS) }; // replay 1 times, length=max [F]
   #1
   din_valid <= 0;
   din <= { PASS, 32'h0000, 32'hffffffff }; // zero/one
@@ -172,7 +172,7 @@ initial begin
 
   #1
   din_valid <= 1;
-  din <= { REPLAY, 32'h0002, 32'(`MEMORY_POSITIONS) }; // replay 2 times, length=max [G]
+  din <= { REPLAY, 32'h0002, 32'(MEMORY_POSITIONS) }; // replay 2 times, length=max [G]
   #1
   din_valid <= 0;
   din <= { PASS, 32'h0000, 32'hffffffff }; // zero/one
@@ -180,7 +180,7 @@ initial begin
 
   #1
   din_valid <= 1;
-  din <= { REPLAY, 32'h0003, 32'(`MEMORY_POSITIONS) }; // replay 3 times, length=max [H]
+  din <= { REPLAY, 32'h0003, 32'(MEMORY_POSITIONS) }; // replay 3 times, length=max [H]
   #1
   din_valid <= 0;
   din <= { PASS, 32'h0000, 32'hffffffff }; // zero/one

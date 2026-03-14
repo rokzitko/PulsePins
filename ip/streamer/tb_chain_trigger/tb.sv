@@ -21,8 +21,8 @@ initial begin
   #2 reset <= 0;
 end
 
-parameter int width = `WIDTH_TRIGGER;
-parameter int width_control = `WIDTH_TRIGGER_CONTROL;
+parameter int width = WIDTH_TRIGGER;
+parameter int width_control = WIDTH_TRIGGER_CONTROL;
 
 wire wrclk = clk;
 logic [width-1:0] i;

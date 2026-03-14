@@ -21,17 +21,17 @@ initial begin
 end
 
 // Interface
-reg [`WIDTH_TOTAL-1:0] input_data;
+reg [WIDTH_TOTAL-1:0] input_data;
 reg input_valid;
 wire input_ready;
 
-wire [`WIDTH_DATA-1:0] initial_value = 0;
+wire [WIDTH_DATA-1:0] initial_value = 0;
 
 always @(posedge clk) begin
   $strobe("t=%8.3f control=%h ctr=%h data=%h rdreq_i=%b empty_i=%b in_v_d=%b in_v_c=%b p=%b m=%b c=%b wrreq=%b used=%d fifo_empty=%b state=%d armed=%b activated=%b used_o=%d",
     $realtime, dut.control, dut.counter, dut.data, dut.rdreq_i, dut.empty_i, dut.in_valid_data, dut.in_valid_chain,
     dut.ct0.pattern, dut.ct0.mask, dut.ct0.control, dut.ct0.wrreq, dut.ct0.used, dut.ct0.fifo_empty, dut.ct0.state,
-    dut.trigger_armed, dut.trigger_activated, dut.used_o
+    dut.trigger_armed, dut.trigger_activated, dut.fifo0.used
 );
 end
 

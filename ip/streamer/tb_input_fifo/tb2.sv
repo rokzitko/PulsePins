@@ -21,11 +21,11 @@ initial begin
 end
 
 // Interface
-logic [`WIDTH_TOTAL-1:0] data;
+logic [WIDTH_TOTAL-1:0] data;
 logic wrreq;
 logic rdreq;
 
-logic [`WIDTH_TOTAL-1:0] q;
+logic [WIDTH_TOTAL-1:0] q;
 logic full;
 logic empty;
 

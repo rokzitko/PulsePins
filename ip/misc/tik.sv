@@ -22,7 +22,7 @@ begin
   end else if (tik) begin
     counter <= '0;
   end else begin
-    counter <= counter + 1;
+    counter <= WIDTH'(counter + 1);
   end
 end
 

@@ -7,24 +7,20 @@
 `include "config.vh"
 
 module chain_trigger
-#(
-parameter int width         = `WIDTH_TRIGGER,         // pattern and mask width
-parameter int width_control = `WIDTH_TRIGGER_CONTROL,
-parameter int fifo_length   = 2**`P_FIFO_TRIGGER)
 (
 input wire wrclk,                       // clock for writing to the trigger condition queue (FIFO)
 input wire reset,                       // total reset (see below)
 
 // input to trigger condition queue
-input wire [width-1:0] pattern,         // pattern to be matched
-input wire [width-1:0] mask,            // mask (1 for signals to be compared)
-input wire [width_control-1:0] control, // bit 1 for the last trigger condition in a sequence ("final element")
+input wire [WIDTH_TRIGGER-1:0] pattern,         // pattern to be matched
+input wire [WIDTH_TRIGGER-1:0] mask,            // mask (1 for signals to be compared)
+input wire [WIDTH_TRIGGER_CONTROL-1:0] control, // bit 1 for the last trigger condition in a sequence ("final element")
 input wire wrreq,                       // write the trigger condition to FIFO
 
 // triggering + status signals
 input wire clk,                         // clock for reading from the trigger condition FIFO (streamer_clk)
 input wire rst,                         // reset signal in streamer_clk clock domain
-input wire [width-1:0] i,               // trigger input signals
+input wire [WIDTH_TRIGGER-1:0] i,               // trigger input signals
 input wire trigger_enable,              // trigger logic enabled (trigger events ignored if not high)
 input wire trigger_force,               // (internal or external) trigger force (or'ed in st_interface.sv)
 input wire trigger_reset,               // trigger reset
@@ -38,19 +34,21 @@ output reg o                            // output
 // (internal) and_trigger_reset: resets and_trigger (for next trigger event)
 
 logic rdreq; // request for next trigger condition to be read from FIFO
-logic [width-1:0] q_pattern; // output from trigger FIFO
-logic [width-1:0] q_mask; // output from trigger FIFO
-logic [width_control-1:0] q_control; // output from trigger FIFO
+logic [WIDTH_TRIGGER-1:0] q_pattern; // output from trigger FIFO
+logic [WIDTH_TRIGGER-1:0] q_mask; // output from trigger FIFO
+logic [WIDTH_TRIGGER_CONTROL-1:0] q_control; // output from trigger FIFO
 
 logic fifo_empty; // when FIFO empty the trigger state changes to S_IDLE
-logic [`P_FIFO_TRIGGER-1:0] used; // [not really used]
+logic [P_FIFO_TRIGGER-1:0] used; // [not really used]
+
+parameter int fifo_length = 2**P_FIFO_TRIGGER;
 
 dcfifo
 #(
  .intended_device_family("CycloneV"),
  .lpm_numwords(fifo_length),
- .lpm_width(2*width+width_control),
- .lpm_widthu(`P_FIFO_TRIGGER),
+ .lpm_width(2*WIDTH_TRIGGER+WIDTH_TRIGGER_CONTROL),
+ .lpm_widthu(P_FIFO_TRIGGER),
  .add_ram_output_register("OFF"),
  .overflow_checking("ON"),
  .underflow_checking("ON"),
@@ -110,7 +108,7 @@ always_ff @(state) begin
 end
 
 logic is_last;
-assign is_last = q_control[`BIT_TRIGGER_FINAL]; // this trigger condition is the last in a chain
+assign is_last = q_control[BIT_TRIGGER_FINAL]; // this trigger condition is the last in a chain
 assign armed = (state == S_WAIT); // armed = waiting for trigger
 
 always_ff @(posedge clk) begin

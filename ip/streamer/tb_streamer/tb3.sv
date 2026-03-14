@@ -21,29 +21,29 @@ initial begin
 end
 
 // Interface
-reg [`WIDTH_TOTAL-1:0] input_data;
+reg [WIDTH_TOTAL-1:0] input_data;
 reg input_valid;
 wire input_ready;
 
-wire [`WIDTH_DATA-1:0] initial_value = 0;
+wire [WIDTH_DATA-1:0] initial_value = 0;
 
 always @(posedge clk) begin
   $strobe("t=%8.3f ctr=%h data=%h rdreq_i=%b empty_i=%b in_v_d=%b curr_value=%h curr_cnt=%d out_data=%h out_wrreq=%b in_rdreq=%b used_o=%d",
     $realtime, dut.counter, dut.data, dut.rdreq_i, dut.empty_i, dut.in_valid_data,
     dut.rl0.curr_value, dut.rl0.curr_cnt,
-    dut.rl0.out_data, dut.rl0.out_wrreq, dut.rl0.in_rdreq, dut.used_o
+    dut.rl0.out_data, dut.rl0.out_wrreq, dut.rl0.in_rdreq, dut.fifo0.used
 );
 end
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value);
 
 localparam [31:0] PASS = 0;
-localparam [31:0] NOPASS = 1 << `BIT_NOPASS;
-localparam [31:0] STORE0 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (0 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE1 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (1 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE2 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (2 << `BIT_POSITIONS_LO);
-localparam [31:0] STORE3 = (1 << `BIT_NOPASS) + (1 << `BIT_STORE) + (3 << `BIT_POSITIONS_LO);
-localparam [31:0] REPLAY = (1 << `BIT_NOPASS) + (1 << `BIT_REPLAY);
+localparam [31:0] NOPASS = 1 << BIT_NOPASS;
+localparam [31:0] STORE0 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (0 << BIT_POSITIONS_LO);
+localparam [31:0] STORE1 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (1 << BIT_POSITIONS_LO);
+localparam [31:0] STORE2 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (2 << BIT_POSITIONS_LO);
+localparam [31:0] STORE3 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (3 << BIT_POSITIONS_LO);
+localparam [31:0] REPLAY = (1 << BIT_NOPASS) + (1 << BIT_REPLAY);
 
 initial begin
   input_data <= 32'b0;

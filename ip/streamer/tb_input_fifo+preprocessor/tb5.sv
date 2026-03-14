@@ -23,11 +23,11 @@ initial begin
 end
 
 // Interface
-logic [`WIDTH_TOTAL-1:0] data;
+logic [WIDTH_TOTAL-1:0] data;
 logic wrreq;
 logic rdreq;
 
-logic [`WIDTH_TOTAL-1:0] q;
+logic [WIDTH_TOTAL-1:0] q;
 logic full;
 logic empty;
 
@@ -90,7 +90,7 @@ endtask
 task automatic read;
   int nr;
   integer j;
-  reg [`WIDTH_TOTAL-1:0] word;
+  reg [WIDTH_TOTAL-1:0] word;
   begin
     if (queue.size() > 0) begin
       nr = queue.pop_front();
@@ -126,7 +126,7 @@ endtask
 
 // Consumes all data from FIFO
 task automatic readall;
-  reg [`WIDTH_TOTAL-1:0] word;
+  reg [WIDTH_TOTAL-1:0] word;
   begin
     while (1) begin
       @(posedge clk);

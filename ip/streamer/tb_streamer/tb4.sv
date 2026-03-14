@@ -23,11 +23,11 @@ initial begin
 end
 
 // Interface
-reg [`WIDTH_TOTAL-1:0] input_data;
+reg [WIDTH_TOTAL-1:0] input_data;
 reg input_valid;
 wire input_ready;
 
-wire [`WIDTH_DATA-1:0] initial_value = 0;
+wire [WIDTH_DATA-1:0] initial_value = 0;
 
 reg trigger_enable;
 reg trigger_force;
@@ -38,7 +38,7 @@ always @(posedge clk) begin
   $strobe("t=%8.3f ctr=%h data=%h rdreq_i=%b empty_i=%b in_v_d=%b curr_value=%h curr_cnt=%d out_data=%h out_wrreq=%b in_rdreq=%b used_o=%d qout=%h",
     $realtime, dut.counter, dut.data, dut.rdreq_i, dut.empty_i, dut.in_valid_data,
     dut.rl0.curr_value, dut.rl0.curr_cnt,
-    dut.rl0.out_data, dut.rl0.out_wrreq, dut.rl0.in_rdreq, dut.used_o, qout
+    dut.rl0.out_data, dut.rl0.out_wrreq, dut.rl0.in_rdreq, dut.fifo0.used, qout
 );
 end
 
@@ -63,7 +63,7 @@ end
 
 initial begin
   #20;
-  assert(dut.used_o == 1) else $fatal;
+  assert(dut.fifo0.used == 1) else $fatal;
 end
 
 initial begin

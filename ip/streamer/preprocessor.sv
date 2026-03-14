@@ -5,26 +5,19 @@
 `include "config.vh"
 
 module preprocessor
-#(
-  parameter int WIDTH          = `WIDTH_TOTAL,
-  parameter int WIDTH_CONTROL  = `WIDTH_CONTROL,
-  parameter int WIDTH_COUNTER  = `WIDTH_COUNTER,
-  parameter int WIDTH_DATA     = `WIDTH_DATA,
-  parameter int POSITIONS      = `MEMORY_POSITIONS,
-  parameter int WIDTH_POSITION = $clog2(POSITIONS)
-)(
-  input  wire               clk,
-  input  wire               reset,
+(
+  input  wire                   clk,
+  input  wire                   reset,
 
   // FIFO #1 interface
-  input  wire [WIDTH-1:0]   din,
-  input  wire               din_valid,
-  output wire               din_ready,
+  input  wire [WIDTH_TOTAL-1:0] din,
+  input  wire                   din_valid,
+  output wire                   din_ready,
 
   // FIFO #2 interface
-  output wire [WIDTH-1:0]   dout,
-  output wire               dout_valid,
-  input  wire               dout_ready
+  output wire [WIDTH_TOTAL-1:0] dout,
+  output wire                   dout_valid,
+  input  wire                   dout_ready
 );
 
   // -------------------------------------------------------------------------
@@ -46,28 +39,30 @@ module preprocessor
   logic pass_bit, pass, store, replay, discard;
 
   // 0 = pass, 1 = discard / store / replay
-  assign pass_bit = (control[`BIT_NOPASS] == 1'b0);
+  assign pass_bit = (control[BIT_NOPASS] == 1'b0);
 
   assign pass    = in_fire &&  pass_bit;
-  assign store   = in_fire && (control[`BIT_NOPASS] == 1'b1)
-                           && (control[`BIT_STORE]  == 1'b1)
-                           && (control[`BIT_REPLAY] == 1'b0);
-  assign replay  = in_fire && (control[`BIT_NOPASS] == 1'b1)
-                           && (control[`BIT_STORE]  == 1'b0)
-                           && (control[`BIT_REPLAY] == 1'b1);
-  assign discard = in_fire && (control[`BIT_NOPASS] == 1'b1)
-                           && (control[`BIT_STORE]  == 1'b0)
-                           && (control[`BIT_REPLAY] == 1'b0); // used in TB
+  assign store   = in_fire && (control[BIT_NOPASS] == 1'b1)
+                           && (control[BIT_STORE]  == 1'b1)
+                           && (control[BIT_REPLAY] == 1'b0);
+  assign replay  = in_fire && (control[BIT_NOPASS] == 1'b1)
+                           && (control[BIT_STORE]  == 1'b0)
+                           && (control[BIT_REPLAY] == 1'b1);
+  assign discard = in_fire && (control[BIT_NOPASS] == 1'b1)
+                           && (control[BIT_STORE]  == 1'b0)
+                           && (control[BIT_REPLAY] == 1'b0); // used in TB
 
   // -------------------------------------------------------------------------
   // Memory
   // -------------------------------------------------------------------------
 
-  logic [WIDTH-1:0]          memory       [POSITIONS-1:0];
-  logic [POSITIONS-1:0]      memory_valid; // for simulation checking
-  logic [WIDTH_POSITION-1:0] position;
+  parameter int WIDTH_POSITION = $clog2(MEMORY_POSITIONS);
 
-  assign position = control[`BIT_POSITIONS_LO+WIDTH_POSITION-1:`BIT_POSITIONS_LO];
+  logic [WIDTH_TOTAL-1:0]      memory [MEMORY_POSITIONS-1:0];
+  logic [MEMORY_POSITIONS-1:0] memory_valid; // for simulation checking
+  logic [WIDTH_POSITION-1:0]   position;
+
+  assign position = control[BIT_POSITIONS_LO+WIDTH_POSITION-1:BIT_POSITIONS_LO];
 
   always_ff @(posedge clk) begin
     if (reset) begin
@@ -82,7 +77,7 @@ module preprocessor
   // Replay configuration and state
   // -------------------------------------------------------------------------
 
-  // length: number of positions to replay (1..POSITIONS); 0 => no replay
+  // length: number of positions to replay (1..MEMORY_POSITIONS); 0 => no replay
   logic [WIDTH_POSITION:0]  length;
   logic [WIDTH_POSITION:0]  req_len;
   logic [WIDTH_COUNTER-1:0] repetitions;
@@ -99,7 +94,7 @@ module preprocessor
   logic infinite;
 
   // current replay data
-  logic [WIDTH-1:0] dout_replay_reg;
+  logic [WIDTH_TOTAL-1:0] dout_replay_reg;
 
   // send: we are outputting from replay
   wire send = active;
