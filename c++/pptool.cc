@@ -800,8 +800,8 @@ int main(int argc, char *argv[])
   fm.report();
 #ifdef HAS_LUA
   lua_processor luna(input, v, fpga);
-  luna.test();
-  luna.process_line("print(\"hello\")");
+  if (v.veryverbose) luna.test();
+//  luna.process_line("print(\"hello\")");
 #endif
 #ifdef HAS_SERVER
   std::unique_ptr<LineServer> server;

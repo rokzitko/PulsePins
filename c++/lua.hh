@@ -116,8 +116,8 @@ class lua_processor {
    void test() {
      process_line(R"(
          print("Hello from Lua")
-         print("2+3=", add(2,3))
-         print(get_capture())
+         -- print("2+3=", add(2,3))
+         -- print(get_capture())
         )");
    }
 };

@@ -29,7 +29,7 @@ class freq_meter {
      n_ch = ln_ch.read();
      assert(1 <= n_ch && n_ch <= 4);
      if (verbose)
-       std::cout << "freq_meter: n_ch=" << n_ch << std::endl;
+       std::cout << "freq_meter: n_ch=" << std::dec << n_ch << std::endl;
      set_gate_len(default_gate_len);
      lresult.reserve(n_ch);
      for (int i = 0; i < n_ch; i++)
@@ -42,7 +42,7 @@ class freq_meter {
      lctl.write(2); // clear
      lctl.write(1); // enable
      if (verbose)
-       std::cout << "freq_meter: gate_len=" << gate_len << std::endl;
+       std::cout << "freq_meter: gate_len=" << std::dec << gate_len << std::endl;
    }
 
    auto get_gate_len() const {
