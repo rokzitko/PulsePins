@@ -749,6 +749,34 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
   return RC_OK;
 }
 
+int ppvcd(FPGA &fpga, const InputParser &input, const Verbosity &v)
+{
+  try {
+    streamer s(input, fpga);
+    trigger tr(input, fpga);
+    readback rb(input, fpga);
+    counter ctr(input, fpga);
+    ctr.reset_all();
+    const std::string filename = input.get_string("-file", "");
+    if (filename == "") {
+      std::cout << "Specify filename using -file." << std::endl;
+      return 0;
+    }
+    const std::string target_name = input.get_string("-target", "outs");
+    const auto scale_factor = input.get_uint32("-scale", 10); // period in ns
+    const bool trig = input.exists("-force") ? force_trigger : do_not_force_trigger;
+    if (v.verbose)
+      std::cout << "Loading sequence from " << filename << " target=" << target_name << " scale=" << scale_factor << std::endl;
+    Sequence elements;
+    elements.load_VCD(filename, target_name, scale_factor);
+    return send_and_trig(s.fifo, s.sc, rb, ctr, elements, input, trig, v);
+  }
+  catch (const char *e) {
+    std::cout << "exception: " << e << std::endl;
+  }
+  return 0;
+}
+
 bool exit_flag = false; // for handling exit requests when waiting (-wait)
 
 int main(int argc, char *argv[])
@@ -809,6 +837,7 @@ int main(int argc, char *argv[])
     {"ppgpsdo", ppgpsdo},
     {"pptemp", pptemp},
     {"ppfreq", ppfreq},
+    {"ppvcd", ppvcd},
     {"pphelloworld", pphelloworld}
   };
 

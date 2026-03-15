@@ -57,7 +57,7 @@ T checked_narrow(uint64_t x, const char* what, const std::string& context = {}) 
   return static_cast<T>(x);
 }
 
-inline count_t parse_timestamp(std::string_view t) {
+inline count_t parse_timestamp(std::string_view t, uint32_t scale_factor) {
   const std::string s(t);
   const char* p = s.c_str();
   if (*p != '#') {
@@ -70,13 +70,14 @@ inline count_t parse_timestamp(std::string_view t) {
   if (endp == p || *endp != '\0') {
     throw std::runtime_error("Invalid VCD timestamp: " + s);
   }
+  v = v/scale_factor;
 
   return checked_narrow<count_t>(static_cast<uint64_t>(v), "timestamp", s);
 }
 
 } // namespace detail
 
-std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view target_name = "outs") {
+std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view target_name = "outs", uint32_t scale_factor = 10) {
   std::vector<VcdUpdate> updates;
 
   std::string target_id;
@@ -107,7 +108,7 @@ std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view target
     }
 
     if (t[0] == '#') {
-      current_time = detail::parse_timestamp(t);
+      current_time = detail::parse_timestamp(t, scale_factor);
       continue;
     }
 
@@ -142,6 +143,8 @@ std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view target
       updates.push_back(VcdUpdate{value, current_time});
     }
   }
+
+  updates.push_back(VcdUpdate{0, current_time}); // add end event
 
   return updates;
 }

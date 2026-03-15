@@ -66,7 +66,7 @@ TARGETS = pptool ppscpi
 
 # Symlinks to pptool
 SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
-           ppgpsdo pptemp ppfreq ppread pphelloworld
+           ppgpsdo pptemp ppfreq ppread ppvcd pphelloworld
 
 pptool: pptool.o $(LUA_LIB)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB) $(LUA_LIB)

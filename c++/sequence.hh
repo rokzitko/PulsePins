@@ -81,6 +81,17 @@ class Sequence : public std::deque<el> {
      return s;
    }
 
+   // Load VCD file
+   void load_VCD(const std::string filename, const std::string target_name = "outs", const uint32_t scale_factor = 10) {
+     std::ifstream F(filename);
+     auto l = parseVcdUpdates(F, target_name, scale_factor);
+     for (size_t i = 0; i < l.size()-1; i++) {
+       Counter c = l[i+1].count-l[i].count;
+       Value v = l[i].value;
+       this->push_back(el(c, v));
+     }
+   }
+
    virtual ~Sequence() = default;
 };
 
