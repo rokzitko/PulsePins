@@ -19,7 +19,6 @@
 #endif
 
 #include "freq_meter.hh"
-#include "clk.hh"
 
 // First command line argument is the test number (pptest, ppmstest, ppdmatest)
 auto get_test_number(const InputParser &input)
@@ -118,7 +117,7 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
     period_req = 1.0/f;
     duty = d;
   }
-  const double output_clk = s.int_clk.get_freq(0);
+  const double output_clk = fpga.pll_int.int_clk.get_freq(0);
   if (v.verbose)
     std::cout << "output_clk=" << pretty_frequency(output_clk) << " output_clk_period="
     << pretty_time(1.0/output_clk) << std::endl;
@@ -216,7 +215,7 @@ int ppdelay(FPGA &fpga, const InputParser &input, const Verbosity &v)
   trigger tr(input, fpga);
   const auto [p, m] = get_trigger_pm(input, v.verbose);
   const auto delay = parse_time(input, "-delay", "0");
-  const double output_clk = s.int_clk.get_freq(0);
+  const double output_clk = fpga.pll_int.int_clk.get_freq(0);
   const auto nr_delay = calc_delay(delay, output_clk);
   const auto pulse_duration = parse_time(input, "-duration", "0");
   const auto nr = calc_duration_nr(pulse_duration, v.verbose, output_clk);
@@ -790,12 +789,9 @@ int main(int argc, char *argv[])
   RealtimeScheduler rt;
   if (v.veryverbose)
     std::cout << "Scheduler: " << rt.report() << std::endl;
+  rstmgr rm;
+  rm.s2f_reset(); // FPGA fabric reset
   FPGA fpga(input, v);
-  if (v.veryverbose) {
-    fpga.mgr.status();
-    fpga.status();
-  }
-  set_clk(input, fpga);
   pp_freq_meter fm(input, fpga);
   fm.report();
 #ifdef HAS_LUA

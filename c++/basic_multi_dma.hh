@@ -13,8 +13,6 @@
 #include "fpga.hh"
 #include "streamer.hh"
 #include "parser.hh"
-#include "pll_clk.hh"
-#include "pll_rules.hh"
 #include "st_mux.hh"
 
 // Streamer interface + asssociated FIFO
@@ -51,24 +49,18 @@ class basic_streamer {
 };
 
 // High-level interface, single core, with multiplexer (using FIFO transport mechanism)
-class streamer : public basic_streamer, public pll_core_clk, public pll_int_clk {
+class streamer : public basic_streamer {
  public:
    FPGA &fpga;
-   rstmgr rm;
    st_mux mux; // Avalon ST multiplexer; default is channel 1 (FIFO)
 
    streamer(const InputParser &input,
             FPGA &_fpga,
             const std::uintptr_t st_mux_base = ST_MUX_1_BASE) :
      basic_streamer(input, _fpga),
-     pll_core_clk(_fpga),
-     pll_int_clk(_fpga),
      fpga (_fpga),
      mux(fpga.dev_h2f, fpga.v, st_mux_base) {
-       rm.s2f_reset();              // FPGA fabric reset
        set_initial_value(input);    // set initial value before streamer reset is performed
-       set_core_clk(input, fpga.v); // set core PLL config
-       set_int_clk(input, fpga.v);  // set streamer int_clk PLL config
        fpga.output_enable(true);    // ensure output is enabled
        sc.reset();                  // streamer core reset
      }
@@ -97,24 +89,18 @@ class dma_streamer : public streamer {
 };
 
 // High-level interface, four cores
-class multistreamer : public pll_core_clk, public pll_int_clk {
+class multistreamer {
  public:
    FPGA &fpga;
-   rstmgr rm;
    basic_streamer s1, s2, s3, s4;
 
    multistreamer(const InputParser &input, FPGA &_fpga) :
-     pll_core_clk(_fpga),
-     pll_int_clk(_fpga),
      fpga(_fpga),
      s1(input, fpga, FIFO_1_IN_BASE, FIFO_1_IN_CSR_BASE, ST_INTERFACE_1_BASE),
      s2(input, fpga, FIFO_2_IN_BASE, FIFO_2_IN_CSR_BASE, ST_INTERFACE_2_BASE),
      s3(input, fpga, FIFO_3_IN_BASE, FIFO_3_IN_CSR_BASE, ST_INTERFACE_3_BASE),
      s4(input, fpga, FIFO_4_IN_BASE, FIFO_4_IN_CSR_BASE, ST_INTERFACE_4_BASE)
      {
-       rm.s2f_reset(); // FPGA fabric reset
-       set_core_clk(input, fpga.v);
-       set_int_clk(input, fpga.v);
        fpga.output_enable(true); // ensure output is enabled
        s1.set_initial_value(input, "-i1");
        s1.sc.reset();

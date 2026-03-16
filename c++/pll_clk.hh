@@ -7,7 +7,6 @@
 #include <string>
 #include <iostream>
 
-#include "fpga.hh"
 #include "pll.hh"
 #include "pll_rules.hh"
 #include "parser.hh"
@@ -19,12 +18,10 @@ constexpr int pll_delay = 2*1000;  // 2ms delay for things to settle (docs say 5
 
 class pll_core_clk {
  public:
-   const FPGA &fpga;
    pll core_clk;
 
-   pll_core_clk(const FPGA &_fpga) :
-     fpga(_fpga),
-     core_clk(fpga.dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
+   pll_core_clk(mm &dev_lw) :
+     core_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
 
    void set_core_clk(const InputParser &input, const Verbosity &v) {
      core_clk.set_from_string(applyReplacement(input.get_string("-core_pll", get_env("PP_CORE_PLL")), pll_rules));
@@ -42,12 +39,10 @@ class pll_core_clk {
 
 class pll_int_clk {
  public:
-   const FPGA &fpga;
    pll int_clk;
 
-   pll_int_clk(const FPGA &_fpga) :
-     fpga(_fpga),
-     int_clk(fpga.dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
+   pll_int_clk(mm &dev_lw) :
+     int_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
 
    void set_int_clk(const InputParser &input, const Verbosity &v) {
      int_clk.set_from_string(applyReplacement(input.get_string("-int_pll", get_env("PP_INT_PLL")), pll_rules));

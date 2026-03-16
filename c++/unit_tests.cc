@@ -355,8 +355,8 @@ TEST_CASE("parseuint32_t") {
 TEST_CASE("VCD parser") {
   std::ifstream F("unit_tests_input/test1.vcd");
   CHECK(F);
-  auto v = parseVcdUpdates(F, "outs");
-  CHECK(v.size() == 5);
+  auto v = parseVcdUpdates(F, "outs", 1);
+  CHECK(v.size() == 6);
   CHECK(v[0].value == 0);
   CHECK(v[0].count == 0);
   CHECK(v[1].value == 4096);
@@ -367,4 +367,6 @@ TEST_CASE("VCD parser") {
   CHECK(v[3].count == 13);
   CHECK(v[4].value == 14);
   CHECK(v[4].count == 33);
+  CHECK(v[5].value == 0);
+  CHECK(v[5].count == 500);
 }

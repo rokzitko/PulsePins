@@ -37,6 +37,8 @@ static_assert(ALT_FPGAMGR_BASE == ALT_FPGAMGR_OFST);
 #include "verbosity.hh"
 #include "trigger_int.hh"
 #include "trigger_ext.hh"
+#include "pll_clk.hh"
+#include "pll_rules.hh"
 
 class MGR {
  private:
@@ -123,6 +125,8 @@ class FPGA {
    trigger_int trig_int;
    trigger_ext trig_ext;
    double streamer_clk = -1.0; // measured streamer clock frequency in Hz
+   pll_core_clk pll_core;
+   pll_int_clk pll_int;
 
    FPGA(const InputParser &_input, const Verbosity &_v, const bool oe = false) :
      dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE),
@@ -137,7 +141,9 @@ class FPGA {
      input(_input),
      v(_v),
      trig_int(dev_lw, PIO_TRIG_INT_BASE),
-     trig_ext(dev_lw, PIO_TRIG_MONITOR_BASE)
+     trig_ext(dev_lw, PIO_TRIG_MONITOR_BASE),
+     pll_core(dev_lw),
+     pll_int(dev_lw)
      {
        // Ensure that only a single instance of class FPGA exists
        bool expected = false;
@@ -145,9 +151,16 @@ class FPGA {
                                                 std::memory_order_acq_rel)) {
          throw std::logic_error("FPGA: second instance construction attempted");
        }
+       pll_core.set_core_clk(input, v);
+       pll_int.set_int_clk(input, v);
+       set_clk();
        if (oe) // if oe=false, leave output_enable signal as is
          output_enable(true);
        blink_led(); // on-board led blinks on startup
+       if (v.veryverbose) {
+         mgr.status();
+         status();
+       }
      }
 
    void blink_led() {
@@ -168,7 +181,7 @@ class FPGA {
    FPGA(FPGA&&)                 = delete;
    FPGA& operator=(FPGA&&)      = delete;
 
-   auto status() const {
+   uint32_t status() const {
      auto s = mgr.gpio_read();
      if (v.verbose) {
        std::cout << "gpio in=0x" << std::hex << s << " ";
@@ -199,6 +212,30 @@ class FPGA {
    static const int ch_ext = 3;
    static const int ch_int = 1;
 #endif
+
+   // Note: the reset is not performed here if the clock is not explicitly specified by either
+   // -int_clk or -ext_clk switch.
+    void set_clk() {
+     rstmgr rm;
+     if (envVarExists("PP_INT_CLK") || input.exists("-int_clk")) {
+       rm.s2f_hold_reset();
+       sel_clk_int();
+       rm.s2f_release_reset();
+     }
+     if (envVarExists("PP_EXT_CLK") || input.exists("-ext_clk")) {
+       rm.s2f_hold_reset();
+       sel_clk_ext();
+       rm.s2f_release_reset();
+     }
+     if (envVarExists("PP_CLK") || input.exists("-clk")) {
+       int val = parse_value(input, "-clk", get_env("PP_CLK"));
+       if (val < 0 || val > 3)
+         std::cerr << "Invalid sel_clk value " << val << "." << std::endl;
+       rm.s2f_hold_reset();
+       sel_clk(val);
+       rm.s2f_release_reset();
+     }
+   }
 
    void sel_clk(uint32_t sel) {
      sel &= 3; // only bits 0 and 1 are relevant for sel_clk

@@ -12,7 +12,6 @@
 #include "ppmisc.hh"
 #include "verbosity.hh"
 #include "freq_meter.hh"
-#include "clk.hh"
 
 class TerminateSession : public std::exception {
    std::string message;
@@ -165,8 +164,9 @@ int main(int argc, char *argv[]) {
   RealtimeScheduler rt;
   if (v.veryverbose)
     std::cout << "Scheduler: " << rt.report() << std::endl;
+  rstmgr rm;
+  rm.s2f_reset(); // FPGA fabric reset
   FPGA fpga(input, v);
-  set_clk(input, fpga);
   pp_freq_meter fm(input, fpga);
   fm.report();
   try {
