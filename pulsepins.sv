@@ -99,9 +99,7 @@ module pulsepins(
     inout                       GPI0GPIO26, // SCL
     inout                       GPI0GPIO27, // SDA
     inout  [`WIDTH_AUX-1:0]     GPI0AUX,    // AUX I/O
-`ifndef INTERNAL_CLK
     input                       EXT_CLKp,   // GPI1GPIO[0]
-`endif
     input                       PPS_IN,     // GPI1GPIO[1]
 //  input                       PPCLK1,     // GPI1GPIO[2] (for future use)
 //  input                       PPCLK2,     // GPI1GPIO[3] (for future use)

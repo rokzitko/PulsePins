@@ -3,6 +3,18 @@
 
 // Low-level interface to FPGA; holds memory-map objects
 
+// Clock mapping needs to be checked using pptool: e.g. pptool -clk 0 -int_pll 25M, pptool -clk 3 -int_pll 25M, etc.
+#define SELECT_CLK_CLEAN
+
+#ifdef SELECT_CLK
+   static const int ch_ext = 2;
+   static const int ch_int = 0;
+#endif
+#ifdef SELECT_CLK_CLEAN
+   static const int ch_ext = 3;
+   static const int ch_int = 0;
+#endif
+
 #pragma once
 
 #include <iostream>
@@ -151,9 +163,9 @@ class FPGA {
                                                 std::memory_order_acq_rel)) {
          throw std::logic_error("FPGA: second instance construction attempted");
        }
+       set_clk();
        pll_core.set_core_clk(input, v);
        pll_int.set_int_clk(input, v);
-       set_clk();
        if (oe) // if oe=false, leave output_enable signal as is
          output_enable(true);
        blink_led(); // on-board led blinks on startup
@@ -201,17 +213,6 @@ class FPGA {
    void output_enable(const bool oe = true) {
      pio_cfg.write_at(0, oe);
    }
-
-#define SELECT_CLK_CLEAN
-
-#ifdef SELECT_CLK
-   static const int ch_ext = 2;
-   static const int ch_int = 0;
-#endif
-#ifdef SELECT_CLK_CLEAN
-   static const int ch_ext = 3;
-   static const int ch_int = 1;
-#endif
 
    // Note: the reset is not performed here if the clock is not explicitly specified by either
    // -int_clk or -ext_clk switch.
