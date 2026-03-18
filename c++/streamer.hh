@@ -446,6 +446,27 @@ class streamer_dma : private c_dma
      wait(report_interval*1000);
    }
 
+   // Transfer the same data to the streamer multiple time
+   // 0 = repeat indefinitely
+   void transfer_multiple_times(const size_t size, const size_t repetitions = 0, const bool verbose = true) {
+//     constexpr size_t depth = MSGDMA_1_DESCRIPTOR_SLAVE_DESCRIPTOR_FIFO_DEPTH;  // Descriptor FIFO depth = 32
+     constexpr size_t depth = 16;
+     reset();
+     for (size_t cnt = 0; cnt < repetitions || repetitions == 0; cnt++) {
+       if (verbose)
+         std::cout << "DMA transfer equeuing, cnt=" << std::dec << cnt << " fill=" << read_fill() << std::endl;
+       report();
+       enqueue_src_addr(sdram.get_base(), size);
+       if (cnt == depth-4) {
+         initiate_transfer();
+         std::cout << " DMA transfer initiated." << std::endl;
+       }
+       while (read_fill() >= depth-2) usleep(100);
+     }
+     initiate_transfer(); // if not done in the for loop
+     wait(report_interval*1000);
+   }
+
    // High-level sequence transfer routine
    void send_sequence(const Sequence &elements, const bool verify_buffer = true) {
      const size_t size = prepare(elements);
