@@ -373,15 +373,18 @@ class streamer_dma : private c_dma
    size_t max_size; // in bytes
    mm sdram;
    int report_interval = 300; // report DMA status every report_interval milliseconds when waiting for transfer to complete
+   const Verbosity &v;
 
    streamer_dma(const mm &dev,
                 const std::uintptr_t csr_base,
                 const std::uintptr_t descriptor_base,
                 const std::uintptr_t ram_addr,
-                const size_t _max_size) :
-     c_dma(dev, csr_base, descriptor_base),
+                const size_t _max_size,
+                const Verbosity &_v) :
+     c_dma(dev, csr_base, descriptor_base, _v.veryverbose),
      max_size(_max_size),
-     sdram(ram_addr, max_size) {
+     sdram(ram_addr, max_size),
+     v(_v) {
        reset();
      }
 
@@ -448,18 +451,16 @@ class streamer_dma : private c_dma
 
    // Transfer the same data to the streamer multiple time
    // 0 = repeat indefinitely
-   void transfer_multiple_times(const size_t size, const size_t repetitions = 0, const bool verbose = true) {
-//     constexpr size_t depth = MSGDMA_1_DESCRIPTOR_SLAVE_DESCRIPTOR_FIFO_DEPTH;  // Descriptor FIFO depth = 32
-     constexpr size_t depth = 16;
+   void transfer_multiple_times(const size_t size, const size_t repetitions) {
+     constexpr size_t depth = MSGDMA_1_DESCRIPTOR_SLAVE_DESCRIPTOR_FIFO_DEPTH;  // Descriptor FIFO depth = 32
      reset();
      for (size_t cnt = 0; cnt < repetitions || repetitions == 0; cnt++) {
-       if (verbose)
-         std::cout << "DMA transfer equeuing, cnt=" << std::dec << cnt << " fill=" << read_fill() << std::endl;
-       report();
+       if (v.veryverbose) std::cout << "DMA transfer equeuing, cnt=" << std::dec << cnt << " fill=" << read_fill() << std::endl;
+       if (v.veryverbose) report();
        enqueue_src_addr(sdram.get_base(), size);
        if (cnt == depth-4) {
          initiate_transfer();
-         std::cout << " DMA transfer initiated." << std::endl;
+         if (v.verbose) std::cout << "DMA transfer initiated." << std::endl;
        }
        while (read_fill() >= depth-2) usleep(100);
      }

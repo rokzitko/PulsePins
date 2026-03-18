@@ -6,3 +6,4 @@ time ppdmatest 22 -c 100000 -v 254 -reps 20
 time ppdmatest 22 -c 100000 -v 254 -reps 30
 
 time ppdmatest 22 -c 10000 -v 254 -reps 30
+time ppdmatest 22 -c 10000 -v 254 -reps 100

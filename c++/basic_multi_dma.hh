@@ -83,7 +83,7 @@ class dma_streamer : public streamer {
 
    dma_streamer(const InputParser &input, FPGA &_fpga) :
      streamer(input, _fpga),
-     dma(fpga.dev_h2f, MSGDMA_1_CSR_BASE, MSGDMA_1_DESCRIPTOR_SLAVE_BASE, dma_base, dma_size) {
+     dma(fpga.dev_h2f, MSGDMA_1_CSR_BASE, MSGDMA_1_DESCRIPTOR_SLAVE_BASE, dma_base, dma_size, fpga.v) {
        mux.channel(2); // DMA
      }
 };
