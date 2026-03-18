@@ -49,7 +49,7 @@ public:
 
      const uint32_t fill = dma_csr_fill_level.read();
      const uint16_t write_fill = (uint16_t)(fill >> 16);
-     const uint16_t read_fill = (uint16_t)(fill && 0x0000ffffUL);
+     const uint16_t read_fill = (uint16_t)(fill & 0x0000ffffUL);
 
      const uint32_t control = dma_csr_control.read();
      std::string strc;
@@ -61,9 +61,9 @@ public:
      strc += (control & (1ULL << 5) ? " stop_desc" : "");
 
      std::stringstream ss;
-     ss << "status=" << std::bitset<10>(status) << str
-       << " | control=" << std::bitset<6>(control) << strc
-       << " | fill=" << std::dec << fill << " r=" << read_fill << " w=" << write_fill;
+     ss << "status=0x" << std::hex << status << str
+       << " | control=0x" << std::hex << control << strc
+       << " | fill r=" << std::dec << read_fill << " w=" << write_fill;
      return ss.str();
    }
 
@@ -78,6 +78,12 @@ public:
      const uint32_t fill = dma_csr_fill_level.read();
      const uint16_t write_fill = (uint16_t)(fill >> 16);
      return write_fill;
+   }
+
+   uint16_t read_fill() {
+     const uint32_t fill = dma_csr_fill_level.read();
+     const uint16_t read_fill = (uint16_t)(fill & 0x0000ffffUL);
+     return read_fill;
    }
 
    void clear_status() {
