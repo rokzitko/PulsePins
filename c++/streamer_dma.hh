@@ -6,12 +6,7 @@
 #include <cstdint> // integer types, uint32_t, etc.
 #include <string>
 #include <iostream>
-#include <sstream>
-#include <bitset>
-#include <memory> // shared_ptr
-#include <deque>
 #include <unistd.h> // usleep
-#include <type_traits> // is_same_v
 
 #include "tidbit.hh"
 #include "delay.hh"
