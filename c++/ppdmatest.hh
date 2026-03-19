@@ -15,6 +15,7 @@
 #include "parser.hh"
 #include "streamer.hh"
 #include "config.h"
+#include "definitions.hh"
 
 class dmatests {
  public:
@@ -40,57 +41,41 @@ class dmatests {
      return send_and_trig(ds.dma, ds.sc, rb, ctr, elements, input, force_trigger, verb);
    }
 
-   int test21() {
-     std::cout << "test21 - long sequence (direct writing to memory)" << std::endl;
+   size_t write_sequence(bool terminator) {
      const auto c = parse_count(input, "-c", "1000");
      auto v = parse_value(input, "-v", "10");
      const auto vmax = ds.dma.max_size/BYTES_TOTAL-1; // maximum number of elements (include one position for terminal element)
      v = std::min(v, vmax);
+     size_t len = v;
      if (verb.verbose)
        std::cout << "c=" << std::dec << c << " v=" << v << std::endl;
      for (size_t i = 0; i < v; i++)
        ds.dma.write_element(i, el(c, i));
-     ds.dma.write_element(v, el());
+     if (terminator) {
+       ds.dma.write_element(v, el());
+       len++;
+     }
+     return len;
+   }
+
+   int test21() {
+     std::cout << "test21 - long sequence (DMA)" << std::endl;
+     const auto len = write_sequence(true);
      std::thread trig(trig_force, std::ref(ds.sc));
-     if (verb.veryverbose) ds.dma.report();
-     ds.dma.transfer(BYTES_TOTAL*(v+1));
-     ds.sc.status_report();
-     if (verb.veryverbose) ds.dma.report();
-     std::cout << "Waiting for streamer to complete" << std::endl;
-     const uint64_t max_cnt = 10000; // 10s maximum wait time
-     uint64_t cnt = 0;
-     while (!(ds.sc.done() || ds.sc.buffer_error()) && cnt < max_cnt) { usleep(1000); cnt++; }
-     // NOTE: in this test we are not checking for correctness, we are just waiting for the streaming process to terminate.
+     ds.dma.transfer(BYTES_TOTAL*len);
      trig.join();
-     const int rc = (cnt == max_cnt ? 1 : 0);
-     std::cout << (rc == 1 ? red : green) << (rc == 1 ? "FAILURE" : "SUCCESS") << rst << std::endl;
-     return rc;
+     return ds.sc.wait_to_complete(verb);
    }
 
    int test22() {
-     std::cout << "test22 - loops with DMA" << std::endl;
-     const auto c = parse_count(input, "-c", "1000");
-     auto v = parse_value(input, "-v", "10");
-     const auto vmax = ds.dma.max_size/BYTES_TOTAL-1; // maximum number of elements (include one position for terminal element)
-     v = std::min(v, vmax);
+     std::cout << "test22 - loops of long sequence (DMA)" << std::endl;
+     const auto len = write_sequence(false);
      const auto reps = parse_count(input, "-reps", "0"); // repetitions, 0 = infinity
-     if (verb.verbose)
-       std::cout << "c=" << std::dec << c << " v=" << v << " reps=" << reps << std::endl;
-     for (size_t i = 0; i < v; i++)
-       ds.dma.write_element(i, el(c, i));
+     std::cout << "reps=" << std::dec << reps << std::endl;
      std::thread trig(trig_force, std::ref(ds.sc));
-     ds.dma.transfer_multiple_times(BYTES_TOTAL*(v+1), reps);
-     ds.sc.status_report();
-     if (verb.veryverbose) ds.dma.report();
-     std::cout << "Waiting for streamer to complete" << std::endl;
-     const uint64_t max_cnt = 10000; // 10s maximum wait time
-     uint64_t cnt = 0;
-     while (!(ds.sc.done() || ds.sc.buffer_error()) && cnt < max_cnt) { usleep(1000); cnt++; }
-     // NOTE: in this test we are not checking for correctness, we are just waiting for the streaming process to terminate.
+     ds.dma.transfer_multiple_times(BYTES_TOTAL*len, reps);
      trig.join();
-     const int rc = (cnt == max_cnt ? 1 : 0);
-     std::cout << (rc == 1 ? red : green) << (rc == 1 ? "FAILURE" : "SUCCESS") << rst << std::endl;
-     return rc;
+     return ds.sc.wait_to_complete(verb);
    }
 
    dmatests(dma_streamer &_ds, readback &_rb, counter &_ctr, const InputParser &_input, const Verbosity &_v) :

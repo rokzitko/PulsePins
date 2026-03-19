@@ -16,11 +16,13 @@
 #include <type_traits> // is_same_v
 
 #include "tidbit.hh"
+#include "delay.hh"
 #include "fifo.hh"
 #include "dma.hh"
 #include "misc.hh"
 #include "verbosity.hh"
 #include "config.h"
+#include "definitions.hh"
 #include "colors.hh"
 
 const bool output_streamer = false;
@@ -207,15 +209,19 @@ class streamer_control
      return status() & DONE;
    }
 
-   void wait_to_complete(const Verbosity &v, const uint64_t max_cnt = 10000) { // 10s maximum wait time by default
+   auto wait_to_complete(const Verbosity &v, const uint64_t max_cnt = 10000) { // 10s maximum wait time by default
+     int rc = RC_OK;
      if (v.veryverbose)
        std::cout << "Waiting for streamer to complete" << std::endl;
      uint64_t cnt = 0;
-     while (!(done() || buffer_error()) && cnt < max_cnt) { usleep(1000); cnt++; }
-     if (cnt == max_cnt && v.verbose)
+     while (!(done() || buffer_error()) && cnt < max_cnt) { sleep_1ms(); cnt++; }
+     if (cnt == max_cnt && v.verbose) {
        std::cout << "wait_to_complete(): timeout exceeded while waiting for completion." << std::endl;
+       rc = RC_TIMEOUT;
+     }
      if (v.veryverbose)
        status_report();
+     return rc;
    }
 
    void status_report(std::ostream &F = std::cout) {
@@ -447,6 +453,7 @@ class streamer_dma : private c_dma
      enqueue_src_addr(sdram.get_base(), size);
      initiate_transfer();
      wait(report_interval*1000);
+     if (v.veryverbose) report();
    }
 
    // Transfer the same data to the streamer multiple time
@@ -466,6 +473,7 @@ class streamer_dma : private c_dma
      }
      initiate_transfer(); // if not done in the for loop
      wait(report_interval*1000);
+     if (v.veryverbose) report();
    }
 
    // High-level sequence transfer routine

@@ -14,6 +14,17 @@
 inline value_t random_value() { return random_u32(); }
 inline count_t random_count() { return random_u32(); }
 
+inline Sequence prepare_counter_sequence(const size_t v,
+                                         const size_t c,
+                                         const bool verbose = false)
+{
+  if (verbose) std::cout << "v=" << std::dec << v << " c=" << c << std::endl;
+  Sequence elements;
+  for (size_t i = 0; i < v; i++)
+    elements.push_back(el(c, i));
+  return elements;
+}
+
 // Create a sequence of 'nr' blocks of maximum length 'max_block_len'
 inline Sequence prepare_random_test_sequence(const unsigned long nr = 10,
                                              const unsigned long max_block_len = 100000,
