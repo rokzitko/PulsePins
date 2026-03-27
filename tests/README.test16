@@ -1,6 +1,6 @@
-Periodic signals on output pins
+Periodic signals on the output pins.
 
 pptest 16 -cycles 1_000_000 -c 1_000 -core_pll 50M
 
-# 1ms, 2ms, 3ms, etc.
+# 1 ms, 2 ms, 3 ms, etc.
 pptest 16 -cycles 0 -c 1_000 -core_pll 20M

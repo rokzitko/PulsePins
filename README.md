@@ -58,6 +58,34 @@ PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit 
 
 [Project webpage](http://auger.ijs.si/pulsepins/site/)
 
+Useful contributor entry points:
+
+* `HACKING.md`
+* `CONTRIBUTING.md`
+* `docs/docs/build.md`
+* `docs/docs/hacking.md`
+
+## Contributors welcome
+
+PulsePins is explicitly intended to appeal to hackers, tinkerers, and experimenters.
+
+Contributions are welcome across documentation, examples, recipes, C++ tools, Python bindings, RTL, test benches, hardware validation notes, and experimental integration ideas. Small, practical improvements are just as valuable as large features.
+
+Worked examples are especially valuable. Example-driven documentation is one of the project goals.
+
+If you want to get started quickly:
+
+* without hardware, see `HACKING.md` and `docs/docs/getting_started_no_hardware.md`
+* with hardware, see `INSTALL-quick_start.md` and `docs/docs/getting_started_hardware.md`
+* for contribution process and DCO details, see `CONTRIBUTING.md`
+
+Community-contributed examples would be especially appreciated in application areas such as lasers/shutters/detectors, synchronized instrument triggering, delay generation for time-resolved measurements, and DDS/DAC control workflows.
+
+## Recipes
+
+Reusable command examples for the PulsePins command-line tools are stored in `recipes/`.
+These files are separate from `tests/` so test executables and example command invocations are easier to find.
+
 ## License
 
 This project is released under the MIT License. You may use, copy, modify, merge, publish, distribute, sublicense,

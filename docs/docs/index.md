@@ -58,7 +58,7 @@ replay).
 
 ### Composition of the control parameter
 
-Defined in ``ip/streamer/config.h`` (bit fields, 0 is LSB):
+Defined in ``ip/streamer/config.vh`` (bit fields, 0 is LSB):
 
 | Name               | Bit        | Description |
 | -------           | ----------- | ----------- |
@@ -69,7 +69,7 @@ Defined in ``ip/streamer/config.h`` (bit fields, 0 is LSB):
 | BIT_MODE*         | 4-7         | mode bits (load, set, clear, flip, invert, shift, etc.)       |
 | BIT_NOPASS        | 8           | preprocessor bit (0 = pass unmodified, 1 = preprocess)        |
 | BIT_STORE         | 9           | store in preprocessor memory                                  |
-| BIT_POSITIONS*    | 10-12       | storage position                                              |
+| BIT_POSITIONS*    | 10-13       | storage position                                              |
 | BIT_REPLAY        | 15          | replay a sequence stored in the preprocessor                  |
 | BIT_RETRIG        | 16          | retrigger request                                             |
 | BIT_PRNG          | 17          | emit random numbers                                           |
@@ -84,9 +84,9 @@ clock). For flexibility, regular elements can either specify the new value on th
 set, bit clear, bit flip, etc.). This is controlled by the "mode bits" in the control parameter.
 
 All elements describing trigger sequences have the control bit 0 (BIT_TRIGGER) high. The final trigger element additionally has its
-control bit 1 (BIT_TRIGGER_FINAL) high (preceeding non-final elements have their bit 1 low); this special marking of the final trigger
+control bit 1 (BIT_TRIGGER_FINAL) high (preceding non-final elements have their bit 1 low); this special marking of the final trigger
 element is often not needed, because the trigger will also fire when all trigger conditions in the condition queue are
-exhaused. In simple cases, there will be a single trigger element in the sequence. The final trigger element
+exhausted. In simple cases, there will be a single trigger element in the sequence. The final trigger element
 might be needed in cases where streaming is paused through a _retrigger request_. In this case, the trigger queue
 needs to contain trigger condition subsequences separated by "final trigger" elements.
 
@@ -250,7 +250,7 @@ Trigger is sensitive only when the _enable_ signal is high. The enable signal ca
 software call), externally (signal applied to a pin) or using switches (switch 0 set to ON); see
 the section on [trigger combiner](#trigger-combiner) on details about the different trigger sources.
 
-Trigger being _armed_ means that the data is available in the output FIFO and that the PulsePin core is waiting for
+Trigger being _armed_ means that the data is available in the output FIFO and that the PulsePins core is waiting for
 the trigger events to occur.
 
 Trigger can be forced by an internal or external trigger_force signal, or using the physical switch number 2 on DE10-Nano board.

@@ -4,7 +4,7 @@
 
 ### Configuration file
 
-`IP/streamer/config.vh` - this file defines the bit widths of various registers (data, counter, control)
+`ip/streamer/config.vh` - this file defines the bit widths of various registers (data, counter, control)
 
 `WIDTH_COUNTER`: number of bits of the integer variable that specifies the length of runs in run-length encoding. Defaults to 32. A version with 64-bit counters is available
 for high-speed systems and for allowing extremely long delays.
@@ -20,19 +20,20 @@ for high-speed systems and for allowing extremely long delays.
 `P_FIFO_TRIGGER`: exponent p that fixes the length 2^p of the FIFO buffer for trigger conditions (pattern and mask pairs) for
 complex serial trigger sequences.
 
-`P_FIFO_IN`: exponent p that fixes the length 2^p of the input FIFO buffer for (counter,data,control) triplets
-received from the software. The buffer should be large enough so that it never underflows during the streaming process.
-Underflows are possible if there are long sequences of elements with very short lengths. Used in `input_fifo.v`.
+`P_FIFO_IN1`, `P_FIFO_IN2`: exponents p that fix the lengths 2^p of the two input FIFO buffers for
+(counter,data,control) triplets received from the software. These buffers should be large enough so that they
+never underflow during the streaming process. Underflows are possible if there are long sequences of elements with
+very short lengths. Used in `input_fifo.sv`.
 
-`P_FIFO_OUT`: exponent p that fixes the legnth 2^p of the output FIFO buffer for the output data. This size is not
-critical. Used in `output_fifo.v`.
+`P_FIFO_OUT`: exponent p that fixes the length 2^p of the output FIFO buffer for the output data. This size is not
+critical. Used in `output_fifo.sv`.
 
 `MEMORY_POSITIONS`: number of elements that can be stored in the preprocessor for replays
 
 
 ### Streamer control registers
 
-Note that the addressed are given in 32-bit word steps (multiply by 4 to get an actual address in units of bytes).
+Note that the addresses are given in 32-bit word steps (multiply by 4 to get an actual address in units of bytes).
 
 Write:
 
@@ -41,7 +42,7 @@ Write:
 | IF_CTRL       | b000        | Control register |
 | INIT_VAL      | b100        | Initial value    |
 | QOUT_OVERRIDE | b110        | Override value for the output register |
-| GATING_W      | b111        | Gating control resiter (mask, gate_in enable, gating enable) |
+| GATING_W      | b111        | Gating control register (mask, gate_in enable, gating enable) |
 
 Read:
 
@@ -49,11 +50,25 @@ Read:
 | Name          | Address     | Description                        |
 | -------       | ----------- | ---------------------------------- |
 | IF_STATUS     | b000        | Status register                    |
-| QOUT          | b100        | Current value at the output        |
-| QOUT_STREAMER | b010        | Current value at the streamer port |
 | EXT_TRIG_IN   | b001        | External trigger inputs            |
+| QOUT_STREAMER | b010        | Current value at the streamer port |
 | EXT_TRIG_CTRL | b011        | External trigger control signals   |
-| GATRING_R     | b111        | Gating signals and control         |
+| QOUT          | b100        | Current value at the output        |
+| OVERFLOW      | b101        | Overflow / error counter           |
+| CRC32         | b110        | CRC32 of streamed data             |
+| GATING_R      | b111        | Gating signals and control         |
+| ST_INF1_IN_L  | b1000       | Input-FIFO 1 statistics, low word  |
+| ST_INF1_IN_H  | b1001       | Input-FIFO 1 statistics, high word |
+| ST_INF1_OUT_L | b1010       | Input-FIFO 1 output stats, low word |
+| ST_INF1_OUT_H | b1011       | Input-FIFO 1 output stats, high word |
+| ST_INF2_IN_L  | b1100       | Input-FIFO 2 statistics, low word  |
+| ST_INF2_IN_H  | b1101       | Input-FIFO 2 statistics, high word |
+| ST_INF2_OUT_L | b1110       | Input-FIFO 2 output stats, low word |
+| ST_INF2_OUT_H | b1111       | Input-FIFO 2 output stats, high word |
+| ST_OUTF_IN_L  | b10000      | Output FIFO input stats, low word  |
+| ST_OUTF_IN_H  | b10001      | Output FIFO input stats, high word |
+| ST_OUTF_OUT_L | b10010      | Output FIFO output stats, low word |
+| ST_OUTF_OUT_H | b10011      | Output FIFO output stats, high word |
 
 
 
@@ -61,7 +76,7 @@ Signals in the status (read) register
 
 | Bit   | Name                 | Description |
 | ----- | ----                 | ----------- |
-| 0     | buffer_error         | Error occured during streaming    |
+| 0     | buffer_error         | Error occurred during streaming   |
 | 1     | done                 | Streaming completed without error |
 | 2     | trigger_activated    | Trigger circuit fired and the data is streaming out |
 | 3     | trigger_armed        | Waiting for a trigger event to begin streaming      |
@@ -83,7 +98,7 @@ Signals in the control (write) register
 
 ### Simple trigger
 
-Implemented in ``ip/streamer/and_trigger.v``. The masked bits are compared against the trigger pattern. The high bits
+Implemented in ``ip/streamer/and_trigger.sv``. The masked bits are compared against the trigger pattern. The high bits
 in the mask indicate the active positions in the input port. The trigger is synchronous with the output clock, i.e.,
 the trigger inputs are compared against the pattern when the clock is asserted.
 

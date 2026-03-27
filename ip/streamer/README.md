@@ -1,4 +1,4 @@
-RLE stream decoder and triggering circuits
+RLE stream decoder and triggering circuits.
 
 * st_interface.sv - high-level interface
 * streamer.sv - streamer core

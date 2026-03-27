@@ -3,7 +3,7 @@
 # https://emlogic.no/2025/06/accessing-i2c-devices-from-userspace-in-linux/
 
 -l
-    Output a list of installed busses.
+    Output a list of installed buses.
 
 # i2cdetect -l
 i2c-1i2c       Synopsys DesignWare I2C adapter I2C adapter

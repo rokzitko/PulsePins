@@ -1,10 +1,10 @@
-Measurement of internal clock stability on DE10 Nano. Performed as inverse measurement: the
-measured signal was a stable reference 10MHz from GPSDO using OXCO, while the counter
-was gated by a signal derived from DE10 Nano 50MHz clock, which in turn is derived from an
-on-board 24MHz crystall oscillator using a CDCE937PWRG4 clock generator.
+Measurement of internal clock stability on the DE10-Nano. Performed as an inverse measurement: the
+measured signal was a stable 10 MHz reference from a GPSDO using an OCXO, while the counter
+was gated by a signal derived from the DE10-Nano 50 MHz clock, which in turn is derived from an
+on-board 24 MHz crystal oscillator using a CDCE937PWRG4 clock generator.
 
-The clock on this particular board is off by ~6ppm, and its frequency is stable
-within ~0.1ppm. This is actually surprisingly good!
+The clock on this particular board is off by ~6 ppm, and its frequency is stable
+within ~0.1 ppm. This is actually surprisingly good.
 
 $ ppfreq -gate_time 60s
 ppfreq, Rok Zitko, rok.zitko@ijs.si

@@ -31,7 +31,7 @@ PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit 
 * Buffer-underrun detection and read-back circuitry with an on-chip run-length encoder for verification and high-assurance scenarios where reliability and correctness under all operating conditions are critical.
 * Comprehensive hardware self-tests via the read-back interface and a suite of test cases for systematic, intensive validation of correct device operation; most of the functionality is covered by these tests.
 * 8-bit auxiliary input/output lines for general-purpose use.
-* Time-stamping circuit for synchronization and timing purposes. Using a pulse-per-second input signal from GNSS and an external frequency-tunable crystall oscillator, a GPS disciplined oscilator clock can be easily implemented.
+* Time-stamping circuit for synchronization and timing purposes. Using a pulse-per-second input signal from GNSS and an external frequency-tunable crystal oscillator, a GPS-disciplined oscillator clock can be easily implemented.
 * General-purpose operation as a delay generator or function generator.
 * Clean, well-documented Verilog implementation with test benches and high test coverage.
 * KiCad schematics and layouts for interface cards that provide easy interfacing (PMOD, SMA), buffering (50&nbsp;Ω drivers), ESD protection, status LEDs, external clock input with threshold control, and pads for CMOS crystal oscillators.

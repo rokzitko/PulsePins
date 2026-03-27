@@ -1,6 +1,6 @@
-This has to be built on the DE10 nano board.
+This has to be built on the DE10-Nano board.
 
-On DE10 nano, do the following:
+On the DE10-Nano, do the following:
 
 cd python
 pip3 install pytest

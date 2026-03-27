@@ -1,3 +1,3 @@
 Possible improvements:
-- structure code; store reference data for checker to avoid duplication
-- random data, random length, random repetitions
+- structure the code; store reference data for the checker to avoid duplication
+- random data, random lengths, random repetitions

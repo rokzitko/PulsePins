@@ -1,4 +1,4 @@
-## C++ Application programming interface
+## C++ application programming interface
 
 ### Data types for sequence representation
 
@@ -15,7 +15,7 @@ Interface of ``Counter`` objects:
 * ``count_str()``: the count value as a string in hexadecimal and decimal form for inspection and troubleshooting
 * ``control_bits()``: returns the bits to be or'd in the control register
 * ``desc()``: get a descriptive string about the control settings; empty for the default case of ``Strobe``
-* ``clone()``: generate a std::share_ptr to a cloned object for use in class compositions (element ``el`` objects, see below)
+* ``clone()``: generate a `std::shared_ptr` to a cloned object for use in class compositions (element ``el`` objects, see below)
 
 Update types (``d`` is the input value, ``q_prev`` is the previous output value, ``q`` is the new output value to be streamed out):
 
@@ -73,7 +73,7 @@ Class ``el`` (defined in ``elements.hh``) represents elements of the sequence. T
 * ``el(Random, count_t)``: generate random numbers
 
 The counter and value are internally stored as ``std::shared_ptr`` objects for easy expandability. The
-control parameter is stored as a ``control_t`` integer value using bit patters obtained from ``Counter``
+control parameter is stored as a ``control_t`` integer value using bit patterns obtained from ``Counter``
 and ``Value`` objects using the ``control_bits`` and ``mode_bits`` member functions.
 
 The public interface of ``el`` objects:
@@ -90,7 +90,7 @@ given element for a given previous output state
 
 ``el`` objects can be compared and passed to an std stream.
 
-Class ``Sequence`` (defined in ``sequence.hh``) represent a sequence of elements. Internally, this is an overloaded std::deque of ``el`` objects.
+Class ``Sequence`` (defined in ``sequence.hh``) represents a sequence of elements. Internally, this is an overloaded `std::deque` of ``el`` objects.
 Public member functions are:
 
 * ``size()``: total number of elements
@@ -104,14 +104,14 @@ Two sequences can be compared using function ``compare()`` and using ``operator=
 
 ### Streamer control interface
 
-Class ``streamer_control`` (defined in ``streamer.hh``) is the high-level interface for controlling the RLE-decoder core. Member functions:
+Class ``streamer_control`` (defined in ``streamer_control.hh`` and re-exported by ``streamer.hh``) is the high-level interface for controlling the RLE-decoder core. Member functions:
 
 * ``status()``: read the status register (buffer error, done, triggered, armed); these are outputs from the
 core
 * ``get_control()``: returns the control register (stop, internal trigger force, internal trigger enable, reset,
 internal trigger reset); these are inputs to the core
 * ``get_qout()``: current value at the output (on the "device pins", if there is no postprocessing)
-* ``get_qout_streamer()``: current value at the streamer output (which may be overriden, see below)
+* ``get_qout_streamer()``: current value at the streamer output (which may be overridden, see below)
 * ``qout_select()``: determine what data is presented at the output (streamer output or override value)
 * ``qout_set()``: override the output with the chosen value
 * ``monitor_ext_trig()``: debugging tool for external trigger signals
@@ -125,26 +125,29 @@ internal trigger reset); these are inputs to the core
 called (or using an external trigger enable signal)
 * ``trigger_force()``: assert the internal trigger force signal
 * ``trigger_reset()``: assert the internal trigger reset signal
-* ``gating()``: control gatting (control of the streaming using an external output enable signal)
+* ``gating()``: control gating (control of the streaming using an external output-enable signal)
 
-Class ``streamer_fifo`` (defined in ``streamer.hh``) is the high-level interface for spooling the sequence to the RLE-decoder core. Member functions:
+Class ``streamer_fifo`` (defined in ``streamer_fifo.hh`` and re-exported by ``streamer.hh``) is the high-level interface for spooling the sequence to the RLE-decoder core. Member functions:
 
 * ``out()``: send one element
 * ``send_sequence()``: send entire sequence
 * ``check_fill_status()``: check FIFO status
 
-Class ``streamer_dma`` (defined in ``streamer.hh``) is the high-level interface for transmitting the sequence to the
+Class ``streamer_dma`` (defined in ``streamer_dma.hh`` and re-exported by ``streamer.hh``) is the high-level interface for transmitting the sequence to the
 RLE-decoder code using direct memory access (DMA). Member functions:
 
 * ``write_element()``: write an element at given memory location
 * ``prepare()``: write an entire sequence in the memory buffer
-* ``verify()``: verity the correctness of the sequence stored in the memory
+* ``verify()``: verify the correctness of the sequence stored in memory
 * ``transfer()``: perform the transfer
 * ``send_sequence()``: high-level function for transmitting a sequence to the streamer via DMA
 
-FPGA (defined in ``fpga.hh``): container for memory-mapped interfacing with the FPGA.
-The constructor of this class blinks the on-board diagnostic LED at startup.
-If also asserts the output enable ``oe`` signal (by default, can be overriden).
+### System-level interfaces
+
+`FPGA` (defined in `fpga.hh`) is the top-level ARM-side container for memory-mapped FPGA access.
+
+It owns the main memory maps, clock-selection helpers, trigger monitor helpers, PLL control helpers, and the output-enable GPIO path.
+The constructor also performs basic startup actions such as clock selection, PLL setup, and a short diagnostic LED blink.
 
 Streamer classes (defined in ``basic_multi_dma.hh``):
 
@@ -153,12 +156,27 @@ Streamer classes (defined in ``basic_multi_dma.hh``):
 * ``dma_streamer``: DMA interface
 * ``multistreamer``: container for four instances of ``basic_streamer``
 
-Combiner class (defined in ``combiner.hh``): interface for advanced multiplexers.
+`combiner` (defined in `combiner.hh`) is the interface for advanced multiplexers.
 
-combiner_qout, qout (defined in ``qout.hh``)
+`combiner_qout`, `qout` (defined in `qout.hh`)
 
-readback (defined in ``readback.hh``)
+`readback` (defined in `readback.hh`)
 
-st_mux (defined in ``st_mux.hh``)
+`st_mux` (defined in `st_mux.hh`)
 
-trigger (defined in ``trigger.hh``)
+`trigger` (defined in `trigger.hh`)
+
+counter (defined in `counter.hh`) exposes the integrated statistics/measurement subsystem.
+
+timestamp (defined in `timestamp.hh`) exposes the dual-path timestamp FIFOs and source-selection controls.
+
+freq_meter, pp_freq_meter (defined in `freq_meter.hh`) expose the on-board frequency meter and its higher-level PulsePins wrapper.
+
+For subsystem-level details, see also:
+
+* `counter.md`
+* `combiner.md`
+* `timestamp.md`
+* `freq_meter.md`
+* `st_mux.md`
+* `build.md`

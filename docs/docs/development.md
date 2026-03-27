@@ -1,15 +1,16 @@
-## PulsePin development
+## PulsePins development
 
-Users are encoureged to participate in further development of PulsePins by contributing code or by making (reasonable)
-feature requests. This text documents some development practices and standards followed.
+Users are encouraged to participate in the further development of PulsePins by contributing code or by making reasonable
+feature requests. This page documents some of the development practices and standards followed in the project.
 
 ### Coding standards
 
-Use structured and clear code. Uniform and self-describing variable names. Ample in-line documentation. Comments should explain intention. Avoid hard-coded parameters. Unit tests with high coverage, including corner cases.
+Use structured, clear code. Prefer uniform and self-describing variable names. Add inline documentation where it helps.
+Comments should explain intent. Avoid hard-coded parameters. Keep tests broad enough to cover corner cases.
 
 ### TO DO list symbols
 
-I like to use the following symbols to annotated my TO DO lists:
+The following symbols are used in project TODO lists:
 
  - ``!`` important, high-impact item
  - ``@`` complex task, might be time consuming or technically demanding
@@ -22,14 +23,31 @@ I like to use the following symbols to annotated my TO DO lists:
 
     ip/              # Verilog descriptions of circuitry
       combiner/      # IP for the advanced multiplexer
+      combiner_comb/ # Combinational version of the advanced multiplexer
+      combiner_trig/ # Trigger-signal multiplexer
+      counter/       # Event counters and test/measurement logic
+      freq_meter/    # Frequency-meter core
+      misc/          # Small reusable support blocks
+      st_mux/        # Avalon-ST multiplexer (implemented in st_mux_if.sv)
       streamer/      # IP for the RTE decoder engine
       rl_encoder_if/ # IP for the RTE encoder engine
-      tagger/        # IP for the time tagger
+      ts_core/       # IP for timestamp capture / time tagging
     c++/             # C++ source code for API, pptool
     python/          # Python binding
 
 
 ### Documentation
 
-These manual pages have been created using [MkDocs](https://www.mkdocs.org/). For testing the generated web site, we use
+These manual pages are built with [MkDocs](https://www.mkdocs.org/). For testing the generated web site, we use
 [caddy](https://caddyserver.com/).
+
+Useful starting points for the current codebase:
+
+* `build.md` - hardware/software build and deployment flow
+* `cpp.md` - C++ API overview
+* `combiner.md` - output and trigger combiner architecture
+* `counter.md` - integrated measurement/counter subsystem
+* `timestamp.md` - timestamp capture path
+* `freq_meter.md` - frequency-meter block and API
+* `st_mux.md` - Avalon-ST multiplexer helper
+* `misc_ip.md` - reusable support RTL blocks

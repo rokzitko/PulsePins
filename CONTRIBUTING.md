@@ -12,7 +12,7 @@ By submitting a contribution (code, documentation, hardware design files, etc.),
   - Use the GitHub "Issues" tab.
   - Describe the problem clearly and minimally:
     - Steps to reproduce
-    - Expected vs. actual behaviour
+    - Expected vs. actual behavior
     - Environment (OS, compiler/tool versions, FPGA board revision, etc.)
 
 - **Feature requests / design proposals**
@@ -35,11 +35,46 @@ These are intentionally minimal; adapt as needed for your contributions.
 
 - Follow the existing **code style** and structure where reasonably possible.
 - Keep changes **modular and documented**:
-  - Update comments and documentation when changing behaviour or interfaces.
+  - Update comments and documentation when changing behavior or interfaces.
   - Add or update tests/examples if applicable.
 - Avoid mixing formatting-only changes with functional changes in the same commit/PR.
 
+Practical guidance:
+
+- If you are new to the project, start with `HACKING.md`.
+- If you do not have hardware, docs, Python, C++, recipes, and HDL simulation are all useful contribution areas.
+- If you do have hardware, measured workflows, validated examples, and board-setup notes are especially valuable.
+- Docs, examples, and test infrastructure are first-class contributions, not second-tier ones.
+- Worked examples are especially encouraged.
+- Wiring diagrams, timing diagrams, screenshots, scope traces, logic-analyzer captures, and setup photos are valuable contributions too.
+
 If in doubt, prefer clarity and maintainability over cleverness.
+
+---
+
+## New contributor paths
+
+Some common contribution paths are:
+
+- **Docs and onboarding**
+  - Improve explanations, examples, and contributor guidance
+- **C++ tools**
+  - Improve command-line UX, parsing, and hardware wrappers
+- **Python bindings**
+  - Improve examples, packaging, and API coverage
+- **RTL and simulation**
+  - Improve IP blocks, CDC/reset structure, and test benches
+- **Hardware validation**
+  - Verify workflows on a real board and turn them into durable docs
+- **Real-world example contributions**
+  - Share practical experiment workflows, instrument integrations, and validated setup notes
+
+See also:
+
+- `HACKING.md`
+- `docs/docs/hacking.md`
+- `docs/docs/getting_started_no_hardware.md`
+- `docs/docs/getting_started_hardware.md`
 
 ---
 
@@ -58,7 +93,7 @@ By contributing, you certify that your contribution complies with the DCO.
 
 ## Sign-off requirement
 
-**Every commit included in a pull request must be ""signed off"** to indicate agreement with the DCO.
+**Every commit included in a pull request must be "signed off"** to indicate agreement with the DCO.
 
 A sign-off is a line at the end of the commit message of the form:
 
