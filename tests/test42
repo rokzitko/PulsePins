@@ -4,3 +4,6 @@ source defs.sh
 pptest 42 -f sequence.simple -check
 pptest 42 -f sequence.longer -check
 pptest 42 -f sequence.one_line -check
+pptest 42 -f sequence.pmmodda3_2.5V -check
+pptest 42 -f sequence.pmmodda3_2V -check
+pptest 42 -f sequence.pmmodda3_1V -check
