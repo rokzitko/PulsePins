@@ -144,18 +144,22 @@ To enable the output buffers, the output enable (``oe``) must be set high.
 
 ## Clocks and clock domains
 
-PulsePins generates two clocks using the PLL: core clock and internal data streaming clock.
-The default frequency of the core clock (core_clk) is 100MHz. The internal data
-streaming clock (streamer_clk) also has a default frequency of 100MHz; this corresponds to 10ns
-timing resolution for digital level updates. There is no length limit on the pulse duration, it is only limited by the clock.
-Individual pulses can thus be as short as 10ns.
+PulsePins uses several important clocks. At the top level, the most important ones are the 50 MHz reference clock
+(`ref_clk`), the main internal system clock (`core_clk`), the internal candidate streaming clock (`int_clk`), and the
+actually selected streaming/output clock (`streamer_clk`).
 
-Data streaming clock can be switched between the internal and an externally-connected clock. The external clock needs to be
-a 3.3V CMOS signal applied to a digital input pin of the FPGA (EXT_CLKp, see the table in the
-following).
+By default, `core_clk` and `int_clk` are both configured for 100 MHz operation. When `streamer_clk` is 100 MHz, the
+design provides 10 ns timing resolution for digital level updates. There is no fixed upper limit on pulse duration; it
+is limited only by the counter width and the selected clock.
 
-The interface between the two domains clock domains is the output dual-clock FIFO (DCFIFO), defined in
-``ip/streamer/output_fifo.sv``.
+The active `streamer_clk` can be switched between the internal clock path and an externally connected clock. The
+external clock is a 3.3 V CMOS signal applied to the `EXT_CLKp` input pin.
+
+The most important boundary between the main control side and the output side is the dual-clock output FIFO in
+`ip/streamer/output_fifo.sv`.
+
+For a fuller description of clock relationships, software clock switching, and timing constraints, see
+`clock_domain.md`.
 
 ## Signal routing
 

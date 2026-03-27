@@ -44,6 +44,7 @@ These manual pages are built with [MkDocs](https://www.mkdocs.org/). For testing
 Useful starting points for the current codebase:
 
 * `build.md` - hardware/software build and deployment flow
+* `clock_domain.md` - detailed clocking, CDC, and timing-constraint reference
 * `cpp.md` - C++ API overview
 * `combiner.md` - output and trigger combiner architecture
 * `counter.md` - integrated measurement/counter subsystem

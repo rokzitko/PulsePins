@@ -42,6 +42,10 @@ Important outputs:
 
 `QDIR` can be overridden to point to a local Quartus installation, and `Makefile.local` can provide local overrides without changing the tracked build file.
 
+Clocking is a central part of the hardware build. The current design uses PLL-generated `core_clk` and `int_clk`, a
+selectable `streamer_clk` path, and explicit top-level timing constraints in `pulsepins.sdc`. For the detailed clocking
+model and software-side clock control, see `clock_domain.md`.
+
 ### C++ build
 
 The ARM-side software lives in `c++/`.
@@ -60,6 +64,10 @@ The build expects:
 * the Lua sources vendored under `c++/third_party/lua`
 
 By default the build is cross-compiling for ARM, but the sources are also structured so they can be copied to the board and built there.
+
+The C++ side also participates in clock configuration. The `FPGA` wrapper and PLL helper classes can reconfigure the
+internal PLLs and switch the active streamer clock source, so clocking should be thought of as a hardware/software
+boundary rather than a purely RTL concern.
 
 ### Python bindings
 

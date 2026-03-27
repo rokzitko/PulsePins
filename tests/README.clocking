@@ -2,11 +2,16 @@ export PP_RBMODE=0
 export PP_CORE_PLL=50M
 export PP_INT_PLL=50M
 
-The core PLL is the clock for the FPGA streamer circuit (decoder). The internal PLL generates the clock
-for clocking out the data from the output FIFO buffer, i.e. it is the "data clock."
+In the current design, `core_clk` is the main internal FPGA system/control clock, while `int_clk` is the
+internal candidate streaming clock. The actually active streaming/output clock is `streamer_clk`, which can
+be selected from the internal path or from an external clock source.
+
+These tests are mainly about switching or checking the active `streamer_clk` path.
 
 pptest 2 -int_clk -int_pll 25M -veryverbose -check
 pptest 2 -ext_clk -veryverbose -check
 pptest 2 -clk 2 -veryverbose -check
 
 NOTE: FPGA reset is performed only if the clock source is changed (using `-int_clk`, `-ext_clk`, `-clk`, or the `PP_INT_CLK` / `PP_EXT_CLK` environment variables).
+
+See also `docs/docs/clock_domain.md` for the fuller clocking model and the relationship between `ref_clk`, `core_clk`, `int_clk`, `streamer_clk`, and external clock selection.
