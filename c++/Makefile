@@ -16,11 +16,13 @@ HWLIBS_ROOT ?= $(SOCEDS_ROOT)/ip/altera/hps/altera_hps/hwlib
 CROSS_COMPILE ?= arm-linux-gnueabihf-
 CFLAGS   = -O2 -Wall -Wextra -fPIC
 CPPFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
+  $(SYSROOT) \
   -D$(ALT_DEVICE_FAMILY) \
   -DGIT_HASH=$(GIT_HASH) \
   -I$(TIDBIT_DIR) -I$(LUA_DIR) \
-  -I$(HWLIBS_ROOT)/include/$(ALT_DEVICE_FAMILY) -I$(HWLIBS_ROOT)/include/ \
-  -I.. -I/usr/include \
+  -I$(HWLIBS_ROOT)/include/ -I$(HWLIBS_ROOT)/include/$(ALT_DEVICE_FAMILY) \
+	-I./third_party/hwlib/include/ -I./third_party/hwlib/include/$(ALT_DEVICE_FAMILY) \
+  -I.. \
   -Wformat=0 -std=c++17 -Wno-psabi $(HW_DEBUG)
 LDFLAGS =  -g -Wall -pthread
 GCC_SUFFIX ?= -10

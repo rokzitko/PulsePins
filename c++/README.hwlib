@@ -1,3 +1,5 @@
 Intel SoC FPGA HWLIB is available from https://github.com/altera-opensource/intel-socfpga-hwlib
 
 The `HWLIBS_ROOT` environment variable must point to those files.
+
+=> As for 28 Mar 2026, hwlib is bundled as c++/third_party/hwlib/.
