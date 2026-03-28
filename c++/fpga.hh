@@ -26,6 +26,8 @@
 #include <stdexcept>
 
 #include "socal/alt_fpgamgr.h"
+#include "hps_0.h"
+#include "ppmisc.hh"
 
 #ifndef HPS_REGS_OFST
  #define HPS_REGS_OFST  0xFF700000

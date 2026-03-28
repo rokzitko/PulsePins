@@ -8,6 +8,7 @@
 #include "ppmstest.hh"
 #include "ppdmatest.hh"
 #include "ppfg.hh"
+#include "trigger.hh"
 
 auto get_test_number(const InputParser &input)
 {

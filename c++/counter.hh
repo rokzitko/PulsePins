@@ -10,6 +10,8 @@
 
 #include "tidbit.hh"
 #include "fpga.hh"
+#include "colors.hh"
+#include "sequence.hh"
 
 #define COUNTER_AC
 

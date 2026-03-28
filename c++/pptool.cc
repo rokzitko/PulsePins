@@ -3,6 +3,11 @@
 
 // pptool main() is here...
 
+#include <iostream>
+#include <map>
+#include <thread>
+#include <memory>
+
 #include "ppmisc.hh"
 #include "pptool_commands.hh"
 #include "ppversion.hh"
@@ -10,6 +15,7 @@
 #include "delay.hh"
 #include "misc.hh"
 #include "parser.hh"
+#include "definitions.hh"
 
 #define HAS_LUA
 #define HAS_SERVER

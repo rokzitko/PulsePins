@@ -9,6 +9,11 @@
 #include <string>
 #include <sstream>
 #include <exception>
+#include <cassert>
+#include <cstdio>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h> // close
 
 #include "hwlib.h"
 #include "socal/socal.h"

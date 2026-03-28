@@ -17,6 +17,8 @@
 #include "config.h"
 #include "definitions.hh"
 #include "colors.hh"
+#include "elements.hh"
+#include "sequence.hh"
 
 // DMA for streaming out
 class streamer_dma : private c_dma

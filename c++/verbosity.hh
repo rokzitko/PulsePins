@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "parser.hh"
+
 struct Verbosity {
   bool verbose = true;        // enable by default; use -quiet to disable
   bool veryverbose = false;   // use -veryverbose to enable

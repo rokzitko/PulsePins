@@ -14,6 +14,7 @@
 #include "verbosity.hh"
 #include "freq_meter.hh"
 #include "startup.hh"
+#include "basic_multi_dma.hh"
 
 class TerminateSession : public std::exception {
    std::string message;

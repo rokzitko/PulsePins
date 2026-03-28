@@ -1,11 +1,16 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 #include <system_error>  // std::errc
 #include <optional>
-#include <cstdlib>
+#include <cstdlib> // std::strtol
 #include <cerrno>
 #include <climits>
+#include <iomanip>
+#include <sstream>
+
+#include "misc.hh"
 
 inline std::optional<int> to_int(std::string_view sv) {
   std::string s(sv);

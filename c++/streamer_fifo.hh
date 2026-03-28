@@ -17,6 +17,8 @@
 #include "config.h"
 #include "definitions.hh"
 #include "colors.hh"
+#include "elements.hh"
+#include "sequence.hh"
 
 // FIFO for streaming out
 class streamer_fifo : private fifo

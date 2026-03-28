@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "misc.hh"
+
 constexpr int P_FIFO_IN1 = 10;
 constexpr int P_FIFO_IN2 = 11;
 constexpr int P_FIFO_OUT = 12;

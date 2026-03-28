@@ -14,6 +14,13 @@
 #include "DAC.hh"
 #include "MCP9808.hh"
 #include "freq_meter.hh"
+#include "sequence.hh"
+#include "elements.hh"
+#include "definitions.hh"
+#include "basic_multi_dma.hh"
+#include "trigger.hh"
+#include "readback.hh"
+#include "ppworkflow.hh"
 
 std::mutex lockcout;
 #define LOCKCOUT(z) { lockcout.lock(); z; lockcout.unlock(); }

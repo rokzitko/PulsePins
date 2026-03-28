@@ -5,14 +5,21 @@
 
 #pragma once
 
+#include <fstream>
 #include <iostream>
 #include <mutex>
+#include <future>
+#include <exception>
+#include <thread>
 
 #include "streamer.hh"
 #include "readback.hh"
 #include "parser.hh"
 #include "sequence.hh"
 #include "ppworkflow.hh"
+#include "basic_multi_dma.hh"
+#include "throttler.hh"
+#include "timer.hh"
 
 class tests {
  public:
