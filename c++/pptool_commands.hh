@@ -3,7 +3,9 @@
 
 #pragma once
 
-#include "ppcommon.hh"
+#include "fpga.hh"
+#include "parser.hh"
+#include "verbosity.hh"
 
 int pptool(FPGA &fpga, const InputParser &input, const Verbosity &v);
 int pptest(FPGA &fpga, const InputParser &input, const Verbosity &v);

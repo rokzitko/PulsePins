@@ -16,6 +16,7 @@
 #include "streamer.hh"
 #include "config.h"
 #include "definitions.hh"
+#include "ppworkflow.hh"
 
 class dmatests {
  public:

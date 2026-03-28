@@ -12,6 +12,7 @@
 #include "readback.hh"
 #include "parser.hh"
 #include "sequence.hh"
+#include "ppworkflow.hh"
 
 class tests {
  public:

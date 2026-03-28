@@ -3,10 +3,13 @@
 
 // pptool main() is here...
 
-#include "ppcommon.hh"
 #include "ppmisc.hh"
 #include "pptool_commands.hh"
+#include "ppversion.hh"
 #include "startup.hh"
+#include "delay.hh"
+#include "misc.hh"
+#include "parser.hh"
 
 #define HAS_LUA
 #define HAS_SERVER

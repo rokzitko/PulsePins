@@ -8,8 +8,9 @@
 #include <exception>
 
 #include "scpi_server.hh"
-#include "ppcommon.hh"
 #include "ppmisc.hh"
+#include "ppversion.hh"
+#include "ppworkflow.hh"
 #include "verbosity.hh"
 #include "freq_meter.hh"
 #include "startup.hh"
