@@ -11,6 +11,7 @@
 #include "fpga.hh"
 #include "combiner.hh"
 #include "parser.hh"
+#include "options.hh"
 
 class trigger {
  private:
@@ -19,71 +20,74 @@ class trigger {
  public:
    combiner_trig ct;
 
-   trigger(const InputParser &input, const FPGA &_fpga) :
+   trigger(const TriggerOptions &opts, const FPGA &_fpga) :
      fpga(_fpga),
-     ct(fpga.dev_h2f, COMBINER_TRIG_BASE) { set(input); }
+     ct(fpga.dev_h2f, COMBINER_TRIG_BASE) { set(opts); }
+
+   trigger(const InputParser &input, const FPGA &_fpga) :
+     trigger(resolve_trigger_options(input), _fpga) {}
 
    // Set the triggering from command line switches
    // Default: internal triggering
-   void set(const InputParser &input) {
+   void set(const TriggerOptions &opts) {
      if (fpga.v.veryverbose) std::cout << "## Setting up the trigger combiner." << std::endl;
-     if (input.exists("-trig_int")) {
+     if (opts.mode == TriggerModeOption::internal) {
        if (fpga.v.veryverbose) std::cout << "Trigger: internal" << std::endl;
        ct.mode(trig_mode::INT);
      }
-     if (input.exists("-trig_ext")) {
+     if (opts.mode == TriggerModeOption::external) {
        if (fpga.v.veryverbose) std::cout << "Trigger: external" << std::endl;
        ct.mode(trig_mode::EXT);
      }
-     if (input.exists("-trig_misc")) {
+     if (opts.mode == TriggerModeOption::misc) {
        if (fpga.v.veryverbose) std::cout << "Trigger: misc (pushbuttons + 1PPS)" << std::endl;
        ct.mode(trig_mode::MISC);
      }
-     if (input.exists("-trig_any")) {
+     if (opts.mode == TriggerModeOption::any) {
        if (fpga.v.veryverbose) std::cout << "Trigger: any of" << std::endl;
        ct.mode(trig_mode::OR);
      }
-     if (input.exists("-trig_all")) {
+     if (opts.mode == TriggerModeOption::all) {
        if (fpga.v.veryverbose) std::cout << "Trigger: all of" << std::endl;
        ct.mode(trig_mode::AND);
      }
-     if (input.exists("-trig_std")) {
+     if (opts.mode == TriggerModeOption::standard) {
        if (fpga.v.veryverbose) std::cout << "Trigger: standard (any of)" << std::endl;
        ct.invert_ext(~0); // invert all external signals (they are pulled up!)
        ct.mode(trig_mode::OR);
      }
-     if (input.exists("-invert_trig_result")) {
-       auto v = parse_uint32(input, "-invert_trig_result", "0");
+     if (opts.invert_result) {
+       auto v = *opts.invert_result;
        if (fpga.v.veryverbose) std::cout << "Trig result inverting: " << trig_parse(v) << std::endl;
        ct.invert_result(v);
      }
-     if (input.exists("-invert_int")) {
-       auto v = parse_uint32(input, "-invert_int", "0");
+     if (opts.invert_int) {
+       auto v = *opts.invert_int;
        if (fpga.v.veryverbose) std::cout << "Trig int inverting: " << trig_parse(v) << std::endl;
        ct.invert_int(v);
      }
-     if (input.exists("-invert_ext")) {
-       auto v = parse_uint32(input, "-invert_ext", "0");
+     if (opts.invert_ext) {
+       auto v = *opts.invert_ext;
        if (fpga.v.veryverbose) std::cout << "Trig ext inverting: " << trig_parse(v) << std::endl;
        ct.invert_ext(v);
      }
-     if (input.exists("-invert_misc")) {
-       auto v = parse_uint32(input, "-invert_misc", "0");
+     if (opts.invert_misc) {
+       auto v = *opts.invert_misc;
        if (fpga.v.veryverbose) std::cout << "Trig misc inverting: " << trig_parse(v) << std::endl;
        ct.invert_misc(v);
      }
-     if (input.exists("-mask_int")) {
-       auto v = parse_uint32(input, "-mask_int", "0");
+     if (opts.mask_int) {
+       auto v = *opts.mask_int;
        if (fpga.v.veryverbose) std::cout << "Trig int mask: " << trig_parse(v) << std::endl;
        ct.mask_int(v);
      }
-     if (input.exists("-mask_ext")) {
-       auto v = parse_uint32(input, "-mask_ext", "0");
+     if (opts.mask_ext) {
+       auto v = *opts.mask_ext;
        if (fpga.v.veryverbose) std::cout << "Trig ext mask: " << trig_parse(v) << std::endl;
        ct.mask_ext(v);
      }
-     if (input.exists("-mask_misc")) {
-       auto v = parse_uint32(input, "-mask_misc", "0");
+     if (opts.mask_misc) {
+       auto v = *opts.mask_misc;
        if (fpga.v.veryverbose) std::cout << "Trig misc mask: " << trig_parse(v) << std::endl;
        ct.mask_misc(v);
      }

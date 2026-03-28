@@ -4,6 +4,7 @@
 #include <cmath>
 #include "tidbit.hh"
 #include "freqfmt.hh"
+#include "options.hh"
 
 class freq_meter {
  private:
@@ -92,28 +93,26 @@ constexpr int METER_CORE_CLK = 3;
 
 class pp_freq_meter {
  private:
-   const InputParser &input;
    FPGA &fpga;
 
-   static constexpr auto cli_rescale = "-freq_rescale";
-   static constexpr auto env_rescale = "PP_FREQ_RESCALE";
-
- public:
+  public:
    freq_meter meter;
 
    // if wait=true, wait until the first reading becomes valid
-   pp_freq_meter(const InputParser &_input, FPGA &_fpga, const bool wait = true) :
-     input(_input),
+   pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait = true) :
      fpga(_fpga),
      meter(fpga.dev_h2f, FREQ_METER_0_BASE) {
-       if (envVarExists(env_rescale) || input.exists(cli_rescale))
-         meter.set_correction_factor(parse_double(input, cli_rescale, get_env(env_rescale)));
+       if (opts.correction_factor)
+         meter.set_correction_factor(*opts.correction_factor);
        const auto n_ch = meter.get_n_ch();
        assert(n_ch == 4);
        if (wait)
          meter.wait_one_gate_time();
        fpga.set_streamer_clk(meter.read_freq(METER_STREAMER_CLK));
      }
+
+   pp_freq_meter(const InputParser &input, FPGA &_fpga, const bool wait = true) :
+     pp_freq_meter(resolve_freq_meter_options(input), _fpga, wait) {}
 
    void report() {
      std::cout << "ext_clk      " << meter.read_freq_str(METER_EXT_CLK) << std::endl;

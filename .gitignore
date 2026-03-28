@@ -50,3 +50,6 @@ sha256.pulsepins.sof
 
 .DS_Store
 ._.DS_Store
+
+# Local planning notes
+CPP_ARCHITECTURE_ROADMAP.md

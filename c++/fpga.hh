@@ -51,6 +51,7 @@ static_assert(ALT_FPGAMGR_BASE == ALT_FPGAMGR_OFST);
 #include "trigger_ext.hh"
 #include "pll_clk.hh"
 #include "pll_rules.hh"
+#include "options.hh"
 
 class MGR {
  private:
@@ -163,9 +164,9 @@ class FPGA {
                                                 std::memory_order_acq_rel)) {
          throw std::logic_error("FPGA: second instance construction attempted");
        }
-       set_clk();
-       pll_core.set_core_clk(input, v);
-       pll_int.set_int_clk(input, v);
+       set_clk(resolve_clock_selection_options(input));
+       pll_core.set_core_clk(resolve_core_pll_options(input), v);
+       pll_int.set_int_clk(resolve_int_pll_options(input), v);
        if (oe) // if oe=false, leave output_enable signal as is
          output_enable(true);
        blink_led(); // on-board led blinks on startup
@@ -216,20 +217,20 @@ class FPGA {
 
    // Note: the reset is not performed here if the clock is not explicitly specified by either
    // -int_clk or -ext_clk switch.
-    void set_clk() {
+    void set_clk(const ClockSelectionOptions &opts) {
      rstmgr rm;
-     if (envVarExists("PP_INT_CLK") || input.exists("-int_clk")) {
+     if (opts.source == StreamerClockSource::internal) {
        rm.s2f_hold_reset();
        sel_clk_int();
        rm.s2f_release_reset();
      }
-     if (envVarExists("PP_EXT_CLK") || input.exists("-ext_clk")) {
+     if (opts.source == StreamerClockSource::external) {
        rm.s2f_hold_reset();
        sel_clk_ext();
        rm.s2f_release_reset();
      }
-     if (envVarExists("PP_CLK") || input.exists("-clk")) {
-       int val = parse_value(input, "-clk", get_env("PP_CLK"));
+     if (opts.source == StreamerClockSource::raw_select) {
+       const auto val = int(opts.raw_select.value_or(0));
        if (val < 0 || val > 3)
          std::cerr << "Invalid sel_clk value " << val << "." << std::endl;
        rm.s2f_hold_reset();

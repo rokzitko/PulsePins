@@ -11,6 +11,7 @@
 #include "streamer.hh"
 #include "colors.hh"
 #include "fpga.hh"
+#include "options.hh"
 
 class ReadbackException : std::exception {
    std::string msg;
@@ -53,14 +54,15 @@ class readback
        reset();
      }
 
-   readback(const InputParser &input,
+   readback(const ReadbackOptions &opts,
             FPGA &_fpga) :
      readback(_fpga, _fpga.dev_h2f, FIFO_RL_OUT_BASE, FIFO_RL_IN_CSR_BASE, RL_ENCODER_IF_BASE) {
-       // Default mode = 1 (valid/clk)
-       // Override with the environment variable PP_RBMODE or with the command line switch -rbmode.
-       // Command line switch takes precedence.
-       std::string rbmode = if_nonempty_or(get_env("PP_RBMODE"), "1");
-       mode(parse_uint32(input, "-rbmode", rbmode));
+       mode(opts.mode);
+     }
+
+   readback(const InputParser &input,
+            FPGA &_fpga) :
+     readback(resolve_readback_options(input), _fpga) {
      }
 
    void check_fill_status() {
