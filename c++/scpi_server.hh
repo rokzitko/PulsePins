@@ -4,7 +4,7 @@
 // Generic class for implementing SCPI interface
 
 #pragma once
-#include <boost/asio.hpp>
+#include <asio.hpp>
 #include <memory>
 #include <string>
 #include <map>
@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <iostream>
 
-using boost::asio::ip::tcp;
+using asio::ip::tcp;
 
 // --- SCPI Node ---
 struct ScpiNode {
@@ -71,7 +71,7 @@ public:
 
 protected:
     tcp::socket socket_;
-    boost::asio::streambuf buffer_;
+    asio::streambuf buffer_;
     std::shared_ptr<ScpiNode> root_;
     bool verbose = true;
 
@@ -184,8 +184,8 @@ protected:
 
     void read() {
         auto self(shared_from_this());
-        boost::asio::async_read_until(socket_, buffer_, '\n',
-            [this, self](boost::system::error_code ec, std::size_t) {
+        asio::async_read_until(socket_, buffer_, '\n',
+            [this, self](asio::error_code ec, std::size_t) {
                 if (!ec) {
                     std::istream is(&buffer_);
                     std::string line;
@@ -202,8 +202,8 @@ protected:
         if (msg.empty()) return;
         auto self(shared_from_this());
         auto out = std::make_shared<std::string>(msg + "\n");
-        boost::asio::async_write(socket_, boost::asio::buffer(*out),
-            [this, self, out](boost::system::error_code, std::size_t) {});
+        asio::async_write(socket_, asio::buffer(*out),
+            [this, self, out](asio::error_code, std::size_t) {});
     }
 
     // Utility
@@ -218,7 +218,7 @@ protected:
 // --- Base server ---
 class ScpiServerBase {
 public:
-    ScpiServerBase(boost::asio::io_context &io, unsigned short port)
+    ScpiServerBase(asio::io_context &io, unsigned short port)
         : acceptor_(io, tcp::endpoint(tcp::v4(), port)) {
         accept();
     }
@@ -228,7 +228,7 @@ protected:
 
     void accept() {
         acceptor_.async_accept(
-            [this](boost::system::error_code ec, tcp::socket socket) {
+            [this](asio::error_code ec, tcp::socket socket) {
                 if (!ec) make_session(std::move(socket))->start();
                 accept();
             });

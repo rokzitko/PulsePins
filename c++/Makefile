@@ -21,7 +21,8 @@ CPPFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
   -DGIT_HASH=$(GIT_HASH) \
   -I$(TIDBIT_DIR) -I$(LUA_DIR) \
   -I$(HWLIBS_ROOT)/include/ -I$(HWLIBS_ROOT)/include/$(ALT_DEVICE_FAMILY) \
-	-I./third_party/hwlib/include/ -I./third_party/hwlib/include/$(ALT_DEVICE_FAMILY) \
+  -I./third_party/hwlib/include/ -I./third_party/hwlib/include/$(ALT_DEVICE_FAMILY) \
+  -I./third_party/asio/include -I./third_party \
   -I.. \
   -Wformat=0 -std=c++17 -Wno-psabi $(HW_DEBUG)
 LDFLAGS =  -g -Wall -pthread
@@ -73,8 +74,13 @@ SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux pp
 pptool: pptool.o $(LUA_LIB)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB) $(LUA_LIB)
 
-ppscpi: ppscpi.o
-	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB)
+ASIO_DIR := third_party/asio
+
+$(ASIO_DIR):
+	git submodule update --init --recursive
+
+ppscpi: ppscpi.o $(ASIO_DIR)
+	$(CXX) $(LDFLAGS)   $< -o $@ $(FSLIB)
 
 HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h)
 

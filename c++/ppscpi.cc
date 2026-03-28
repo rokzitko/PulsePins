@@ -144,7 +144,7 @@ class PPServer : public ScpiServerBase {
    FPGA &fpga;
    const Verbosity &v;
  public:
-   PPServer(boost::asio::io_context &io, unsigned short port, const InputParser &_input, FPGA &_fpga, const Verbosity &_v)
+   PPServer(asio::io_context &io, unsigned short port, const InputParser &_input, FPGA &_fpga, const Verbosity &_v)
      : ScpiServerBase(io, port), input(_input), fpga(_fpga), v(_v) {}
  protected:
    std::shared_ptr<ScpiSessionBase> make_session(tcp::socket socket) override {
@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
   pp_freq_meter fm(input, fpga);
   fm.report();
   try {
-    boost::asio::io_context io;
+    asio::io_context io;
     PPServer server(io, server_port, input, fpga, v);
     std::cout << "ppserver running on port " << server_port << std::endl;
     io.run();
