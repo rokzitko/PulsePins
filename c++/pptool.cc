@@ -6,6 +6,7 @@
 #include "ppcommon.hh"
 #include "ppmisc.hh"
 #include "pptest.hh"
+#include "startup.hh"
 
 #define HAS_LUA
 #define HAS_SERVER
@@ -784,14 +785,9 @@ int main(int argc, char *argv[])
   about(progname);
   InputParser input(argc, argv);
   auto v = set_verbosity(input);
-  check_version(version);
-  mlockall(MCL_CURRENT | MCL_FUTURE);
-  RealtimeScheduler rt;
-  if (v.veryverbose)
-    std::cout << "Scheduler: " << rt.report() << std::endl;
-  rstmgr rm;
-  rm.s2f_reset(); // FPGA fabric reset
-  FPGA fpga(input, v);
+  auto rt = bootstrap_process(v, version);
+  FPGA fpga(v);
+  apply_fpga_startup_policy(fpga, input);
   pp_freq_meter fm(input, fpga);
   fm.report();
 #ifdef HAS_LUA

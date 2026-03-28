@@ -131,7 +131,6 @@ class FPGA {
    uint32_t cfg = 0; // current value on gp_out (configuration bits)
    pio_out_bits pio_cfg; // oe signal
    Elapsed elapsed;
-   const InputParser &input;
    const Verbosity &v;
    inline static std::atomic<bool> constructed {false};
    std::mutex m;
@@ -141,7 +140,7 @@ class FPGA {
    pll_core_clk pll_core;
    pll_int_clk pll_int;
 
-   FPGA(const InputParser &_input, const Verbosity &_v, const bool oe = false) :
+   FPGA(const Verbosity &_v) :
      dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE),
      dev_h2f(HPSFPGA_OFST, H2F_RANGE),
      dev_hps(HPS_REGS_OFST, HPS_REGS_RANGE),
@@ -151,7 +150,6 @@ class FPGA {
      mgr(dev_fpgamgr, _v),
      pio_cfg(dev_lw, PIO_CFG_BASE),
      elapsed(dev_lw, PIO_ELAPSED_BASE),
-     input(_input),
      v(_v),
      trig_int(dev_lw, PIO_TRIG_INT_BASE),
      trig_ext(dev_lw, PIO_TRIG_MONITOR_BASE),
@@ -163,16 +161,6 @@ class FPGA {
        if (!constructed.compare_exchange_strong(expected, true,
                                                 std::memory_order_acq_rel)) {
          throw std::logic_error("FPGA: second instance construction attempted");
-       }
-       set_clk(resolve_clock_selection_options(input));
-       pll_core.set_core_clk(resolve_core_pll_options(input), v);
-       pll_int.set_int_clk(resolve_int_pll_options(input), v);
-       if (oe) // if oe=false, leave output_enable signal as is
-         output_enable(true);
-       blink_led(); // on-board led blinks on startup
-       if (v.veryverbose) {
-         mgr.status();
-         status();
        }
      }
 
