@@ -9,6 +9,7 @@ usleep = lambda x: time.sleep(x/1000000.0)
 
 class pptool:
     def __init__(self):
+        self.ip = pp.InputParser( [] )
         self.dev_lw  = pp.mm(pp_impl.LWHPSFPGA_OFST, pp_impl.LWH2F_RANGE)
         self.dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST,   pp_impl.H2F_RANGE)
         self.sc = pp.streamer_control(self.dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
@@ -18,7 +19,10 @@ class pptool:
         self.v = pp.Verbosity()
         self.v.veryverbose = True
         self.v.verbosecheck = True
-        self.rb = pp.readback(self.dev_h2f, pp_impl.FIFO_RL_OUT_BASE, pp_impl.FIFO_RL_IN_CSR_BASE, pp_impl.RL_ENCODER_IF_BASE, self.v)
+        self.fpga = pp.FPGA(self.v)
+        self.fm = pp.pp_freq_meter(self.ip, self.fpga, True)
+        self.fm.report();
+        self.rb = pp.readback(self.fpga, self.dev_h2f, pp_impl.FIFO_RL_OUT_BASE, pp_impl.FIFO_RL_IN_CSR_BASE, pp_impl.RL_ENCODER_IF_BASE)
         self.pio0 = pp.pio_out(self.dev_lw, pp_impl.PIO_TRIG_INT_BASE)
         self.pio0.write(0)
 
