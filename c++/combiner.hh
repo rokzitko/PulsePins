@@ -17,7 +17,7 @@
 #include "fpga.hh"
 
 // Returns a string representing the trigger input and control (enable, force, reset) signals
-std::string trig_parse(const uint32_t v)
+inline std::string trig_parse(const uint32_t v)
 {
   std::stringstream ss;
   ss << "trig=" << std::bitset<WIDTH_TRIGGER>(v)
@@ -30,7 +30,7 @@ std::string trig_parse(const uint32_t v)
 enum class comb_mode : int { SEL1 = 0, SEL2 = 1, SEL3 = 2, SEL4 = 3, AND = 4, OR = 5, XOR = 6,
     XNOR = 7, MAJ = 8, BLOCK8 = 9, BLOCK16 = 10, SUM12 = 11, SUM1234 = 12, DIFF12 = 13 };
 
-std::string to_string(const comb_mode c) {
+inline std::string to_string(const comb_mode c) {
   switch(c) {
   case comb_mode::SEL1: return "SEL1";
   case comb_mode::SEL2: return "SEL2";
@@ -455,6 +455,6 @@ class combiner_trig : public combiner {
    }
 };
 
-auto ndx2mode(const int i) {
+inline auto ndx2mode(const int i) {
     return static_cast<comb_mode>(i-1); // not the offset by 1
 }

@@ -164,7 +164,7 @@ class qout {
    auto out() { return cq.out(); }
 };
 
-value_t combine(comb_mode cm, value_t y1, value_t y2, value_t y3, value_t y4) {
+inline value_t combine(comb_mode cm, value_t y1, value_t y2, value_t y3, value_t y4) {
   switch (cm) {
   case comb_mode::SEL1:
     return y1;

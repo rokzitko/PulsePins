@@ -16,7 +16,7 @@
 #include "sequence.hh"
 
 // Determine the requested period from -period or -freq settinh
-double parse_period(const InputParser &input)
+inline double parse_period(const InputParser &input)
 {
   double period_req = 0;
   if (input.exists("-period") && input.exists("-freq"))
@@ -29,9 +29,9 @@ double parse_period(const InputParser &input)
 }
 constexpr double default_output_clk = 100 * 1000 * 1000.0; // default output clock frequency [Hz]
 
-std::pair<uint64_t, uint64_t> calc_pos_neg(const double period_req,
-                                           const double duty,
-                                           const double output_clk = default_output_clk)
+inline std::pair<uint64_t, uint64_t> calc_pos_neg(const double period_req,
+                                                  const double duty,
+                                                  const double output_clk = default_output_clk)
 {
   if (period_req < 0.0)
     throw std::runtime_error("Period/frequency must be a positive quantity.");
@@ -64,7 +64,7 @@ std::pair<uint64_t, uint64_t> calc_pos_neg(const double period_req,
   return {nr_pos, nr_neg};
 }
 
-uint64_t calc_delay(const double delay, const double output_clk = default_output_clk)
+inline uint64_t calc_delay(const double delay, const double output_clk = default_output_clk)
 {
   const double output_clk_period = 1.0/output_clk;
   uint64_t nr_delay = round(delay/output_clk_period);
@@ -76,7 +76,7 @@ uint64_t calc_delay(const double delay, const double output_clk = default_output
   return nr_delay;
 }
 
-auto seq_continuous(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count_t nr_neg, value_t v1, value_t v0, bool start0 = false)
+inline auto seq_continuous(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count_t nr_neg, value_t v1, value_t v0, bool start0 = false)
 {
   Sequence elements;
   elements.push_back(el(p, m, true));
@@ -94,7 +94,7 @@ auto seq_continuous(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, 
   return elements;
 }
 
-auto seq_burst(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count_t nr_neg, value_t v1, value_t v0, int rep, bool start0, value_t final)
+inline auto seq_burst(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count_t nr_neg, value_t v1, value_t v0, int rep, bool start0, value_t final)
 {
   Sequence elements;
   elements.push_back(el(p, m, true));
@@ -112,7 +112,7 @@ auto seq_burst(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count
   return elements;
 }
 
-auto seq_once(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count_t nr_neg, value_t v1, value_t v0, value_t final)
+inline auto seq_once(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count_t nr_neg, value_t v1, value_t v0, value_t final)
 {
   Sequence elements;
   elements.push_back(el(p, m, true));
@@ -127,11 +127,11 @@ auto seq_once(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos, count_
 // Map target servo angle (degrees) to PWM frequency and duty cycle
 // angle_min, angle_max define the servo range (deg)
 // pulse_min, pulse_max define the pulse width range (s)
-std::pair<double, double> servo_pwm_params(double angle,
-                                           double angle_min = 0.0,
-                                           double angle_max = 180.0,
-                                           double pulse_min = 1e-3,    // 1.0 ms
-                                           double pulse_max = 2e-3)    // 2.0 ms
+inline std::pair<double, double> servo_pwm_params(double angle,
+                                                  double angle_min = 0.0,
+                                                  double angle_max = 180.0,
+                                                  double pulse_min = 1e-3,    // 1.0 ms
+                                                  double pulse_max = 2e-3)    // 2.0 ms
 {
   constexpr double period = 20e-3;   // 20 ms
   constexpr double frequency = 1.0 / period; // 50 Hz

@@ -371,7 +371,7 @@ class counter {
    }
 };
 
-int compare(const std::string what, const uint64_t value, const uint64_t expected) {
+inline int compare(const std::string what, const uint64_t value, const uint64_t expected) {
   if (value == expected)
     return 0;
   std::cerr << red << what << " mismatch: value=" << value << " expected=" << expected << rst << std::endl;
@@ -380,7 +380,7 @@ int compare(const std::string what, const uint64_t value, const uint64_t expecte
 
 #define test_equal(a, b) compare(std::string(#a), a, b)
 
-auto counter_seq1()
+inline auto counter_seq1()
 {
   Sequence seq;
   seq.push_back(el(1, 0));
@@ -394,7 +394,7 @@ auto counter_seq1()
   return seq;
 }
 
-auto counter_seq2(const InputParser &input)
+inline auto counter_seq2(const InputParser &input)
 {
   const auto c = parse_count(input, "-c", "1000");
   Sequence seq;
@@ -404,7 +404,7 @@ auto counter_seq2(const InputParser &input)
   return seq;
 }
 
-int counter_test1(counter &ctr)
+inline int counter_test1(counter &ctr)
 {
   int rc = 0;
   rc |= test_equal(ctr.bc.total(), 9);

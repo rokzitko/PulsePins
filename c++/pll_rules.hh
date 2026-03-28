@@ -9,8 +9,8 @@
 #include <vector>
 #include <utility>
 
-std::string applyReplacement(const std::string &s,
-                             const std::vector<std::pair<std::string, std::string>> &rules)
+inline std::string applyReplacement(const std::string &s,
+                                    const std::vector<std::pair<std::string, std::string>> &rules)
 {
   for (const auto &[from, to] : rules)
     if (s == from)
@@ -19,7 +19,7 @@ std::string applyReplacement(const std::string &s,
 }
 
 // N,M,C triplets, freq=ref*M/(N*C), where ref=50MHz on DE10-Nano
-std::vector<std::pair<std::string, std::string>> pll_rules = {
+static const std::vector<std::pair<std::string, std::string>> pll_rules = {
   {"100M", "5,20,2"},
   {"80M",  "3,24,5"},
   {"75M",  "5,30,4"},

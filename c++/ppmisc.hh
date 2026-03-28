@@ -14,14 +14,14 @@
 #define STRINGIFY(x) #x
 #define TOSTRING(x)  STRINGIFY(x)
 
-void about(std::string progname, std::string author = "Rok Zitko, rok.zitko@ijs.si")
+inline void about(std::string progname, std::string author = "Rok Zitko, rok.zitko@ijs.si")
 {
   std::cout << progname << ", " << author << std::endl;
   std::cout << "Version " << VERSION << ", commit " << TOSTRING(GIT_HASH) << ", compiled on " << __DATE__ << " " << __TIME__ << std::endl;
 }
 
 // Returns the name of the executable called (symlink)
-auto get_program_name(int argc, char *argv[])
+inline auto get_program_name(int argc, char *argv[])
 {
   return std::filesystem::path(argv[0]).filename().string();
 }

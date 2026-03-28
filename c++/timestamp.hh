@@ -19,7 +19,7 @@ constexpr int TS_SEL_STREAMER_TRIGGER_ACTIVATED = 0;
 constexpr int CFG_TS_SEL_PPS = 1;
 constexpr int CFG_TS_SEL_SIGA_MUX_OFFSET = 2;
 
-std::string sel_str(int sel)
+inline std::string sel_str(int sel)
 {
   switch (sel) {
   case TS_SEL_PULSE_1MS:

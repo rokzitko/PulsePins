@@ -28,7 +28,7 @@ template <typename T>
 
 // Returns true if successful, false otherwise. This allows one to gracefully handle
 // broken connections.
-bool send_ram_block(ram_block &rb, tcp::socket &sock)
+inline bool send_ram_block(ram_block &rb, tcp::socket &sock)
 {
   mm data(rb.get_addr(), rb.get_size());
   auto buffer_addr = data.get_ptr(0);

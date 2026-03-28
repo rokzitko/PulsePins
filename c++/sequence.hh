@@ -109,7 +109,7 @@ inline bool operator==(const Sequence &X, const Sequence &Y) {
   return compare(X, Y);
 }
 
-std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
+inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
 {
   Sequence elements;
   bool force_trigger = false;

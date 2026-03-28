@@ -55,7 +55,7 @@ inline void identity(Sequence &e) {
 
 // drop an element (nr is 0-based)
 template <std::size_t nr>
-void drop(Sequence &s)
+inline void drop(Sequence &s)
 {
   if (nr < s.size())
     s.erase(s.begin() + nr);
@@ -82,7 +82,7 @@ inline void convert_for_readback_check(Sequence &s) {
 
 // Positive value: timeout after last received element (in seconds)
 // Negative value: timeout after start (in seconds)
-auto readback_timeout(const InputParser &input) {
+inline auto readback_timeout(const InputParser &input) {
   double timeout = 0.0;
   if (input.exists("-timeout")) {
     timeout = parse_double(input, "-timeout", "0");
@@ -93,15 +93,15 @@ auto readback_timeout(const InputParser &input) {
 
 // Send a test sequence 'elements' to streamer 'fifo' and use readback 'rb' for testing equivalence (if -check command line argument is used).
 template<typename Transport, typename Convert>
-int send_and_trig(Transport &tr,
-                  streamer_control &sc,
-                  readback &rb,
-                  counter &ctr,
-                  Sequence &elements,
-                  const InputParser &input,
-                  const bool force_trigger,
-                  const Verbosity &v,
-                  Convert convert)
+inline int send_and_trig(Transport &tr,
+                         streamer_control &sc,
+                         readback &rb,
+                         counter &ctr,
+                         Sequence &elements,
+                         const InputParser &input,
+                         const bool force_trigger,
+                         const Verbosity &v,
+                         Convert convert)
 {
   int rc = RC_OK;
   const value_t final = input.exists("-t") ? parse_value(input, "-t", "0") : random_value();

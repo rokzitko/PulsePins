@@ -44,7 +44,7 @@ inline std::vector<std::string> split_ws(std::string_view sv) {
 }
 
 template <typename T>
-T checked_narrow(uint64_t x, const char* what, const std::string& context = {}) {
+inline T checked_narrow(uint64_t x, const char* what, const std::string& context = {}) {
   static_assert(std::numeric_limits<T>::is_integer, "T must be an integer type");
   static_assert(!std::numeric_limits<T>::is_signed, "T must be an unsigned integer type");
 
@@ -77,7 +77,7 @@ inline count_t parse_timestamp(std::string_view t, uint32_t scale_factor) {
 
 } // namespace detail
 
-std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view target_name = "outs", uint32_t scale_factor = 10) {
+inline std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view target_name = "outs", uint32_t scale_factor = 10) {
   std::vector<VcdUpdate> updates;
 
   std::string target_id;

@@ -39,12 +39,12 @@ using namespace std::chrono_literals;
 
 // Returns true if the data is sequential (steps of n)
 template <typename T>
-  bool test_sequential(T *data,
-                       const size_t len,
-                       const T range = 0,
-                       const T step = 1,
-                       const bool check_first_is_zero = false,
-                       const bool verbose = true)
+inline  bool test_sequential(T *data,
+                             const size_t len,
+                             const T range = 0,
+                             const T step = 1,
+                             const bool check_first_is_zero = false,
+                             const bool verbose = true)
 {
   if (verbose) std::cout << "Testing" << std::endl;
   T prev = 0;
@@ -98,12 +98,12 @@ class counter_control {
 };
 
 template <typename T>
-  double microseconds_since(T &initial_time) {
-    const auto now = std::chrono::steady_clock::now();
-    return std::chrono::duration_cast<std::chrono::microseconds>(now - initial_time).count();
-  }
+inline double microseconds_since(T &initial_time) {
+  const auto now = std::chrono::steady_clock::now();
+  return std::chrono::duration_cast<std::chrono::microseconds>(now - initial_time).count();
+}
 
-void check_ID(const int tidbit, bool verbose = true, std::ostream &s = std::cout)
+inline void check_ID(const int tidbit, bool verbose = true, std::ostream &s = std::cout)
 {
   mm dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE);
   mm dev_h2f(HPSFPGA_OFST, H2F_RANGE);
@@ -117,7 +117,7 @@ void check_ID(const int tidbit, bool verbose = true, std::ostream &s = std::cout
 
 #include "parseVerilog.hh"
 
-std::string stripUnderscores(const std::string& s) {
+inline std::string stripUnderscores(const std::string& s) {
   std::string result;
   result.reserve(s.size());
   for (char c : s)
@@ -125,11 +125,11 @@ std::string stripUnderscores(const std::string& s) {
   return result;
 }
 
-bool containsChar(const std::string& s, char c) {
+inline bool containsChar(const std::string& s, char c) {
   return std::find(s.begin(), s.end(), c) != s.end();
 }
 
-uint8_t parse_uint8_t(std::string s)
+inline uint8_t parse_uint8_t(std::string s)
 {
   s = stripUnderscores(s);
   if (containsChar(s, '\'')) return parseVerilogInt(s);
@@ -144,11 +144,11 @@ uint8_t parse_uint8_t(std::string s)
   }
 }
 
-uint8_t parse_uint8(const InputParser &input, const std::string s, const std::string def) {
+inline uint8_t parse_uint8(const InputParser &input, const std::string s, const std::string def) {
   return parse_uint8_t(input.get_string(s, def));
 }
 
-uint32_t parse_uint32_t(std::string s)
+inline uint32_t parse_uint32_t(std::string s)
 {
   s = stripUnderscores(s);
   if (containsChar(s, '\'')) return parseVerilogInt(s);
@@ -163,11 +163,11 @@ uint32_t parse_uint32_t(std::string s)
   }
 }
 
-uint32_t parse_uint32(const InputParser &input, const std::string s, const std::string def) {
+inline uint32_t parse_uint32(const InputParser &input, const std::string s, const std::string def) {
   return parse_uint32_t(input.get_string(s, def));
 }
 
-uint64_t parse_uint64_t(std::string s)
+inline uint64_t parse_uint64_t(std::string s)
 {
   s = stripUnderscores(s);
   if (containsChar(s, '\'')) return parseVerilogInt(s);
@@ -182,16 +182,16 @@ uint64_t parse_uint64_t(std::string s)
   }
 }
 
-uint64_t parse_uint64(const InputParser &input, const std::string s, const std::string def) {
+inline uint64_t parse_uint64(const InputParser &input, const std::string s, const std::string def) {
   return parse_uint64_t(input.get_string(s, def));
 }
 
-double parse_double(const InputParser &input, const std::string s, const std::string def) {
+inline double parse_double(const InputParser &input, const std::string s, const std::string def) {
   return std::stod(input.get_string(s, def));
 }
 
 // Returns a hexadecimal and binary representation of uint32_t 'a'
-std::string dump(uint32_t a, std::string sep = "=")
+inline std::string dump(uint32_t a, std::string sep = "=")
 {
    std::stringstream s;
    s << std::dec << a << sep << "0x" << std::hex << a << sep << "0b" << std::bitset<32>(a);
@@ -199,7 +199,7 @@ std::string dump(uint32_t a, std::string sep = "=")
 }
 
 // Returns a hexadecimal and binary representation of uint64_t 'a'
-std::string dump(uint64_t a, std::string sep = "=")
+inline std::string dump(uint64_t a, std::string sep = "=")
 {
    std::stringstream s;
    s << std::dec << a << sep << "0x" << std::hex << a << sep << "0b" << std::bitset<64>(a);
@@ -207,7 +207,8 @@ std::string dump(uint64_t a, std::string sep = "=")
 }
 
 // Returns a binary representation of value_t variable
-template <typename T> std::string binary_digits(T v)
+template <typename T>
+inline std::string binary_digits(T v)
 {
   std::stringstream ss;
   ss << std::bitset<sizeof(T)*8>(v);
@@ -215,7 +216,8 @@ template <typename T> std::string binary_digits(T v)
 }
 
 // Returns a hexadecimal (zero padded) and binary representation of 'v'.
-template <typename T> std::string hex_and_bin(T v)
+template <typename T>
+inline std::string hex_and_bin(T v)
 {
   std::stringstream ss;
   ss << "0x" << std::hex << std::setw(sizeof(T)*2) << std::setfill('0') << v << " " << std::bitset<sizeof(T)*8>(v);
@@ -231,7 +233,7 @@ inline uint32_t higher32(const uint64_t x) {
 }
 
 template<typename T, typename Cmp, typename Merge>
-void merge_adjacent(std::deque<T>& dq, Cmp cmp, Merge merge) {
+inline void merge_adjacent(std::deque<T>& dq, Cmp cmp, Merge merge) {
   if (dq.size() < 2) return;
   for (auto it = dq.begin(); it != dq.end(); /* advance inside */) {
     auto next = std::next(it);
@@ -249,7 +251,7 @@ void merge_adjacent(std::deque<T>& dq, Cmp cmp, Merge merge) {
 }
 
 template <typename T>
-std::string with_underscores(T value) {
+inline std::string with_underscores(T value) {
   static_assert(std::is_integral<T>::value, "Integral type required");
 
   bool negative = value < 0;
@@ -300,12 +302,12 @@ class rnd32 {
 };
 
 // Simple 32-bit integer random generator
-uint32_t random_u32() {
+inline uint32_t random_u32() {
   static std::mt19937 gen(std::random_device{}());
   return gen();  // already uniform over [0, 2^32-1]
 }
 
-uint32_t random_log_uniform(uint32_t min_len, uint32_t max_len) {
+inline uint32_t random_log_uniform(uint32_t min_len, uint32_t max_len) {
   if (!(min_len > 0) || !(max_len > min_len))
     throw std::invalid_argument("Require 0 < min_len < max_len.");
   // u in [0,1): divide by 2^32
@@ -315,7 +317,7 @@ uint32_t random_log_uniform(uint32_t min_len, uint32_t max_len) {
   return min_len * std::exp(u * std::log(double(max_len) / double(min_len)));
 }
 
-uint32_t random_lin_uniform(uint32_t min_len, uint32_t max_len) {
+inline uint32_t random_lin_uniform(uint32_t min_len, uint32_t max_len) {
   return (random_u32() % max_len) + min_len;
 }
 
@@ -339,11 +341,11 @@ inline uint32_t sra(uint32_t value, unsigned int shamt) {
   return static_cast<uint32_t>(signed_val >> shamt);
 }
 
-bool envVarExists(const std::string &name) {
+inline bool envVarExists(const std::string &name) {
   return std::getenv(name.c_str()) != nullptr;
 }
 
-std::optional<double> envDouble(std::string_view name)
+inline std::optional<double> envDouble(std::string_view name)
 {
   const char* s = std::getenv(name.data());
   if (!s) return std::nullopt;
@@ -359,7 +361,7 @@ std::optional<double> envDouble(std::string_view name)
   return v;
 }
 
-std::optional<long long> envInt(std::string_view name, int base = 10)
+inline std::optional<long long> envInt(std::string_view name, int base = 10)
 {
   const char* s = std::getenv(name.data());
   if (!s) return std::nullopt;
@@ -374,7 +376,7 @@ std::optional<long long> envInt(std::string_view name, int base = 10)
   return v;
 }
 
-std::optional<bool> envBool(std::string_view name)
+inline std::optional<bool> envBool(std::string_view name)
 {
   const char* s = std::getenv(name.data());
   if (!s) return std::nullopt;
@@ -397,7 +399,7 @@ inline std::string trim_zeros(std::string s) {
   return s;
 }
 
-std::string pretty_time(double seconds, int sig_digits = 8) {
+inline std::string pretty_time(double seconds, int sig_digits = 8) {
   if (seconds == 0.0)
     return "0";
 
@@ -434,7 +436,7 @@ std::string pretty_time(double seconds, int sig_digits = 8) {
   return "NaN";
 }
 
-std::string pretty_frequency(double hz, int sig_digits = 8) {
+inline std::string pretty_frequency(double hz, int sig_digits = 8) {
   if (hz == 0.0)
     return "0";
 
@@ -493,7 +495,7 @@ inline void split_number_unit(const std::string& input, std::string& number, std
 }
 
 // Parse time strings -> seconds
-double parse_time(const std::string& input) {
+inline double parse_time(const std::string& input) {
   if (input == "0")
     return 0.0;
 
@@ -529,12 +531,12 @@ double parse_time(const std::string& input) {
   return value * it->second;
 }
 
-double parse_time(const InputParser &input, std::string s, std::string def) {
+inline double parse_time(const InputParser &input, std::string s, std::string def) {
   return parse_time(input.get_string(s, def));
 }
 
 // Parse frequency strings -> Hz
-double parse_frequency(const std::string& input) {
+inline double parse_frequency(const std::string& input) {
   if (input == "0")
     return 0.0;
 
@@ -570,38 +572,38 @@ double parse_frequency(const std::string& input) {
   return value * it->second;
 }
 
-double parse_frequency(const InputParser &input, std::string s, std::string def) {
+inline double parse_frequency(const InputParser &input, std::string s, std::string def) {
   return parse_frequency(input.get_string(s, def));
 }
 
 // assert_not_reached equivalent
-void never_reached()
+inline void never_reached()
 {
   throw std::logic_error("Unreachable code reached");
 }
 
 // Bitwise majority of three integers
 template <typename T>
-constexpr T bitwise_majority(T a, T b, T c) {
+inline constexpr T bitwise_majority(T a, T b, T c) {
   return (a & b) | (a & c) | (b & c);
 }
 
 template <typename T>
-constexpr T bitwise_majority_nonstrict(T a, T b, T c, T d) {
+inline constexpr T bitwise_majority_nonstrict(T a, T b, T c, T d) {
   return (a & b) | (a & c) | (a & d)
     | (b & c) | (b & d) | (c & d);
 }
 
 // Bitwise majority of four inputs: at least 3 out of 4 bits set
 template <typename T>
-constexpr T bitwise_majority4(T a, T b, T c, T d) {
+inline constexpr T bitwise_majority4(T a, T b, T c, T d) {
   return (a & b & c) |
     (a & b & d) |
     (a & c & d) |
     (b & c & d);
 }
 
-std::pair<std::string_view, std::string_view> split_once(std::string_view str, char delimiter)
+inline std::pair<std::string_view, std::string_view> split_once(std::string_view str, char delimiter)
 {
   size_t pos = str.find(delimiter);
   if (pos == std::string_view::npos)
@@ -609,7 +611,7 @@ std::pair<std::string_view, std::string_view> split_once(std::string_view str, c
   return {str.substr(0, pos), str.substr(pos + 1)};
 }
 
-std::tuple<std::string_view, std::string_view, std::string_view>
+inline std::tuple<std::string_view, std::string_view, std::string_view>
   split_twice(std::string_view str, char delimiter)
 {
   size_t pos1 = str.find(delimiter);
@@ -625,7 +627,7 @@ std::tuple<std::string_view, std::string_view, std::string_view>
   };
 }
 
-bool parse_bool(const std::string& s)
+inline bool parse_bool(const std::string& s)
 {
   // Trim leading/trailing spaces
   auto str = s;
@@ -641,30 +643,30 @@ bool parse_bool(const std::string& s)
   throw std::invalid_argument("Invalid boolean string: " + s);
 }
 
-bool parse_bool(std::string_view s)
+inline bool parse_bool(std::string_view s)
 {
   return parse_bool(std::string(s));
 }
 
-bool parse_bool(const InputParser &input, const std::string s, const std::string def) {
+inline bool parse_bool(const InputParser &input, const std::string s, const std::string def) {
   return parse_bool(input.get_string(s, def));
 }
 
 // Example: auto seq_retrig = with_pushed(seq, el(Retrig{}));
 template <typename Container, typename T>
-  Container with_pushed(Container c, T&& value) {
+inline Container with_pushed(Container c, T&& value) {
     c.push_back(std::forward<T>(value));
     return c;
   }
 
 // substring test
-bool contains_case(const std::string &text, const std::string &substr) {
+inline bool contains_case(const std::string &text, const std::string &substr) {
   if (substr.empty()) return true;
   return text.find(substr) != std::string::npos;
 }
 
 // substring test, case insensitive
-bool contains_icase(const std::string &text, const std::string &substr) {
+inline bool contains_icase(const std::string &text, const std::string &substr) {
   if (substr.empty()) return true;
   if (text.size() < substr.size()) return false;
   auto it = std::search(text.begin(), text.end(),
@@ -675,37 +677,37 @@ bool contains_icase(const std::string &text, const std::string &substr) {
   return it != text.end();
 }
 
-std::ostream& operator<<(std::ostream& os, uint8_t v) {
+inline std::ostream& operator<<(std::ostream& os, uint8_t v) {
     return os << static_cast<unsigned int>(v);
 }
 
-std::ostream& operator<<(std::ostream& os, int8_t v) {
+inline std::ostream& operator<<(std::ostream& os, int8_t v) {
     return os << static_cast<int>(v);
 }
 
 template <typename T>
-  std::string str_hex(const T x) {
+inline std::string str_hex(const T x) {
     std::stringstream s;
     s << "0x" << std::hex << std::setw(sizeof(T)*2) << std::setfill('0') << x;
         return s.str();
   }
 
 template <typename T>
-  std::string str_bin(const T x) {
+inline std::string str_bin(const T x) {
     std::stringstream s;
     s << "b" << std::bitset<sizeof(T)*8>(x);
         return s.str();
   }
 
 template <typename T>
-  std::string str_dec(const T x) {
+inline std::string str_dec(const T x) {
     std::stringstream s;
     s << std::dec << x;
         return s.str();
   }
 
 template <typename T>
-  std::string output_formatter(const T x, const std::string mode)
+inline std::string output_formatter(const T x, const std::string mode)
 {
   const auto strhex = contains_icase(mode, "hex") ? str_hex(x) : "";
   const auto strbin = contains_icase(mode, "bin") ? str_bin(x) : "";
@@ -713,7 +715,7 @@ template <typename T>
     return trim(strhex + " " + strbin + " " + strdec);
 }
 
-std::string timestamp_iso8601_utc_ms() {
+inline std::string timestamp_iso8601_utc_ms() {
   using namespace std::chrono;
   auto now = system_clock::now();
   // Extract whole seconds and milliseconds
@@ -727,7 +729,7 @@ std::string timestamp_iso8601_utc_ms() {
   return oss.str();
 }
 
-std::string get_env(const std::string& name) {
+inline std::string get_env(const std::string& name) {
   const char* val = std::getenv(name.c_str());
   return val ? std::string(val) : std::string();  // empty string if not found
 }

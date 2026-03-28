@@ -14,7 +14,7 @@
 
 using namespace std::string_literals;
 
-uint64_t parseVerilogInt(const std::string& lit) {
+inline uint64_t parseVerilogInt(const std::string& lit) {
   std::string s;
   // Remove underscores
   for (char c : lit) {

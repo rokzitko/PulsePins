@@ -130,7 +130,7 @@ inline Sequence prepare_random_pulses(unsigned long nr = 10, unsigned long max_b
    return elements;
 }
 
-Sequence prepare_equally_spaced_pulses(unsigned long nr = 10, unsigned long block_len = 100000, bool verbose = false)
+inline Sequence prepare_equally_spaced_pulses(unsigned long nr = 10, unsigned long block_len = 100000, bool verbose = false)
 {
    if (verbose) std::cout << "nr=" << nr << " block_len=" << block_len << std::endl;
    Sequence elements;

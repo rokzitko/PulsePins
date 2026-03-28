@@ -7,7 +7,7 @@
 
 #include "memory.hh"
 
-std::string format_sysid_timestamp(uint32_t raw_ts) {
+inline std::string format_sysid_timestamp(uint32_t raw_ts) {
   // Convert to time_t (safe since sysid uses epoch seconds)
   std::time_t t = static_cast<std::time_t>(raw_ts);
   std::tm tm{};

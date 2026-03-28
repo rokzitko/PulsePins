@@ -13,6 +13,7 @@
 #include "PID.hh"
 #include "DAC.hh"
 #include "MCP9808.hh"
+#include "freq_meter.hh"
 
 std::mutex lockcout;
 #define LOCKCOUT(z) { lockcout.lock(); z; lockcout.unlock(); }

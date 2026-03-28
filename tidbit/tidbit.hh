@@ -74,7 +74,7 @@ inline bool compare(const uint32_t val, const char expected[4], std::ostream &f 
   return compare(val, chars_to_uint32(expected));
 };
 
-void hello_msg(int tidbit, std::ostream &f = std::cerr) {
+inline void hello_msg(int tidbit, std::ostream &f = std::cerr) {
   f << "test for tidbit" << tidbit << ", Rok Zitko 2022-2025" << std::endl;
   f << "compiled on " << __DATE__ << " " << __TIME__ << std::endl;
 }

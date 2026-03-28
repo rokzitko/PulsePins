@@ -321,7 +321,7 @@ class el
      return ss.str();
    }
 
-   friend std::ostream &operator<<(std::ostream &o, const el &e) {
+   friend inline std::ostream &operator<<(std::ostream &o, const el &e) {
      o << e.desc();
      return o;
    }

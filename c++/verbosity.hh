@@ -11,7 +11,7 @@ struct Verbosity {
   bool verbosecheck = false;  // use -verbosecheck to enable
 };
 
-Verbosity set_verbosity(InputParser &input)
+inline Verbosity set_verbosity(InputParser &input)
 {
   Verbosity v;
   if (input.exists("-quiet"))

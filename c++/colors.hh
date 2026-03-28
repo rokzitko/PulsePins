@@ -5,10 +5,10 @@
 
 #pragma once
 
-const char* red     = "\033[31m";
-const char* green   = "\033[32m";
-const char* yellow  = "\033[33m";
-const char* blue    = "\033[34m";
-const char* magenta = "\033[35m";
-const char* cyan    = "\033[36m";
-const char* rst     = "\033[0m"; // reset to default
+static const char* red     = "\033[31m";
+static const char* green   = "\033[32m";
+static const char* yellow  = "\033[33m";
+static const char* blue    = "\033[34m";
+static const char* magenta = "\033[35m";
+static const char* cyan    = "\033[36m";
+static const char* rst     = "\033[0m"; // reset to default

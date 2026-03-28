@@ -7,7 +7,7 @@
 #include <cerrno>
 #include <climits>
 
-std::optional<int> to_int(std::string_view sv) {
+inline std::optional<int> to_int(std::string_view sv) {
   std::string s(sv);
   char* end = nullptr;
   errno = 0;
@@ -19,21 +19,21 @@ std::optional<int> to_int(std::string_view sv) {
   return static_cast<int>(value);
 }
 
-std::string setw_l(std::string s, std::string_view w) {
+inline std::string setw_l(std::string s, std::string_view w) {
   std::stringstream ss;
   ss << std::setw(to_int(w).value_or(0)) << std::left << s;
   return ss.str();
 }
 
 // uint32_t as 0x00112233, zero padded
-std::string hex8(uint32_t x) {
+inline std::string hex8(uint32_t x) {
   std::stringstream ss;
   ss << "0x" << std::setw(8) << std::setfill('0') << std::hex << x;
   return ss.str();
 }
 
 // uint32_t as 1_234_567_890, right aligned
-std::string dec13(uint32_t x) {
+inline std::string dec13(uint32_t x) {
   std::stringstream ss;
   ss << std::setw(13) << std::setfill(' ') << with_underscores(x);
   return ss.str();
