@@ -71,7 +71,9 @@ TARGETS = pptool ppscpi
 SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
            ppgpsdo pptemp ppfreq ppread ppvcd pphelloworld
 
-pptool: pptool.o $(LUA_LIB)
+PPTOOL_OBJS = pptool.o pptool_streaming.o pptool_measurement.o
+
+pptool: $(PPTOOL_OBJS) $(LUA_LIB)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB) $(LUA_LIB)
 
 ASIO_DIR := third_party/asio
@@ -88,6 +90,12 @@ unit_tests: unit_tests.cc $(HEADERS)
 	g++ $(CPPFLAGS) $< -o $@
 
 pptool.o : pptool.cc ../hps_0.h $(HEADERS)
+	$(CXX) $(CPPFLAGS) -c $< -o $@
+
+pptool_streaming.o : pptool_streaming.cc ../hps_0.h $(HEADERS)
+	$(CXX) $(CPPFLAGS) -c $< -o $@
+
+pptool_measurement.o : pptool_measurement.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
