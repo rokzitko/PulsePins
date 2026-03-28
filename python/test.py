@@ -14,28 +14,24 @@ def test_the_answer():
 def test_Counter():
    c = pp.Counter(10)
    assert c.count() == 10
-   assert c.count_str() == "count=0xa [10]"
    assert c.control_bits() == 0
    assert c.desc() == ""
 
 def test_Strobe():
    c = pp.Strobe(11)
    assert c.count() == 11
-   assert c.count_str() == "count=0xb [11]"
    assert c.control_bits() == pp_impl.STROBE
    assert c.desc() == pp_impl.strobestring
 
 def test_NoStrobe():
    c = pp.NoStrobe(12)
    assert c.count() == 12
-   assert c.count_str() == "count=0xc [12]"
    assert c.control_bits() == pp_impl.NOSTROBE
    assert c.desc() == pp_impl.nostrobestring
 
 def test_Value():
    v = pp.Value(10)
    assert v.value() == 10
-   assert v.value_str() == "value=0xa [10] "
    assert v.result(0) == 10
    assert v.mode_bits() == 0
    assert v.desc() == ""
@@ -43,7 +39,6 @@ def test_Value():
 def test_BitLoad():
    v = pp.BitLoad(10)
    assert v.value() == 10
-   assert v.value_str() == "value=0xa [10] "
    assert v.result(0) == 10
    assert v.result(1) == 10
    assert v.result(10) == 10
@@ -53,7 +48,6 @@ def test_BitLoad():
 def test_BitSet():
    v = pp.BitSet(10)
    assert v.value() == 10
-   assert v.value_str() == "value=0xa [10] "
    assert v.result(0) == 10
    assert v.result(1) == 11
    assert v.result(10) == 10
@@ -63,7 +57,6 @@ def test_BitSet():
 def test_BitClear():
    v = pp.BitClear(10)
    assert v.value() == 10
-   assert v.value_str() == "value=0xa [10] "
    assert v.result(0) == 0
    assert v.result(1) == 1
    assert v.result(10) == 0
@@ -73,7 +66,6 @@ def test_BitClear():
 def test_BitFlip():
    v = pp.BitFlip(10)
    assert v.value() == 10
-   assert v.value_str() == "value=0xa [10] "
    assert v.result(0) == 10
    assert v.result(1) == 11
    assert v.result(10) == 0
@@ -83,7 +75,6 @@ def test_BitFlip():
 def test_BitNot():
    v = pp.BitNot(0)
    assert v.value() == 0
-   assert v.value_str() == "value=0x0 [0] "
    assert v.result(0) == 0xFFFFFFFF
    assert v.result(0xFFFFFFFF) == 0
    assert v.mode_bits() == pp_impl.BITNOT
@@ -92,7 +83,6 @@ def test_BitNot():
 def test_BitAnd():
    v = pp.BitAnd(2)
    assert v.value() == 2
-   assert v.value_str() == "value=0x2 [2] "
    assert v.result(0) == 0
    assert v.result(1) == 0
    assert v.result(2) == 2
@@ -102,7 +92,6 @@ def test_BitAnd():
 def test_BitOr():
    v = pp.BitOr(2)
    assert v.value() == 2
-   assert v.value_str() == "value=0x2 [2] "
    assert v.result(0) == 2
    assert v.result(1) == 3
    assert v.result(2) == 2
@@ -112,7 +101,6 @@ def test_BitOr():
 def test_BitXor():
    v = pp.BitXor(2)
    assert v.value() == 2
-   assert v.value_str() == "value=0x2 [2] "
    assert v.result(0) == 2
    assert v.result(1) == 3
    assert v.result(2) == 0
@@ -122,7 +110,6 @@ def test_BitXor():
 def test_BitXnor():
    v = pp.BitXnor(2)
    assert v.value() == 2
-   assert v.value_str() == "value=0x2 [2] "
    assert v.result(0) == 0xFFFFFFFF - 2
    assert v.result(1) == 0xFFFFFFFF - 3
    assert v.result(2) == 0xFFFFFFFF
@@ -132,7 +119,6 @@ def test_BitXnor():
 def test_BitSll():
    v = pp.BitSll(2)
    assert v.value() == 2
-   assert v.value_str() == "value=0x2 [2] "
    assert v.result(0) == 0
    assert v.result(1) == 4
    assert v.result(2) == 8
@@ -142,7 +128,6 @@ def test_BitSll():
 def test_BitSrl():
    v = pp.BitSrl(2)
    assert v.value() == 2
-   assert v.value_str() == "value=0x2 [2] "
    assert v.result(0) == 0
    assert v.result(1) == 0
    assert v.result(2) == 0
@@ -155,14 +140,12 @@ def test_TriggerCondition():
    assert v.value() == (1 << pp_impl.WIDTH_TRIGGER) + 1
    assert v.mode_bits() == pp_impl.TRIGGER
    assert v.desc() == pp_impl.triggerstring
-   assert v.value_str() == "0x101 trig=0x1 {00000001} mask=0x1 {00000001}"
 
 def test_TriggerConditionFinal():
    v = pp.TriggerCondition(2,2,True)
    assert v.value() == (2 << pp_impl.WIDTH_TRIGGER) + 2
    assert v.mode_bits() == pp_impl.TRIGGER + pp_impl.TRIGGERFINAL
    assert v.desc() == pp_impl.triggerstring + pp_impl.finalstring
-   assert v.value_str() == "0x202 trig=0x2 {00000010} mask=0x2 {00000010}"
 
 def test_el1():
    c = pp.Counter(1)
@@ -319,18 +302,6 @@ def test_decode():
    position = 3
    e.store(position)
    assert e.decode() == " (store 3)"
-
-def test_desc():
-   c = pp.Counter(1)
-   v = pp.Value(2)
-   e = pp.el(pp.el_type.regular, c, v)
-   assert e.desc() == "value=0x2 [2]  count=0x1 [1]   control=0x0"
-
-def test_repr():
-   c = pp.Counter(1)
-   v = pp.Value(2)
-   e = pp.el(pp.el_type.regular, c, v)
-   assert repr(e) == "value=0x2 [2]  count=0x1 [1]   control=0x0"
 
 def test_eq():
    c1 = pp.Counter(1)

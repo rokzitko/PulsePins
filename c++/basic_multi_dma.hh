@@ -48,14 +48,14 @@ class basic_streamer {
                   const std::uintptr_t st_if_base = ST_INTERFACE_1_BASE) :
      basic_streamer(resolve_streamer_options(input), _fpga, fifo_base, fifo_csr_base, st_if_base) {}
 
-   void set_initial_value(const StreamerOptions &opts, const std::string &param_name = "-i") {
+   void set_initial_value_opts(const StreamerOptions &opts, const std::string &param_name = "-i") {
      if (opts.report_initial_value)
        std::cout << "initial_value(" << param_name << ")=" << opts.initial_value << std::endl;
      sc.set_initial_value(opts.initial_value);
    }
 
    void set_initial_value(const InputParser &input, const std::string param_name = "-i") {
-     set_initial_value(resolve_streamer_options(input, param_name), param_name);
+     set_initial_value_opts(resolve_streamer_options(input, param_name), param_name);
    }
 };
 
@@ -71,7 +71,7 @@ class streamer : public basic_streamer {
      basic_streamer(opts, _fpga, FIFO_1_IN_BASE, FIFO_1_IN_CSR_BASE, ST_INTERFACE_1_BASE),
      fpga (_fpga),
      mux(fpga.dev_h2f, fpga.v, st_mux_base) {
-       basic_streamer::set_initial_value(opts); // set initial value before streamer reset is performed
+       basic_streamer::set_initial_value_opts(opts); // set initial value before streamer reset is performed
        fpga.output_enable(true);    // ensure output is enabled
        sc.reset();                  // streamer core reset
      }
@@ -125,13 +125,13 @@ class multistreamer {
      s4(s4_opts, fpga, FIFO_4_IN_BASE, FIFO_4_IN_CSR_BASE, ST_INTERFACE_4_BASE)
      {
        fpga.output_enable(true); // ensure output is enabled
-       s1.set_initial_value(s1_opts, "-i1");
+       s1.set_initial_value_opts(s1_opts, "-i1");
        s1.sc.reset();
-       s2.set_initial_value(s2_opts, "-i2");
+       s2.set_initial_value_opts(s2_opts, "-i2");
        s2.sc.reset();
-       s3.set_initial_value(s3_opts, "-i3");
+       s3.set_initial_value_opts(s3_opts, "-i3");
        s3.sc.reset();
-       s4.set_initial_value(s4_opts, "-i4");
+       s4.set_initial_value_opts(s4_opts, "-i4");
        s4.sc.reset();
      }
 

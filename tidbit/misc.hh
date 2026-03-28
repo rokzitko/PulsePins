@@ -34,6 +34,7 @@
 #include "from_chars.hh" // C++11
 
 #include "parser.hh"
+#include "pio.hh"
 
 using namespace std::chrono_literals;
 
@@ -101,18 +102,6 @@ template <typename T>
 inline double microseconds_since(T &initial_time) {
   const auto now = std::chrono::steady_clock::now();
   return std::chrono::duration_cast<std::chrono::microseconds>(now - initial_time).count();
-}
-
-inline void check_ID(const int tidbit, bool verbose = true, std::ostream &s = std::cout)
-{
-  mm dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE);
-  mm dev_h2f(HPSFPGA_OFST, H2F_RANGE);
-
-  assert(SYSID_QSYS_0_ID == tidbit); // check for consistency
-
-  sysid id(dev_lw, SYSID_BASE, SYSID_ID, verbose, s);                      // lw
-  sysid id_tidbit(dev_lw, SYSID_QSYS_0_BASE, SYSID_QSYS_0_ID, verbose, s); // lw
-  sysid id2(dev_h2f, SYSID_H2F_BASE, SYSID_H2F_ID, verbose, s);            // h2f
 }
 
 #include "parseVerilog.hh"

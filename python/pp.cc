@@ -10,6 +10,11 @@
 
 #include "ppcommon.hh"
 #include "ppmisc.hh"
+#include "basic_multi_dma.hh"
+#include "combiner.hh"
+#include "qout.hh"
+#include "trigger.hh"
+#include "freq_meter.hh"
 
 namespace nb = nanobind;
 using namespace nb::literals;
@@ -184,14 +189,16 @@ NB_MODULE(pp, m) {
   nb::class_<hpsled>(m, "hpsled");
 
   nb::class_<FPGA>(m, "FPGA")
-    .def(nb::init<const InputParser &, const Verbosity &, bool>(),
-         nb::arg("input"),
-         nb::arg("verbosity"),
-         nb::arg("oe") = true
-        )
-//    .def_prop_ro("mgr", &FPGA::mgr)
+    .def(nb::init<const Verbosity &>())
     .def("status", &FPGA::status)
     .def("output_enable", &FPGA::output_enable);
+
+  nb::class_<freq_meter>(m, "freq_meter")
+    .def(nb::init<mm &, const std::uintptr_t, bool>());
+
+  nb::class_<pp_freq_meter>(m, "pp_freq_meter")
+    .def(nb::init<InputParser &, FPGA &, const bool>())
+    .def("report", &pp_freq_meter::report);
 
   nb::class_<sysid>(m, "sysid")
     .def(nb::init<mm &, const std::uintptr_t>())
@@ -266,7 +273,7 @@ NB_MODULE(pp, m) {
     .def("read_in_chunks", &c_dma::read_in_chunks);
 
   nb::class_<streamer_dma, c_dma>(m, "streamer_dma")
-    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t, size_t>())
+    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t, size_t, const Verbosity &>())
     .def("write_element", &streamer_dma::write_element)
     .def("prepare", &streamer_dma::prepare)
     .def("verify", &streamer_dma::verify)
@@ -282,7 +289,7 @@ NB_MODULE(pp, m) {
     .def("send_sequence", &streamer_fifo::send_sequence);
 
   nb::class_<readback>(m, "readback")
-    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t, Verbosity &>())
+    .def(nb::init<FPGA &, mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t>())
     .def("check_fill_status", &readback::check_fill_status)
     .def("filled", &readback::filled)
     .def("clear_fifo", &readback::clear_fifo)
@@ -329,11 +336,11 @@ NB_MODULE(pp, m) {
 
   // pll_clk
   nb::class_<pll_core_clk>(m, "pll_core_clk")
-    .def(nb::init<const FPGA &>())
+    .def(nb::init<mm &>())
     .def("set_core_clk", &pll_core_clk::set_core_clk);
 
   nb::class_<pll_int_clk>(m, "pll_int_clk")
-    .def(nb::init<const FPGA &>())
+    .def(nb::init<mm &>())
     .def("set_int_clk", &pll_int_clk::set_int_clk);
 
   // basic_multi_dma

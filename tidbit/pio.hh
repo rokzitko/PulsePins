@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <thread>
+
 #include "memory.hh"
 
 // PIO core

@@ -40,15 +40,11 @@
 #include "socal/alt_gpio.h"
 #include "hps_0.h"
 
-#ifndef DEVICE
-#define DEVICE DE10NANO
-#define DE10NANO
-#endif
-
-using namespace std::string_literals;
-
+#include "defs.hh"
 #include "bitops.hh"
 #include "memory.hh"
+
+using namespace std::string_literals;
 
 inline uint32_t chars_to_uint32(const char buffer[4])
 {
