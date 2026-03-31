@@ -1,0 +1,2 @@
+#!/bin/bash
+arm-linux-gnueabihf-readelf -V ./pptool | grep -E 'GLIBC|GLIBCXX'

@@ -1,0 +1,11 @@
+#!/bin/bash
+arm-linux-gnueabihf-g++-10 --sysroot=$SYSROOT -print-sysroot
+arm-linux-gnueabihf-g++-10 --sysroot=$SYSROOT -print-search-dirs
+arm-linux-gnueabihf-g++-10 --sysroot=$SYSROOT -Wl,--verbose 2>&1 | grep SEARCH_DIR
+
+arm-linux-gnueabihf-g++-10 --sysroot=$SYSROOT -print-file-name=libstdc++.so
+arm-linux-gnueabihf-g++-10 --sysroot=$SYSROOT -print-file-name=libgcc_s.so
+arm-linux-gnueabihf-g++-10 --sysroot=$SYSROOT -print-file-name=crt1.o
+arm-linux-gnueabihf-g++-10 --sysroot=$SYSROOT -print-file-name=crti.o
+
+strings $SYSROOT/usr/lib/libstdc++.so.6 | grep GLIBCXX_ | tail -20

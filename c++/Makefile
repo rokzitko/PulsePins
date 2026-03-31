@@ -13,10 +13,20 @@ LUA_DIR := third_party/lua
 ALT_DEVICE_FAMILY ?= soc_cv_av
 SOCEDS_ROOT ?= $(SOCEDS_DEST_ROOT)
 HWLIBS_ROOT ?= $(SOCEDS_ROOT)/ip/altera/hps/altera_hps/hwlib
+
+# Note: gcc-7 does not support the C++ filesystem library
+#TOOLCHAIN ?= $(HOME)/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf
+#CROSS_COMPILE ?= $(TOOLCHAIN)/bin/arm-linux-gnueabihf-
+
 CROSS_COMPILE ?= arm-linux-gnueabihf-
+GCC_SUFFIX ?= -7
+
+# Used only for cross-compilation
+CROSSCFLAGS = --sysroot=$(SYSROOT)
+CROSSCPPFLAGS = --sysroot=$(SYSROOT)
+
 CFLAGS   = -O2 -Wall -Wextra -fPIC
 CPPFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
-  $(SYSROOT) \
   -D$(ALT_DEVICE_FAMILY) \
   -DGIT_HASH=$(GIT_HASH) \
   -I$(TIDBIT_DIR) -I$(LUA_DIR) \
@@ -26,16 +36,18 @@ CPPFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
   -I.. \
   -Wformat=0 -std=c++17 -Wno-psabi -Wno-cpp $(HW_DEBUG)
 LDFLAGS =  -g -Wall -pthread
-GCC_SUFFIX ?= -10
+
 CXX = $(CROSS_COMPILE)g++$(GCC_SUFFIX)
 CC = $(CROSS_COMPILE)gcc$(GCC_SUFFIX)
+AR = $(CROSS_COMPILE)ar
+RANLIB = $(CROSS_COMPILE)ranlib
+
 ARCH = arm
-AR := ar
-RANLIB := ranlib
 
 ifneq ($(MAKECMDGOALS),lint-whitespace)
 GCC_VERSION := $(shell $(CXX) -dumpversion | cut -f1 -d.)
 
+# Supported from gcc-8 onwards
 ifeq ($(GCC_VERSION),8)
     FSLIB = -lstdc++fs
     LDFLAGS += $(FSLIB)
@@ -67,7 +79,7 @@ $(LUA_LIB): $(LUA_CORE_OBJ)
 	$(RANLIB) $@
 
 $(LUA_DIR)/%.o: $(LUA_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CROSSCFLAGS) $(CFLAGS) -c $< -o $@
 
 # Targets that run on DE10 board
 TARGETS = pptool ppscpi
@@ -95,16 +107,16 @@ unit_tests: unit_tests.cc $(HEADERS)
 	g++ $(CPPFLAGS) $< -o $@
 
 pptool.o : pptool.cc ../hps_0.h $(HEADERS)
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCPPFLAGS) $(CPPFLAGS) -c $< -o $@
 
 pptool_streaming.o : pptool_streaming.cc ../hps_0.h $(HEADERS)
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 pptool_measurement.o : pptool_measurement.cc ../hps_0.h $(HEADERS)
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 .PHONY: clean copy lint-whitespace
 clean:
@@ -128,6 +140,12 @@ copy_sources:
 	ssh $(TARGETHOST) mkdir -p $(CPPDIR)
 	scp $(SOURCES) $(MISCFILES) @$(TARGETHOST):$(CPPDIR)
 	scp ../hps_0.h @$(TARGETHOST):
+	cd third_party/lua ; make clean
+	ssh $(TARGETHOST) mkdir -p $(CPPDIR)/third_party
+	scp -r third_party/lua-5.5.0 @$(TARGETHOST):$(CPPDIR)/third_party
+	ssh $(TARGETHOST) cd c++/third_party ; ln -s lua-5.5.0 lua
+	scp -r third_party/asio @$(TARGETHOST):$(CPPDIR)/third_party
+	scp include/doctest.h @$(TARGETHOST):$(CPPDIR)/include
 
 copy_sources_img:
 	mkdir -p $(IMGROOT)/$(CPPDIR)
