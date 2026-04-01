@@ -2,6 +2,11 @@
 // Copyright (c) 2026 Rok Zitko
 //
 // Measurement-oriented `pptool` command implementations.
+//
+// This file collects the user-facing entry points for subsystems whose main job is
+// observation, verification, or environmental control rather than output generation.
+// The important pattern is that each command stays thin and delegates the hardware model
+// to typed wrappers such as `counter`, `timestamp`, `freq_meter`, and `readback`.
 
 #include <algorithm>
 #include <functional>
@@ -38,6 +43,12 @@ std::mutex lockcout;
 
 int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
+  // Counter workflow:
+  //   1. reset the measurement bank
+  //   2. optionally generate a built-in reference sequence
+  //   3. stream it to the FPGA and force execution
+  //   4. latch all counter instruments
+  //   5. print reports and optionally run the deterministic self-check
   int rc = 0;
   streamer s(input, fpga);
   counter ctr(input, fpga);
@@ -61,6 +72,8 @@ int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
 
 int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
+  // `ppread` is the simplest measurement command: configure output-enable if requested,
+  // then stream readback elements until timeout or external termination.
   if (input.exists("-oe")) {
     const bool oe = parse_bool(input, "-oe", "0");
     fpga.output_enable(oe);
@@ -75,7 +88,9 @@ int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
 
 void ts_reader(const InputParser &input, std::string label, std::function<uint64_t()> read, long long silent_after = -1)
 {
-  long long ctr = 0;
+  // Shared timestamp-printing loop used by both `ppts` and `ppgpsdo`.
+  // `silent_after` lets a caller keep collecting data after the initial bring-up logs stop.
+  long long ctr = 0; // keep this signed, because of silent_after (than can be negative)
   uint64_t current = 0;
   uint64_t previous = 0;
   FormatDispatch d;
@@ -101,6 +116,8 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
 
 int ppts(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
+  // Timestamp reader entry point. Depending on the switches, this command can read the
+  // PPS path, the auxiliary signal-A path, or both concurrently.
   rstmgr rm;
   rm.s2f_reset();
   timestamp ts(fpga.dev_h2f,
@@ -201,6 +218,8 @@ class Averager {
 
 int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
+  // GPSDO helper: pair PPS and signal-A timestamps, derive timing error, then feed the
+  // averaged error into a PID-controlled DAC output.
   rstmgr rm;
   rm.s2f_reset();
   timestamp ts(fpga.dev_h2f,
@@ -292,6 +311,8 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
 
 int pptemp(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
+  // Temperature polling loop for the MCP9808 sensor. The formatting and retry policy live
+  // in the sensor wrapper so this command can stay focused on the read/print cadence.
   Args args;
   MCP9808::print_csv_header(args, std::cout);
   MCP9808 sensor(args.bus, args.addr, args.reopen);
@@ -339,7 +360,7 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
     auto gate_len = parse_uint32(input, "-gate_len", "500000");
     fm.meter.set_gate_len(gate_len);
   }
-  size_t ctr;
+  long long ctr;
   FormatDispatch d;
   d['t'] = [](std::string_view t) { return timestamp_iso8601_utc_ms(); };
   d['c'] = [&ctr](std::string_view t) { return setw_l(with_underscores(ctr), t); };

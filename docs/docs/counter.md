@@ -142,7 +142,7 @@ The packet-statistics block is useful for streams that carry an explicit valid/i
 
 The implementation supports both overlapping and non-overlapping windows, although the current integrated instance in `counter_if.sv` uses non-overlapping windows.
 
-`autocorrelation` and `crosscorrelation` expose compact lag-based correlation counts. The current C++ wrapper instantiates them with 16 result bins.
+`autocorrelation` and `crosscorrelation` expose compact lag-based correlation counts. Address 0 reports the total number of valid samples, and higher addresses report per-lag match counts. The current C++ wrapper instantiates them with 16 result bins.
 
 The time-counter path is slightly different from the other instruments: it measures elapsed system-clock ticks between start and stop edges derived from selected channels, and exposes ready flags separately.
 

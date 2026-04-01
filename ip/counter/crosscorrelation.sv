@@ -3,6 +3,16 @@
 
 `default_nettype none // turn off implicit data types
 
+// Lag-based crosscorrelation counter for two selected channels.
+//
+// This block stores a short history of `d1` and compares the current `d2` sample against
+// that history. For each lag `tau`, it counts how often `d2[i]` matches `d1[i-tau]`.
+// Address 0 exposes the total number of valid samples, while higher addresses expose the
+// per-lag match accumulators.
+//
+// Accumulation happens in `d_clk` and software reads a latched snapshot through
+// `counter_if.sv`.
+
 module crosscorrelation
 #(
   parameter length = 8,                    // size of the shift register
@@ -22,7 +32,7 @@ module crosscorrelation
   output reg [width_bus-1:0] result
 );
 
-logic [width_ctr-1:0] ctr;              // total length counter
+logic [width_ctr-1:0] ctr;              // total number of valid samples
 logic [width_ctr-1:0] ctr_r;            // registered version of ctr
 logic [width_ctr-1:0] acc   [1:length]; // accumulator for x[i] y[i+tau]
 logic [width_ctr-1:0] acc_r [1:length]; // registered version of acc
@@ -34,7 +44,7 @@ always_ff @(posedge d_clk) begin
     array <= '0;
   end else if (valid) begin
     ctr <= ctr+1;
-    array <= { array[length-1:0], d1 }; // add new elements from the LSB side and shift left
+    array <= { array[length-1:0], d1 }; // shift in the newest `d1` sample from the LSB side
   end
 end
 
@@ -44,6 +54,7 @@ always_ff @(posedge d_clk) begin
     for (i = 1; i <= length; i++)
       acc[i] <= '0;
   end else if (valid) begin
+    // For lag `i`, compare the current `d2` sample with the `d1` sample from `i` valid cycles ago.
     for (i = 1; i <= length; i++)
       if (ctr >= i) acc[i] <= acc[i] + (d2 == array[i-1] ? 1 : 0); // array[0] contains *previous* element
   end
@@ -55,6 +66,7 @@ always_ff @(posedge d_clk) begin
       acc_r[i] <= '0;
     ctr_r <= '0;
   end else if (latch) begin
+    // Freeze a coherent snapshot for software readout.
     for (i = 1; i <= length; i++)
       acc_r[i] <= acc[i];
     ctr_r <= ctr;
