@@ -1,0 +1,4 @@
+For testing on development computer, install the dependencies using
+
+pip3 install pytest
+pip3 install nanobind
