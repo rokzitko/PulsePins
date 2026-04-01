@@ -6,7 +6,8 @@
 // The `timestamp` wrapper owns two FIFOs and one configuration PIO block. It provides the
 // software-visible model for the `ts_core` subsystem used by `ppts` and `ppgpsdo`:
 // select sources, clear stale samples, then read complete 64-bit timestamps from the PPS
-// and/or auxiliary capture paths.
+// and/or auxiliary capture paths. Architectural overview lives in `docs/docs/timestamp.md`
+// and `ip/ts_core/README.md`.
 
 #pragma once
 
@@ -64,10 +65,12 @@ private:
   fifo ffA;
   pio_out_bits pio_cfg;
 
+  // Busy-wait until one 32-bit FIFO word is available on the PPS path.
   uint32_t read_one() {
     while (!filled()) {}
     return ff.read();
   }
+  // Busy-wait until one 32-bit FIFO word is available on the auxiliary path.
   uint32_t read_oneA() {
     while (!filledA()) {}
     return ffA.read();
@@ -139,7 +142,7 @@ public:
     return (uint64_t(read_oneA()) << 32) + read_oneA();
   }
 
-    // Wait until a full 64-bit event record is present, then reconstruct it.
+    // Wait until a full 64-bit PPS event record is present, then reconstruct it.
     uint64_t read_with_timeout(const double timeout = 2.0) {
     std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
     while (ff.fill() < 2) {
@@ -152,6 +155,7 @@ public:
     return read();
   }
 
+  // Wait until a full 64-bit auxiliary event record is present.
   uint64_t readA_with_timeout(const double timeout = 2.0) {
     std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
     while (ffA.fill() < 2) {

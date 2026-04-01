@@ -1,4 +1,4 @@
-## ppts
+# ppts
 
 `ppts` reads timestamp events from the `ts_core` hardware block.
 
@@ -21,8 +21,7 @@ This means the most common modes are:
 * `sigA`-only capture using `-nopps -sigA`
 * simultaneous PPS + `sigA` capture using `-sigA`
 
-It can monitor the PPS input, the auxiliary `sigA` input, or both. The implementation lives in `c++/pptool_measurement.cc` and
-uses the timestamp interface from `c++/timestamp.hh`.
+It can monitor the PPS input, the auxiliary `sigA` input, or both. The implementation lives in `c++/pptool_measurement.cc` and uses the timestamp interface from `c++/timestamp.hh`.
 
 Common options:
 
@@ -57,6 +56,8 @@ Output behavior:
 If both paths are enabled, the tool reads them concurrently using separate threads.
 
 Because the two streams are read independently, the printed lines from PPS and `sigA` may interleave.
+
+Because the hardware capture core drops events that arrive when the downstream FIFO is not ready, `ppts` is intended for sparse timing signals rather than dense pulse trains.
 
 ### Typical examples
 

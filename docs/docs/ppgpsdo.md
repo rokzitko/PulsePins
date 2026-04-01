@@ -1,4 +1,4 @@
-## ppgpsdo
+# ppgpsdo
 
 `ppgpsdo` is a reference implementation of a GNSS-disciplined oscillator.
 
@@ -19,3 +19,5 @@ Implementation notes:
 * timestamp capture and pairing live in `c++/pptool_measurement.cc`
 * timestamp routing comes from `c++/timestamp.hh`
 * DAC control is handled through the I2C-backed helper used in the same command implementation
+
+Because the underlying timestamp core is designed for sparse events, `ppgpsdo` assumes PPS-like timing signals rather than dense arbitrary transitions.

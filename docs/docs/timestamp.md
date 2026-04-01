@@ -1,8 +1,10 @@
-## Timestamp capture
+# Timestamp capture
 
 PulsePins includes a dedicated timestamp-capture block for recording the clock-cycle position of selected events.
 
 The main hardware block is `ip/ts_core/ts_core.sv`, and the main software interface is `c++/timestamp.hh`.
+
+For a maintainer-oriented RTL map, see `ip/ts_core/README.md`.
 
 For maintainers, the important split is:
 
@@ -30,6 +32,8 @@ Internally the block:
 * asserts an Avalon-ST valid pulse for one cycle when the downstream FIFO is ready
 
 This makes the block simple and deterministic, but it also means that timestamps are quantized to the `ts_core` clock.
+
+One important constraint is that the core does not retry a capture if the downstream FIFO is not ready in the cycle where the edge is detected. In practice that is fine for sparse timing events, but it is not intended for dense event streams.
 
 ### Source selection
 

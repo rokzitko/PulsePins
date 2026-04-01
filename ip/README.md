@@ -36,3 +36,5 @@ That path covers the core programming model, verification path, and measurement 
   - `docs/docs/counter.md`
   - `docs/docs/st_mux.md`
   - `docs/docs/clock_domain.md`
+  - `docs/docs/timestamp.md`
+  - `docs/docs/freq_meter.md`
