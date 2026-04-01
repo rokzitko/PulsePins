@@ -28,6 +28,7 @@ class Sequence : public std::deque<el> {
    using Base::back;
    using Base::clear;
    using Base::empty;
+   using Base::insert;
    using Base::push_back;
 
    void push_back_py(el && x) { Base::push_back(x); }

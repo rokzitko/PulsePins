@@ -15,6 +15,7 @@
 #include "streamer.hh"
 #include "readback.hh"
 #include "parser.hh"
+#include "PMODDA3.hh"
 #include "sequence.hh"
 #include "ppworkflow.hh"
 #include "basic_multi_dma.hh"
@@ -539,6 +540,59 @@ class tests {
      return rc.get();
    }
 
+   int test21() {
+     std::cout << "test21 - PMOD DA3 SPI voltage sweep" << std::endl;
+
+     const auto vmin = parse_double(input, "-vmin", "0.0");
+     const auto vmax = parse_double(input, "-vmax", "2.5");
+     const auto vstep = parse_double(input, "-vstep", "0.01");
+     const auto dwell = parse_time(input, "-dwell", "10ms");
+     auto cfg = pmod_da3::default_spi_config();
+     cfg.spi_clock_hz = parse_double(input, "-spi_clock", "10e6");
+
+     double streamer_clk_hz = 100e6;
+     try {
+       streamer_clk_hz = fpga.streamer_freq();
+     } catch (const std::exception &) {
+       if (verb.verbose)
+         std::cout << "streamer clock not measured, assuming " << streamer_clk_hz << " Hz" << std::endl;
+     }
+     cfg.decoder_clock_hz = streamer_clk_hz;
+
+     if (!(vstep > 0.0))
+       throw std::runtime_error("test21 requires a positive -vstep");
+     if (!(dwell > 0.0))
+       throw std::runtime_error("test21 requires a positive -dwell");
+     if (vmax < vmin)
+       throw std::runtime_error("test21 requires the upper voltage bound to be at least the lower bound");
+
+     const auto dwell_ticks = static_cast<count_t>(std::llround(dwell * streamer_clk_hz));
+     if (dwell_ticks == 0)
+       throw std::runtime_error("test21 dwell time is shorter than one streamer clock period");
+
+     if (verb.verbose) {
+       std::cout << "vmin=" << vmin << " vmax=" << vmax << " vstep=" << vstep << " dwell=" << dwell << "s" << std::endl;
+       std::cout << "requested SPI clock=" << cfg.spi_clock_hz << "Hz achieved SPI clock="
+                 << pmod_da3::transaction_for_voltage(vmin, 2.5, cfg).achieved_spi_clock_hz() << "Hz" << std::endl;
+     }
+
+     Sequence elements;
+     size_t points = 0;
+     for (double volts = vmin; volts <= vmax + 0.5 * vstep; volts += vstep) {
+       auto builder = pmod_da3::transaction_for_voltage(volts, 2.5, cfg);
+       const auto &tx = builder.sequence();
+       elements.insert(elements.end(), tx.begin(), tx.end());
+       elements.push_back(el(dwell_ticks, tx.back().value()));
+       points++;
+     }
+     elements = elements.merge();
+
+     if (verb.verbose)
+       std::cout << "Generated " << std::dec << points << " DAC updates, sequence size=" << elements.size() << std::endl;
+
+     return send_and_trig(fifo, sc, rb, ctr, elements, input, force_trigger, verb);
+   }
+
    int test42() {
      std::cout << "test42 - stream a sequence from a file" << std::endl;
      const std::string fn = input.get_string("-f", "sequence");
@@ -618,6 +672,9 @@ class tests {
        break;
      case 20:
        rc = test20();
+       break;
+     case 21:
+       rc = test21();
        break;
      case 42:
        rc = test42();

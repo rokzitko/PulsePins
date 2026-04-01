@@ -179,6 +179,20 @@ Additional parameters:
 * ``-end``: randomize values
 * ``-report N``: report statistics at most every N seconds; this shows total run time, the total number of elements (size), and the total duration of the sequence so far (length)
 
+### Test 21
+
+PMOD DA3 SPI sweep. This generates DAC codes for a PMOD DA3 module using the host-side SPI sequence generator and streams them through PulsePins.
+
+By default the test sweeps from 0.0 V to 2.5 V in 0.01 V increments, uses a 10 MHz SPI clock, and inserts a 10 ms dwell after each DAC update. This produces a sweep of roughly 2.5 s total duration.
+
+Additional parameters:
+
+* ``-vmin``: starting voltage, default 0.0
+* ``-vmax``: ending voltage, default 2.5
+* ``-vstep``: voltage increment, default 0.01
+* ``-dwell``: dwell time after each DAC update, default ``10ms``
+* ``-spi_clock``: requested SPI clock frequency in Hz, default ``10e6``
+
 ### Test 42
 
 Stream out a sequence specified in a text file. The filename is provided using ``-f`` argument.
