@@ -43,6 +43,25 @@ Named testpoints visible in the current schematic include:
 * `Misc` sheet: `TP1`, `TP2`, `TP3`, `TP4`, `TP8`, `TP9`, `TP10`, `TP11`, `TP12`
 * `I2C` sheet: `TP5`, `TP6`, `TP7`
 
+Confirmed testpoint roles from the current schematics:
+
+| Ref | Sheet | Observed role |
+| --- | --- | --- |
+| `TP1` | `Misc` | ground probe point |
+| `TP2` | `Misc` | ground loop-style probe point |
+| `TP3` | `Misc` | `TRIG_ACTIV` testpoint |
+| `TP4` | `Misc` | `STROBE` testpoint |
+| `TP8` | `Misc` | ground probe point |
+| `TP9` | `Misc` | ground probe point |
+| `TP10` | `Misc` | ground probe point |
+| `TP11` | `Misc` | ground probe point |
+| `TP12` | `Misc` | ground probe point |
+| `TP5` | `I2C` | DAC `VOUT` testpoint, carrying the programmed analog output voltage |
+| `TP6` | `I2C` | DAC `VREF` testpoint |
+| `TP7` | `I2C` | local regulated `+3.3 V` testpoint in the DAC/I2C subsection |
+
+`TP5` is the one testpoint in this set that should be treated as an analog signal observation point rather than as a convenience ground or fixed-rail check.
+
 Typical uses include:
 
 * verifying local supply rails
@@ -55,6 +74,8 @@ Typical uses include:
 The board includes dedicated ground connection points intended to make oscilloscope probing cleaner and more repeatable.
 
 Several of the `Misc`-sheet probe features are implemented as loop-style or through-hole testpoints intended for easier instrument hookup, including the beaded loop footprints used on `TP2`, `TP3`, and `TP4`.
+
+The cluster `TP1`, `TP8`, `TP9`, `TP10`, `TP11`, and `TP12` is primarily useful as a set of distributed ground probe attachment points.
 
 Use these features when checking fast edges on the trigger, clock, or output paths rather than relying on long clip leads.
 
