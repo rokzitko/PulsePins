@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <optional>
+#include <ctype.h> // isdigit
 
 // Simple command line parser
 // based on https://stackoverflow.com/questions/865668/parsing-command-line-arguments-in-c

@@ -61,7 +61,7 @@ class streamer_control
      qout_override(dev.get_loc(base, QOUT_OVERRIDE*4)), // (w)
      initial_value(dev.get_loc(base, INIT_VAL*4)),      // (w)
      lgating(dev.get_loc(base, GATING_W*4)),            // (r&w)
-     overflow(dev.get_loc(base, OVERFLOW*4)),           // (r)
+     overflow(dev.get_loc(base, FIFO_OVERFLOW*4)),      // (r)
      crc32(dev.get_loc(base, CRC32*4)),                 // (r)
      input_fifo1_ctr_in_l  (dev.get_loc(base, INPUT_FIFO1_CTR_IN_L*4)),
      input_fifo1_ctr_in_h  (dev.get_loc(base, INPUT_FIFO1_CTR_IN_H*4)),

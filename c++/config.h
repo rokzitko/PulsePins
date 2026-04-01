@@ -128,7 +128,7 @@ constexpr port_t EXT_TRIG_IN   = 0b00001;
 constexpr port_t QOUT_STREAMER = 0b00010;
 constexpr port_t EXT_TRIG_CTRL = 0b00011;
 constexpr port_t QOUT          = 0b00100;
-constexpr port_t OVERFLOW      = 0b00101;
+constexpr port_t FIFO_OVERFLOW = 0b00101;
 constexpr port_t CRC32         = 0b00110;
 constexpr port_t GATING_R      = 0b00111;
 
