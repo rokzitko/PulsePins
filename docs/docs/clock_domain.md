@@ -75,6 +75,11 @@ Files:
 - `c++/pll_clk.hh`
 - `c++/fpga.hh`
 
+The intended split is:
+
+- `pll_clk.hh` owns PLL reconfiguration policy and reporting
+- `fpga.hh` owns the top-level clock-select GPIO path and reset sequencing around source changes
+
 ### Streamer clock source switching
 
 `FPGA::set_clk()` in `c++/fpga.hh` handles source selection for `streamer_clk`.
@@ -92,6 +97,8 @@ Sequence used by software when a source change is requested:
 3. release HPS-to-FPGA reset
 
 PLL programming and clock-source selection are separate operations.
+
+`FPGA::set_clk()` only performs the reset-wrapped source-switch sequence when the caller explicitly requested a source change through `ClockSelectionOptions`.
 
 ### Measured streamer clock
 
@@ -122,6 +129,12 @@ Current streamer facts:
 - `streamer_rst`: synchronized from `reset` into `streamer_clk`
 - trigger chain: `streamer_clk`
 - output read request: `trigger_activated && gate_enable`
+
+Host-side trigger routing and software-controlled trigger bits are configured from:
+
+- `c++/trigger.hh`
+- `c++/trigger_int.hh`
+- `c++/trigger_ext.hh`
 
 ### Readback and counters at top level
 

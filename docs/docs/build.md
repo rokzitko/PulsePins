@@ -69,6 +69,13 @@ The C++ side also participates in clock configuration. The `FPGA` wrapper and PL
 internal PLLs and switch the active streamer clock source, so clocking should be thought of as a hardware/software
 boundary rather than a purely RTL concern.
 
+The host-side ownership split is deliberate:
+
+* `c++/startup.hh` applies the common startup policy
+* `c++/options.hh` resolves CLI/environment clocking choices into typed policy objects
+* `c++/fpga.hh` owns top-level source switching and shared hardware state
+* `c++/pll_clk.hh` owns PLL reconfiguration wrappers
+
 ### Python bindings
 
 The Python bindings live in `python/` and are built with CMake and nanobind.

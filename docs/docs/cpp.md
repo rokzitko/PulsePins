@@ -24,10 +24,11 @@ The most important host-side layers are:
 
 * `fpga.hh` - top-level ownership of memory maps, PLL helpers, trigger monitors, and GPIO-backed control paths
 * `startup.hh` - common process bootstrap and default FPGA startup policy
+* `options.hh`, `pll_rules.hh` - typed option resolution and symbolic PLL presets shared by multiple tools
 * `pptool_streaming.cc`, `pptool_measurement.cc` - user-facing command implementations
 * `ppworkflow.hh` - shared streaming workflow used by commands that send sequences, arm/force triggers, and optionally validate readback
 * `elements.hh`, `sequence.hh` - host-side representation of pulse programs and trigger programs
-* subsystem wrappers such as `streamer.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, and `freq_meter.hh`
+* subsystem wrappers such as `streamer.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, `freq_meter.hh`, and the trigger/combiner helpers in `trigger.hh`, `trigger_int.hh`, and `trigger_ext.hh`
 
 For a maintainer-oriented walkthrough of the directory, see `c++/README.md`.
 
@@ -43,6 +44,14 @@ For streamer-oriented tools, the typical host-side path is:
 6. wait for completion and inspect final status, counters, FIFO statistics, and CRCs
 
 That common pattern is centralized in `send_and_trig(...)` in `ppworkflow.hh` so that behavior stays consistent across multiple tools.
+
+The startup path follows the same philosophy: CLI and environment inputs are first normalized by `options.hh`, then `startup.hh` applies the resulting clock-selection and PLL policy through the `FPGA` wrapper.
+
+Trigger configuration follows a similar split:
+
+* `options.hh` resolves trigger-related CLI switches into a `TriggerOptions` policy object
+* `trigger.hh` applies that policy to the trigger combiner
+* `trigger_int.hh` and `trigger_ext.hh` expose the direct software-driven and observed trigger PIO paths
 
 ### Data types for sequence representation
 
@@ -240,7 +249,13 @@ RLE-decoder code using direct memory access (DMA). Member functions:
 `FPGA` (defined in `fpga.hh`) is the top-level ARM-side container for memory-mapped FPGA access.
 
 It owns the main memory maps, clock-selection helpers, trigger monitor helpers, PLL control helpers, and the output-enable GPIO path.
-The constructor also performs basic startup actions such as clock selection, PLL setup, and a short diagnostic LED blink.
+The constructor enforces single-owner semantics for this top-level hardware view. Shared startup actions such as clock selection, PLL setup, and the bring-up LED blink are applied by `startup.hh`, not by the constructor itself.
+
+Clocking-related responsibilities are split deliberately:
+
+* `FPGA::set_clk()` performs top-level streamer-clock source switching with the required reset hold/release sequence
+* `pll_core_clk` and `pll_int_clk` in `pll_clk.hh` program the two reconfigurable PLLs
+* `FPGA::set_streamer_clk()` stores the measured active streaming frequency for later timing-aware host operations
 
 Streamer classes (defined in ``basic_multi_dma.hh``):
 
@@ -274,6 +289,7 @@ Common extension paths are:
 * add a new typed wrapper for a hardware block and expose it through a tool or higher-level API
 * adjust shared streaming policy in `ppworkflow.hh`
 * update startup defaults in `startup.hh`
+* change clock/PLL option semantics in `options.hh` and `pll_rules.hh`
 
 The preferred approach is to preserve the top-level command names and high-level wrapper types while evolving the implementation behind them.
 

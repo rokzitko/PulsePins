@@ -2,6 +2,14 @@
 // Copyright (c) 2026 Rok Zitko
 //
 // Common process-startup helpers for PulsePins host executables.
+//
+// This header centralizes the runtime policy shared by `pptool`-style programs:
+//   - process-level bootstrap such as version checks, mlock, and reset-manager setup
+//   - FPGA startup policy such as clock-source selection, PLL programming, and optional
+//     output-enable handling
+//
+// Architectural overview lives in `c++/README.md`, `docs/docs/cpp.md`, and
+// `docs/docs/pptool.md`.
 
 #pragma once
 
@@ -14,6 +22,8 @@
 
 inline RealtimeScheduler bootstrap_process(const Verbosity &v, const int version)
 {
+  // Process bootstrap is intentionally separated from FPGA startup so future tools can
+  // reuse one policy without necessarily applying the other.
   check_version(version);
   mlockall(MCL_CURRENT | MCL_FUTURE);
   RealtimeScheduler rt;
@@ -26,6 +36,11 @@ inline RealtimeScheduler bootstrap_process(const Verbosity &v, const int version
 
 inline void apply_fpga_startup_policy(FPGA &fpga, const InputParser &input, const bool oe = false)
 {
+  // Order matters here:
+  //   1. choose the active streamer clock source
+  //   2. program the core and internal PLLs
+  //   3. optionally enable outputs
+  //   4. perform a short visible bring-up indication
   fpga.set_clk(resolve_clock_selection_options(input));
   fpga.pll_core.set_core_clk(resolve_core_pll_options(input), fpga.v);
   fpga.pll_int.set_int_clk(resolve_int_pll_options(input), fpga.v);

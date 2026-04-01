@@ -2,6 +2,9 @@
 // Copyright (c) 2026 Rok Zitko
 //
 // External trigger status reporting helpers.
+//
+// This wrapper is read-only: it mirrors the external trigger/control PIO so host tools can
+// inspect the live trigger input bits together with the current enable/force/reset state.
 
 #pragma once
 
@@ -12,11 +15,11 @@
 #include "config.h"
 #include "pio.hh"
 
-// External trigger status reporting
 class trigger_ext : public pio_in {
 public:
   trigger_ext(mm &dev, uintptr_t base) : pio_in(dev, base) {}
 
+  // Print a decoded view of the current trigger input word and control flags.
   void status() {
     const auto x = read();
     const trigger_t trigger_in = x & TRIGGER_MASK;

@@ -2,6 +2,11 @@
 // Copyright (c) 2026 Rok Zitko
 //
 // Structured option resolution helpers shared across host-side tools.
+//
+// These helpers convert raw CLI/environment inputs into small typed policy objects. The
+// goal is to keep tool entry points readable and to make shared startup/runtime choices
+// explicit, especially for clock selection, PLL programming, trigger routing, and
+// readback/frequency-meter behavior.
 
 #pragma once
 
@@ -67,6 +72,8 @@ struct FreqMeterOptions {
 
 inline ClockSelectionOptions resolve_clock_selection_options(const InputParser &input) {
   ClockSelectionOptions opts;
+  // Later checks intentionally override earlier ones so the raw `-clk` selector remains
+  // the most explicit request when multiple clock-selection knobs are present.
   if (envVarExists("PP_INT_CLK") || input.exists("-int_clk"))
     opts.source = StreamerClockSource::internal;
   if (envVarExists("PP_EXT_CLK") || input.exists("-ext_clk"))
@@ -140,6 +147,9 @@ inline TriggerOptions resolve_trigger_options(const InputParser &input) {
 inline StreamerOptions resolve_streamer_options(const InputParser &input,
                                                 const std::string &initial_value_param = "-i") {
   StreamerOptions opts;
+  // `report_initial_value` tracks whether the caller explicitly requested a non-default
+  // initial output state so command implementations can decide whether it is worth
+  // mentioning in user-facing reports.
   opts.stop_on_buffer_error = input.exists("-stop_on_buffer_error") || input.exists("-sobe");
   opts.initial_value = parse_value(input, initial_value_param, "0");
   opts.report_initial_value = opts.initial_value != 0;

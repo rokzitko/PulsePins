@@ -19,6 +19,8 @@ At startup it performs the shared host-side bootstrap:
 
 This means `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and several other commands are all different front doors into the same host-side runtime.
 
+The clock-selection and PLL choices consumed during startup are resolved by `c++/options.hh` and then applied by `c++/startup.hh`, which makes startup behavior a reusable policy layer rather than ad hoc code in each command.
+
 The command catalog itself is declared in `c++/pptool_commands.hh` and implemented mainly in:
 
 * `c++/pptool_streaming.cc`

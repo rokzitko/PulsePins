@@ -2,6 +2,10 @@
 // Copyright (c) 2026 Rok Zitko
 //
 // Internal trigger control helpers for the PulsePins host tools.
+//
+// This wrapper drives the software-controlled internal trigger PIO. It is the low-level
+// path used when trigger generation comes directly from host software rather than from the
+// trigger combiner or an external signal source.
 
 #pragma once
 
@@ -25,12 +29,14 @@ public:
       write(0);
   }
 
+  // Update only the trigger-pattern bits while preserving the enable/force/reset flags.
   void trig(const trigger_t p) {
     const auto oldval = read();
     const auto newval = set_masked(oldval, TRIGGER_MASK, p);
     write(newval);
   }
 
+  // Gate whether the internal trigger source is allowed to affect the downstream path.
   void enable(bool x = true) {
     auto val = read();
     if (x)
@@ -40,6 +46,7 @@ public:
     write(val);
   }
 
+  // Assert or deassert the host-controlled force bit.
   void force(bool x = true) {
     auto val = read();
     if (x)
@@ -49,6 +56,7 @@ public:
     write(val);
   }
 
+  // Drive the host-controlled reset bit for the internal trigger path.
   void reset(bool x = true) {
     auto val = read();
     if (x)

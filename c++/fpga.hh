@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025,2026 Rok Zitko
 
-// Low-level interface to FPGA; holds memory-map objects
+// Top-level ARM-side ownership wrapper for FPGA-facing resources.
+//
+// `FPGA` is the main host-side integration object. It owns the core memory maps, top-level
+// control/status GPIO, trigger helpers, PLL helpers, and the cached measured streamer-clock
+// frequency used by timing-sensitive host logic.
+//
+// Architectural overview lives in `c++/README.md`, `docs/docs/cpp.md`, and
+// `docs/docs/clock_domain.md`.
 
 // Clock mapping needs to be checked using pptool: e.g. pptool -clk 0 -int_pll 25M, pptool -clk 3 -int_pll 25M, etc.
 #define SELECT_CLK_CLEAN
@@ -69,7 +76,7 @@ public:
     v(_v)
     {}
 
-  // Read status bits in gp_in port
+  // Decode the top-level FPGA manager status register and print it when verbosity allows.
   auto status() const {
     const auto s = stat.read();
     if (v.verbose) {
@@ -124,7 +131,7 @@ public:
   }
 };
 
-// Low-level interfacing to FPGA
+// Top-level FPGA resource owner used by host-side tools.
 class FPGA {
 public:
   mm dev_lw, dev_h2f, dev_hps, dev_sysmgr, dev_fpgamgr;
@@ -158,7 +165,8 @@ public:
     pll_core(dev_lw),
     pll_int(dev_lw)
     {
-      // Ensure that only a single instance of class FPGA exists
+      // The host software assumes one coherent owner of the memory maps and top-level
+      // control bits, so creating multiple `FPGA` instances is treated as a logic error.
       bool expected = false;
       if (!constructed.compare_exchange_strong(expected, true,
                                                 std::memory_order_acq_rel)) {
@@ -205,9 +213,9 @@ public:
     pio_cfg.write_at(0, oe);
   }
 
-  // Note: the reset is not performed here if the clock is not explicitly specified by either
-  // -int_clk or -ext_clk switch.
-    void set_clk(const ClockSelectionOptions &opts) {
+  // Apply streamer clock-source selection. Reset is only pulsed when the caller explicitly
+  // requested a source change through the resolved options object.
+  void set_clk(const ClockSelectionOptions &opts) {
     rstmgr rm;
     if (opts.source == StreamerClockSource::internal) {
       rm.s2f_hold_reset();
@@ -230,6 +238,7 @@ public:
   }
 
   void sel_clk(uint32_t sel) {
+    // Only the low two configuration bits currently map to the top-level clock selector.
     sel &= 3; // only bits 0 and 1 are relevant for sel_clk
     cfg = (cfg | 3) + sel;
     if (v.verbose) {
@@ -256,7 +265,7 @@ public:
     sel_clk(ch_int);
   }
 
-  // Global FPGA lock
+  // Global lock guarding coordinated access to shared top-level FPGA state.
   void lock() {
     m.lock();
   }
@@ -275,7 +284,7 @@ public:
     streamer_clk = hz;
   }
 
-  // Streaming clock frequency [Hz]
+  // Streaming clock frequency [Hz], as measured by the frequency meter.
   double streamer_freq() const {
     if (streamer_clk < 0.0)
       throw std::runtime_error("Streamer clock not measured yet.");

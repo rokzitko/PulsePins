@@ -2,6 +2,10 @@
 // Copyright (c) 2025 Rok Zitko
 //
 // Helpers for configuring the core and internal PLL clocks.
+//
+// These wrappers are intentionally thin: they translate typed `PllOptions` into the lower-
+// level PLL reconfiguration API, apply symbolic preset expansion via `pll_rules.hh`, wait
+// for the hardware to settle, and optionally report the resulting clock frequency.
 
 #pragma once
 
@@ -14,9 +18,6 @@
 #include "parser.hh"
 #include "options.hh"
 
-// PLL clocks. It uses environment variables PP_(CORE|INT)_PLL, or the -(core|int)_pll command line switch.
-// Command line switch takes precedence.
-
 constexpr int pll_delay = 2*1000;  // 2ms delay for things to settle (docs say 500us is worst case)
 
 class pll_core_clk {
@@ -26,6 +27,7 @@ public:
   pll_core_clk(mm &dev_lw) :
     core_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
 
+  // Program the core clock PLL using the resolved preset/raw string plus optional fine-tuning.
   void set_core_clk(const PllOptions &opts, const Verbosity &v) {
     core_clk.set_from_string(applyReplacement(opts.profile, pll_rules));
     if (opts.charge_pump)
@@ -47,6 +49,7 @@ public:
   pll_int_clk(mm &dev_lw) :
     int_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
 
+  // Program the internal candidate streamer clock PLL.
   void set_int_clk(const PllOptions &opts, const Verbosity &v) {
     int_clk.set_from_string(applyReplacement(opts.profile, pll_rules));
     if (opts.charge_pump)

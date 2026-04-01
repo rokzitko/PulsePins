@@ -123,6 +123,11 @@ Important behavioral facts:
 * forced trigger can bypass normal input-condition detection
 * retrigger support lets a sequence pause and wait for a later trigger event
 
+On the host side there are two related trigger-control paths:
+
+* `c++/trigger.hh` configures the trigger combiner that selects and conditions the upstream trigger sources
+* `c++/trigger_int.hh` and `c++/trigger_ext.hh` provide direct software control and status visibility for the low-level trigger PIOs
+
 For lower-level trigger implementation details, see `details.md`.
 
 ## Gating and output override

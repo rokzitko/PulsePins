@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-//  Predefined settings for PLLs
+// Predefined symbolic PLL settings.
+//
+// These aliases provide stable, human-friendly names for commonly used `(N,M,C)` triplets
+// so CLI users and higher-level tools can request frequencies without spelling out raw PLL
+// parameters every time.
 
 #pragma once
 
@@ -18,7 +22,7 @@ inline std::string applyReplacement(const std::string &s,
   return s; // no replacement applied
 }
 
-// N,M,C triplets, freq=ref*M/(N*C), where ref=50MHz on DE10-Nano
+// N,M,C triplets, freq = ref * M / (N * C), where ref = 50 MHz on DE10-Nano.
 static const std::vector<std::pair<std::string, std::string>> pll_rules = {
   {"100M", "5,20,2"},
   {"80M",  "3,24,5"},

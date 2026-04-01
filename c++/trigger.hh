@@ -5,7 +5,8 @@
 //
 // This wrapper translates parsed trigger options into `combiner_trig` configuration so the
 // streamer trigger path can be rerouted, masked, and inverted without manipulating the raw
-// combiner registers directly.
+// combiner registers directly. Architectural overview lives in `docs/docs/streamer.md`,
+// `docs/docs/clock_domain.md`, and `docs/docs/cpp.md`.
 
 #pragma once
 
@@ -33,6 +34,8 @@ public:
 
   // Apply trigger-routing options. The default policy is internal triggering.
   void set(const TriggerOptions &opts) {
+    // Only explicitly requested fields are programmed, so callers can update one aspect of
+    // the trigger path without overwriting the rest of the combiner configuration.
     if (fpga.v.veryverbose) std::cout << "## Setting up the trigger combiner." << std::endl;
     if (opts.mode == TriggerModeOption::internal) {
       if (fpga.v.veryverbose) std::cout << "Trigger: internal" << std::endl;
