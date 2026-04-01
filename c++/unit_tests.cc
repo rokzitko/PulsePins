@@ -408,6 +408,22 @@ TEST_CASE("parse_sequence_from_stream parses stage 2 regular element variants") 
   CHECK(seq[3] == el(6, BitFlip(0x30)));
 }
 
+TEST_CASE("parse_sequence_from_stream parses stage 3 regular element variants") {
+  std::istringstream in("n 7 0xff a 8 0x0f o 9 0xf0 xr 10 0x33 xn 11 0x55 sl 12 3 sr 13 2");
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+
+  REQUIRE(seq.size() == 7);
+  CHECK(!force_trigger);
+
+  CHECK(seq[0] == el(7, BitNot(0xff)));
+  CHECK(seq[1] == el(8, BitAnd(0x0f)));
+  CHECK(seq[2] == el(9, BitOr(0xf0)));
+  CHECK(seq[3] == el(10, BitXor(0x33)));
+  CHECK(seq[4] == el(11, BitXnor(0x55)));
+  CHECK(seq[5] == el(12, BitSll(3)));
+  CHECK(seq[6] == el(13, BitSrl(2)));
+}
+
 TEST_CASE("parse_sequence_from_stream rejects unknown tokens") {
   std::istringstream in("bogus");
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Unknown sequence token: 'bogus'", std::runtime_error);
@@ -427,6 +443,23 @@ TEST_CASE("parse_sequence_from_stream rejects truncated stage 2 regular element 
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_s), "Incomplete 's' record: expected count and value", std::runtime_error);
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_c), "Incomplete 'c' record: expected count and value", std::runtime_error);
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_x), "Incomplete 'x' record: expected count and value", std::runtime_error);
+}
+
+TEST_CASE("parse_sequence_from_stream rejects truncated stage 3 regular element records") {
+  std::istringstream in_n("n 7");
+  std::istringstream in_a("a 8");
+  std::istringstream in_o("o 9");
+  std::istringstream in_xr("xr 10");
+  std::istringstream in_xn("xn 11");
+  std::istringstream in_sl("sl 12");
+  std::istringstream in_sr("sr 13");
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_n), "Incomplete 'n' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_a), "Incomplete 'a' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_o), "Incomplete 'o' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_xr), "Incomplete 'xr' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_xn), "Incomplete 'xn' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_sl), "Incomplete 'sl' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_sr), "Incomplete 'sr' record: expected count and value", std::runtime_error);
 }
 
 TEST_CASE("parse_sequence_from_stream rejects truncated final trigger records") {

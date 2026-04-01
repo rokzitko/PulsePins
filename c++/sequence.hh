@@ -129,6 +129,13 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
   //   s <count> <value>           regular BITSET element
   //   c <count> <value>           regular BITCLEAR element
   //   x <count> <value>           regular BITFLIP element
+  //   n <count> <value>           regular BITNOT element
+  //   a <count> <value>           regular BITAND element
+  //   o <count> <value>           regular BITOR element
+  //   xr <count> <value>          regular BITXOR element
+  //   xn <count> <value>          regular BITXNOR element
+  //   sl <count> <value>          regular BITSLL element
+  //   sr <count> <value>          regular BITSRL element
   //   t <pattern> <mask>          final trigger-condition element
   //   tn <pattern> <mask>         non-final trigger-condition element
   //   f                           request forced trigger instead of arm-and-wait
@@ -163,6 +170,27 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
       } else if (token == "x") {
         auto [c, v] = parse_regular_args("x");
         elements.push_back(el(c, BitFlip(v)));
+      } else if (token == "n") {
+        auto [c, v] = parse_regular_args("n");
+        elements.push_back(el(c, BitNot(v)));
+      } else if (token == "a") {
+        auto [c, v] = parse_regular_args("a");
+        elements.push_back(el(c, BitAnd(v)));
+      } else if (token == "o") {
+        auto [c, v] = parse_regular_args("o");
+        elements.push_back(el(c, BitOr(v)));
+      } else if (token == "xr") {
+        auto [c, v] = parse_regular_args("xr");
+        elements.push_back(el(c, BitXor(v)));
+      } else if (token == "xn") {
+        auto [c, v] = parse_regular_args("xn");
+        elements.push_back(el(c, BitXnor(v)));
+      } else if (token == "sl") {
+        auto [c, v] = parse_regular_args("sl");
+        elements.push_back(el(c, BitSll(v)));
+      } else if (token == "sr") {
+        auto [c, v] = parse_regular_args("sr");
+        elements.push_back(el(c, BitSrl(v)));
       } else if (token == "t") {
         std::string sp, sm;
         if (!(f >> sp >> sm))
