@@ -23,7 +23,10 @@ The following application areas would especially benefit from community-contribu
 * compose two streamer outputs with the combiner
 * drive LED PMODs using `pptest`
 * generate SPI transactions directly from C++ and stream them without an intermediate payload tool
-* read a `TMP117` sensor using `I2C/tmp117.py`
+* read the onboard `MCP9808` using `pptemp` or `I2C/mcp9808.py`
+* read an external Qwiic `TMP117` module using `I2C/tmp117.py`
+
+For board-specific hardware examples, see [PP_PMOD validated examples](pp_pmod_examples.md).
 
 ### Why examples matter
 

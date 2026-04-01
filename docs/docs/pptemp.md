@@ -52,3 +52,5 @@ Pipe into a log file:
 ```bash
 pptemp >> temp.log
 ```
+
+See also [PP_PMOD I2C and onboard peripherals](pp_pmod_i2c.md).

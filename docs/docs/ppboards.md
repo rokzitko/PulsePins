@@ -2,34 +2,45 @@
 
 ppboards are shields that plug into the two 40-pin 2.54 mm GPIO pin headers on the DE10-Nano board.
 They enable custom interfacing of the FPGA module with the external world. As an example, a KiCad design for
-a simple shield using PMOD connectors is provided (PP_PMOD, described below). This reference design
+a simple shield using PMOD-style expansion connectors is provided (`PP_PMOD`, described below). This reference design
 can be used as is or it can serve as a starting point for user customization (different connectors, buffering, etc.).
 
 ## PP_PMOD
 
 This PulsePins shield board provides output signals broken out on four dual
-[PMOD](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf) ports carrying 8
-bits each. In addition, the board has dual PMOD connectors for trigger inputs and AUX signals, and
-regular PMOD connectors for clocking, trigger control and streamer status signals. Other features:
+[PMOD](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf)-style ports carrying 8
+bits each. In addition, the board has expansion connectors for trigger inputs and AUX signals, separate header breakouts for
+trigger control and status, and dedicated SMA connectors for clocking and instrument hookup. Other features:
 
 * all signals on connectors have ESD protection diodes
 * SMA connectors for external clock and for pulse-per-second (PPS) signals; monitoring LED for PPS
 signal; optional built-in 50-ohm terminators (enabled by jumpers)
 * SMA connector for one trigger signal; it is connected to a fast comparator with a tunable
 threshold voltage; optional 50-ohm terminator; monitoring LED
-* two output signals are wired to SMA connectors with 50-ohm line drivers; monitoring LEDs
+* two buffered output signals are wired to SMA connectors; monitoring LEDs
 * Status LEDs: trigger armed, trigger activated, done, buffer error
 * Activity & heartbeat LEDs
 * QWIIC I2C connector for external modules
-* Optional temperature monitor (I2C interface)
+* Optional onboard `MCP9808` temperature monitor (I2C interface)
 * Optional 16-bit DAC (I2C interface) with separate low-noise power supply (a possible application
 is frequency tuning of an OCXO; in combination with the PPS input from a GPS receiver, PulsePins can
 serve as a simple GPSDO)
-* Pads for optional crystal oscillators for clocking the PulsePins system
+* Footprints for optional CMOS oscillator modules for clocking the PulsePins system
 * Testpoints for troubleshooting
 * GND connection bars for grounding oscilloscope probes
 
 ![PP_PMOD ppboard](img/IMG_0064.jpeg){: style="height:400px"}
+
+Detailed board documentation:
+
+* [PP_PMOD overview](pp_pmod.md)
+* [PP_PMOD connectors and pinout](pp_pmod_connectors.md)
+* [PP_PMOD triggering](pp_pmod_triggering.md)
+* [PP_PMOD clocking and PPS](pp_pmod_clocking.md)
+* [PP_PMOD outputs](pp_pmod_outputs.md)
+* [PP_PMOD I2C and onboard peripherals](pp_pmod_i2c.md)
+* [PP_PMOD LEDs, jumpers, and testpoints](pp_pmod_service.md)
+* [PP_PMOD validated examples](pp_pmod_examples.md)
 
 KiCad schematics and PCB layouts, as well as the Gerber files for producing the boards, are [available
 on the GitHub repository](https://github.com/rokzitko/PulsePins/tree/main/pcb/ppshield_pmod).

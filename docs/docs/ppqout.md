@@ -28,3 +28,5 @@ Command line parameters:
 * ``-report_post``: report final settings after configuring the combiner
 * ``-self_test``: perform basic internal tests
 * ``-test <n>``: perform intensive self tests; n is the number of repetitions
+
+See also [PP_PMOD outputs](pp_pmod_outputs.md).

@@ -76,17 +76,25 @@ It is useful for experimentation and initial hardware exploration, but contribut
 Useful capabilities include:
 
 * PMOD expansion connectors
-* one SMA trigger input
-* two SMA outputs with 50 ohm buffers
+* one SMA trigger input with comparator threshold control
+* two buffered SMA outputs
 * external clock and PPS inputs
 * Qwiic I2C connector
-* optional DAC
+* optional onboard `AD5693` DAC
+* optional onboard `MCP9808` temperature sensor
 * status LEDs
+
+See also:
+
+* [`ppboards.md`](ppboards.md)
+* [`pp_pmod.md`](pp_pmod.md)
+* [`pp_pmod_examples.md`](pp_pmod_examples.md)
 
 Documented/tested optional examples and checks include:
 
 * LED PMODs driven with `pptest` and various scripts in `tests/`
-* `TMP117` via `I2C/tmp117.py`
+* onboard `MCP9808` via `pptemp` or `I2C/mcp9808.py`
+* external `TMP117` via `I2C/tmp117.py` on the Qwiic connector
 * `PMOD DA3` for fixed-voltage DAC output
 * external clock checks with `ppfreq`
 * PPS checks with `ppts`

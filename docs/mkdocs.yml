@@ -4,6 +4,14 @@ nav:
   - Sequencer: index.md
   - Hardware:
     - ppboards shields: ppboards.md
+    - PP_PMOD overview: pp_pmod.md
+    - PP_PMOD connectors: pp_pmod_connectors.md
+    - PP_PMOD triggering: pp_pmod_triggering.md
+    - PP_PMOD clocking and PPS: pp_pmod_clocking.md
+    - PP_PMOD outputs: pp_pmod_outputs.md
+    - PP_PMOD I2C and peripherals: pp_pmod_i2c.md
+    - PP_PMOD service notes: pp_pmod_service.md
+    - PP_PMOD examples: pp_pmod_examples.md
     - Technicalities: details.md
     - Streamer subsystem: streamer.md
     - Clock domains: clock_domain.md

@@ -118,17 +118,19 @@ Its KiCad design is published so people can build it, modify it, or use it as a 
 Useful capabilities include:
 
 - PMOD connectors for expansion modules
-- one SMA trigger input
-- two SMA outputs with 50 ohm buffers
+- one SMA trigger input with comparator threshold control
+- two buffered SMA outputs
 - external clock and PPS inputs
 - Qwiic I2C connector
-- optional on-board DAC
+- optional on-board `AD5693` DAC
+- optional on-board `MCP9808` temperature sensor
 - status LEDs
 
 Verified/useful optional workflows around `PP_PMOD` include:
 
 - LED PMODs for visible output patterns
-- `TMP117` over Qwiic/I2C
+- onboard `MCP9808` temperature reads
+- external `TMP117` over Qwiic/I2C
 - `PMOD DA3` for fixed-voltage DAC output
 - external clock verification with `ppfreq`
 - PPS verification with `ppts`
