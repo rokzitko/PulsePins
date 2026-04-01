@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Host-side accessors for the FPGA frequency measurement blocks.
+
 #pragma once
 
 #include <cassert>

@@ -1,5 +1,8 @@
 #pragma once
 
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Rok Zitko
+//
 // Host-side wrapper for the integrated counter/measurement subsystem.
 //
 // This file mirrors the compact selector-based programming model implemented by

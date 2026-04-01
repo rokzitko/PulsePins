@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// Structured option resolution helpers shared across host-side tools.
 
 #pragma once
 

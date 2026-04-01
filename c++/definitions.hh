@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Shared constants for streamer limits and tool return codes.
+
 #pragma once
 
 #include "config.h"

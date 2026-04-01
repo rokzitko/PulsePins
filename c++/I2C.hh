@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Low-level Linux i2c-dev wrapper.
+
 #pragma once
 
 #include <array>

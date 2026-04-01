@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// Command handler declarations for the `pptool` executable family.
 
 #pragma once
 

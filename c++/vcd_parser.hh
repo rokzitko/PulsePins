@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Parser for extracting timestamped value changes from VCD files.
+
 #pragma once
 
 #include <cstdint>

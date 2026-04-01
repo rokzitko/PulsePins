@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Lua bindings and helpers for PulsePins host-side scripting.
+
 #pragma once
 
 extern "C" {

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 20252-2026 Rok Zitko
+// Copyright (c) 2026 Rok Zitko
+//
+// DMA-backed sequence transport for the PulsePins streamer.
 
 #pragma once
 

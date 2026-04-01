@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// Common process-startup helpers for PulsePins host executables.
 
 #pragma once
 

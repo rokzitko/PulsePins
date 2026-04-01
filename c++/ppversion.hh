@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// Build-time version constants for the PulsePins host tools.
 
 #pragma once
 

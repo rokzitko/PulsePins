@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// Streaming-oriented `pptool` command implementations.
 
 #include <bitset>
 #include <fstream>

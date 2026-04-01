@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// Internal trigger control helpers for the PulsePins host tools.
 
 #pragma once
 

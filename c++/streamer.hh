@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025-2026 Rok Zitko
+//
+// Aggregates the main streamer control, FIFO, and DMA interfaces.
 
 #pragma once
 

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
+//
+// Helpers for configuring the core and internal PLL clocks.
 
 #pragma once
 

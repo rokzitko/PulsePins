@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Small parsing and formatting helpers for command-line text values.
+
 #pragma once
 
 #include <string>

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// Measurement-oriented `pptool` command implementations.
 
 #include <algorithm>
 #include <functional>

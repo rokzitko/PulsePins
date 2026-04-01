@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025-2026 Rok Zitko
+//
+// FIFO-backed sequence transport for the PulsePins streamer.
 
 #pragma once
 

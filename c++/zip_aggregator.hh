@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Threaded zipper that pairs items from two producer queues.
+
 #pragma once
 #include <atomic>
 #include <chrono>

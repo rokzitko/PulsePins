@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// Generic host-side SPI sequence builder for PulsePins stream output.
 
 #pragma once
 

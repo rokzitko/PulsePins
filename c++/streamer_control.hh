@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025-2026 Rok Zitko
+//
+// High-level host-side control interface for the PulsePins streamer.
 
 #pragma once
 

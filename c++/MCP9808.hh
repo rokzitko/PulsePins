@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Helpers for reading temperatures from the MCP9808 sensor over I2C.
+
 #pragma once
 
 #include <array>

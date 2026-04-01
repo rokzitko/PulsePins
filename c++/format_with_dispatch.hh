@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Formatter helpers for dispatching placeholder expansion by token.
+
 #include <cctype>
 #include <functional>
 #include <stdexcept>

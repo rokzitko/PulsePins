@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Minimal TCP and UDP server helpers used by PulsePins host tools.
+
 #include <atomic>
 #include <cerrno>
 #include <cstring>

@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Simple host-side PID controller with deadband and anti-windup support.
+
 #pragma once
 #include <chrono>
 #include <algorithm>

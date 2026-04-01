@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Frequency formatting helpers with SI scaling and grouped digits.
+
+#pragma once
+
 #include <cmath>
 #include <cstdint>
 #include <limits>

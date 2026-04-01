@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Rok Zitko
+//
+// Host-side helpers for timestamp capture and reporting.
+
 #pragma once
 
 #include <cstdint>

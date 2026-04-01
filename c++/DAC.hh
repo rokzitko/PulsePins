@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+//
+// Helpers for controlling AD5693-family DACs over I2C.
+
 #pragma once
 
 #include <array>

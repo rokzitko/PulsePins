@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
+//
+// PMOD DA3-specific helpers built on top of the generic SPI sequence API.
 
 #pragma once
 

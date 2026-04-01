@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-// Author: Rok Žitko
-
-// Simple server for Ethernet control
+// Copyright (c) 2025 Rok Zitko
+//
+// SCPI server entry point for controlling PulsePins over Ethernet.
 
 #include <exception>
 #include <iostream>
