@@ -6,8 +6,11 @@
 // https://github.com/doctest/doctest
 // https://github.com/doctest/doctest/blob/master/doc/markdown/tutorial.md
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "include/doctest.h"

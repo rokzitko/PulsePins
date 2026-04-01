@@ -5,11 +5,18 @@
 
 #pragma once
 
+#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <exception>
 #include <fstream>
+#include <functional>
+#include <future>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
-#include <future>
-#include <exception>
+#include <stdexcept>
+#include <string>
 #include <thread>
 
 #include "streamer.hh"

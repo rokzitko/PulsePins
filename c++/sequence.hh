@@ -11,10 +11,12 @@
 
 #pragma once
 
+#include <deque>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
-#include <deque>
+#include <utility>
 
 #include "elements.hh"
 #include "vcd_parser.hh"

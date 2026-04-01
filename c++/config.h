@@ -5,6 +5,10 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+
 #include "misc.hh"
 
 constexpr int P_FIFO_IN1 = 10;

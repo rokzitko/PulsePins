@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
 
+#include <bitset>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
 #include "pptool_commands.hh"
 #include "ppmisc.hh"
 #include "pptest.hh"

@@ -5,8 +5,9 @@
 
 #pragma once
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
+#include <thread>
 
 using Clock = std::chrono::steady_clock;
 

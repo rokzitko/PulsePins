@@ -8,13 +8,16 @@
 // shared register bank. Architectural overview lives in `docs/docs/counter.md` and
 // `ip/counter/README.md`.
 
-#include <iostream>
-#include <memory>
+#include <algorithm>
 #include <functional>
 #include <cstdint>
-#include <sstream>
-#include <cmath>
 #include <bitset>
+#include <cmath>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
 
 #include "tidbit.hh"
 #include "fpga.hh"

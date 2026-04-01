@@ -4,6 +4,11 @@
 #include <chrono>
 #include <exception>
 
+#include <cassert>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
 #include "fifo.hh"
 #include "pio.hh"
 

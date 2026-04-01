@@ -5,8 +5,11 @@
 
 #pragma once
 
-#include <exception>
 #include <chrono>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <string>
 
 #include "streamer.hh"
 #include "colors.hh"

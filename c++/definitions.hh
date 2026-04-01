@@ -1,5 +1,7 @@
 #pragma once
 
+#include "config.h"
+
 // Max. nr. of elements that can be queued in (assuming no replay elements).
 constexpr auto max_size =
   (FIFO_1_IN_FIFO_DEPTH*(FIFO_1_IN_AVALONMM_AVALONST_DATA_WIDTH/8))/BYTES_TOTAL // Avalon ST FIFO

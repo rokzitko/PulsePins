@@ -3,6 +3,13 @@
 
 #pragma once
 
+#include <bitset>
+#include <cstdint>
+#include <iostream>
+
+#include "config.h"
+#include "pio.hh"
+
 // External trigger status reporting
 class trigger_ext : public pio_in {
  public:

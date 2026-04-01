@@ -3,10 +3,12 @@
 
 #pragma once
 
-#include <cstdint> // integer types, uint32_t, etc.
-#include <string>
-#include <iostream>
+#include <cassert>
 #include <bitset>
+#include <cstdint> // integer types, uint32_t, etc.
+#include <iostream>
+#include <sstream>
+#include <string>
 #include <unistd.h> // usleep
 #include <type_traits> // is_same_v
 

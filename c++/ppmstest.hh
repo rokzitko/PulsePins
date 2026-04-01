@@ -5,10 +5,15 @@
 
 #pragma once
 
+#include <functional>
 #include <iostream>
+#include <string>
 #include <thread>
+#include <tuple>
 #include <unistd.h>
+#include <utility>
 
+#include "misc.hh"
 #include "pio.hh"
 #include "parser.hh"
 #include "basic_multi_dma.hh"

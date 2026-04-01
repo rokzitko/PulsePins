@@ -3,9 +3,11 @@
 
 #pragma once
 
+#include <cstdint>
 #include <cmath>
 #include <initializer_list>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "sequence.hh"

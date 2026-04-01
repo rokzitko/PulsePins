@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <sys/mman.h>
 
 #include "ppmisc.hh"

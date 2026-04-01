@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "bitops.hh"
+#include "misc.hh"
 #include "pio.hh"
 #include "config.h"
 

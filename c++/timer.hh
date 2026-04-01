@@ -6,6 +6,7 @@
 #pragma once
 
 #include <chrono>
+#include <iostream>
 
 class Timer {
     using Clock = std::chrono::steady_clock;

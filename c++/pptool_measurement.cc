@@ -1,8 +1,17 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
 
-#include <limits>
 #include <algorithm>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <mutex>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
 
 #include "pptool_commands.hh"
 #include "counter.hh"

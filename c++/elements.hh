@@ -5,10 +5,13 @@
 
 #pragma once
 
+#include <bitset>
 #include <cstdint> // integer types, uint32_t, etc.
-#include <string>
 #include <iostream>
 #include <memory> // shared_ptr
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 #include "tidbit.hh"
 #include "misc.hh"

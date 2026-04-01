@@ -3,9 +3,11 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstdint> // integer types, uint32_t, etc.
-#include <string>
 #include <iostream>
+#include <stdexcept>
+#include <string>
 #include <unistd.h> // usleep
 
 #include "tidbit.hh"

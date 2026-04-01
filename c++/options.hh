@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 
+#include "config.h"
 #include "tidbit.hh"
 #include "parser.hh"
 #include "misc.hh"

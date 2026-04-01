@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <iostream>
 #include <random>
 #include <cstdint>

@@ -1,8 +1,12 @@
 #pragma once
 #include <chrono>
 #include <algorithm>
+#include <iomanip>
+#include <iostream>
 #include <limits>
 #include <cmath> // std::abs!
+#include <sstream>
+#include <string>
 
 inline double clamp(double x, double lo, double hi) {
   return std::max(lo, std::min(x, hi));

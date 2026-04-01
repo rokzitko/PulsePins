@@ -3,9 +3,12 @@
 
 // Simple server for Ethernet control
 
-#include <iostream>
-#include <string>
 #include <exception>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
 
 #include "scpi_server.hh"
 #include "ppmisc.hh"

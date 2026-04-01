@@ -1,9 +1,14 @@
 #pragma once
 
+#include <cassert>
+#include <iostream>
+#include <string>
+#include <unistd.h>
 #include <vector>
 #include <cmath>
 #include "tidbit.hh"
 #include "freqfmt.hh"
+#include "fpga.hh"
 #include "options.hh"
 
 class freq_meter {
