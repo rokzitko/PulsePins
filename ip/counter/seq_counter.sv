@@ -3,6 +3,16 @@
 
 `default_nettype none // turn off implicit data types
 
+// Histogram counter for short binary sequences.
+//
+// This block observes one selected channel and counts how often each bit pattern of a
+// fixed window length appears. It supports two modes:
+//   - rolling windows (`rolling=1`): overlapping subsequences
+//   - snapshot windows (`rolling=0`): non-overlapping chunks
+//
+// The resulting histogram is stored as an array of counters indexed by the observed bit
+// pattern. A latched copy is exposed to software through `counter_if.sv`.
+
 module seq_counter
 #(
   parameter length = 1,          // size of window in bits
@@ -22,16 +32,16 @@ module seq_counter
   output reg [width_bus-1:0] result
 );
 
-localparam [length-1:0] max_nr = {length{1'b1}}; // last array index
-localparam width = $clog2(length);               // number of bits for l
+localparam [length-1:0] max_nr = {length{1'b1}}; // last histogram index
+localparam width = $clog2(length);               // number of bits needed for the fill counter
 
 logic [width_ctr-1:0] ctr [0:max_nr];   // internal counters
 logic [width_ctr-1:0] ctr_r [0:max_nr]; // registered counters for readout
 logic [width-1:0] l;  // current data block length counter
-logic [length-1:0] w; // data window (index into ctr when wr=1)
+logic [length-1:0] w; // current data window; used as histogram index when wr=1
 logic wr;             // write flag
 
-// Pipeline input
+// Pipeline input so the window generator and counter update remain simple.
 logic d_reg, valid_reg;
 always_ff @(posedge d_clk) begin
   if (reset) begin
@@ -43,7 +53,7 @@ always_ff @(posedge d_clk) begin
   end
 end
 
-// Pipeline counter update
+// Pipeline histogram write requests by one cycle.
 logic [length-1:0]  w_q;
 logic               wr_q;
 
@@ -79,7 +89,7 @@ always_ff @(posedge d_clk) begin
     wr <= 0;
   end else if (valid_reg) begin
     if (rolling == 1) begin
-      // the window moves from MSB to LSB: 001 010 -> 001 010 101 ...
+      // The window moves from MSB to LSB, so neighboring histogram samples overlap.
       w <= {w[length-2:0], d_reg};
       if (l < length) begin
         l <= l+1;
@@ -91,7 +101,7 @@ always_ff @(posedge d_clk) begin
         wr <= 1;
       end
     end else begin // rolling == 0
-      // input sequence (length=3), filling from left to right, as a time sequence: 000 001 010 011 ...
+      // Build a non-overlapping chunk by filling the window from MSB to LSB.
       w[length-l-1] <= d_reg; // fill from MSB to LSB
       if (l == length-1) begin
         wr <= 1;
@@ -109,6 +119,7 @@ always_ff @(posedge d_clk) begin
     for (i = 0; i <= max_nr; i++)
       ctr_r[i] <= '0;
   end else if (latch) begin
+    // Freeze the full histogram for software readout.
     for (i = 0; i <= max_nr; i++)
       ctr_r[i] <= ctr[i];
   end

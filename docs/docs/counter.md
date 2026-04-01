@@ -136,9 +136,11 @@ In practice this block is useful for questions like “how long do high pulses u
 * packet begin/end counts
 * accumulated packet length statistics
 
-The packet-statistics block is useful for streams that carry an explicit valid/idle notion through `d_valid`.
+The packet-statistics block is useful for streams that carry an explicit valid/idle notion through `d_valid`. A packet is defined purely by that validity signal: an assertion starts a packet and a deassertion ends it.
 
 `seq_counter` builds a histogram of short bit patterns. In the current integration it is configured for 4-bit sequences, which is why the C++ wrapper prints 16 bins.
+
+The implementation supports both overlapping and non-overlapping windows, although the current integrated instance in `counter_if.sv` uses non-overlapping windows.
 
 `autocorrelation` and `crosscorrelation` expose compact lag-based correlation counts. The current C++ wrapper instantiates them with 16 result bins.
 

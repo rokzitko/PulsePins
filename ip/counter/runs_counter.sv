@@ -3,6 +3,19 @@
 
 `default_nettype none // turn off implicit data types
 
+// Run-length statistics for one selected binary channel.
+//
+// This block groups consecutive equal samples into runs and accumulates per-level
+// summary statistics such as:
+//   - total number of completed runs
+//   - number of low/high runs
+//   - sum of run lengths per level
+//   - maximum run length per level
+//   - number of short runs classified as glitches
+//
+// The input is sampled in `d_clk`, and software reads a latched snapshot through
+// `counter_if.sv` after pulsing the shared latch control.
+
 module runs_counter
 #(
   parameter width_addr = 4,
@@ -21,7 +34,7 @@ module runs_counter
   output reg [width_bus-1:0] result
 );
 
-logic [width_ctr-1:0] ctr_run;                  // Number of runs of either level
+logic [width_ctr-1:0] ctr_run;                  // Number of completed runs of either level
 logic [width_ctr-1:0] nr_run_l, nr_run_h;       // Number of runs of low/high level
 logic [width_ctr-1:0] sum_run_l, sum_run_h;     // Sum of lengths of runs of low/high level
 `ifdef DO_SUM2
@@ -43,10 +56,10 @@ always_ff @(posedge d_clk) begin
   end
 end
 
-logic first;                   // Is first element?
-logic d_prev;                  // Previous element
+logic first;                   // Have we seen the first valid sample of the current burst?
+logic d_prev;                  // Previous sampled value
 logic valid_prev;              // Previous state of valid signal
-logic [width_ctr-1:0] run_len; // Current length of run
+logic [width_ctr-1:0] run_len; // Current run length in samples
 
 always_ff @(posedge d_clk) begin
   if (reset) begin
@@ -69,6 +82,7 @@ always_ff @(posedge d_clk) begin
     valid_prev <= 0;
   end else begin
     if (valid_reg && first) begin
+      // Start the first run of a new valid burst.
       run_len <= 1;
       first <= 0;
     end else
@@ -76,6 +90,7 @@ always_ff @(posedge d_clk) begin
       run_len <= run_len+1;
     end else
     if ((valid_reg && !first && d_reg != d_prev) || (!valid_reg && valid_prev)) begin
+      // A run ends either when the sampled level changes or when the valid region ends.
       if (d_prev == 1'b0) begin
         nr_run_l <= nr_run_l + 1;
         sum_run_l <= sum_run_l + run_len;
@@ -124,6 +139,7 @@ always_ff @(posedge d_clk) begin
     nr_glitch_l_r <= 0;
     nr_glitch_h_r <= 0;
   end else if (latch) begin
+    // Freeze a coherent snapshot for software readout in the control clock domain.
     ctr_run_r <= ctr_run;
     nr_run_l_r <= nr_run_l;
     nr_run_h_r <= nr_run_h;

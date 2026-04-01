@@ -3,6 +3,18 @@
 
 `default_nettype none // turn off implicit data types
 
+// Packet/validity statistics for one sampled stream.
+//
+// This block interprets `valid` as a packet-presence qualifier and accumulates:
+//   - total sampled clock ticks
+//   - ticks with valid data
+//   - idle ticks without valid data
+//   - packet begin/end events
+//   - sum and sum-of-squares of packet lengths
+//
+// The counters live in `d_clk` and are copied into readout registers on `latch` so the
+// control side can read a stable snapshot through `counter_if.sv`.
+
 module packet_stats
 #(
   parameter width_addr = 3,
@@ -20,7 +32,7 @@ module packet_stats
   output reg overflow
 );
 
-logic [width_ctr-1:0] ctr_total,        // clock tick counter
+logic [width_ctr-1:0] ctr_total,        // total sampled clock ticks
                       ctr_valid,        // valid data counter
                       ctr_idle,         // idle (!valid) counter
                       ctr_pkt_begin,    // number of assertions of valid signal
@@ -30,7 +42,7 @@ logic [width_ctr-1:0] ctr_total,        // clock tick counter
 logic [width_ctr-1:0] ctr_total_r, ctr_valid_r, ctr_idle_r,
                       ctr_pkt_begin_r, ctr_pkt_end_r,
                       ctr_pkt_len_sum_r, ctr_pkt_len_sum2_r;
-logic [width_ctr-1:0] pkt_len;          // running packet length
+logic [width_ctr-1:0] pkt_len;          // current packet length while `valid` stays high
 logic valid_prev;
 
 always_ff @(posedge d_clk) begin
@@ -52,9 +64,11 @@ always_ff @(posedge d_clk) begin
     if (!valid)
       ctr_idle <= ctr_idle+1;
     if (valid && !valid_prev) begin
+      // Start of a new packet.
       ctr_pkt_begin <= ctr_pkt_begin+1;
       pkt_len <= 1;
     end else if (!valid && valid_prev) begin
+      // End of packet: commit the accumulated packet length statistics.
       ctr_pkt_end <= ctr_pkt_end+1;
       ctr_pkt_len_sum <= ctr_pkt_len_sum + pkt_len;
       ctr_pkt_len_sum2 <= ctr_pkt_len_sum2 + pkt_len*pkt_len;
@@ -83,6 +97,7 @@ always_ff @(posedge d_clk) begin
     ctr_pkt_len_sum_r <= 0;
     ctr_pkt_len_sum2_r <= 0;
   end else if (latch) begin
+    // Freeze a coherent snapshot for software readout.
     ctr_total_r <= ctr_total;
     ctr_valid_r <= ctr_valid;
     ctr_idle_r <= ctr_idle;
