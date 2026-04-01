@@ -6,9 +6,11 @@
 #pragma once
 
 #include <iostream>
+#include <iomanip>
 #include <thread>
 #include <algorithm>
 #include <unistd.h>
+#include <algorithm>
 
 #include "basic_multi_dma.hh"
 #include "readback.hh"
@@ -44,8 +46,8 @@ class dmatests {
 
    size_t write_sequence(bool terminator) {
      const auto c = parse_count(input, "-c", "1000");
-     auto v = parse_value(input, "-v", "10");
-     const auto vmax = ds.dma.max_size/BYTES_TOTAL-1; // maximum number of elements (include one position for terminal element)
+     long unsigned v = parse_value(input, "-v", "10");
+     const long unsigned vmax = ds.dma.max_size/BYTES_TOTAL-1; // maximum number of elements (include one position for terminal element)
      v = std::min(v, vmax);
      size_t len = v;
      if (verb.verbose)
