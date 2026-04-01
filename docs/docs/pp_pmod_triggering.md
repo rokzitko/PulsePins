@@ -99,7 +99,12 @@ The SMA trigger path can accept analog-like or edge-shaped external signals and 
 
 The threshold potentiometer makes the trigger path suitable for experiments where a fixed CMOS threshold is not ideal. When documenting or reproducing a setup, record the comparator threshold setting alongside the signal source and termination setting.
 
-Other trigger-side configuration references visible on the sheet include `J16` and `J19`. These are small auxiliary headers or links associated with the trigger front-end and should be checked in the schematic before changing population or wiring assumptions.
+Other trigger-side configuration references visible on the sheet include `J16` and `J19`:
+
+* `J16` is an in-series 2-pin patch/disconnect point on the `TRIG_IN0` path.
+* `J19` is an in-series 2-pin patch/disconnect point on the SMA trigger-signal path that also reaches `J17`.
+
+These are useful when isolating the trigger front-end during bring-up or patching an alternate source into the signal path.
 
 ## Validation with `pptrig` and `pptest`
 

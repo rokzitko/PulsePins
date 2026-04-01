@@ -37,6 +37,10 @@ The PPS side also has:
 * an optional 50 ohm termination resistor `R6`
 * a dedicated monitoring LED path on the clocking sheet
 
+`J20` is an in-series 2-pin patch/disconnect point in the `EXT_CLK` path between the external-input side and the downstream clocking logic.
+
+`J25` is the matching in-series 2-pin patch/disconnect point in the `PPS_IN` path.
+
 As with the external clock path, treat `J20`, `J25`, and the 0 ohm links as schematic-controlled configuration points rather than fixed user-facing defaults.
 
 The board provides a practical PPS entry point for:

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+  <style>
+    .title { font: 700 24px sans-serif; fill: #111827; }
+    .label { font: 600 16px sans-serif; fill: #111827; }
+    .small { font: 13px sans-serif; fill: #374151; }
+    .box { fill: #f8fafc; stroke: #334155; stroke-width: 2; rx: 12; ry: 12; }
+    .accent { fill: #eef2ff; stroke: #4338ca; stroke-width: 2; rx: 12; ry: 12; }
+    .sma { fill: #ecfeff; stroke: #0f766e; stroke-width: 2; rx: 18; ry: 18; }
+    .note { fill: #fff7ed; stroke: #c2410c; stroke-width: 2; rx: 10; ry: 10; }
+    .line { stroke: #94a3b8; stroke-width: 2; }
+  </style>
+
+  <text x="30" y="40" class="title">PP_PMOD connector map</text>
+  <text x="30" y="64" class="small">Stylized top-level reference diagram for the main external interfaces.</text>
+
+  <rect x="40" y="110" width="150" height="80" class="box"/>
+  <text x="55" y="145" class="label">J3</text>
+  <text x="55" y="168" class="small">Q0..Q7</text>
+
+  <rect x="40" y="210" width="150" height="80" class="box"/>
+  <text x="55" y="245" class="label">J4</text>
+  <text x="55" y="268" class="small">Q8..Q15</text>
+
+  <rect x="40" y="310" width="150" height="80" class="box"/>
+  <text x="55" y="345" class="label">J5</text>
+  <text x="55" y="368" class="small">Q16..Q23</text>
+
+  <rect x="40" y="410" width="150" height="80" class="box"/>
+  <text x="55" y="445" class="label">J6</text>
+  <text x="55" y="468" class="small">Q24..Q31</text>
+
+  <rect x="260" y="110" width="180" height="80" class="accent"/>
+  <text x="275" y="145" class="label">J7</text>
+  <text x="275" y="168" class="small">TRIG_IN0..TRIG_IN7</text>
+
+  <rect x="260" y="210" width="180" height="80" class="accent"/>
+  <text x="275" y="245" class="label">J10</text>
+  <text x="275" y="268" class="small">trigger control</text>
+
+  <rect x="260" y="310" width="180" height="80" class="accent"/>
+  <text x="275" y="345" class="label">J11</text>
+  <text x="275" y="368" class="small">trigger status</text>
+
+  <rect x="260" y="410" width="180" height="80" class="accent"/>
+  <text x="275" y="445" class="label">J12</text>
+  <text x="275" y="468" class="small">AUX0..AUX7</text>
+
+  <rect x="500" y="140" width="180" height="70" class="box"/>
+  <text x="515" y="172" class="label">J8</text>
+  <text x="515" y="194" class="small">STROBE, OE,</text>
+  <text x="515" y="212" class="small">STREAMER_CLK, QOUT_VALID</text>
+
+  <rect x="500" y="255" width="180" height="70" class="box"/>
+  <text x="515" y="287" class="label">J18</text>
+  <text x="515" y="309" class="small">Qwiic I2C</text>
+
+  <rect x="500" y="370" width="180" height="70" class="note"/>
+  <text x="515" y="402" class="label">Service / config</text>
+  <text x="515" y="424" class="small">J16, J19, J20, J25</text>
+
+  <ellipse cx="810" cy="135" rx="95" ry="34" class="sma"/>
+  <text x="770" y="141" class="label">J17</text>
+  <text x="736" y="161" class="small">thresholded trigger SMA</text>
+
+  <ellipse cx="810" cy="225" rx="95" ry="34" class="sma"/>
+  <text x="772" y="231" class="label">J9</text>
+  <text x="748" y="251" class="small">EXT_CLK SMA</text>
+
+  <ellipse cx="810" cy="315" rx="95" ry="34" class="sma"/>
+  <text x="767" y="321" class="label">J26</text>
+  <text x="748" y="341" class="small">PPS_IN SMA</text>
+
+  <ellipse cx="810" cy="405" rx="95" ry="34" class="sma"/>
+  <text x="768" y="399" class="label">J13 / J14</text>
+  <text x="735" y="421" class="small">buffered Q0 / Q1 SMA</text>
+
+  <line x1="190" y1="150" x2="500" y2="175" class="line"/>
+  <line x1="190" y1="250" x2="500" y2="175" class="line"/>
+  <line x1="190" y1="350" x2="500" y2="175" class="line"/>
+  <line x1="190" y1="450" x2="500" y2="175" class="line"/>
+  <line x1="440" y1="150" x2="715" y2="135" class="line"/>
+  <line x1="680" y1="290" x2="715" y2="315" class="line"/>
+  <line x1="680" y1="175" x2="715" y2="225" class="line"/>
+  <line x1="680" y1="405" x2="715" y2="405" class="line"/>
+
+  <text x="40" y="530" class="small">See the connectors, triggering, clocking, and outputs pages for exact signal tables and header ordering.</text>
+</svg>

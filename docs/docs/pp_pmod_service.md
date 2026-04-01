@@ -21,8 +21,10 @@ The board includes small headers or links associated with optional termination a
 
 Named configuration references visible in the current schematic include:
 
-* clocking sheet: 2-pin headers `J20`, `J25`
-* trigger sheet: 2-pin headers `J16`, `J19`
+* clocking sheet: `J20` is an in-series patch/disconnect point on `EXT_CLK`
+* clocking sheet: `J25` is an in-series patch/disconnect point on `PPS_IN`
+* trigger sheet: `J16` is an in-series patch/disconnect point on `TRIG_IN0`
+* trigger sheet: `J19` is an in-series patch/disconnect point on the SMA trigger path
 
 There are also 0 ohm link parts in these configurable paths, for example `R30`, `R31`, `R26`, and `R27`.
 

@@ -16,6 +16,8 @@ Project files:
 
 ![PP_PMOD board](img/IMG_0064.jpeg){: style="height:400px"}
 
+![PP_PMOD connector map](img/pp_pmod_connector_map.svg)
+
 ## Feature summary
 
 The reference design includes:

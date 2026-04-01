@@ -2,6 +2,8 @@
 
 This page is the board-level connector inventory for `PP_PMOD`.
 
+![PP_PMOD connector map](img/pp_pmod_connector_map.svg)
+
 For detailed signal behavior, use the functional pages alongside this inventory:
 
 * [triggering](pp_pmod_triggering.md)
