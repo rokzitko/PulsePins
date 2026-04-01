@@ -26,7 +26,7 @@ And it exposes trigger status signals used elsewhere on the board:
 
 The dedicated SMA trigger path lives on the `Triggering` schematic sheet and includes:
 
-* an SMA input connector
+* SMA connector `J17`
 * ESD protection on the external-facing path
 * optional input termination
 * a fast `ADCMP604` comparator
@@ -60,7 +60,18 @@ The board exposes the main trigger-control signals directly:
 
 These are useful during bring-up, debugging, and experiments where hardware-side trigger control is preferable to software-only control.
 
-These signals appear on the dedicated `J10` trigger control/status header together with `TRIG_ARMED`, `TRIG_ACTIV`, and one spare `TRIG_NC` position.
+These signals appear on dedicated control and status headers rather than being mixed onto one connector.
+
+`J10` is the trigger-control header. Its physical order from top to bottom in the schematic is:
+
+| Position | Signal |
+| --- | --- |
+| top | `+3.3V` |
+| 2 | `GND` |
+| 3 | `GATE_IN` |
+| 4 | `TRIG_RESET` |
+| 5 | `TRIG_FORCE` |
+| bottom | `TRIG_ENABLE` |
 
 ## Trigger status signals
 
@@ -71,11 +82,24 @@ These signals appear on the dedicated `J10` trigger control/status header togeth
 
 Both status signals are also used for board indicators.
 
+`J11` is the nearby status/service header. Its physical order from top to bottom in the schematic is:
+
+| Position | Signal |
+| --- | --- |
+| top | `+3.3V` |
+| 2 | `GND` |
+| 3 | `BUFFER_ERROR` |
+| 4 | `DONE` |
+| 5 | `TRIG_ACTIV` |
+| bottom | `TRIG_ARMED` |
+
 ## Threshold control
 
 The SMA trigger path can accept analog-like or edge-shaped external signals and convert them into a digital trigger input using the onboard comparator.
 
 The threshold potentiometer makes the trigger path suitable for experiments where a fixed CMOS threshold is not ideal. When documenting or reproducing a setup, record the comparator threshold setting alongside the signal source and termination setting.
+
+Other trigger-side configuration references visible on the sheet include `J16` and `J19`. These are small auxiliary headers or links associated with the trigger front-end and should be checked in the schematic before changing population or wiring assumptions.
 
 ## Validation with `pptrig` and `pptest`
 

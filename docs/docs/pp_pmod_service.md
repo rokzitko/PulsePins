@@ -19,15 +19,29 @@ These are useful for quick visual confirmation that the board is alive, armed, t
 
 The board includes small headers or links associated with optional termination and source-selection behavior, especially on the trigger and clock-input paths.
 
+Named configuration references visible in the current schematic include:
+
+* clocking sheet: 2-pin headers `J20`, `J25`
+* trigger sheet: 2-pin headers `J16`, `J19`
+
+There are also 0 ohm link parts in these configurable paths, for example `R30`, `R31`, `R26`, and `R27`.
+
 When documenting a setup, record:
 
 * whether the optional terminations are enabled
 * whether an onboard oscillator module is populated
 * any source-selection or configuration links relevant to `EXT_CLK`, `PPS_IN`, or the SMA trigger path
 
+Before changing any jumper or link, verify its exact role in the relevant schematic sheet rather than relying on shorthand board descriptions.
+
 ## Testpoints
 
 The `Misc` and `I2C` sheets include dedicated testpoints that support board bring-up and troubleshooting.
+
+Named testpoints visible in the current schematic include:
+
+* `Misc` sheet: `TP1`, `TP2`, `TP3`, `TP4`, `TP8`, `TP9`, `TP10`, `TP11`, `TP12`
+* `I2C` sheet: `TP5`, `TP6`, `TP7`
 
 Typical uses include:
 
@@ -39,6 +53,8 @@ Typical uses include:
 ## Grounding features
 
 The board includes dedicated ground connection points intended to make oscilloscope probing cleaner and more repeatable.
+
+Several of the `Misc`-sheet probe features are implemented as loop-style or through-hole testpoints intended for easier instrument hookup, including the beaded loop footprints used on `TP2`, `TP3`, and `TP4`.
 
 Use these features when checking fast edges on the trigger, clock, or output paths rather than relying on long clip leads.
 

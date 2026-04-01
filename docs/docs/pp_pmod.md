@@ -69,3 +69,22 @@ When documenting or validating the board, record which optional parts are popula
 * [PP_PMOD I2C and onboard peripherals](pp_pmod_i2c.md)
 * [PP_PMOD LEDs, jumpers, and testpoints](pp_pmod_service.md)
 * [PP_PMOD validated examples](pp_pmod_examples.md)
+
+## Connector index
+
+Quick reference for the board's main external interfaces:
+
+| Ref | Purpose |
+| --- | --- |
+| `J3`-`J6` | four 8-bit `QOUT` groups |
+| `J7` | 8-bit trigger input bus |
+| `J8` | QOUT sideband header |
+| `J9` | `EXT_CLK` SMA input |
+| `J10` | trigger control header |
+| `J11` | trigger/status header |
+| `J12` | `AUX` bus |
+| `J13` | buffered `Q0` SMA output |
+| `J14` | buffered `Q1` SMA output |
+| `J17` | thresholded trigger SMA input |
+| `J18` | Qwiic I2C connector |
+| `J26` | `PPS_IN` SMA input |

@@ -41,6 +41,17 @@ The same sheet also breaks out several output-related control and observation si
 
 These sideband signals are presented on the dedicated 1x6 header `J8`, together with utility power/ground pins.
 
+Physical order on `J8`, top to bottom in the schematic:
+
+| Position | Signal |
+| --- | --- |
+| top | `STROBE` |
+| 2 | `OE` |
+| 3 | `STREAMER_CLK` |
+| 4 | `QOUT_VALID` |
+| 5 | `GND` |
+| bottom | `+3.3V` |
+
 These signals are especially useful during board bring-up and when aligning output timing to external equipment.
 
 ## Buffered SMA outputs
@@ -50,6 +61,8 @@ The `output buffers` sheet routes two board signals to SMA connectors through lo
 Documented facts from the schematic:
 
 * there are two SMA output connectors
+* `J13` is tied to the buffered `Q0` path
+* `J14` is tied to the buffered `Q1` path
 * the path is buffered
 * indicator LEDs are present on the output-buffer section
 
@@ -67,6 +80,7 @@ The buffered SMA outputs are useful for:
 For repeatable measurements, record:
 
 * output connector used
+* whether the measurement is on buffered `Q0` or buffered `Q1`
 * instrument input impedance
 * cable type and length
 * output-enable settings

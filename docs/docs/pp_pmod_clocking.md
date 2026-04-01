@@ -8,8 +8,8 @@ These features make the board useful both for simple external-reference experime
 
 The clock-related hardware on the board is centered around:
 
-* one SMA input for `EXT_CLK`
-* one SMA input for `PPS_IN`
+* one SMA input for `EXT_CLK` on `J9`
+* one SMA input for `PPS_IN` on `J26`
 * optional terminations
 * optional oscillator-module footprints
 * exported internal board signals `PPCLK1` and `PPCLK2`
@@ -18,17 +18,26 @@ The clock-related hardware on the board is centered around:
 
 The external clock path lives on the `ext_clk` schematic sheet and includes:
 
-* an SMA connector
-* external-facing protection
-* a clock buffer stage
-* optional termination hardware
+* SMA connector `J9`
+* external-facing protection `U20`
+* a clock buffer stage `U19`
+* an optional 50 ohm termination resistor `R17`
+* nearby 2-pin configuration headers `J20` and `J25`, plus 0 ohm links on the clock path
 * routing into the board clock-selection logic
 
 Unlike the SMA trigger input, this path does not include an adjustable threshold comparator.
 
 ## `PPS_IN` input
 
-`PPS_IN` is brought in through its own SMA connector on the same clocking sheet.
+`PPS_IN` is brought in through SMA connector `J26` on the same clocking sheet.
+
+The PPS side also has:
+
+* external-facing protection `U21`
+* an optional 50 ohm termination resistor `R6`
+* a dedicated monitoring LED path on the clocking sheet
+
+As with the external clock path, treat `J20`, `J25`, and the 0 ohm links as schematic-controlled configuration points rather than fixed user-facing defaults.
 
 The board provides a practical PPS entry point for:
 
@@ -41,6 +50,11 @@ The board provides a practical PPS entry point for:
 The `ext_clk` sheet also contains footprints for optional oscillator modules.
 
 These are active CMOS oscillator-module footprints, not bare crystal resonators. When describing the board, prefer wording such as "optional oscillator modules" or "optional CMOS oscillator modules" rather than "crystal oscillators".
+
+The two oscillator footprints shown in the schematic are:
+
+* `Y1`: `SG-5032CBN`
+* `Y2`: `SG-7050CAN`
 
 ## Clock-related exported signals
 
