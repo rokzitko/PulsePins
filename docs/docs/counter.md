@@ -1,4 +1,4 @@
-## Counter subsystem
+# Counter subsystem
 
 The counter subsystem provides on-chip measurement blocks for statistics, sequence analysis, and timing analysis of streamed or externally supplied digital signals.
 

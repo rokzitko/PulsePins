@@ -1,4 +1,4 @@
-## Combiner subsystem
+# Combiner subsystem
 
 PulsePins can combine the outputs of multiple streamer instances before they reach the external pins.
 

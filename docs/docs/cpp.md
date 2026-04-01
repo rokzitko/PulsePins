@@ -1,4 +1,4 @@
-## C++ application programming interface
+# C++ application programming interface
 
 The C++ code in `c++/` serves two closely related roles:
 

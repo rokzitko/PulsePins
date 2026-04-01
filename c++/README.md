@@ -59,7 +59,7 @@ That order mirrors the path a user command takes from CLI invocation down to FPG
 ## Verification and related docs
 
 - build host tools: `make -C c++ build`
-- run unit tests: `make -C c++ test`
+- run unit tests: `make -C c++ unit_tests`
 - check whitespace policy: `make -C c++ lint-whitespace`
 - broader contributor workflow: `HACKING.md`
 - C++ API overview: `docs/docs/cpp.md`
