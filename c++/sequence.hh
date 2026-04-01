@@ -125,6 +125,10 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
 {
   // Text grammar accepted here:
   //   d <count> <value>           regular data element
+  //   dn <count> <value>          regular data element without strobes
+  //   s <count> <value>           regular BITSET element
+  //   c <count> <value>           regular BITCLEAR element
+  //   x <count> <value>           regular BITFLIP element
   //   t <pattern> <mask>          final trigger-condition element
   //   tn <pattern> <mask>         non-final trigger-condition element
   //   f                           request forced trigger instead of arm-and-wait
@@ -132,18 +136,33 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
   Sequence elements;
   bool force_trigger = false;
   try {
+    auto parse_regular_args = [&f](const char *token_name) {
+      std::string sc, sv;
+      if (!(f >> sc >> sv))
+        throw std::runtime_error(std::string("Incomplete '") + token_name + "' record: expected count and value");
+      return std::make_pair(parse_count_t(sc), parse_value_t(sv));
+    };
+
     while (f) {
       std::string token;
       f >> token;
       if (!f) break;
 
       if (token == "d") {
-        std::string sc, sv;
-        if (!(f >> sc >> sv))
-          throw std::runtime_error("Incomplete 'd' record: expected count and value");
-        auto c = parse_count_t(sc);
-        auto v = parse_value_t(sv);
+        auto [c, v] = parse_regular_args("d");
         elements.push_back(el(c, v));
+      } else if (token == "dn") {
+        auto [c, v] = parse_regular_args("dn");
+        elements.push_back(el(NoStrobe(c), v));
+      } else if (token == "s") {
+        auto [c, v] = parse_regular_args("s");
+        elements.push_back(el(c, BitSet(v)));
+      } else if (token == "c") {
+        auto [c, v] = parse_regular_args("c");
+        elements.push_back(el(c, BitClear(v)));
+      } else if (token == "x") {
+        auto [c, v] = parse_regular_args("x");
+        elements.push_back(el(c, BitFlip(v)));
       } else if (token == "t") {
         std::string sp, sm;
         if (!(f >> sp >> sm))

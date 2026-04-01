@@ -395,6 +395,19 @@ TEST_CASE("parse_sequence_from_stream parses non-final triggers") {
   CHECK(seq[1] == el(0b10, 0b10, true));
 }
 
+TEST_CASE("parse_sequence_from_stream parses stage 2 regular element variants") {
+  std::istringstream in("dn 3 0x12 s 4 0x03 c 5 0x0c x 6 0x30");
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+
+  REQUIRE(seq.size() == 4);
+  CHECK(!force_trigger);
+
+  CHECK(seq[0] == el(NoStrobe(3), 0x12));
+  CHECK(seq[1] == el(4, BitSet(0x03)));
+  CHECK(seq[2] == el(5, BitClear(0x0c)));
+  CHECK(seq[3] == el(6, BitFlip(0x30)));
+}
+
 TEST_CASE("parse_sequence_from_stream rejects unknown tokens") {
   std::istringstream in("bogus");
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Unknown sequence token: 'bogus'", std::runtime_error);
@@ -403,6 +416,17 @@ TEST_CASE("parse_sequence_from_stream rejects unknown tokens") {
 TEST_CASE("parse_sequence_from_stream rejects truncated data records") {
   std::istringstream in("d 3");
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Incomplete 'd' record: expected count and value", std::runtime_error);
+}
+
+TEST_CASE("parse_sequence_from_stream rejects truncated stage 2 regular element records") {
+  std::istringstream in_dn("dn 3");
+  std::istringstream in_s("s 4");
+  std::istringstream in_c("c 5");
+  std::istringstream in_x("x 6");
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_dn), "Incomplete 'dn' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_s), "Incomplete 's' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_c), "Incomplete 'c' record: expected count and value", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_x), "Incomplete 'x' record: expected count and value", std::runtime_error);
 }
 
 TEST_CASE("parse_sequence_from_stream rejects truncated final trigger records") {
