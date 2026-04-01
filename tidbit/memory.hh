@@ -151,14 +151,13 @@ class mm
 
 class on_chip_memory {
  private:
-   loc f;
-   size_t size; // in bytes
+    loc f;
  public:
-   on_chip_memory(mm &dev, const std::uintptr_t base, const size_t _size = 0) :
-     f(dev.get_loc(base)), size(_size) {}
-   void write(const std::uintptr_t addr, const uint32_t v) {
-     f.write(v, addr);
-   }
+    on_chip_memory(mm &dev, const std::uintptr_t base, const size_t = 0) :
+      f(dev.get_loc(base)) {}
+    void write(const std::uintptr_t addr, const uint32_t v) {
+      f.write(v, addr);
+    }
    uint32_t read32(const std::uintptr_t addr) {
      return f.read(addr);
    }

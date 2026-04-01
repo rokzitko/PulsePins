@@ -90,10 +90,9 @@ class streamer_dma : private c_dma
          pos++;
        }
      }
-     const size_t size = 4*pos;
-     assert(size <= max_size);
-     return true;
-   }
+      assert(4 * pos <= max_size);
+      return true;
+    }
 
    void report() {
      std::cout << "DMA " << status_string() << std::endl;

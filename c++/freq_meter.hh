@@ -114,10 +114,9 @@ class pp_freq_meter {
      meter(fpga.dev_h2f, FREQ_METER_0_BASE) {
        if (opts.correction_factor)
          meter.set_correction_factor(*opts.correction_factor);
-       const auto n_ch = meter.get_n_ch();
-       assert(n_ch == 4);
-       if (wait)
-         meter.wait_one_gate_time();
+        assert(meter.get_n_ch() == 4);
+        if (wait)
+          meter.wait_one_gate_time();
        fpga.set_streamer_clk(meter.read_freq(METER_STREAMER_CLK));
      }
 
