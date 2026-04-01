@@ -15,8 +15,8 @@ inline value_t random_value() { return random_u32(); }
 inline count_t random_count() { return random_u32(); }
 
 inline Sequence prepare_counter_sequence(const size_t v,
-                                         const size_t c,
-                                         const bool verbose = false)
+                                        const size_t c,
+                                        const bool verbose = false)
 {
   if (verbose) std::cout << "v=" << std::dec << v << " c=" << c << std::endl;
   Sequence elements;
@@ -27,9 +27,9 @@ inline Sequence prepare_counter_sequence(const size_t v,
 
 // Create a sequence of 'nr' blocks of maximum length 'max_block_len'
 inline Sequence prepare_random_test_sequence(const unsigned long nr = 10,
-                                             const unsigned long max_block_len = 100000,
-                                             const bool rnd = false,
-                                             const bool verbose = false)
+                                            const unsigned long max_block_len = 100000,
+                                            const bool rnd = false,
+                                            const bool verbose = false)
 {
   if (verbose) std::cout << "nr=" << nr << " max_block_len=" << max_block_len << (rnd ? " with randomized values" : "") << std::endl;
   Sequence elements;
@@ -55,8 +55,8 @@ inline Sequence prepare_random_test_sequence(const unsigned long nr = 10,
 
 // Prepare a random sequence where the update types are also random (update, set, clear, flip, not, and, or,...)
 inline Sequence prepare_general_random_test_sequence(const unsigned long nr = 10,
-                                                     const unsigned long max_block_len = 100000,
-                                                     const bool verbose = false)
+                                                    const unsigned long max_block_len = 100000,
+                                                    const bool verbose = false)
 {
   if (verbose) std::cout << "nr=" << nr << " max_block_len=" << max_block_len << std::endl;
   Sequence elements;
@@ -119,26 +119,26 @@ inline Sequence prepare_general_random_test_sequence(const unsigned long nr = 10
 // Create a sequence of 'nr' pulses spaced maximally by 'max_block_len'
 inline Sequence prepare_random_pulses(unsigned long nr = 10, unsigned long max_block_len = 100000, bool verbose = false)
 {
-   if (verbose) std::cout << "nr=" << nr << " max_block_len=" << max_block_len << std::endl;
-   Sequence elements;
-   for (unsigned long i = 0; i < nr; i++) {
+  if (verbose) std::cout << "nr=" << nr << " max_block_len=" << max_block_len << std::endl;
+  Sequence elements;
+  for (unsigned long i = 0; i < nr; i++) {
       el e_wait{Strobe((random_u32() % max_block_len) + 1), BitLoad(0)}; // blocks of random length
       elements.push_back(e_wait);
       el e_pulse{Strobe(1), BitLoad(1)};
       elements.push_back(e_pulse);
-   }
-   return elements;
+  }
+  return elements;
 }
 
 inline Sequence prepare_equally_spaced_pulses(unsigned long nr = 10, unsigned long block_len = 100000, bool verbose = false)
 {
-   if (verbose) std::cout << "nr=" << nr << " block_len=" << block_len << std::endl;
-   Sequence elements;
-   for (unsigned long i = 0; i < nr; i++) {
+  if (verbose) std::cout << "nr=" << nr << " block_len=" << block_len << std::endl;
+  Sequence elements;
+  for (unsigned long i = 0; i < nr; i++) {
       el e_wait{Strobe(block_len-1), BitLoad(0)};
       elements.push_back(e_wait);
       el e_pulse{Strobe(1), BitLoad(1)};
       elements.push_back(e_pulse);
-   }
-   return elements;
+  }
+  return elements;
 }

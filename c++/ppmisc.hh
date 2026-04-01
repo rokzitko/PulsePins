@@ -17,10 +17,10 @@
 #include "hps_0.h"
 
 #ifndef HPS_REGS_OFST
- #define HPS_REGS_OFST  0xFF700000
+#define HPS_REGS_OFST  0xFF700000
 #endif
 #ifndef HPS_REGS_RANGE
- #define HPS_REGS_RANGE 0x00010000
+#define HPS_REGS_RANGE 0x00010000
 #endif
 
 #define ALT_SYSMGR_BASE          0xFFD08000

@@ -31,12 +31,12 @@ public:
         orig_policy = sched_getscheduler(0);
         if (orig_policy == -1) {
             throw SchedulerError("sched_getscheduler failed: " +
-                                 std::string(std::strerror(errno)));
+                                std::string(std::strerror(errno)));
         }
 
         if (sched_getparam(0, &orig_param) == -1) {
             throw SchedulerError("sched_getparam failed: " +
-                                 std::string(std::strerror(errno)));
+                                std::string(std::strerror(errno)));
         }
 
         // Resolve priority
@@ -45,7 +45,7 @@ public:
             int max_prio = sched_get_priority_max(policy);
             if (max_prio == -1) {
                 throw SchedulerError("sched_get_priority_max failed: " +
-                                     std::string(std::strerror(errno)));
+                                    std::string(std::strerror(errno)));
             }
             param.sched_priority = max_prio;
         } else {
@@ -53,20 +53,20 @@ public:
             int max_prio = sched_get_priority_max(policy);
             if (min_prio == -1 || max_prio == -1) {
                 throw SchedulerError("sched_get_priority_[min|max] failed: " +
-                                     std::string(std::strerror(errno)));
+                                    std::string(std::strerror(errno)));
             }
             if (priority < min_prio || priority > max_prio) {
                 throw SchedulerError("Priority " + std::to_string(priority) +
-                                     " is out of range (" +
-                                     std::to_string(min_prio) + "-" +
-                                     std::to_string(max_prio) + ")");
+                                    " is out of range (" +
+                                    std::to_string(min_prio) + "-" +
+                                    std::to_string(max_prio) + ")");
             }
             param.sched_priority = priority;
         }
 
         if (sched_setscheduler(0, policy, &param) == -1) {
             throw SchedulerError("sched_setscheduler failed: " +
-                                 std::string(std::strerror(errno)));
+                                std::string(std::strerror(errno)));
         }
 
         new_policy = policy;
@@ -104,13 +104,13 @@ public:
         int policy = sched_getscheduler(0);
         if (policy == -1) {
             throw SchedulerError("sched_getscheduler failed: " +
-                                 std::string(std::strerror(errno)));
+                                std::string(std::strerror(errno)));
         }
 
         sched_param param{};
         if (sched_getparam(0, &param) == -1) {
             throw SchedulerError("sched_getparam failed: " +
-                                 std::string(std::strerror(errno)));
+                                std::string(std::strerror(errno)));
         }
 
         std::string pol_name;

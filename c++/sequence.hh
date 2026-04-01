@@ -24,93 +24,93 @@
 // Thin extension of `std::deque<el>` with helpers that reflect the semantics of a
 // pulse sequence rather than just container operations.
 class Sequence : public std::deque<el> {
- public:
-   using Base = std::deque<el>;
-   using Base::Base;
-   using Base::back;
-   using Base::clear;
-   using Base::empty;
-   using Base::insert;
-   using Base::push_back;
+public:
+  using Base = std::deque<el>;
+  using Base::Base;
+  using Base::back;
+  using Base::clear;
+  using Base::empty;
+  using Base::insert;
+  using Base::push_back;
 
-   void push_back_py(el && x) { Base::push_back(x); }
+  void push_back_py(el && x) { Base::push_back(x); }
 
-   // Total length of the sequence (in units of periods)
-   uint64_t length() const {
-     uint64_t len = 0;
-     for (const auto &e : *this)
-       if (e.is_regular())
-         len += e.count();
-     return len;
-   }
+  // Total length of the sequence (in units of periods)
+  uint64_t length() const {
+    uint64_t len = 0;
+    for (const auto &e : *this)
+      if (e.is_regular())
+        len += e.count();
+    return len;
+  }
 
-   // Number of regular elements in the container
-   uint64_t data_size() const {
-     uint64_t sz = 0;
-     for (const auto &e : *this)
-       if (e.is_regular())
-         sz++;
-     return sz;
-   }
+  // Number of regular elements in the container
+  uint64_t data_size() const {
+    uint64_t sz = 0;
+    for (const auto &e : *this)
+      if (e.is_regular())
+        sz++;
+    return sz;
+  }
 
-   // Dump the sequence to stream `F`.
-   void dump(std::ostream &F = std::cout, const std::string prefix = "") const {
-     F << prefix << "Sequence: number of elements (size)=" << size() << ", sequence duration in clock periods (length)=" << length() << std::endl;
-     size_t i = 0;
-     for (const auto &e : *this) {
-       F << prefix << std::dec << i << ": " << e << std::endl;
-       i++;
-     }
-   }
+  // Dump the sequence to stream `F`.
+  void dump(std::ostream &F = std::cout, const std::string prefix = "") const {
+    F << prefix << "Sequence: number of elements (size)=" << size() << ", sequence duration in clock periods (length)=" << length() << std::endl;
+    size_t i = 0;
+    for (const auto &e : *this) {
+      F << prefix << std::dec << i << ": " << e << std::endl;
+      i++;
+    }
+  }
 
-   void dump_py(const std::string prefix = "") const {
-     dump(std::cout, prefix);
-   }
+  void dump_py(const std::string prefix = "") const {
+    dump(std::cout, prefix);
+  }
 
     // Convert regular data elements into the effective output-value stream. This is
     // mainly used for readback checking, where comparisons are done against the data
     // observed at the streamer output rather than the original update operators.
     Sequence convert_to_BitLoad() {
-     Sequence s;
-     size_t n = 0; // counts regular elements only
-     value_t v_prev;
-     for (const auto &e: *this) {
-       el enew = e;
-       if (n && e.is_regular()) {
-         enew.set_value(BitLoad(e.updated_value(v_prev)));
-         enew.set_control((e.control() & ~MODEBITS) | BITLOAD);
-       }
-       s.push_back(enew);
-       if (e.is_regular())
-         v_prev = enew.value();
-       if (e.is_regular())
-         n++;
-     }
-     return s;
-   }
+    Sequence s;
+    size_t n = 0; // counts regular elements only
+    value_t v_prev;
+    for (const auto &e: *this) {
+      el enew = e;
+      if (n && e.is_regular()) {
+        enew.set_value(BitLoad(e.updated_value(v_prev)));
+        enew.set_control((e.control() & ~MODEBITS) | BITLOAD);
+      }
+      s.push_back(enew);
+      if (e.is_regular())
+        v_prev = enew.value();
+      if (e.is_regular())
+        n++;
+    }
+    return s;
+  }
 
     // Merge adjacent regular elements that produce the same output state.
     Sequence merge() {
-     Sequence s = *this; // make a copy
-     merge_adjacent<el>(s,
+    Sequence s = *this; // make a copy
+    merge_adjacent<el>(s,
                         [](const el &x, const el &y){ return x.is_regular() && y.is_regular() && x.control() == y.control() && x.value() == y.value(); },
                         [](const el &x, const el &y){ return el(Counter(x.count() + y.count()), Value(x.value())); });
-     return s;
-   }
+    return s;
+  }
 
     // Build a sequence from a VCD signal trace. Consecutive samples become run-length
     // encoded elements targeting `target_name`.
     void load_VCD(const std::string filename, const std::string target_name = "outs", const uint32_t scale_factor = 10) {
-     std::ifstream F(filename);
-     auto l = parseVcdUpdates(F, target_name, scale_factor);
-     for (size_t i = 0; i < l.size()-1; i++) {
-       Counter c = l[i+1].count-l[i].count;
-       Value v = l[i].value;
-       this->push_back(el(c, v));
-     }
-   }
+    std::ifstream F(filename);
+    auto l = parseVcdUpdates(F, target_name, scale_factor);
+    for (size_t i = 0; i < l.size()-1; i++) {
+      Counter c = l[i+1].count-l[i].count;
+      Value v = l[i].value;
+      this->push_back(el(c, v));
+    }
+  }
 
-   virtual ~Sequence() = default;
+  virtual ~Sequence() = default;
 };
 
 inline bool compare(const Sequence &X, const Sequence &Y, bool verbose = false) {
@@ -166,8 +166,8 @@ inline std::string sequence_regular_token(const el &e)
 }
 
 inline void write_sequence_to_stream(const Sequence &sequence,
-                                     std::ostream &f,
-                                     const bool force_trigger = false)
+                                    std::ostream &f,
+                                    const bool force_trigger = false)
 {
   for (const auto &e : sequence) {
     const control_t control = e.control();
@@ -212,8 +212,8 @@ inline void write_sequence_to_stream(const Sequence &sequence,
 }
 
 inline void write_sequence_to_file(const Sequence &sequence,
-                                   const std::string &filename,
-                                   const bool force_trigger = false)
+                                  const std::string &filename,
+                                  const bool force_trigger = false)
 {
   std::ofstream f(filename);
   if (!f)

@@ -38,7 +38,7 @@ struct Config {
 };
 
 class SequenceBuilder {
- public:
+public:
   explicit SequenceBuilder(Config cfg) : cfg_(cfg) {
     validate_config();
     const double exact_half_period = cfg_.decoder_clock_hz / (2.0 * cfg_.spi_clock_hz);
@@ -132,7 +132,7 @@ class SequenceBuilder {
     deselect();
   }
 
- private:
+private:
   Config cfg_;
   Sequence sequence_;
   count_t half_period_ticks_ = 1;

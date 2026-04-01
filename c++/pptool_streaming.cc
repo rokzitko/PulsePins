@@ -176,8 +176,8 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
 }
 
 count_t calc_duration_nr(const double duration_req,
-                         const bool verbose,
-                         const double output_clk = default_output_clk)
+                        const bool verbose,
+                        const double output_clk = default_output_clk)
 {
   const double output_clk_period = 1.0/output_clk;
   if (verbose)

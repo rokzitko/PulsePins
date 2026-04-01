@@ -73,7 +73,7 @@ static int make_listen_socket(const std::string& bind_ip, uint16_t port, Proto p
 // Reads from a stream socket and yields complete lines (newline-delimited).
 // Handles CRLF by stripping a trailing '\r'.
 static void read_lines_from_stream(int fd, const std::atomic<bool>& stop_flag,
-                                   const std::function<void(const std::string&)>& on_line) {
+                                  const std::function<void(const std::string&)>& on_line) {
   std::string buf;
   buf.reserve(4096);
   std::vector<char> tmp(4096);
@@ -114,7 +114,7 @@ static void read_lines_from_udp(int fd, const std::atomic<bool>& stop_flag,
     sockaddr_in peer{};
     socklen_t peer_len = sizeof(peer);
     ssize_t n = ::recvfrom(fd, tmp.data(), tmp.size(), 0,
-                           reinterpret_cast<sockaddr*>(&peer), &peer_len);
+                          reinterpret_cast<sockaddr*>(&peer), &peer_len);
     if (n < 0) {
       if (errno == EINTR) continue;
       throw std::runtime_error("recvfrom() failed: " + std::string(std::strerror(errno)));
@@ -137,82 +137,82 @@ static void read_lines_from_udp(int fd, const std::atomic<bool>& stop_flag,
 
 class LineServer {
 public:
-   using Handler = std::function<void(const std::string&)>;
+  using Handler = std::function<void(const std::string&)>;
 
-   LineServer(std::string bind_ip, uint16_t port, Proto proto, Handler handler)
-     : bind_ip_(std::move(bind_ip)), port_(port), proto_(proto), handler_(std::move(handler)) {}
+  LineServer(std::string bind_ip, uint16_t port, Proto proto, Handler handler)
+    : bind_ip_(std::move(bind_ip)), port_(port), proto_(proto), handler_(std::move(handler)) {}
 
-   void start() {
-     if (thread_.joinable()) throw std::runtime_error("Server already started");
-     stop_flag_.store(false, std::memory_order_relaxed);
-     thread_ = std::thread([this] { this->run(); });
-   }
+  void start() {
+    if (thread_.joinable()) throw std::runtime_error("Server already started");
+    stop_flag_.store(false, std::memory_order_relaxed);
+    thread_ = std::thread([this] { this->run(); });
+  }
 
-   void stop() {
-     stop_flag_.store(true, std::memory_order_relaxed);
-     // Best-effort unblock: close fds if open.
-     // Note: closing from another thread is the common POSIX approach to unblock recv/accept.
-     int fd = listen_fd_.exchange(-1);
-     if (fd >= 0) {
-       ::shutdown(fd, SHUT_RDWR);
-       ::close(fd);
-     }
-     int cfd = client_fd_.exchange(-1);
-     if (cfd >= 0) ::close(cfd);
-     if (thread_.joinable()) thread_.join();
-   }
+  void stop() {
+    stop_flag_.store(true, std::memory_order_relaxed);
+    // Best-effort unblock: close fds if open.
+    // Note: closing from another thread is the common POSIX approach to unblock recv/accept.
+    int fd = listen_fd_.exchange(-1);
+    if (fd >= 0) {
+      ::shutdown(fd, SHUT_RDWR);
+      ::close(fd);
+    }
+    int cfd = client_fd_.exchange(-1);
+    if (cfd >= 0) ::close(cfd);
+    if (thread_.joinable()) thread_.join();
+  }
 
-   ~LineServer() {
-     try { stop(); } catch (...) { /* no-throw */ }
-   }
+  ~LineServer() {
+    try { stop(); } catch (...) { /* no-throw */ }
+  }
 
- private:
-   void run() {
-     try {
-       const int lfd = make_listen_socket(bind_ip_, port_, proto_);
-       listen_fd_.store(lfd);
-       if (proto_ == Proto::TCP) {
-         for (;;) {
-           // Accept exactly one connection, then read lines until it closes or stop() is called.
-           sockaddr_in peer{};
-           socklen_t peer_len = sizeof(peer);
-           int cfd = ::accept(lfd, reinterpret_cast<sockaddr*>(&peer), &peer_len);
-           if (cfd < 0) {
-             if (!stop_flag_.load(std::memory_order_relaxed)) {
-               throw std::runtime_error("accept() failed: " + std::string(std::strerror(errno)));
-             }
-             return;
-           }
-           std::cout << "Connection from " << client_ip_string(cfd) << std::endl;
-           client_fd_.store(cfd);
-           // Optional: after accepting a single connection, you may close the listen socket.
-           // That prevents any further connections.
-           // int old_lfd = listen_fd_.exchange(-1);
-           // if (old_lfd >= 0) ::close(old_lfd);
-           read_lines_from_stream(cfd, stop_flag_, handler_);
-           int old_cfd = client_fd_.exchange(-1);
-           if (old_cfd >= 0) ::close(old_cfd);
-           std::cout << "Connection closed." << std::endl;
-         }
-       } else {
-         // UDP: no accept(). Just read datagrams and parse lines.
-         read_lines_from_udp(lfd, stop_flag_, handler_);
-         int old_lfd = listen_fd_.exchange(-1);
-         if (old_lfd >= 0) ::close(old_lfd);
-       }
-     } catch (const std::exception& e) {
-       // In real code, route this to your logging system.
-       std::cerr << "LineServer error: " << e.what() << "\n";
-     }
-     std::cout << "LineServer terminating." << std::endl;
-   }
+private:
+  void run() {
+    try {
+      const int lfd = make_listen_socket(bind_ip_, port_, proto_);
+      listen_fd_.store(lfd);
+      if (proto_ == Proto::TCP) {
+        for (;;) {
+          // Accept exactly one connection, then read lines until it closes or stop() is called.
+          sockaddr_in peer{};
+          socklen_t peer_len = sizeof(peer);
+          int cfd = ::accept(lfd, reinterpret_cast<sockaddr*>(&peer), &peer_len);
+          if (cfd < 0) {
+            if (!stop_flag_.load(std::memory_order_relaxed)) {
+              throw std::runtime_error("accept() failed: " + std::string(std::strerror(errno)));
+            }
+            return;
+          }
+          std::cout << "Connection from " << client_ip_string(cfd) << std::endl;
+          client_fd_.store(cfd);
+          // Optional: after accepting a single connection, you may close the listen socket.
+          // That prevents any further connections.
+          // int old_lfd = listen_fd_.exchange(-1);
+          // if (old_lfd >= 0) ::close(old_lfd);
+          read_lines_from_stream(cfd, stop_flag_, handler_);
+          int old_cfd = client_fd_.exchange(-1);
+          if (old_cfd >= 0) ::close(old_cfd);
+          std::cout << "Connection closed." << std::endl;
+        }
+      } else {
+        // UDP: no accept(). Just read datagrams and parse lines.
+        read_lines_from_udp(lfd, stop_flag_, handler_);
+        int old_lfd = listen_fd_.exchange(-1);
+        if (old_lfd >= 0) ::close(old_lfd);
+      }
+    } catch (const std::exception& e) {
+      // In real code, route this to your logging system.
+      std::cerr << "LineServer error: " << e.what() << "\n";
+    }
+    std::cout << "LineServer terminating." << std::endl;
+  }
 
-   std::string bind_ip_;
-   uint16_t port_;
-   Proto proto_;
-   Handler handler_;
-   std::atomic<bool> stop_flag_{false};
-   std::atomic<int> listen_fd_{-1};
-   std::atomic<int> client_fd_{-1};
-   std::thread thread_;
+  std::string bind_ip_;
+  uint16_t port_;
+  Proto proto_;
+  Handler handler_;
+  std::atomic<bool> stop_flag_{false};
+  std::atomic<int> listen_fd_{-1};
+  std::atomic<int> client_fd_{-1};
+  std::thread thread_;
 };

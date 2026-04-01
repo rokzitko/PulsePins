@@ -60,7 +60,17 @@ That order mirrors the path a user command takes from CLI invocation down to FPG
 
 - build host tools: `make -C c++ build`
 - run unit tests: `make -C c++ test`
+- check whitespace policy: `make -C c++ lint-whitespace`
 - broader contributor workflow: `HACKING.md`
 - C++ API overview: `docs/docs/cpp.md`
 - CLI command overview: `docs/docs/pptool.md`
 - hardware subsystem reference: `docs/docs/counter.md`, `docs/docs/freq_meter.md`, `docs/docs/timestamp.md`, `docs/docs/details.md`
+
+## Whitespace policy
+
+- C++ files use spaces only, never tabs.
+- Indentation width is 2 spaces.
+- Leading indentation must be divisible by 2.
+- Lines use LF endings, no trailing whitespace, and end with a final newline.
+- This policy intentionally does not enforce a single brace style or broad auto-formatting.
+- `.editorconfig` is the editor-facing source of truth, and `make -C c++ lint-whitespace` checks compliance.

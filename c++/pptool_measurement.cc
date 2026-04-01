@@ -121,10 +121,10 @@ int ppts(FPGA &fpga, const InputParser &input, const Verbosity &v)
   rstmgr rm;
   rm.s2f_reset();
   timestamp ts(fpga.dev_h2f,
-               fpga.dev_lw,
-               FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
-               FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
-               PIO_CFG_BASE);
+              fpga.dev_lw,
+              FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
+              FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
+              PIO_CFG_BASE);
   const double timeout = parse_double(input, "-timeout", "0");
   const bool read_pps = !input.exists("-nopps");
   if (input.exists("-pps_in"))
@@ -152,13 +152,13 @@ template <typename T> int sgn(T val) {
 }
 
 class linear {
- protected:
+protected:
   double k = 0.0;
   double l = 0.0;
   double ymin = -std::numeric_limits<double>::max();
   double ymax = std::numeric_limits<double>::max();
 
- public:
+public:
   linear() {}
 
   linear(double _k, double _l) {
@@ -184,7 +184,7 @@ class linear {
 };
 
 class dac_linear : public linear {
- public:
+public:
   void parse(const InputParser &input) {
     k = parse_double(input, "-k", "2.6");
     l = parse_double(input, "-l", "-0.01");
@@ -195,13 +195,13 @@ class dac_linear : public linear {
 
 template <typename T>
 class Averager {
- private:
+private:
   T sum {0};
   size_t ctr {0};
   size_t nr {0};
   std::function<void(T)> fnc;
 
- public:
+public:
   Averager(size_t _nr, std::function<void(T)> _fnc) : nr(_nr), fnc(std::move(_fnc)) {}
 
   void add(T x) {
@@ -223,10 +223,10 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
   rstmgr rm;
   rm.s2f_reset();
   timestamp ts(fpga.dev_h2f,
-               fpga.dev_lw,
-               FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
-               FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
-               PIO_CFG_BASE);
+              fpga.dev_lw,
+              FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
+              FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
+              PIO_CFG_BASE);
   const double timeout = parse_double(input, "-timeout", "0");
   if (input.exists("-pps_in"))
     ts.sel_pps_in();

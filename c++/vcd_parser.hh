@@ -140,9 +140,9 @@ inline std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view
     if (t.size() >= 2 && t.substr(1) == target_id) {
       value_t value{};
       switch (t[0]) {
-       case '0': value = static_cast<value_t>(0); break;
-       case '1': value = static_cast<value_t>(1); break;
-       default:
+      case '0': value = static_cast<value_t>(0); break;
+      case '1': value = static_cast<value_t>(1); break;
+      default:
         throw std::runtime_error("Unsupported scalar VCD value: " + t);
       }
       updates.push_back(VcdUpdate{value, current_time});

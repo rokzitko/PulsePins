@@ -33,14 +33,19 @@ ARCH = arm
 AR := ar
 RANLIB := ranlib
 
+ifneq ($(MAKECMDGOALS),lint-whitespace)
 GCC_VERSION := $(shell $(CXX) -dumpversion | cut -f1 -d.)
 
 ifeq ($(GCC_VERSION),8)
     FSLIB = -lstdc++fs
     LDFLAGS += $(FSLIB)
 endif
+endif
 
 build: pptool ppscpi unit_tests
+
+lint-whitespace:
+	python3 ../scripts/check_cpp_whitespace.py .
 
 # Lua core sources
 LUA_CORE_SRC := \
@@ -101,7 +106,7 @@ pptool_measurement.o : pptool_measurement.cc ../hps_0.h $(HEADERS)
 ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
-.PHONY: clean copy
+.PHONY: clean copy lint-whitespace
 clean:
 	rm -f $(TARGETS) unit_tests *.a *.o *~
 

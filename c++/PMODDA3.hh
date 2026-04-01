@@ -48,7 +48,7 @@ inline uint16_t code_from_voltage(double volts, double vref = 2.5)
 }
 
 inline spi::SequenceBuilder transaction_for_code(uint16_t code,
-                                                 spi::Config cfg = default_spi_config())
+                                                spi::Config cfg = default_spi_config())
 {
   spi::SequenceBuilder builder(cfg);
   builder.set_aux(false);

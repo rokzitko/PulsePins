@@ -70,14 +70,14 @@ inline auto readback_timeout(const InputParser &input) {
 
 template<typename Transport, typename Convert>
 inline int send_and_trig(Transport &tr,
-                         streamer_control &sc,
-                         readback &rb,
-                         counter &ctr,
-                         Sequence &elements,
-                         const InputParser &input,
-                         const bool force_trigger,
-                         const Verbosity &v,
-                         Convert convert)
+                        streamer_control &sc,
+                        readback &rb,
+                        counter &ctr,
+                        Sequence &elements,
+                        const InputParser &input,
+                        const bool force_trigger,
+                        const Verbosity &v,
+                        Convert convert)
 {
   // Contract:
   // - `elements` is the sequence requested by the caller and is modified in place.
@@ -195,7 +195,7 @@ inline int send_and_trig(Transport &tr,
 
 template<typename Transport>
 inline int send_and_trig(Transport &tr, streamer_control &sc, readback &rb, counter &ctr,
-                         Sequence &elements, const InputParser &input, const bool force_trigger, const Verbosity &v) {
+                        Sequence &elements, const InputParser &input, const bool force_trigger, const Verbosity &v) {
   return send_and_trig(tr, sc, rb, ctr, elements, input, force_trigger, v, identity);
 }
 

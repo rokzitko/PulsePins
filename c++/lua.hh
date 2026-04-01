@@ -82,47 +82,47 @@ void lua_push_function_object(lua_State* L, F&& f) {
 }
 
 class lua_processor {
- private:
-   const InputParser &input;
-   const Verbosity &v;
-   FPGA &fpga;
-   lua_State *L;
+private:
+  const InputParser &input;
+  const Verbosity &v;
+  FPGA &fpga;
+  lua_State *L;
 
- public:
-   lua_processor(const InputParser &_input, const Verbosity &_v, FPGA &_fpga) :
-     input(_input), v(_v), fpga(_fpga) {
-       L = luaL_newstate(); // create interpreter
-       if (!L) throw std::runtime_error("luaL_newstate() failed");
-       luaL_openlibs(L);    // standard libs
-       // Register C function as global "add"
-       lua_pushcfunction(L, l_add);
-       lua_setglobal(L, "add");
-       lua_push_function_object(L, [capture = 42](lua_State* L) -> int {
-         lua_pushinteger(L, capture);
-         return 1; // number of return values
-       });
-       lua_setglobal(L, "get_capture");
-       lua_push_function_object(L, [&](lua_State *L) -> int {
-         int p = luaL_checknumber(L, 1);
-         fpga.trig_int.trig(p);
-         return 0;
-       });
-       lua_setglobal(L, "trig");
-     }
+public:
+  lua_processor(const InputParser &_input, const Verbosity &_v, FPGA &_fpga) :
+    input(_input), v(_v), fpga(_fpga) {
+      L = luaL_newstate(); // create interpreter
+      if (!L) throw std::runtime_error("luaL_newstate() failed");
+      luaL_openlibs(L);    // standard libs
+      // Register C function as global "add"
+      lua_pushcfunction(L, l_add);
+      lua_setglobal(L, "add");
+      lua_push_function_object(L, [capture = 42](lua_State* L) -> int {
+        lua_pushinteger(L, capture);
+        return 1; // number of return values
+      });
+      lua_setglobal(L, "get_capture");
+      lua_push_function_object(L, [&](lua_State *L) -> int {
+        int p = luaL_checknumber(L, 1);
+        fpga.trig_int.trig(p);
+        return 0;
+      });
+      lua_setglobal(L, "trig");
+    }
 
-   ~lua_processor() {
-     lua_close(L); // cleanup
-   }
+  ~lua_processor() {
+    lua_close(L); // cleanup
+  }
 
-   void process_line(const std::string& line) {
-     throw_if_lua_error(L, luaL_dostring(L, line.c_str()));
-   }
+  void process_line(const std::string& line) {
+    throw_if_lua_error(L, luaL_dostring(L, line.c_str()));
+  }
 
-   void test() {
-     process_line(R"(
-         print("Hello from Lua")
-         -- print("2+3=", add(2,3))
-         -- print(get_capture())
+  void test() {
+    process_line(R"(
+        print("Hello from Lua")
+        -- print("2+3=", add(2,3))
+        -- print(get_capture())
         )");
-   }
+  }
 };
