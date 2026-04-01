@@ -1,11 +1,9 @@
-// Multiplexer with advanced features:
-// - bit inversion on inputs and output
-// - bit masking on inputs and output
-// - overrides on inputs and output
-// - multiplexing, bitwise logic operations, block combinations, arithmetic sums and differences
-// - readback of inputs and output
-// NOTE: Both inputs and outputs are registered; the signals will be delayed by two clock ticks.
-// Rok Zitko, Sep 2025
+// Combinational output combiner.
+//
+// This block implements the same programming model and combination semantics as the main
+// registered combiner, but leaves the output path combinational. It is mainly useful when
+// latency is more important than clocked datapath boundaries.
+// Architectural overview lives in `ip/combiner/README.md` and `docs/docs/combiner.md`.
 
 module combiner_comb #(
  parameter int WIDTH = 32
@@ -94,7 +92,7 @@ logic [WIDTH-1:0] valueo, value1, value2, value3, value4;      // override value
 `define C_VALUE3 4'b1110
 `define C_VALUE4 4'b1111
 
-// Upon reset, the in1 is passed unmodified to output.
+// Upon reset, `in1` is passed to the output with no inversion, masking, or forcing.
 
 always_ff @(posedge clock_clk) begin
   if (reset_reset) begin
@@ -161,8 +159,7 @@ always_ff @(posedge clock_clk) begin
   end
 end
 
-// Apply inversion on selected bits
-// Note: If forcing enable, the value is forced before inversion and masking.
+// Apply input forcing first, then inversion.
 logic [WIDTH-1:0] x1, x2, x3, x4;
 
 assign x1 = (force1 ? value1 : in1) ^ invert1;
@@ -170,7 +167,7 @@ assign x2 = (force2 ? value2 : in2) ^ invert2;
 assign x3 = (force3 ? value3 : in3) ^ invert3;
 assign x4 = (force4 ? value4 : in4) ^ invert4;
 
-// Apply filter masks
+// Apply input masks after forcing and inversion.
 logic [WIDTH-1:0] y1, y2, y3, y4;
 assign y1 = x1 & mask1;
 assign y2 = x2 & mask2;
@@ -211,7 +208,7 @@ always_comb begin
   endcase
 end
 
-// Note: if forcing, the value replaces the combiner output (i.e., it is not affected by inversion and masking).
+// Output forcing bypasses the normal output inversion/masking path.
 assign o = (forceo ? valueo : (z ^ inverto) & masko);
 
 endmodule

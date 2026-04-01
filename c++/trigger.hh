@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// High-level interface for triggering control
+// High-level CLI-facing control of the trigger combiner.
+//
+// This wrapper translates parsed trigger options into `combiner_trig` configuration so the
+// streamer trigger path can be rerouted, masked, and inverted without manipulating the raw
+// combiner registers directly.
 
 #pragma once
 
@@ -27,8 +31,7 @@ class trigger {
    trigger(const InputParser &input, const FPGA &_fpga) :
      trigger(resolve_trigger_options(input), _fpga) {}
 
-   // Set the triggering from command line switches
-   // Default: internal triggering
+   // Apply trigger-routing options. The default policy is internal triggering.
    void set(const TriggerOptions &opts) {
      if (fpga.v.veryverbose) std::cout << "## Setting up the trigger combiner." << std::endl;
      if (opts.mode == TriggerModeOption::internal) {

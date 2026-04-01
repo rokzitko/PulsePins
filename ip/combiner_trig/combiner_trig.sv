@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Žitko
 
-// Multiplexer with advanced features:
-// - bit inversion on inputs and output
-// - bit masking on inputs and output
-// - overrides on inputs and output
-// - multiplexing, bitwise logic operations, block combinations, arithmetic sums and differences
-// - readback of inputs and output
-// NOTE: Both inputs and outputs are registered; the signals will be delayed by two clock ticks.
-// Rok Zitko, Sep 2025
+// Registered trigger-group combiner.
+//
+// This block reuses the same programming style as the output combiner, but applies it to
+// trigger-group signals instead of full-width output buses. In practice the useful modes
+// are the selection and basic logical-combination modes used by the host-side trigger
+// routing helpers.
+// Architectural overview lives in `ip/combiner/README.md` and `docs/docs/combiner.md`.
 
 module combiner_trig #(
  parameter int WIDTH = 11
@@ -97,7 +96,7 @@ logic [WIDTH-1:0] valueo, value1, value2, value3, value4;      // override value
 `define C_VALUE3 4'b1110
 `define C_VALUE4 4'b1111
 
-// Upon reset, the in1 is passed unmodified to output.
+// Upon reset, `in1` is passed to the output with no inversion, masking, or forcing.
 
 always_ff @(posedge clock_clk) begin
   if (reset_reset) begin
@@ -164,8 +163,7 @@ always_ff @(posedge clock_clk) begin
   end
 end
 
-// Apply inversion on selected bits
-// Note: If forcing enable, the value is forced before inversion and masking.
+// Apply input forcing first, then inversion.
 logic [WIDTH-1:0] x1, x2, x3, x4;
 
 always_ff @(posedge clk) begin
@@ -175,7 +173,7 @@ always_ff @(posedge clk) begin
   x4 <= (force4 ? value4 : in4) ^ invert4;
 end
 
-// Apply filter masks
+// Apply input masks after forcing and inversion.
 logic [WIDTH-1:0] y1, y2, y3, y4;
 assign y1 = x1 & mask1;
 assign y2 = x2 & mask2;
@@ -216,7 +214,7 @@ always_comb begin
   endcase
 end
 
-// Note: if forcing, the value replaces the combiner output (i.e., it is not affected by inversion and masking).
+// Output forcing bypasses the normal output inversion/masking path.
 always_ff @(posedge clk) begin
   o <= (forceo ? valueo : (z ^ inverto) & masko);
 end

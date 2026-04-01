@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Combiners are IP designs for multiplexing inputs with some additional functionality (inversion, masking, overriding).
+// Host-side wrappers for the combiner subsystem.
+//
+// The combiner blocks are the late-stage routing/mixing layer for multiple streamer
+// outputs and trigger groups. This header mirrors the shared Avalon-MM programming model
+// used by the RTL: mode selection plus per-port inversion, masking, forcing, and readback.
+// Architectural overview lives in `docs/docs/combiner.md` and `ip/combiner/README.md`.
 
 #pragma once
 
@@ -135,7 +140,7 @@ class combiner {
        c = 0;
      }
 
-   // Set the mode of operation of the combiner
+   // Select the main combination mode.
    void mode(comb_mode _m) {
      Value m = static_cast<int>(_m);
      c = (c & ~MODE_MASK) | m;
@@ -146,7 +151,7 @@ class combiner {
      return static_cast<comb_mode>(lcfg.read() & MODE_MASK);
    }
 
-   // Update the configuration value from raw value
+   // Replace the raw configuration register. Useful for low-level bring-up and debugging.
    void cfg(Value _c) {
      c = _c;
      lcfg.write(c);
@@ -156,7 +161,7 @@ class combiner {
      return lcfg.read();
    }
 
-   // Invert bit pattern (signal inverted at bit positions in v). n=0 for output, n=1,2,3,4 for inputs.
+   // Invert selected bits. `n=0` targets the output, `1..4` target inputs.
    void invert(const int n, const Value v) {
      assert(n >= 0 && n <= NR);
      if (n == 0)
@@ -186,7 +191,7 @@ class combiner {
      return 0;
    }
 
-   // Mask pattern (ones indicate what is passed on). n=0 for output, n=1,2,3,4 for inputs.
+   // Mask selected bits. Ones pass through; zeros suppress that bit position.
    void mask(const int n, const Value v) {
      assert(n >= 0 && n <= NR);
      if (n == 0)
@@ -216,7 +221,7 @@ class combiner {
      return 0;
    }
 
-   // Store an internal value. See below for enable_force() for forcing these values to the inputs or the output.
+   // Store an override value without enabling it yet.
    void value(const int n, const Value v) {
      assert(n >= 0 && n <= NR);
      if (n == 0)
@@ -246,9 +251,9 @@ class combiner {
      return 0;
    }
 
-   // Use the stored values instead of the input. For n=1,2,3,4 the stored value replaces the input value (thus inversion
-   // and masking is applied to it). For n=0, the stored value appears at the output (it is not subject to inversion or
-   // masking).
+   // Enable forcing for one input or for the output.
+   // For inputs, the stored value still goes through inversion/masking. For the output,
+   // the forced value bypasses the normal output processing path.
    void enable_force(const int n) {
      switch (n) {
      case 0:

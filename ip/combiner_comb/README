@@ -1,1 +1,3 @@
-Combinational-logic version.
+Combinational-logic version of the main combiner datapath.
+
+Use `combiner_comb.sv` when you need the same programming model as `ip/combiner/combiner.sv` but without the registered input/output stages.

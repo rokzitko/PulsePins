@@ -14,6 +14,8 @@ The main C++ interfaces are:
 * `c++/qout.hh`
 * `c++/trigger.hh`
 
+For a maintainer-oriented RTL map, see `ip/combiner/README.md`.
+
 ### Output combiner
 
 The output combiner accepts four input buses and produces one output bus.

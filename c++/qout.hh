@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Control over the output from multiple streamers
+// High-level CLI-facing control of the output combiner.
+//
+// This wrapper translates command-line switches into `combiner.hh` operations so tools
+// such as `ppqout` can configure the final output routing without dealing with raw register
+// details.
 
 #pragma once
 
@@ -17,7 +21,7 @@ class combiner_qout : public combiner {
      combiner::combiner(dev, base) {}
 };
 
-// High-level control of the output
+// High-level control of the output routing stage.
 class qout {
  private:
    FPGA &fpga;
@@ -32,6 +36,7 @@ class qout {
      cq(fpga.dev_h2f, COMBINER_QOUT_BASE)
      { set(input); }
 
+   // Apply command-line-selected routing, masks, inversions, and forces.
    void set(const InputParser &input) {
      if (input.exists("-out_sel1")) {
        cq.mode(comb_mode::SEL1);
