@@ -251,3 +251,20 @@ Same as test 4 in pptest, but using DMA for the data transfer.
 
 Test for a large number of elements. Note that the readback test is not performed here, this test
 only exercises memory transfers, no correctness testing of the generated bit pattern is implemented.
+
+### Test 22
+
+Repeated playback of the long DMA sequence from test 21. The number of repetitions is controlled by ``-reps``; ``0`` means repeat indefinitely.
+
+### Test 25
+
+PMOD DA3 sine generator using DMA. This builds one sampled sine-wave period as a sequence of SPI DAC updates for the PMOD DA3 and then replays that period using DMA, so repeated playback produces a continuous periodic waveform.
+
+Additional parameters:
+
+* ``-samples``: number of DAC updates per sine period, default ``250``
+* ``-reps``: number of DMA repetitions, default ``0`` for infinite playback
+* ``-dwell``: hold time after each DAC update, default ``10us``
+* ``-vmin``: minimum sine voltage, default ``0.0``
+* ``-vmax``: maximum sine voltage, default ``2.5``
+* ``-spi_clock``: requested SPI clock frequency in Hz, default ``10e6``
