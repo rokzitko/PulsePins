@@ -13,6 +13,8 @@
 #include "include/doctest.h"
 
 #include "elements.hh"
+#include "PMODDA3.hh"
+#include "SPI.hh"
 #include "sequence.hh"
 #include "streamer.hh"
 #include "vcd_parser.hh"
@@ -511,4 +513,60 @@ TEST_CASE("parse_sequence_from_stream rejects truncated final trigger records") 
 TEST_CASE("parse_sequence_from_stream rejects truncated non-final trigger records") {
   std::istringstream in("tn 0b01");
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Incomplete 'tn' record: expected pattern and mask", std::runtime_error);
+}
+
+TEST_CASE("spi sequence builder quantizes requested frequency") {
+  spi::Config cfg;
+  cfg.decoder_clock_hz = 100e6;
+  cfg.spi_clock_hz = 12e6;
+
+  spi::SequenceBuilder builder(cfg);
+  builder.write_transaction({0x80});
+
+  CHECK(builder.half_period_ticks() == 4);
+  CHECK(builder.achieved_spi_clock_hz() == doctest::Approx(12.5e6));
+  CHECK(builder.sequence().size() > 4);
+  CHECK(builder.sequence()[0] == el(1, 0x1));
+}
+
+TEST_CASE("PMOD DA3 voltage conversion clips to DAC range") {
+  CHECK(pmod_da3::code_from_voltage(-1.0) == 0x0000);
+  CHECK(pmod_da3::code_from_voltage(0.0) == 0x0000);
+  CHECK(pmod_da3::code_from_voltage(2.5) == 0xFFFF);
+  CHECK(pmod_da3::code_from_voltage(3.0) == 0xFFFF);
+  CHECK(pmod_da3::code_from_voltage(1.25) == 0x8000);
+}
+
+TEST_CASE("PMOD DA3 transaction matches spi.cc example") {
+  auto builder = pmod_da3::transaction_for_voltage(2.5);
+
+  CHECK(builder.half_period_ticks() == 5);
+  CHECK(builder.achieved_spi_clock_hz() == doctest::Approx(10e6));
+
+  Sequence expected;
+  expected.push_back(el(1, 0x1));
+  expected.push_back(el(2, 0x0));
+  for (size_t i = 0; i < 16; i++) {
+    expected.push_back(el(5, 0x2));
+    expected.push_back(el(5, 0xa));
+  }
+  expected.push_back(el(2, 0x2));
+  expected.push_back(el(4, 0x3));
+
+  CHECK(builder.sequence() == expected);
+}
+
+TEST_CASE("write_sequence_to_stream round-trips PMOD DA3 sequence") {
+  auto builder = pmod_da3::transaction_for_voltage(2.5);
+  std::ostringstream out;
+  write_sequence_to_stream(builder.sequence(), out, true);
+
+  const std::string serialized = out.str();
+  CHECK(contains(serialized, "d 1 0x1"));
+  CHECK(contains(serialized, "f\n"));
+
+  std::istringstream in(serialized);
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+  CHECK(force_trigger);
+  CHECK(seq == builder.sequence());
 }

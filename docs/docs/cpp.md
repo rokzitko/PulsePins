@@ -150,6 +150,47 @@ Two sequences can be compared using function ``compare()`` and using ``operator=
 
 `sequence.hh` also provides ``parse_sequence_from_stream(std::istream&)`` for the text-based sequence format used by `pptest` test 42 and by the SCPI `SEQ` command. That parser now exposes the same regular update modes implemented by the `Value` subclasses, non-final triggers, preprocessor operations (`store`, `r`, `rt`, `pr`), explicit final terminators, and the `f` force-trigger flag. The accepted token grammar is documented inline next to the parser and mirrored in `docs/docs/pptest.md`.
 
+The same header also provides ``write_sequence_to_stream(...)`` and ``write_sequence_to_file(...)`` for emitting that text format from an in-memory `Sequence`. These helpers are intended for round-tripping sequences through files or for generating sequence files programmatically instead of hand-writing token streams.
+
+### SPI sequence generation
+
+`SPI.hh` provides a host-side SPI sequence generator that emits PulsePins `Sequence` objects directly, without going through the old standalone `tools/spi_payload` utility.
+
+Generic SPI support lives in the `spi` namespace:
+
+* ``spi::Config``: decoder clock, requested SPI clock, SPI mode, bit order, pin mapping, chip-select polarity, and select/deselect timing
+* ``spi::SequenceBuilder``: stateful encoder that emits RLE `Sequence` elements for SPI idle, select, clock, MOSI, and auxiliary-pin changes
+
+The builder quantizes the requested SPI clock to the nearest half-period measured in decoder-clock ticks. Use ``half_period_ticks()`` and ``achieved_spi_clock_hz()`` to inspect the resulting timing.
+
+Typical usage:
+
+```cpp
+spi::Config cfg;
+cfg.decoder_clock_hz = 100e6;
+cfg.spi_clock_hz = 12e6;
+
+spi::SequenceBuilder spi_builder(cfg);
+spi_builder.write_transaction({0x9a, 0xbc});
+
+const Sequence &seq = spi_builder.sequence();
+write_sequence_to_file(seq, "spi_sequence.txt");
+```
+
+Device-specific helpers stay separate from the generic SPI layer. `PMODDA3.hh` provides PMOD DA3 support in the `pmod_da3` namespace:
+
+* ``pmod_da3::default_spi_config()``: PMOD pin mapping and timing defaults matching the existing PMOD DA3 example
+* ``pmod_da3::code_from_voltage()``: convert output voltage to the 16-bit DAC code
+* ``pmod_da3::transaction_for_code()`` and ``pmod_da3::transaction_for_voltage()``: build the SPI transaction as a `spi::SequenceBuilder`
+
+Example:
+
+```cpp
+auto dac = pmod_da3::transaction_for_voltage(1.25);
+std::cout << dac.achieved_spi_clock_hz() << std::endl;
+write_sequence_to_stream(dac.sequence(), std::cout, true);
+```
+
 ### Streamer control interface
 
 The C++ streamer wrappers are thin, typed views of the hardware control/status registers rather than a separate software simulation of the datapath.

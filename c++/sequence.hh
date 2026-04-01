@@ -25,6 +25,9 @@ class Sequence : public std::deque<el> {
  public:
    using Base = std::deque<el>;
    using Base::Base;
+   using Base::back;
+   using Base::clear;
+   using Base::empty;
    using Base::push_back;
 
    void push_back_py(el && x) { Base::push_back(x); }
@@ -119,6 +122,100 @@ inline bool compare(const Sequence &X, const Sequence &Y, bool verbose = false) 
 
 inline bool operator==(const Sequence &X, const Sequence &Y) {
   return compare(X, Y);
+}
+
+inline std::string sequence_regular_token(const el &e)
+{
+  if (!e.is_regular())
+    throw std::runtime_error("sequence_regular_token() requires a regular element");
+
+  const control_t control = e.control();
+  const bool no_strobe = (control & NOSTROBE) == NOSTROBE;
+  const control_t mode = control & MODEBITS;
+
+  if (no_strobe && mode != BITLOAD)
+    throw std::runtime_error("Text sequence writer does not support non-BITLOAD no-strobe elements");
+
+  if (mode == BITLOAD)
+    return no_strobe ? "dn" : "d";
+  if (mode == BITSET)
+    return "s";
+  if (mode == BITCLEAR)
+    return "c";
+  if (mode == BITFLIP)
+    return "x";
+  if (mode == BITNOT)
+    return "n";
+  if (mode == BITAND)
+    return "a";
+  if (mode == BITOR)
+    return "o";
+  if (mode == BITXOR)
+    return "xr";
+  if (mode == BITXNOR)
+    return "xn";
+  if (mode == BITSLL)
+    return "sl";
+  if (mode == BITSRL)
+    return "sr";
+
+  throw std::runtime_error("Unsupported regular element mode in text sequence writer");
+}
+
+inline void write_sequence_to_stream(const Sequence &sequence,
+                                     std::ostream &f,
+                                     const bool force_trigger = false)
+{
+  for (const auto &e : sequence) {
+    const control_t control = e.control();
+
+    if (e.is_regular()) {
+      const auto token = sequence_regular_token(e);
+      if ((control & STORE) == STORE) {
+        const auto slot = (control & POSITIONS_MASK) >> SHIFT_POSITION;
+        f << "store " << std::dec << slot << " " << token
+          << " " << std::dec << e.count()
+          << " 0x" << std::hex << e.value() << "\n";
+      } else {
+        f << token
+          << " " << std::dec << e.count()
+          << " 0x" << std::hex << e.value() << "\n";
+      }
+    } else if (e.is_trigger()) {
+      const auto pattern = static_cast<trigger_t>(e.value() & TRIGGER_MASK);
+      const auto mask = static_cast<trigger_t>((e.value() >> WIDTH_TRIGGER) & TRIGGER_MASK);
+      const bool final = (control & TRIGGERFINAL) == TRIGGERFINAL;
+      f << (final ? "t" : "tn")
+        << " 0x" << std::hex << int(pattern)
+        << " 0x" << std::hex << int(mask) << "\n";
+    } else if (e.is_final()) {
+      f << "final 0x" << std::hex << e.value() << "\n";
+    } else if ((control & REPLAY) == REPLAY) {
+      f << "r"
+        << " " << std::dec << e.count()
+        << " 0x" << std::hex << e.value() << "\n";
+    } else if ((control & RETRIG) == RETRIG) {
+      f << "rt\n";
+    } else if ((control & PRNG) == PRNG) {
+      f << "pr"
+        << " " << std::dec << e.count() << "\n";
+    } else {
+      throw std::runtime_error("Unsupported element in text sequence writer");
+    }
+  }
+
+  if (force_trigger)
+    f << "f\n";
+}
+
+inline void write_sequence_to_file(const Sequence &sequence,
+                                   const std::string &filename,
+                                   const bool force_trigger = false)
+{
+  std::ofstream f(filename);
+  if (!f)
+    throw std::runtime_error("Could not open sequence output file: " + filename);
+  write_sequence_to_stream(sequence, f, force_trigger);
 }
 
 inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)

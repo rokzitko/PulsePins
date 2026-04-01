@@ -22,6 +22,7 @@ The following application areas would especially benefit from community-contribu
 * inspect PPS timing with `ppts`
 * compose two streamer outputs with the combiner
 * drive LED PMODs using `pptest`
+* generate SPI transactions directly from C++ and stream them without an intermediate payload tool
 * read a `TMP117` sensor using `I2C/tmp117.py`
 
 ### Why examples matter
