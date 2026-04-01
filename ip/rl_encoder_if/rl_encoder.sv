@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025,2026 Rok Zitko
 
-// Runtime-length encoder
+// Run-length encoder for the readback path.
+//
+// This block observes a sampled data stream, compresses consecutive equal values into
+// `{count, value}` runs, and buffers those runs in a dual-clock FIFO for software-side
+// readout. It is the core used by the readback subsystem documented in
+// `ip/rl_encoder_if/README.md` and `docs/docs/readback.md`.
 
 `default_nettype none
 `include "rl_config.vh"
@@ -55,7 +60,7 @@ module rl_encoder
   localparam logic [width_counter-1:0] ONE       = {{(width_counter-1){1'b0}}, 1'b1};
   localparam logic [width_counter-1:0] MAX_COUNT = {width_counter{1'b1}};
 
-  // sample event definition preserved from original meaning:
+  // Sample-event definition preserved from the original meaning:
   // mode=1   -> sample whenever valid=1 (data_clk domain)
   // mode=0   -> sample when strobe & valid (clk domain)
   `ifdef WEIRD_CLOCK
@@ -64,7 +69,7 @@ module rl_encoder
      wire sample_event = valid;
   `endif
 
-  // valid dropped -> flush pending run
+  // When `valid` drops, flush any pending run so the final observed value is not lost.
   wire flush_event = (~valid);
 
   always_ff @(posedge input_clk or posedge reset_iclk) begin
@@ -90,7 +95,7 @@ module rl_encoder
           // extend run
           run_count <= run_count + ONE;
         end else begin
-          // emit old run due to value change or saturation
+          // Emit the previous run because the value changed or the count saturated.
           j         <= {run_count, run_value};
           wrreq     <= 1'b1;
 
@@ -143,8 +148,8 @@ module rl_encoder
    .wrusedw(used)
   );
 
-  // Detect overflows (latch). This typically indicates that we are not reading the data from the
-  // FIFO buffer fast enough.
+  // Detect FIFO overflows (latched). This usually means software is not draining the
+  // readback stream fast enough for the observed signal activity.
   always_ff @(posedge input_clk) begin
     if (reset_iclk) begin
       overflow <= 0;

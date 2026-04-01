@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
 
-// Avalon-ST/MM interface for RL encoder
+// Software-visible wrapper around the readback run-length encoder.
+//
+// Responsibilities of this module:
+//   - connect sampled output data to the RL encoder core
+//   - expose encoded runs on Avalon-ST for software readout
+//   - provide a small Avalon-MM register file for reset, mode, pulse count, CRC, and overflow status
+//
+// Architectural overview lives in `ip/rl_encoder_if/README.md` and `docs/docs/readback.md`.
 
 `default_nettype none // turn off implicit data types
 `include "rl_config.vh"
@@ -27,7 +34,7 @@ input wire qin_strobe,
 input wire qin_clk
 );
 
-logic rdreq;         // handshaking signal
+logic rdreq;         // Avalon-ST dequeue handshake
 logic empty;         // 1 if the FIFO buffer is empty
 logic reset_counter; // reset rl_encoder; clears the FIFO
 logic mode;          // 0 = valid, 1 = strobe [only works if WEIRD_CLOCK is defined]
@@ -55,10 +62,10 @@ rl_encoder rl0 (
 
 assign aso_data = { {cfg::WIDTH_CONTROL{1'b0}}, j };
 
-assign rdreq = aso_ready && ~empty; // handle backpressure
+assign rdreq = aso_ready && ~empty; // only dequeue when the downstream reader can accept data
 assign aso_valid = rdreq;
 
-// Clock selection
+// Clock selection for the auxiliary pulse counter and CRC path.
 logic input_clk;
 logic is_valid;
 
@@ -70,7 +77,7 @@ logic is_valid;
   assign is_valid = qin_valid;
 `endif
 
-// Pulse counter
+// Pulse counter counts observed input samples, not encoded output elements.
 logic [cfg::WIDTH_COUNTER-1:0] counter;
 always_ff @(posedge input_clk) begin
   if (reset || reset_counter) begin // global or rl_encoder-specific reset
@@ -82,7 +89,7 @@ always_ff @(posedge input_clk) begin
   end
 end
 
-// CRC
+// CRC is computed over the observed data words in the sampled-input domain.
 logic [31:0] crc_out;
 logic        crc_valid;
 
@@ -99,6 +106,7 @@ always_ff @(posedge clk) begin
   if (reset) begin
     reset_counter <= 0;
   end else if (avs_s0_write) begin
+    // The control interface is intentionally small: reset and mode select are the only writable knobs.
     unique case (avs_s0_address)
       2'b00: {reset_counter} <= avs_s0_writedata[0];
       2'b01: {mode}          <= avs_s0_writedata[0];
@@ -110,6 +118,7 @@ always_ff @(posedge clk) begin
   if (reset) begin
     avs_s0_readdata <= 0;
   end else if (avs_s0_read) begin
+    // Software can inspect FIFO-empty state, encoder mode, overflow, observed sample count, and CRC.
     unique case (avs_s0_address)
       2'b00: avs_s0_readdata <= { overflow, mode, reset_counter, empty };
       2'b01: avs_s0_readdata <= counter;

@@ -1,51 +1,65 @@
 # Readback
 
-Readback is the name of a run-length encoder core. This core is connected directly to the output of the PulsePins
-streamer (``qout``) for verification and testing purposes. It reads streamed symbols and RL-compresses them. The
-results can be read through an Avalon-ST interface. PulsePins comes with a suite of testing scripts
-that assert correct functionality of the streamer, including various corner cases, by matching the streamed
-out data with the reference sequences. The readback mechanism thus provides high assurance.
+Readback is the name of the run-length encoder subsystem connected directly to the PulsePins streamer output.
 
-The acquired sequence uses the same format as the streamer (control, counter, value). The control register is all zeros;
-we assume that all data are ``BITLOAD`` updates.
+Its job is to observe streamed symbols, compress them back into `{count, value}` runs, and expose those runs to software for verification, debugging, and external-signal capture. PulsePins uses this path heavily for self-test: software can compare the observed output stream against the reference sequence that was originally sent to the streamer.
+
+The acquired sequence uses the same top-level element format as the streamer (`control`, `counter`, `value`), but in practice the control field is always zero and software interprets the readback as plain `BITLOAD` output states.
 
 The bus widths in ``ip/rl_encoder_if/rl_config.vh`` need to match those in ``ip/streamer/config.vh``.
 
-## rl_encoder core
+For a maintainer-oriented RTL map, see `ip/rl_encoder_if/README.md`.
+
+## Architecture overview
+
+At a high level the flow is:
+
+1. sampled output values arrive on `qin`
+2. `rl_encoder.sv` groups consecutive equal samples into runs
+3. a dual-clock FIFO buffers those runs for software-side reads
+4. `rl_encoder_if.sv` exposes the encoded runs on Avalon-ST and adds control/status registers
+5. `c++/readback.hh` either dumps the captured stream or compares it against a reference `Sequence`
+
+This makes the readback path the main verification seam between the generated FPGA output and the host-side model.
+
+## `rl_encoder` core
 
 Inputs:
 
- * ``qin``: data signals; connects to ``qout`` of the streamer
- * ``qin_valid``: if 1, qin data is valid
- * ``qin_clk``: data are sampled when qin_clk is asserted
- * ``activated``: enable signal, sampling is only performed when this signal is high
+  * `qin`: observed data word, usually connected to streamer `qout`
+  * `qin_valid`: sampled-data validity qualifier
+  * `qin_clk`: sampled-data clock
+  * `qin_strobe`: optional strobe-based sampling qualifier for the alternate mode
 
-The enable signal `activated` needs to be deasserted at the end of the sequence to indicate that the streaming has
-terminated, so that the RL encoder can add the last element to the acquired sequence.
+Important behavior:
+
+* equal consecutive samples are merged into one run-length element
+* when validity drops, the pending run is flushed so the final observed state is not lost
+* overflow latches high if software is not draining the encoded FIFO fast enough
 
 ## rl_encoder_if interface
 
-Provides an Avalon-ST interface for reading the acquired sequence and an Avalon-MM interface for control.
-The only purpose of the control interface is to reset the reader.
+`rl_encoder_if.sv` provides:
+
+* Avalon-ST output carrying encoded readback elements
+* Avalon-MM control/status for reset, mode selection, FIFO-empty state, overflow, observed pulse count, and CRC32
+
+The pulse counter and CRC are computed in the sampled-input domain, which lets software compare transport-level integrity against the transmitted reference stream.
 
 ## Software interface
 
-The software interface is provided through class ``readback`` in the header file ``readback.hh``.
+The software interface is provided through class `readback` in `c++/readback.hh`.
 The key member functions are:
 
- * ``reset``: perform the reset of the circuitry
- * ``clear_fifo``: read and discard all elements in the readback queue
- * ``filled``: returns true if there are elements to be read back
- * ``check_fill_status``: provides a report on the Avalon ST reading FIFO
- * ``read``: read a single element
- * ``read_all``: read indefinitely; this function never returns
- * ``check``: perform a comparison between the sequence that is read back and a reference ``Sequence`` object
+  * `reset`: reset the encoder and discard stale FIFO contents
+  * `clear_fifo`: read and discard all queued elements
+  * `filled`: report whether encoded elements are available
+  * `check_fill_status`: print FIFO status/debug information
+  * `read`: read one encoded element
+  * `read_all`: dump the captured stream until timeout or external termination
+  * `check`: compare the captured stream against a reference `Sequence`
 
-The function ``check`` returns true if no errors are detected. A timeout argument can be provided; if no new
-elements are received during the specified interval, an exception is raised. An exception is also raised if the
-reference sequence is exhausted and a new element is received from the encoder. A report is produced when the check
-is completed, including the number and ratio of errors, the difference in size (number of elements) and length (number
-of periods of strobed data).
+The `check` function returns true if no errors are detected. A timeout argument can be provided; if no new elements are received during the specified interval, an exception is raised. An exception is also raised if the reference sequence is exhausted and a new element is received from the encoder. A report is produced when the check completes, including the number and ratio of errors plus the difference in encoded size and effective output length.
 
 ## Readback of external signals
 

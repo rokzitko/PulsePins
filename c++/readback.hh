@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Readback for self-testing
+// Host-side wrapper for the readback / run-length encoder subsystem.
+//
+// The readback path observes the streamer output (or external pins when output-enable is
+// disabled), re-encodes it into run-length elements, and lets software either dump the
+// captured sequence or compare it against a host-side reference `Sequence`.
+// Architectural overview lives in `docs/docs/readback.md` and `ip/rl_encoder_if/README.md`.
 
 #pragma once
 
@@ -83,7 +88,9 @@ class readback
        f.read(); // ignore return value
    }
 
-   void reset() {
+    // Reset the hardware encoder, wait long enough for the streamer domain to observe it,
+    // then drain any stale FIFO contents.
+    void reset() {
      if (v.veryverbose)
        F << "Readback: resetting" << std::endl;
      uint32_t control = 0;
@@ -96,7 +103,8 @@ class readback
      clear_fifo();
    }
 
-   void mode(const uint32_t m) {
+    // Select the readback sampling mode. The mode meanings come from the RTL wrapper.
+    void mode(const uint32_t m) {
      if (v.veryverbose)
        F << "Readback: setting mode=" << m << " " << (m == 1 ? "{valid/clk}" : "{strobe}") << std::endl;
      lmode.write(m);
@@ -119,9 +127,9 @@ class readback
      std::cout << " CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32 << std::endl;
    }
 
-   // Returns true if during the readback the encoder attempted to write to a full FIFO. This implies
-   // data loss and should be considered as an error.
-   bool overflow() {
+    // Returns true if the encoder attempted to write into a full FIFO. This implies data
+    // loss and should be treated as a verification failure.
+    bool overflow() {
      return lstatus.read() & 8;
    }
 
@@ -132,9 +140,9 @@ class readback
      return el{count, value}; // regular element
    }
 
-   // Read back indefinitely. Does not return, except if it times out.
-   // If timeout>0: timeout in seconds after the last data were read.
-   // If timeout<0: timeout in seconds (abs value) after the initial time.
+    // Read back indefinitely and print each captured run if verbosity is enabled.
+    // If timeout>0: timeout in seconds after the last data were read.
+    // If timeout<0: timeout in seconds (abs value) after the initial time.
    void read_all(const double timeout = 0.0) {
      if (v.veryverbose)
        status_report();
@@ -177,8 +185,8 @@ class readback
        status_report();
    }
 
-   // Read back a sequence and compare it against the run-length-encoded reference results 'elements'.
-   // Returns true if no errors are detected.
+    // Compare a captured readback stream against a reference sequence.
+    // Returns true if no errors are detected.
    bool check(Sequence elements,
               const double timeout = 0.0) {
      // size, data_size, length need to be computed now, because elements are consumed in the checking process
