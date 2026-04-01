@@ -1,5 +1,28 @@
-`basic_counter.sv`:
+Clock-domain notes for the counter subsystem.
 
-- `clk`, `high_low`, `addr`, `result`: system clock domain (`ref_clk`)
-- `d_clk`, `d`, `d_reset`, `d_valid`, `d_latch`: data clock domain (`int_clk`)
-- `overflow`: latched
+## `basic_counter.sv`
+
+- `clk`, `high_low`, `addr`, `result` - control/readout side
+- `d_clk`, `d`, `d_reset`, `d_valid`, `d_latch` - sampled data side
+- `overflow` - latched overflow indication
+
+## `counter_if.sv`
+
+- `clk` - Avalon-MM programming and result readout domain
+- `d_clk` - live counter update domain for sampled signal statistics
+- `reset_all` and `latch_all` are generated in `clk` and synchronized into `d_clk`
+- selected channels `d0`, `d1`, `d2` are derived from the registered copy of `d`
+
+## Time-counter path
+
+`time_counter.sv` is different from the other instruments:
+
+- start/stop events are derived from selected channels in `counter_if.sv`
+- elapsed time is measured in `clk`
+- `ready` is reported back on the Avalon side as a latched status bit
+
+See also:
+
+- `ip/counter/README.md`
+- `docs/docs/counter.md`
+- `docs/docs/clock_domain.md`

@@ -3,6 +3,16 @@
 
 `default_nettype none
 
+// Software-visible wrapper for the integrated counter/measurement subsystem.
+//
+// Responsibilities of this module:
+//   - expose one compact Avalon-MM programming surface for several instruments
+//   - select observed input channels through small mux helpers
+//   - synchronize latch/reset control into the sampled-data clock domain
+//   - multiplex the chosen instrument result back to software
+//
+// Architectural overview lives in `ip/counter/README.md` and `docs/docs/counter.md`.
+
 module counter_if
 #(
  parameter width_data = 32,      // number of inputs
@@ -33,7 +43,8 @@ cdc_twoff sync_latch (.clk_dst(d_clk), .d_async(latch_all), .q_sync(d_latch));
 localparam int width_ch = $clog2(width_data); // 32 -> 5
 localparam int width_instr = 4;
 
-// the following signals do not require synchronization, they are used in combinational logic
+// These control selections live in the Avalon/control domain and steer readout and
+// channel routing rather than representing sampled signal data themselves.
 logic [width_instr-1:0] instr;
 logic high_low;
 logic [width_addr-1:0] addr;
@@ -53,7 +64,8 @@ always_ff @(posedge d_clk) begin
   end
 end
 
-// Selector of channels
+// Channel selectors feeding the various instruments. Most blocks observe `sel0`, while
+// correlation and timing measurements additionally use `sel1` and `sel2`.
 localparam width_sel = $clog2(width_data); // 32 -> 5
 logic [width_sel-1:0] sel0;
 logic d0;
@@ -241,6 +253,8 @@ always_ff @(posedge clk) begin
     latch_all <= 0;
     reset_all <= 0;
   end else if (avs_s0_write) begin
+    // The Avalon register model is intentionally small: software selects instrument,
+    // result word, and observed channels, then pulses latch/reset as needed.
     case (avs_s0_address)
       3'b001: instr      <= avs_s0_writedata[width_instr-1:0];
       3'b010: high_low   <= avs_s0_writedata[0];
@@ -256,6 +270,7 @@ end
 logic [width_bus-1:0] result;
 
 always_comb begin
+  // Instruments run in parallel; software sees a muxed readout selected by `instr`.
   unique case (instr)
     4'b0001: result = result_bc;
     4'b0010: result = result_rc;
@@ -276,6 +291,8 @@ always_ff @(posedge clk) begin
   if (reset) begin
     avs_s0_readdata <= 0;
   end else if (avs_s0_read) begin
+    // Besides the selected result word, software can directly observe overflow and
+    // time-counter ready status through a few fixed readback locations.
     case (avs_s0_address)
       4'b0000: avs_s0_readdata <= result;
       4'b0001: avs_s0_readdata <= overflow_bc;

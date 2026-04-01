@@ -1,5 +1,13 @@
 #pragma once
 
+// Host-side wrapper for the integrated counter/measurement subsystem.
+//
+// This file mirrors the compact selector-based programming model implemented by
+// `ip/counter/counter_if.sv`: software selects an instrument, chooses the high/low word
+// and instrument-local address, optionally selects channels, then reads results through a
+// shared register bank. Architectural overview lives in `docs/docs/counter.md` and
+// `ip/counter/README.md`.
+
 #include <iostream>
 #include <memory>
 #include <functional>
@@ -327,6 +335,7 @@ class counter {
      sel2 = 1;
    }
 
+   // Read one logical measurement word from the selector-based counter backplane.
    uint32_t read(uint32_t instr, uint32_t part, uint32_t addr) {
      linstr.write(instr);
      lpart.write(part);
@@ -334,12 +343,15 @@ class counter {
      return lresult.read();
    }
 
+   // Reset is synchronized into the sampled-data domain, so the pulse must be long
+   // enough relative to the active streamer clock.
    void reset_all() {
      lctrl.write(1);
      fpga.wait_for_N_streamer_clk_periods(2);  // reset is synchronous, thus this should be longer than the period of streaming clock
      lctrl.write(0);
    }
 
+   // Latch all instruments so the following read sequence observes a stable snapshot.
    void latch_all() {
      lctrl.write(2);
      usleep(10);
@@ -384,6 +396,7 @@ inline int compare(const std::string what, const uint64_t value, const uint64_t 
 
 inline auto counter_seq1()
 {
+  // Deterministic reference sequence used by the built-in self-check path.
   Sequence seq;
   seq.push_back(el(1, 0));
   seq.push_back(el(1, 0xff));
@@ -398,6 +411,7 @@ inline auto counter_seq1()
 
 inline auto counter_seq2(const InputParser &input)
 {
+  // Longer pseudo-random activity source used for exploratory measurements and stress.
   const auto c = parse_count(input, "-c", "1000");
   Sequence seq;
   if (c > 0)

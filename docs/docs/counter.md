@@ -4,6 +4,8 @@ The counter subsystem provides on-chip measurement blocks for statistics, sequen
 
 The main integration block is `ip/counter/counter_if.sv`, with the software interface in `c++/counter.hh`.
 
+For a maintainer-oriented map of the RTL directory, see `ip/counter/README.md`.
+
 At a high level, `counter_if` acts as a measurement backplane: one Avalon-MM slave selects an instrument, chooses channel indices, optionally latches or resets all counters, and returns the selected result word.
 
 ### Main RTL blocks
@@ -19,6 +21,8 @@ The main instruments are:
 * `seq_counter.sv` - short-sequence histogramming
 * `autocorrelation.sv` - short-depth autocorrelation counters
 * `crosscorrelation.sv` - correlation between two selected channels
+
+The wrapper is intentionally backplane-like: the instruments run in parallel, but software sees them through one compact selector-based Avalon-MM interface instead of through separate bus wrappers.
 
 The instrument selector in `counter_if.sv` currently maps these numeric IDs:
 
@@ -95,6 +99,14 @@ Important operations:
 * `short_report()` - print a smaller report focused on basic/run statistics
 
 The wrapper also embeds typed helper objects for each instrument. Those helpers know how to turn low/high words and instrument-local addresses into usable 64-bit statistics.
+
+The default host-side usage pattern is:
+
+1. choose observed channels
+2. optionally reset the instrument bank
+3. let the experiment or test waveform run
+4. latch all counters
+5. read the desired instrument reports
 
 ### What each instrument measures
 

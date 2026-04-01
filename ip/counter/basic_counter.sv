@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025,2026 Rok Zitko
 
-// Counts total number of values, number of high values, number of low values, number of high-to-low
-// transitions, number of low-to-high transitions for 1-bit input 'd'. Values are sampled at
-// d_clk positive edges when d_valid=1.
+// Basic single-channel statistics counter.
+//
+// This block samples one selected bit in the `d_clk` domain and accumulates the most
+// fundamental activity metrics used throughout the counter subsystem:
+//   - total number of valid samples
+//   - number of low samples
+//   - number of high samples
+//   - low-to-high transitions
+//   - high-to-low transitions
+//
+// `counter_if.sv` latches these working counters into readout registers before software
+// reads them back through the shared Avalon-MM interface.
 
 `default_nettype none // turn off implicit data types
 
@@ -28,9 +37,9 @@ module basic_counter
 initial assert (2*width_bus <= width_ctr)
   else $error("width_bus too large for width_ctr");
 
-// Working counters: total, high, low, high-to-low transitions, low-to-high transitions
+// Working counters updated in the sampled-data clock domain.
 logic [width_ctr-1:0] ctr_total, ctr_l, ctr_h, ctr_lh, ctr_hl;
-// Registers for read-out.
+// Snapshot registers read from the control side after a latch pulse.
 logic [width_ctr-1:0] ctr_total_r, ctr_l_r, ctr_h_r, ctr_lh_r, ctr_hl_r;
 
 logic first;  // first=1 after reset, before reading the first value
@@ -46,6 +55,8 @@ always_ff @(posedge d_clk) begin
     first <= 1'b1;
     d_prev <= 0;
   end else if (d_valid) begin
+    // Sampling is qualified by `d_valid` so the block can measure meaningful activity
+    // rather than raw clock cycles in invalid/idle regions.
     if (ctr_total != {width_ctr{1'b1}}) // saturate counter (overflow will also be asserted)
       ctr_total <= ctr_total+1;
     if (!d) ctr_l <= ctr_l+1;
@@ -72,6 +83,7 @@ always_ff @(posedge d_clk) begin
     ctr_hl_r <= 0;
     ctr_lh_r <= 0;
   end else if (d_latch) begin
+    // Latching freezes a coherent snapshot for slower software-side readout.
     ctr_total_r <= ctr_total;
     ctr_l_r <= ctr_l;
     ctr_h_r <= ctr_h;

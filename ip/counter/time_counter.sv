@@ -3,6 +3,15 @@
 
 `default_nettype none // turn off implicit data types
 
+// Elapsed-time counter between asynchronous start and stop events.
+//
+// Unlike the other counter instruments, this block measures duration in the control-side
+// `clk` domain after synchronizing externally generated start/stop pulses. In the current
+// integration those pulses are derived in `counter_if.sv` from selected signal edges.
+//
+// A completed measurement latches into `elapsed` and raises `ready`, which software reads
+// through the shared counter-subsystem wrapper.
+
 module time_counter #(
   parameter width_bus = 32,
   parameter width_ctr = 64
@@ -21,7 +30,7 @@ module time_counter #(
 logic [width_ctr-1:0] elapsed;
 logic valid;
 
-// --- Synchronizers ---
+// Synchronize externally generated start/stop events into `clk` before edge detection.
 (* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED" *) logic start_sync_1, start_sync;
 (* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED" *) logic stop_sync_1,  stop_sync;
 
@@ -37,7 +46,7 @@ always_ff @(posedge clk) begin
   end
 end
 
-// --- Edge Detection ---
+// Convert synchronized levels into one-cycle start/stop pulses.
 logic start_prev, stop_prev;
 logic start_pulse, stop_pulse;
 
@@ -53,7 +62,7 @@ always_ff @(posedge clk) begin
   end
 end
 
-// --- Counter and State ---
+// Main measurement state.
 logic [width_ctr-1:0] counter;
 logic running;
 
@@ -64,7 +73,7 @@ always_ff @(posedge clk) begin
     elapsed <= 0;
     valid   <= 0;
   end else begin
-    valid <= 0; // default, asserted only for one cycle
+    valid <= 0; // default, asserted only for one cycle when a measurement completes
     if (start_pulse) begin
       // restart measurement on new start
       counter <= 0;
@@ -80,7 +89,7 @@ always_ff @(posedge clk) begin
   end
 end
 
-// Interfacing
+// Interfacing: keep `ready` asserted once a result has been captured until reset.
 always_ff @(posedge clk) begin
   if (reset) begin
     ready <= 0;
