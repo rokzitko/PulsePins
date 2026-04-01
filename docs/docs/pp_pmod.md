@@ -62,15 +62,9 @@ Several parts of the board are optional or configuration-dependent:
 
 When documenting or validating the board, record which optional parts are populated and which jumper positions are used.
 
-## Related pages
+## Hardware reference
 
-* [PP_PMOD connectors and pinout](pp_pmod_connectors.md)
-* [PP_PMOD triggering](pp_pmod_triggering.md)
-* [PP_PMOD clocking and PPS](pp_pmod_clocking.md)
-* [PP_PMOD outputs](pp_pmod_outputs.md)
-* [PP_PMOD I2C and onboard peripherals](pp_pmod_i2c.md)
-* [PP_PMOD LEDs, jumpers, and testpoints](pp_pmod_service.md)
-* [PP_PMOD validated examples](pp_pmod_examples.md)
+All board-level connectors, timing inputs, onboard peripherals, jumpers, and testpoints are documented on [PP_PMOD hardware reference](pp_pmod_reference.md).
 
 ## Connector index
 
@@ -90,3 +84,17 @@ Quick reference for the board's main external interfaces:
 | `J17` | thresholded trigger SMA input |
 | `J18` | Qwiic I2C connector |
 | `J26` | `PPS_IN` SMA input |
+
+## Validated workflows
+
+Examples worth documenting or reproducing on this board include:
+
+* LED PMOD output checks with [`pptest`](pptest.md)
+* onboard `MCP9808` reads with [`pptemp`](pptemp.md) or `I2C/mcp9808.py`
+* external Qwiic `TMP117` reads with `I2C/tmp117.py`
+* DAC output checks with `I2C/ad5693_set_vout.py`
+* PPS validation with [`ppts`](ppts.md)
+* external clock validation with [`ppfreq`](ppfreq.md)
+* trigger experiments with [`pptrig`](pptrig.md)
+
+For these workflows, record board revision, population, jumpers, external wiring, exact commands, and observed behavior.

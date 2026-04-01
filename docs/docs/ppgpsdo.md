@@ -8,7 +8,7 @@ Requirements:
 
 * FPGA running the PulsePins design with an external clock signal (`EXT_CLK`) from a tunable oscillator such as an OCXO or TCXO
 * pulse-per-second signal from a GNSS receiver applied to the PPS pin
-* DAC on [PP_PMOD](pp_pmod_i2c.md) controlling the frequency of the tunable oscillator
+* DAC on [PP_PMOD](pp_pmod_reference.md) controlling the frequency of the tunable oscillator
 
 Command-line switches:
 
@@ -22,4 +22,4 @@ Implementation notes:
 
 Because the underlying timestamp core is designed for sparse events, `ppgpsdo` assumes PPS-like timing signals rather than dense arbitrary transitions.
 
-See also [PP_PMOD clocking and PPS](pp_pmod_clocking.md).
+See also [PP_PMOD hardware reference](pp_pmod_reference.md).

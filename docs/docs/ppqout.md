@@ -29,4 +29,4 @@ Command line parameters:
 * ``-self_test``: perform basic internal tests
 * ``-test <n>``: perform intensive self tests; n is the number of repetitions
 
-See also [PP_PMOD outputs](pp_pmod_outputs.md).
+See also [PP_PMOD hardware reference](pp_pmod_reference.md).

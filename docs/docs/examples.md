@@ -26,7 +26,7 @@ The following application areas would especially benefit from community-contribu
 * read the onboard `MCP9808` using `pptemp` or `I2C/mcp9808.py`
 * read an external Qwiic `TMP117` module using `I2C/tmp117.py`
 
-For board-specific hardware examples, see [PP_PMOD validated examples](pp_pmod_examples.md).
+For board-specific hardware notes, see [PP_PMOD reference shield](pp_pmod.md) and [PP_PMOD hardware reference](pp_pmod_reference.md).
 
 ### Why examples matter
 

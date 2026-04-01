@@ -20,4 +20,4 @@ internally pulled up, thus shorting a signal to zero produces a logical 0)
 * ``-mask_ext m``: uses m as the mask for input EXT (only signals marked with 1 are passed through)
 * ``-mask_misc m``: uses m as the mask for input MISC (only signals marked with 1 are passed through)
 
-See also [PP_PMOD triggering](pp_pmod_triggering.md).
+See also [PP_PMOD hardware reference](pp_pmod_reference.md).

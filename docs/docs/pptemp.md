@@ -53,4 +53,4 @@ Pipe into a log file:
 pptemp >> temp.log
 ```
 
-See also [PP_PMOD I2C and onboard peripherals](pp_pmod_i2c.md).
+See also [PP_PMOD hardware reference](pp_pmod_reference.md).

@@ -88,7 +88,7 @@ See also:
 
 * [`ppboards.md`](ppboards.md)
 * [`pp_pmod.md`](pp_pmod.md)
-* [`pp_pmod_examples.md`](pp_pmod_examples.md)
+* [`pp_pmod_reference.md`](pp_pmod_reference.md)
 
 Documented/tested optional examples and checks include:
 

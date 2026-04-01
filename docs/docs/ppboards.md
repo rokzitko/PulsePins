@@ -33,14 +33,8 @@ serve as a simple GPSDO)
 
 Detailed board documentation:
 
-* [PP_PMOD overview](pp_pmod.md)
-* [PP_PMOD connectors and pinout](pp_pmod_connectors.md)
-* [PP_PMOD triggering](pp_pmod_triggering.md)
-* [PP_PMOD clocking and PPS](pp_pmod_clocking.md)
-* [PP_PMOD outputs](pp_pmod_outputs.md)
-* [PP_PMOD I2C and onboard peripherals](pp_pmod_i2c.md)
-* [PP_PMOD LEDs, jumpers, and testpoints](pp_pmod_service.md)
-* [PP_PMOD validated examples](pp_pmod_examples.md)
+* [PP_PMOD reference shield](pp_pmod.md)
+* [PP_PMOD hardware reference](pp_pmod_reference.md)
 
 KiCad schematics and PCB layouts, as well as the Gerber files for producing the boards, are [available
 on the GitHub repository](https://github.com/rokzitko/PulsePins/tree/main/pcb/ppshield_pmod).
