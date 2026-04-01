@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Avalon-ST multiplexer
+// Software-visible Avalon-ST multiplexer.
+//
+// Responsibilities of this block:
+//   - select one of two Avalon-ST input streams
+//   - forward only the selected stream to the shared output
+//   - provide backpressure only to the selected input
+//   - count successful transfers on each input path
+//
+// Architectural overview lives in `ip/st_mux/README.md` and `docs/docs/st_mux.md`.
 
 `default_nettype none
 
@@ -38,7 +46,7 @@ logic channel; // 0 = channel1, 1 = channel2
 logic [63:0] ctr1;
 logic [63:0] ctr2;
 
-// Gather statistics
+// Count successful handshakes on each input path.
 always @(posedge clk) begin
   if (reset) begin
     ctr1 <= 0;
@@ -53,6 +61,7 @@ always @(posedge clk) begin
   end
 end
 
+// The mux is purely combinational in the data path; `channel` only controls selection.
 assign aso_data  = (channel == 1'b1 ? asi_data2  : asi_data1);
 assign aso_valid = (channel == 1'b1 ? asi_valid2 : asi_valid1);
 assign asi_ready1 = (channel == 1'b0 ? aso_ready : 1'b0);
@@ -63,6 +72,7 @@ always_ff @(posedge clk) begin
   if (reset) begin
     channel <= 0;
   end else if (avs_s0_write) begin
+    // Only one writable control bit exists: selected input channel.
     case (avs_s0_address)
       3'b0: channel <= avs_s0_writedata[0];
     endcase
@@ -73,6 +83,7 @@ always_ff @(posedge clk) begin
   if (reset) begin
     avs_s0_readdata <= 0;
   end else if (avs_s0_read) begin
+    // Readback exposes the 64-bit transfer counters as low/high 32-bit words.
     case (avs_s0_address)
       3'b000:  avs_s0_readdata <= ctr1[31:0];
       3'b001:  avs_s0_readdata <= ctr1[63:32];

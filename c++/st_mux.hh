@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Avalon ST multiplexer control and statistics
+// Host-side wrapper for the Avalon-ST multiplexer block.
+//
+// This class mirrors the small programming model in `ip/st_mux/st_mux_if.sv`: select
+// the active upstream channel and read the two traffic counters. Architectural overview
+// lives in `docs/docs/st_mux.md` and `ip/st_mux/README.md`.
 
 #pragma once
 
@@ -27,7 +31,7 @@ public:
     ctr2_h(dev.get_loc(base, 12)),
     v(_v) {}
 
-  // Switch between the two input Avalon ST sources
+  // Switch between the two upstream Avalon-ST sources.
   void channel(const int ch) {
     if (ch != 1 && ch != 2)
       throw std::runtime_error("Only channels 1 and 2 are availble");
@@ -36,12 +40,12 @@ public:
     lchannel.write(ch-1);
   }
 
-  // Amount of data that has passed through input 1
+  // Number of successful Avalon-ST transfers observed on input 1.
   uint64_t ctr1() {
     return (uint64_t(ctr1_h.read()) << 32) + uint64_t(ctr1_l.read());
   }
 
-  // Amount of data that has passed through input 2
+  // Number of successful Avalon-ST transfers observed on input 2.
   uint64_t ctr2() {
     return (uint64_t(ctr2_h.read()) << 32) + uint64_t(ctr2_l.read());
   }
