@@ -4,8 +4,6 @@ This page is the compact hardware reference for `PP_PMOD`.
 
 For board purpose, project links, and example workflows, see [PP_PMOD reference shield](pp_pmod.md).
 
-![PP_PMOD connector map](img/pp_pmod_connector_map.svg)
-
 ## Conventions
 
 The design uses 3.3 V logic on the shield-side digital interfaces.
@@ -67,12 +65,12 @@ QOUT sideband signals are presented on `J8`:
 
 | Position | Signal |
 | --- | --- |
-| top | `STROBE` |
+| 1 | `STROBE` |
 | 2 | `OE` |
 | 3 | `STREAMER_CLK` |
 | 4 | `QOUT_VALID` |
 | 5 | `GND` |
-| bottom | `+3.3V` |
+| 6 | `+3.3V` |
 
 Buffered SMA outputs:
 
@@ -95,27 +93,27 @@ Trigger bus grouping on `J7`:
 | odd pins | `TRIG_IN3`, `TRIG_IN2`, `TRIG_IN1`, `TRIG_IN0`, then utility pins |
 | even pins | `TRIG_IN7`, `TRIG_IN6`, `TRIG_IN5`, `TRIG_IN4`, then utility pins |
 
-Trigger control header `J10`, top to bottom in the schematic:
+Trigger control header `J10`, positions `1` through `6` in the schematic:
 
 | Position | Signal |
 | --- | --- |
-| top | `+3.3V` |
+| 1 | `+3.3V` |
 | 2 | `GND` |
 | 3 | `GATE_IN` |
 | 4 | `TRIG_RESET` |
 | 5 | `TRIG_FORCE` |
-| bottom | `TRIG_ENABLE` |
+| 6 | `TRIG_ENABLE` |
 
-Trigger status header `J11`, top to bottom in the schematic:
+Trigger status header `J11`, positions `1` through `6` in the schematic:
 
 | Position | Signal |
 | --- | --- |
-| top | `+3.3V` |
+| 1 | `+3.3V` |
 | 2 | `GND` |
 | 3 | `BUFFER_ERROR` |
 | 4 | `DONE` |
 | 5 | `TRIG_ACTIV` |
-| bottom | `TRIG_ARMED` |
+| 6 | `TRIG_ARMED` |
 
 The SMA trigger path includes:
 
