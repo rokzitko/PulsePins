@@ -24,7 +24,7 @@ CPPFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
   -I./third_party/hwlib/include/ -I./third_party/hwlib/include/$(ALT_DEVICE_FAMILY) \
   -I./third_party/asio/include -I./third_party \
   -I.. \
-  -Wformat=0 -std=c++17 -Wno-psabi $(HW_DEBUG)
+  -Wformat=0 -std=c++17 -Wno-psabi -Wno-cpp $(HW_DEBUG)
 LDFLAGS =  -g -Wall -pthread
 GCC_SUFFIX ?= -10
 CXX = $(CROSS_COMPILE)g++$(GCC_SUFFIX)
