@@ -1,15 +1,17 @@
 NR = 35
 ALT_DEVICE_FAMILY ?= soc_cv_av
-CPPFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
+CXXFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
   -D$(ALT_DEVICE_FAMILY) \
-  -I.. -I/usr/include \
   -Wformat=0 -std=c++17
+
+CXX = g++$(GCC_SUFFIX)
+CC = gcc$(GCC_SUFFIX)
 
 .PHONY: build test clean copy_sources copy_tests
 
 build:
 	mkdir -p build
-	cmake -S . -B build
+	cmake -S . -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_CXX_FLAGS="$(CXXFLAGS)" -B build
 	cmake --build build
 
 # Unit tests

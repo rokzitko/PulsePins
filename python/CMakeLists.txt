@@ -27,17 +27,19 @@ nanobind_add_module(pp pp.cc)
 nanobind_add_module(pp_impl pp_impl.cc)
 
 target_include_directories(pp
-    PRIVATE ${CMAKE_SOURCE_DIR}/../c++ .. /usr/include
+    PRIVATE ${CMAKE_SOURCE_DIR}/../c++
+            ${CMAKE_SOURCE_DIR}/..
+            ${CMAKE_SOURCE_DIR}/../tidbit
+            ${CMAKE_SOURCE_DIR}/../c++/third_party/hwlib/include
+            ${CMAKE_SOURCE_DIR}/../c++/third_party/hwlib/include/soc_cv_av
+            /usr/include
 )
 
 target_include_directories(pp_impl
-    PRIVATE ${CMAKE_SOURCE_DIR}/../c++ .. /usr/include
-)
-
-target_compile_definitions(pp
-    PRIVATE soc_cv_av TIDBITNR=35
-)
-
-target_compile_definitions(pp_impl
-    PRIVATE soc_cv_av TIDBITNR=35
+    PRIVATE ${CMAKE_SOURCE_DIR}/../c++
+            ${CMAKE_SOURCE_DIR}/..
+            ${CMAKE_SOURCE_DIR}/../tidbit
+            ${CMAKE_SOURCE_DIR}/../c++/third_party/hwlib/include
+            ${CMAKE_SOURCE_DIR}/../c++/third_party/hwlib/include/soc_cv_av
+            /usr/include
 )
