@@ -1,4 +1,4 @@
-## ppfreq
+# ppfreq
 
 `ppfreq` reads the on-board frequency-meter block and prints measured frequencies periodically.
 
@@ -18,6 +18,8 @@ The current implementation chooses gate configuration this way:
 
 * if `-gate_time` is present, it is used
 * otherwise `-gate_len` is used, defaulting to `500000`
+
+The command currently uses a fixed output format equivalent to `%t %e`, so by default it prints a wall-clock timestamp plus the external-clock reading. The formatter infrastructure in the implementation already has access to the internal and streamer channels as well.
 
 ### Displayed channels
 

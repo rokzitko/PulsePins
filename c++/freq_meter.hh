@@ -7,6 +7,7 @@
 // to keep the hardware model visible: configure gate length, wait for one full gate, then
 // read per-channel counts or convert them to Hz. `pp_freq_meter` adds PulsePins-specific
 // policy such as storing the measured streamer clock back into the `FPGA` object.
+// Architectural overview lives in `docs/docs/freq_meter.md` and `ip/freq_meter/README.md`.
 
 #pragma once
 
@@ -71,6 +72,7 @@ public:
     set_gate_len(t*nominal_cnt_clk_freq);
   }
 
+  // Read the raw per-gate edge count for channel `i`.
   Ticks read(const int i) {
     return lresult[i].read();
   }
@@ -99,6 +101,7 @@ public:
     return n_ch;
   }
 
+  // Wait long enough for one fresh measurement interval to complete.
   void wait_one_gate_time() const {
     usleep( double(gate_len)/nominal_cnt_clk_freq * 1000*1000 );
   }

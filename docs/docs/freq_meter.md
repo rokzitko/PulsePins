@@ -1,8 +1,10 @@
-## Frequency meter
+# Frequency meter
 
 PulsePins includes a multi-channel frequency meter for reporting the observed frequencies of important on-board clocks.
 
 The hardware implementation is in `ip/freq_meter/freq_meter.sv`, and the C++ interface is in `c++/freq_meter.hh`.
+
+For a maintainer-oriented RTL map, see `ip/freq_meter/README.md`.
 
 For maintainers, the most important split is:
 
@@ -20,6 +22,8 @@ The current block is an Avalon-MM controlled frequency meter with:
 The design counts transitions in each input clock domain and transfers results back into the Avalon clock domain using Gray-coded counters and synchronization stages.
 
 The measurement path is intentionally CDC-heavy because each observed signal is itself a running clock. Rather than sampling those clocks directly in the Avalon domain, the hardware increments a per-channel counter in the input-clock domain, converts it to Gray code, synchronizes that Gray value into the gate/reference clock domain, and computes a delta at the end of each gate interval.
+
+One important consequence is that the reported values are per-gate edge counts, not continuously updated instantaneous frequencies. The host-side wrapper is responsible for turning those per-gate counts into Hz.
 
 ### Register model
 
@@ -78,6 +82,13 @@ The current C++ layer names the four channels as:
 * core clock
 
 The wrapper currently expects all four channels to be present.
+
+The standard channel IDs in `c++/freq_meter.hh` are:
+
+* `0` - external clock
+* `1` - internal clock
+* `2` - streamer clock
+* `3` - core clock
 
 ### Tool integration
 
