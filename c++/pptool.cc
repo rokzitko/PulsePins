@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025, 2026 Rok Zitko
 
-// pptool main() is here...
+// Main entry point for the `pptool` executable family.
+//
+// The binary is invoked either directly as `pptool` or via symlinked names such as
+// `ppfg`, `ppcounter`, and `ppdelay`. The program name selects the command handler,
+// which keeps startup policy centralized while preserving small tool-style entry points.
+// Architectural overview lives in `c++/README.md` and `docs/docs/pptool.md`.
 
 #include <iostream>
 #include <map>
@@ -65,6 +70,8 @@ int main(int argc, char *argv[])
   }
 #endif
 
+  // User-facing mode selection happens here. Adding a new `pp...` command normally
+  // means implementing a handler and registering it in this dispatch table.
   static const std::map<std::string, std::function<int(FPGA &, const InputParser&, const Verbosity&)>> actions{
     {"pptool", pptool},
     {"pptest", pptest},
@@ -105,7 +112,9 @@ int main(int argc, char *argv[])
     rc = RC_INVALID_ARG;
   }
 
-  if (input.exists("-wait")) {  // wait forever
+  // `-wait` keeps the process alive after the command has completed so external
+  // tooling can continue interacting with the initialized runtime.
+  if (input.exists("-wait")) {
     std::cout << "Waiting for exit." << std::endl;
     while (!exit_flag)
       sleep_1ms();
@@ -115,6 +124,8 @@ int main(int argc, char *argv[])
   if (server) server->stop();
   if (server_thread.joinable()) server_thread.join();
 
+  // Optional exit delay is useful when the caller wants outputs and status to remain
+  // stable for a short time after the main command path returns.
   double exit_delay = 0.0;
   if (envVarExists("PP_EXIT_DELAY"))
     exit_delay = envDouble("PP_EXIT_DELAY").value_or(1.0);

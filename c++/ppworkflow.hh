@@ -3,6 +3,19 @@
 
 #pragma once
 
+// Shared execution helpers for commands that stream a Sequence into the FPGA.
+//
+// `send_and_trig(...)` is the common high-level workflow used by several tools:
+//   - append the expected final output value
+//   - transmit the sequence through the chosen transport
+//   - arm or force the trigger
+//   - optionally validate the readback stream
+//   - wait for completion and check final-state invariants
+//   - report FIFO, CRC, readback, and counter status
+//
+// The goal is consistent behavior across CLI entry points, so changes here should be
+// treated as policy changes for multiple commands, not as a local helper tweak.
+
 #include <iostream>
 #include <iomanip>
 
@@ -66,6 +79,12 @@ inline int send_and_trig(Transport &tr,
                          const Verbosity &v,
                          Convert convert)
 {
+  // Contract:
+  // - `elements` is the sequence requested by the caller and is modified in place.
+  // - a final output element is always appended so the post-run qout state can be checked.
+  // - if `-check` is enabled, the same sequence may be converted into a readback-friendly
+  //   form before comparison.
+  // - the return code accumulates multiple error bits instead of stopping at first failure.
   int rc = RC_OK;
   const value_t final = input.exists("-t") ? parse_value(input, "-t", "0") : random_value();
   elements.push_back(el(final));
@@ -94,6 +113,9 @@ inline int send_and_trig(Transport &tr,
 
   bool rb_failure = false;
   if (input.exists("-check")) {
+    // Readback comparison is done against the effective output stream, not necessarily
+    // against the original input representation. `convert(...)` lets callers normalize
+    // features such as non-BITLOAD updates before the check.
     convert(elements);
     drop_count0(elements);
     if (v.veryverbose && input.exists("-dump-converted"))
@@ -114,6 +136,7 @@ inline int send_and_trig(Transport &tr,
   if (input.exists("-dont_wait"))
     return rc;
 
+  // The remaining checks are post-completion invariants for the whole streamer path.
   sc.wait_to_complete(v);
   sleep_1ms();
   value_t final_qout = sc.get_qout();

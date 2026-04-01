@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Sequence class
+// Host-side representation of PulsePins sequences.
+//
+// A Sequence is an ordered container of `el` objects matching the encoded stream sent
+// to the FPGA. Most user-visible pulse programs eventually pass through this type,
+// either because they were built programmatically or because they were parsed from a
+// text/VCD representation. Higher-level architectural context lives in `c++/README.md`
+// and `docs/docs/cpp.md`.
 
 #pragma once
 
@@ -13,7 +19,8 @@
 #include "elements.hh"
 #include "vcd_parser.hh"
 
-// Extended version of a standard library deque of el objects
+// Thin extension of `std::deque<el>` with helpers that reflect the semantics of a
+// pulse sequence rather than just container operations.
 class Sequence : public std::deque<el> {
  public:
    using Base = std::deque<el>;
@@ -53,8 +60,10 @@ class Sequence : public std::deque<el> {
      dump(std::cout, prefix);
    }
 
-   // Convert to a sequence of BitLoad's only. This can then be used as reference data in readback checking.
-   Sequence convert_to_BitLoad() {
+    // Convert regular data elements into the effective output-value stream. This is
+    // mainly used for readback checking, where comparisons are done against the data
+    // observed at the streamer output rather than the original update operators.
+    Sequence convert_to_BitLoad() {
      Sequence s;
      size_t n = 0; // counts regular elements only
      value_t v_prev;
@@ -73,8 +82,8 @@ class Sequence : public std::deque<el> {
      return s;
    }
 
-   // Merge equal elements
-   Sequence merge() {
+    // Merge adjacent regular elements that produce the same output state.
+    Sequence merge() {
      Sequence s = *this; // make a copy
      merge_adjacent<el>(s,
                         [](const el &x, const el &y){ return x.is_regular() && y.is_regular() && x.control() == y.control() && x.value() == y.value(); },
@@ -82,8 +91,9 @@ class Sequence : public std::deque<el> {
      return s;
    }
 
-   // Load VCD file
-   void load_VCD(const std::string filename, const std::string target_name = "outs", const uint32_t scale_factor = 10) {
+    // Build a sequence from a VCD signal trace. Consecutive samples become run-length
+    // encoded elements targeting `target_name`.
+    void load_VCD(const std::string filename, const std::string target_name = "outs", const uint32_t scale_factor = 10) {
      std::ifstream F(filename);
      auto l = parseVcdUpdates(F, target_name, scale_factor);
      for (size_t i = 0; i < l.size()-1; i++) {
@@ -112,6 +122,11 @@ inline bool operator==(const Sequence &X, const Sequence &Y) {
 
 inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
 {
+  // Text grammar accepted here:
+  //   d <count> <value>           regular data element
+  //   t <pattern> <mask>          trigger-condition element
+  //   f                           request forced trigger instead of arm-and-wait
+  // The returned boolean carries that forced-trigger request alongside the sequence.
   Sequence elements;
   bool force_trigger = false;
   try {

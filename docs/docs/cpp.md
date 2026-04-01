@@ -1,6 +1,52 @@
 ## C++ application programming interface
 
+The C++ code in `c++/` serves two closely related roles:
+
+* it is the host-side control plane for the PulsePins hardware
+* it is also the implementation substrate for the `pptool` command family
+
+The architecture is intentionally layered so command-line tools, tests, and future bindings can share the same sequence and hardware-control model.
+
+### Host-side architecture
+
+The main entry point is `c++/pptool.cc`.
+
+At startup it:
+
+1. parses common options
+2. enables the shared runtime policy from `startup.hh`
+3. constructs the single `FPGA` object
+4. dispatches to a command handler based on the executable name
+
+That dispatch model is why one compiled binary can appear as multiple tools such as `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and `ppvcd`.
+
+The most important host-side layers are:
+
+* `fpga.hh` - top-level ownership of memory maps, PLL helpers, trigger monitors, and GPIO-backed control paths
+* `startup.hh` - common process bootstrap and default FPGA startup policy
+* `pptool_streaming.cc`, `pptool_measurement.cc` - user-facing command implementations
+* `ppworkflow.hh` - shared streaming workflow used by commands that send sequences, arm/force triggers, and optionally validate readback
+* `elements.hh`, `sequence.hh` - host-side representation of pulse programs and trigger programs
+* subsystem wrappers such as `streamer.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, and `freq_meter.hh`
+
+For a maintainer-oriented walkthrough of the directory, see `c++/README.md`.
+
+### Common execution flow
+
+For streamer-oriented tools, the typical host-side path is:
+
+1. build or parse a `Sequence`
+2. construct a transport such as a FIFO-backed streamer or DMA-backed streamer
+3. transmit the sequence to the FPGA
+4. enable or force the trigger
+5. optionally validate the readback stream
+6. wait for completion and inspect final status, counters, FIFO statistics, and CRCs
+
+That common pattern is centralized in `send_and_trig(...)` in `ppworkflow.hh` so that behavior stays consistent across multiple tools.
+
 ### Data types for sequence representation
+
+The host-side sequence model mirrors the encoded data consumed by the streamer core. The core types are defined in `elements.hh` and `sequence.hh`.
 
 Class hierarchy for counter value objects:
 
@@ -104,6 +150,10 @@ Two sequences can be compared using function ``compare()`` and using ``operator=
 
 ### Streamer control interface
 
+The C++ streamer wrappers are thin, typed views of the hardware control/status registers rather than a separate software simulation of the datapath.
+
+This is important for maintainability: the intent is that the code stays close to the actual FPGA programming model.
+
 Class ``streamer_control`` (defined in ``streamer_control.hh`` and re-exported by ``streamer.hh``) is the high-level interface for controlling the RLE-decoder core. Member functions:
 
 * ``status()``: read the status register (buffer error, done, triggered, armed); these are outputs from the
@@ -171,6 +221,18 @@ counter (defined in `counter.hh`) exposes the integrated statistics/measurement 
 timestamp (defined in `timestamp.hh`) exposes the dual-path timestamp FIFOs and source-selection controls.
 
 freq_meter, pp_freq_meter (defined in `freq_meter.hh`) expose the on-board frequency meter and its higher-level PulsePins wrapper.
+
+### Customization points
+
+Common extension paths are:
+
+* add a new `pp...` command in `pptool.cc` and declare it in `pptool_commands.hh`
+* extend the sequence model in `elements.hh` / `sequence.hh`
+* add a new typed wrapper for a hardware block and expose it through a tool or higher-level API
+* adjust shared streaming policy in `ppworkflow.hh`
+* update startup defaults in `startup.hh`
+
+The preferred approach is to preserve the top-level command names and high-level wrapper types while evolving the implementation behind them.
 
 For subsystem-level details, see also:
 
