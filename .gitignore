@@ -53,3 +53,6 @@ sha256.pulsepins.sof
 
 # Local planning notes
 CPP_ARCHITECTURE_ROADMAP.md
+
+# Local build environment configuration
+PREP-LOCAL
