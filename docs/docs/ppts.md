@@ -21,7 +21,7 @@ This means the most common modes are:
 * `sigA`-only capture using `-nopps -sigA`
 * simultaneous PPS + `sigA` capture using `-sigA`
 
-It can monitor the PPS input, the auxiliary `sigA` input, or both. The implementation lives in `c++/pptool.cc` and
+It can monitor the PPS input, the auxiliary `sigA` input, or both. The implementation lives in `c++/pptool_measurement.cc` and
 uses the timestamp interface from `c++/timestamp.hh`.
 
 Common options:

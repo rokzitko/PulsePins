@@ -4,6 +4,11 @@ PulsePins includes a dedicated timestamp-capture block for recording the clock-c
 
 The main hardware block is `ip/ts_core/ts_core.sv`, and the main software interface is `c++/timestamp.hh`.
 
+For maintainers, the important split is:
+
+* `ip/ts_core/ts_core.sv` owns the free-running counter and edge-capture logic
+* `c++/timestamp.hh` owns source routing, FIFO draining, and reconstruction of 64-bit event records
+
 ### Hardware model
 
 `ts_core` maintains a free-running counter and captures its value when monitored asynchronous inputs change.
@@ -73,6 +78,8 @@ Each timestamp is assembled from two 32-bit FIFO words into a 64-bit counter val
 The timeout-based read functions poll until two FIFO words are available, then reconstruct the full 64-bit timestamp. This is why the timeout is applied to a complete event record rather than to a single 32-bit transfer.
 
 The constructor clears both FIFOs on startup, which helps avoid stale samples after reset or reconfiguration.
+
+The main user-facing command implementations live in `c++/pptool_measurement.cc` (`ppts` and `ppgpsdo`).
 
 ### Timing semantics
 

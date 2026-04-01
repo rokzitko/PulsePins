@@ -1,5 +1,15 @@
 `default_nettype none
 
+// Dual-path timestamp capture core.
+//
+// This block runs a free-running counter in `clk` and captures that counter value on the
+// rising edge of two asynchronous inputs, `sig` and `sigA`. Each capture path drives its
+// own Avalon-ST output so software can consume the PPS path and the auxiliary path
+// independently.
+//
+// The design intentionally stays simple: synchronize input, detect edge, copy counter,
+// emit one event if the downstream FIFO is ready.
+
 module ts_core #(
   parameter CTR_W = 64                 // counter width
 ) (
@@ -33,7 +43,7 @@ module ts_core #(
   end
 
   // ============================================================
-  // Synchronize and edge-detect the asynchronous input
+  // Synchronize and edge-detect the asynchronous inputs.
   // ============================================================
   reg s1, s2, s3;
   always_ff @(posedge clk) begin
@@ -66,7 +76,7 @@ module ts_core #(
   wire signalA_rise = sA2 & ~sA3;
 
   // ============================================================
-  // Capture timestamp on rising edge
+  // Capture the current counter value on each detected rising edge.
   // ============================================================
   reg [CTR_W-1:0] ctr_cap;
   reg             cap_valid;
@@ -97,7 +107,9 @@ module ts_core #(
   end
 
   // ============================================================
-  // Avalon-ST output
+  // Avalon-ST output.
+  // If the downstream FIFO is not ready in that cycle, the one-cycle capture pulse is not
+  // retried, so this core is intended for sparse event streams rather than dense traffic.
   // ============================================================
   assign aso_valid = cap_valid & aso_ready; // do not assert valid if the FIFO is not ready
   assign aso_data  = ctr_cap;

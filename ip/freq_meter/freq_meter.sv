@@ -1,3 +1,15 @@
+// Avalon-MM controlled multi-channel frequency meter.
+//
+// Each observed input is itself a running clock, so direct sampling in the Avalon domain
+// would be unsafe and inaccurate. The implementation therefore:
+//   - counts edges in each input clock domain
+//   - converts those counters to Gray code
+//   - synchronizes the Gray values into the gate/reference clock domain
+//   - computes per-gate deltas there
+//   - transfers stable results back to the Avalon domain using update toggles
+//
+// This is the main hardware block wrapped by `c++/freq_meter.hh`.
+
 module freq_meter_avalon_gray #(
   parameter int N_CH        = 4,
   parameter int COUNTER_W   = 32   // width of edge counters and results
@@ -26,16 +38,17 @@ module freq_meter_avalon_gray #(
   reg        reg_enable;
   reg [31:0] reg_gate_len;
 
-  // Controls to cnt_clk via toggles
+  // Controls cross from Avalon into the gate/reference domain via toggles so one-shot
+  // requests and configuration updates survive the CDC boundary cleanly.
   reg        enable_tgl_avs;
   reg        clear_tgl_avs;
   reg [31:0] gate_len_shadow_avs;
   reg        gate_len_tgl_avs;
 
-  // Results sampled into avs_clk domain
+  // Results sampled into avs_clk domain.
   reg [COUNTER_W-1:0] result_avs [N_CH];
 
-  // Results from cnt_clk domain + per-channel update toggles
+  // Results from cnt_clk domain plus per-channel update toggles.
   wire [COUNTER_W-1:0] result_cnt [N_CH];
   wire [N_CH-1:0]      upd_tgl_cnt;
 
@@ -237,7 +250,7 @@ module freq_meter_avalon_gray #(
     end
   endfunction
 
-  // Gate timer in cnt_clk domain, compute deltas at gate end
+  // Gate timer in cnt_clk domain; compute per-channel deltas at gate end.
   reg [31:0] gate_down_cnt;
 
   integer c;

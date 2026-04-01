@@ -2,6 +2,11 @@
 // Copyright (c) 2026 Rok Zitko
 //
 // Host-side accessors for the FPGA frequency measurement blocks.
+//
+// The low-level `freq_meter` wrapper exposes the Avalon-MM register file directly enough
+// to keep the hardware model visible: configure gate length, wait for one full gate, then
+// read per-channel counts or convert them to Hz. `pp_freq_meter` adds PulsePins-specific
+// policy such as storing the measured streamer clock back into the `FPGA` object.
 
 #pragma once
 
@@ -47,7 +52,8 @@ class freq_meter {
        lresult.push_back(dev.get_loc(base, 0x10 + 4*i));
    }
 
-   void set_gate_len(Ticks new_gate_len) {
+    // Reprogram the measurement window and restart accumulation.
+    void set_gate_len(Ticks new_gate_len) {
      gate_len = new_gate_len;
      lgate_len.write(gate_len);
      lctl.write(2); // clear
@@ -60,7 +66,8 @@ class freq_meter {
      return gate_len;
    }
 
-   void set_gate_time(double t) { // t in seconds
+    // Convenience wrapper around `set_gate_len`, using seconds instead of raw cycles.
+    void set_gate_time(double t) { // t in seconds
      set_gate_len(t*nominal_cnt_clk_freq);
    }
 
@@ -68,13 +75,14 @@ class freq_meter {
      return lresult[i].read();
    }
 
-   double read_freq(const int i) {
+    // Convert raw counter delta into Hz using the currently configured gate length.
+    double read_freq(const int i) {
      const auto t = read(i);
      return double(t)/gate_len * nominal_cnt_clk_freq * correction_factor;
    }
 
-   // Formated output with the number of decimals consistent with the frequency resultion set by gate time
-   std::string read_freq_str(const int i) {
+    // Formatted output with precision matched to the current gate-time resolution.
+    std::string read_freq_str(const int i) {
      const auto digits = std::ceil(std::log10(gate_len));
      return freqfmt::format_frequency(read_freq(i), digits, '\'');
    }
@@ -108,8 +116,8 @@ class pp_freq_meter {
   public:
    freq_meter meter;
 
-   // if wait=true, wait until the first reading becomes valid
-   pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait = true) :
+    // If `wait` is true, block until the first post-configuration measurement is valid.
+    pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait = true) :
      fpga(_fpga),
      meter(fpga.dev_h2f, FREQ_METER_0_BASE) {
        if (opts.correction_factor)
@@ -123,7 +131,8 @@ class pp_freq_meter {
    pp_freq_meter(const InputParser &input, FPGA &_fpga, const bool wait = true) :
      pp_freq_meter(resolve_freq_meter_options(input), _fpga, wait) {}
 
-   void report() {
+    // Standard four-channel PulsePins report used by the CLI tools.
+    void report() {
      std::cout << "ext_clk      " << meter.read_freq_str(METER_EXT_CLK) << std::endl;
      std::cout << "int_clk      " << meter.read_freq_str(METER_INT_CLK) << std::endl;
      std::cout << "streamer_clk " << meter.read_freq_str(METER_STREAMER_CLK) << std::endl;

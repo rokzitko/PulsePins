@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 //
-// Host-side helpers for timestamp capture and reporting.
+// Host-side helpers for timestamp capture and routing control.
+//
+// The `timestamp` wrapper owns two FIFOs and one configuration PIO block. It provides the
+// software-visible model for the `ts_core` subsystem used by `ppts` and `ppgpsdo`:
+// select sources, clear stale samples, then read complete 64-bit timestamps from the PPS
+// and/or auxiliary capture paths.
 
 #pragma once
 
@@ -82,21 +87,25 @@ class timestamp {
        clear_fifoA();
      }
 
-   void sel_pps_xtal() {
+    // Select the crystal-derived PPS source.
+    void sel_pps_xtal() {
      pio_cfg.clear(1 << CFG_TS_SEL_PPS);
    }
 
-   void sel_pps_in() {
+    // Select the external PPS input source.
+    void sel_pps_in() {
      pio_cfg.set(1 << CFG_TS_SEL_PPS);
    }
 
-   void selA(const int i) {
+    // Route one of the predefined timestamp sources to the auxiliary capture path.
+    void selA(const int i) {
      assert(0 <= i && i <= 7);
      pio_cfg.clear((1 << 2) + (1 << 3) + (1 << 4));
      pio_cfg.set(i << 2);
    }
 
-   std::string get_cfg() {
+    // Human-readable summary of the current routing configuration.
+    std::string get_cfg() {
      const auto cfg = pio_cfg.read();
      std::stringstream ss;
      ss << ((cfg & (1 << CFG_TS_SEL_PPS)) ? "PPS_IN" : "PPS_XTAL");
@@ -122,14 +131,16 @@ class timestamp {
        ffA.read(); // ignore return value
    }
 
-   uint64_t read() {
+    // Each timestamp record is stored as two 32-bit FIFO words.
+    uint64_t read() {
      return (uint64_t(read_one()) << 32) + read_one();
    }
    uint64_t readA() {
      return (uint64_t(read_oneA()) << 32) + read_oneA();
    }
 
-   uint64_t read_with_timeout(const double timeout = 2.0) {
+    // Wait until a full 64-bit event record is present, then reconstruct it.
+    uint64_t read_with_timeout(const double timeout = 2.0) {
      std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
      while (ff.fill() < 2) {
        auto now = std::chrono::steady_clock::now();

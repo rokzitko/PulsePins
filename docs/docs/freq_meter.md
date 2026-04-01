@@ -4,6 +4,11 @@ PulsePins includes a multi-channel frequency meter for reporting the observed fr
 
 The hardware implementation is in `ip/freq_meter/freq_meter.sv`, and the C++ interface is in `c++/freq_meter.hh`.
 
+For maintainers, the most important split is:
+
+* `ip/freq_meter/freq_meter.sv` owns the CDC-heavy hardware measurement pipeline
+* `c++/freq_meter.hh` owns gate configuration, Hz conversion, and PulsePins-specific channel naming
+
 ### Hardware model
 
 The current block is an Avalon-MM controlled frequency meter with:
@@ -60,6 +65,8 @@ The higher-level `pp_freq_meter` wrapper additionally:
 * stores the measured streamer clock in the `FPGA` object
 
 That last step is important because other software layers may rely on the measured streamer clock when converting counts to time-based values.
+
+The user-facing command implementation lives in `c++/pptool_measurement.cc`.
 
 ### Standard channels
 
