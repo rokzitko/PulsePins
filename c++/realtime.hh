@@ -5,13 +5,17 @@
 
 #pragma once
 
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+#if defined(__linux__)
 #include <sched.h>
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
-#include <stdexcept>
 #include <iostream>
-#include <string>
+#endif
 
 class SchedulerError : public std::runtime_error {
 public:
@@ -19,6 +23,7 @@ public:
         : std::runtime_error(what_arg) {}
 };
 
+#if defined(__linux__)
 class RealtimeScheduler {
 public:
     RealtimeScheduler(int policy = SCHED_FIFO, int priority = -1) {
@@ -53,7 +58,7 @@ public:
             if (priority < min_prio || priority > max_prio) {
                 throw SchedulerError("Priority " + std::to_string(priority) +
                                      " is out of range (" +
-                                     std::to_string(min_prio) + "–" +
+                                     std::to_string(min_prio) + "-" +
                                      std::to_string(max_prio) + ")");
             }
             param.sched_priority = priority;
@@ -77,14 +82,13 @@ public:
         }
     }
 
-    // Disable copy
     RealtimeScheduler(const RealtimeScheduler&) = delete;
     RealtimeScheduler& operator=(const RealtimeScheduler&) = delete;
 
-    // Allow move
     RealtimeScheduler(RealtimeScheduler&& other) noexcept {
         *this = std::move(other);
     }
+
     RealtimeScheduler& operator=(RealtimeScheduler&& other) noexcept {
         if (this != &other) {
             orig_policy = other.orig_policy;
@@ -96,7 +100,6 @@ public:
         return *this;
     }
 
-    /// Query current scheduling policy and priority
     static std::string report() {
         int policy = sched_getscheduler(0);
         if (policy == -1) {
@@ -132,3 +135,24 @@ private:
     int new_policy{};
     sched_param new_param{};
 };
+#else
+class RealtimeScheduler {
+public:
+    RealtimeScheduler(int policy = 0, int priority = -1) {
+        (void)policy;
+        (void)priority;
+    }
+
+    ~RealtimeScheduler() = default;
+
+    RealtimeScheduler(const RealtimeScheduler&) = delete;
+    RealtimeScheduler& operator=(const RealtimeScheduler&) = delete;
+
+    RealtimeScheduler(RealtimeScheduler&&) noexcept = default;
+    RealtimeScheduler& operator=(RealtimeScheduler&&) noexcept = default;
+
+    static std::string report() {
+        return "realtime scheduling unsupported on this platform";
+    }
+};
+#endif
