@@ -148,6 +148,8 @@ Public member functions are:
 
 Two sequences can be compared using function ``compare()`` and using ``operator==``.
 
+`sequence.hh` also provides ``parse_sequence_from_stream(std::istream&)`` for the text-based sequence format used by `pptest` test 42 and by the SCPI `SEQ` command. That parser now exposes the same regular update modes implemented by the `Value` subclasses, non-final triggers, preprocessor operations (`store`, `r`, `rt`, `pr`), explicit final terminators, and the `f` force-trigger flag. The accepted token grammar is documented inline next to the parser and mirrored in `docs/docs/pptest.md`.
+
 ### Streamer control interface
 
 The C++ streamer wrappers are thin, typed views of the hardware control/status registers rather than a separate software simulation of the datapath.

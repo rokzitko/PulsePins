@@ -185,9 +185,36 @@ Stream out a sequence specified in a text file. The filename is provided using `
 
 Format:
 
-* ``d C V``: data element (BITLOAD)
-* ``t P M``: trigger element
-* ``f``: force trigger
+Regular elements:
+
+* ``d C V``: strobed data element (BITLOAD)
+* ``dn C V``: non-strobed data element (BITLOAD)
+* ``s C V``: BITSET update
+* ``c C V``: BITCLEAR update
+* ``x C V``: BITFLIP update
+* ``n C V``: BITNOT update
+* ``a C V``: BITAND update
+* ``o C V``: BITOR update
+* ``xr C V``: BITXOR update
+* ``xn C V``: BITXNOR update
+* ``sl C V``: BITSLL update
+* ``sr C V``: BITSRL update
+
+Triggers and execution flags:
+
+* ``t P M``: final trigger element
+* ``tn P M``: non-final trigger element
+* ``f``: request forced triggering instead of arm-and-wait
+
+Preprocessor and control-flow elements:
+
+* ``store I OP ...``: parse the following regular-element record and tag it for storage in preprocessor slot ``I``
+* ``r R L``: replay a stored subsequence ``R`` times with replay length ``L``
+* ``rt``: pause and wait for a retrigger event
+* ``pr C``: emit pseudo-random values for ``C`` cycles
+* ``final V``: explicit final terminator with output value ``V``
+
+The ``store`` wrapper accepts any regular-element token in place of ``OP``: ``d``, ``dn``, ``s``, ``c``, ``x``, ``n``, ``a``, ``o``, ``xr``, ``xn``, ``sl``, or ``sr``.
 
 ## ppmstest
 
