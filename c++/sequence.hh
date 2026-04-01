@@ -25,6 +25,7 @@ class Sequence : public std::deque<el> {
  public:
    using Base = std::deque<el>;
    using Base::Base;
+   using Base::push_back;
 
    void push_back_py(el && x) { Base::push_back(x); }
 
@@ -124,7 +125,8 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
 {
   // Text grammar accepted here:
   //   d <count> <value>           regular data element
-  //   t <pattern> <mask>          trigger-condition element
+  //   t <pattern> <mask>          final trigger-condition element
+  //   tn <pattern> <mask>         non-final trigger-condition element
   //   f                           request forced trigger instead of arm-and-wait
   // The returned boolean carries that forced-trigger request alongside the sequence.
   Sequence elements;
@@ -133,22 +135,33 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
     while (f) {
       std::string token;
       f >> token;
+      if (!f) break;
+
       if (token == "d") {
         std::string sc, sv;
-        f >> sc >> sv;
+        if (!(f >> sc >> sv))
+          throw std::runtime_error("Incomplete 'd' record: expected count and value");
         auto c = parse_count_t(sc);
         auto v = parse_value_t(sv);
         elements.push_back(el(c, v));
-      }
-      if (token == "t") {
+      } else if (token == "t") {
         std::string sp, sm;
-        f >> sp >> sm;
+        if (!(f >> sp >> sm))
+          throw std::runtime_error("Incomplete 't' record: expected pattern and mask");
         auto p = parse_trigger_t(sp);
         auto m = parse_trigger_t(sm);
         elements.push_back(el(p, m, true));
-      }
-      if (token == "f") {
+      } else if (token == "tn") {
+        std::string sp, sm;
+        if (!(f >> sp >> sm))
+          throw std::runtime_error("Incomplete 'tn' record: expected pattern and mask");
+        auto p = parse_trigger_t(sp);
+        auto m = parse_trigger_t(sm);
+        elements.push_back(el(p, m, false));
+      } else if (token == "f") {
         force_trigger = true;
+      } else {
+        throw std::runtime_error("Unknown sequence token: '" + token + "'");
       }
     }
   } catch (const std::exception& e) {

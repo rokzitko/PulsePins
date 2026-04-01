@@ -7,6 +7,7 @@
 // https://github.com/doctest/doctest/blob/master/doc/markdown/tutorial.md
 
 #include <iostream>
+#include <sstream>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "include/doctest.h"
@@ -369,4 +370,47 @@ TEST_CASE("VCD parser") {
   CHECK(v[4].count == 33);
   CHECK(v[5].value == 0);
   CHECK(v[5].count == 500);
+}
+
+TEST_CASE("parse_sequence_from_stream parses existing grammar") {
+  std::istringstream in("d 3 0x12 t 0b01 0b11 f d 4 0x34");
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+
+  REQUIRE(seq.size() == 3);
+  CHECK(force_trigger);
+
+  CHECK(seq[0] == el(3, 0x12));
+  CHECK(seq[1] == el(0b01, 0b11, true));
+  CHECK(seq[2] == el(4, 0x34));
+}
+
+TEST_CASE("parse_sequence_from_stream parses non-final triggers") {
+  std::istringstream in("tn 0b01 0b01 t 0b10 0b10");
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+
+  REQUIRE(seq.size() == 2);
+  CHECK(!force_trigger);
+
+  CHECK(seq[0] == el(0b01, 0b01, false));
+  CHECK(seq[1] == el(0b10, 0b10, true));
+}
+
+TEST_CASE("parse_sequence_from_stream rejects unknown tokens") {
+  std::istringstream in("bogus");
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Unknown sequence token: 'bogus'", std::runtime_error);
+}
+
+TEST_CASE("parse_sequence_from_stream rejects truncated data records") {
+  std::istringstream in("d 3");
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Incomplete 'd' record: expected count and value", std::runtime_error);
+}
+
+TEST_CASE("parse_sequence_from_stream rejects truncated final trigger records") {
+  std::istringstream in("t 0b01");
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Incomplete 't' record: expected pattern and mask", std::runtime_error);
+}
+
+TEST_CASE("parse_sequence_from_stream rejects truncated non-final trigger records") {
+  std::istringstream in("tn 0b01");
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Incomplete 'tn' record: expected pattern and mask", std::runtime_error);
 }
