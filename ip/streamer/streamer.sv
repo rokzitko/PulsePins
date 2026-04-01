@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Glue logic
+// Main streamer datapath glue.
+//
+// This module joins the major internal streamer building blocks:
+//   - input buffering in the control clock domain
+//   - decode of regular sequence elements
+//   - loading/execution of trigger programs
+//   - CDC into the output/streaming clock domain
+//   - output pacing, gating, and completion/error signaling
+//
+// Architectural overview lives in `ip/streamer/README.md` and `docs/docs/streamer.md`.
 
 `default_nettype none // turn off implicit data types
 `include "config.vh"
@@ -91,7 +100,9 @@ logic in_valid_data, in_valid_chain;
 assign in_valid_data  = ~empty_i && is_regular; // regular element available in FIFO
 assign in_valid_chain = ~empty_i && is_trigger; // trigger element available in FIFO
 
-// Signal to the input FIFO to unload new data can come from either RL decoder or from trigger queue processor.
+// Input FIFO consumption is shared between the data path and the trigger-program loader.
+// Trigger elements are consumed immediately into the trigger chain, while regular elements
+// are pulled only when the RL decoder can accept more work.
 logic rdreq_rl_decoder;                  // request for a new element from RL decoder
 logic rdreq_rl_encoder;
 assign rdreq_rl_encoder = in_valid_chain; // the trigger system will fetch the element in a single cycle, thus a wrreq to chain_trigger is also a rdreq to input FIFO
@@ -163,7 +174,9 @@ output_fifo fifo0 (
     .ctr_out(output_fifo_ctr_out)
     );
 
-assign rdreq = trigger_activated && gate_enable; // streaming out if the trigger is activated & gate enabled
+// Output advancement happens in the streamer clock domain only after the trigger has
+// activated and the effective gate is open.
+assign rdreq = trigger_activated && gate_enable;
 
 logic trigger_latch;
 always_ff @(posedge streamer_clk) begin
@@ -200,6 +213,8 @@ chain_trigger ct0 (
     .o(trigger_o)
     );
 
+// `trigger_activated` is the final runtime enable for output progression. It folds in
+// trigger state, explicit stop, completion, and the optional stop-on-buffer-error policy.
 assign trigger_activated = trigger_o && ~done && (stop_on_buffer_error ? ~buffer_error : 1) && ~stop;
 
 endmodule

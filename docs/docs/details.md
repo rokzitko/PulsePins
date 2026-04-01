@@ -1,5 +1,9 @@
 # Implementation details
 
+This page collects lower-level implementation notes that complement the subsystem overviews.
+
+For the maintainer-oriented architectural view of the output engine, start with `streamer.md` and use this page as the lower-level reference for control bits, trigger details, and internal implementation facts.
+
 ## Streamer core
 
 ### Configuration file

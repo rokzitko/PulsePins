@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rok Zitko
 
-// Streamer interface
+// Software-visible wrapper around the streamer core.
+//
+// Responsibilities of this module:
+//   - accept encoded sequence elements on Avalon-ST
+//   - expose a compact Avalon-MM programming model for trigger/gating/output control
+//   - connect runtime trigger/gate inputs to the core
+//   - provide visibility into current output state, CRC, overflow, and FIFO counters
+//
+// This is the main RTL entry point for software and system integration work. The fuller
+// subsystem overview lives in `ip/streamer/README.md` and `docs/docs/streamer.md`.
 
 `default_nettype none // turn off implicit data types
 `include "config.vh"
@@ -145,7 +154,10 @@ always_ff @(posedge clk) begin
     gating <= 0;
     gate_in_en <= 0;
     gate_mask <= 0;
+    stop_on_buffer_error <= 0;
   end else if (avs_s0_write) begin
+    // Control writes intentionally stay in the Avalon/control clock domain; the deeper
+    // streamer core consumes the resulting control signals and performs the required CDC.
     unique case (st_if_w_t'(avs_s0_address))
       IF_CTRL:       {stop_on_buffer_error, qout_select, trigger_reset_int, reset_streamer, trigger_enable_int, trigger_force_int, stop} <= avs_s0_writedata[5:0];
       INIT_VAL:      initial_value[WIDTH_AVS-1:0] <= avs_s0_writedata;
@@ -159,6 +171,8 @@ always_ff @(posedge clk) begin
   if (reset) begin
     avs_s0_readdata <= 0;
   end else if (avs_s0_read) begin
+    // Readback exposes both direct state (status, outputs, trigger inputs) and transport
+    // health information (overflow/CRC/FIFO counters) so software can verify streamer runs.
     unique case (st_if_r_t'(avs_s0_address))
       IF_STATUS:     avs_s0_readdata <= $bits(avs_s0_readdata)'({ trigger_armed, trigger_activated, done, buffer_error});
       QOUT:          avs_s0_readdata <= qout[WIDTH_AVS-1:0]; // 32 bit

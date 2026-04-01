@@ -4,7 +4,15 @@
 `ifndef _CONFIG_VH_
 `define _CONFIG_VH_
 
-// Dimensions of structures, bit positions, constants
+// Shared configuration and programmer-visible constants for the streamer subsystem.
+//
+// This file is the common reference for:
+//   - encoded element layout on the ingress path
+//   - control-bit assignments used by the decoder and software sequence model
+//   - streamer register enums used by `st_interface.sv` and host-side wrappers
+//   - FIFO sizing choices that affect throughput/latency tradeoffs
+//
+// Architectural overview lives in `ip/streamer/README.md` and `docs/docs/streamer.md`.
 
 parameter int WIDTH_AVS = 32; // Avalon MM interface data-width
 
@@ -23,7 +31,9 @@ parameter int P_FIFO_TRIGGER = 8; // 2^p=256
 // statistics counters bit width
 parameter int WIDTH_STAT = 64;
 
-// Only one of the following settings should be defined
+// Only one of the following buffer profiles should be defined at a time.
+// These values shape how much burstiness the control-side path can absorb before the
+// decoder/output path becomes the bottleneck.
 //`define SMALL_BUFFERS
 `define STANDARD_BUFFERS
 //`define BIG_BUFFERS
@@ -49,7 +59,8 @@ parameter int P_FIFO_OUT = 14; // 2^p=16384
 // Memory
 parameter int MEMORY_POSITIONS = 8;
 
-// Bit positions in control register; 0-based indexes
+// Bit positions in the per-element control word; 0-based indexes.
+// The same layout is used by the host-side sequence model in `c++/`.
 parameter int BIT_TRIGGER       = 0;  // 0 = regular element, 1 = trigger element
 parameter int BIT_TRIGGER_FINAL = 1;  // 1 = final element in a chain of trigger conditions
 parameter int BIT_TERMINATE     = 2;  // 1 = terminating element of the sequence
@@ -80,7 +91,7 @@ typedef enum logic [3:0] {
   BITSRL   = 4'b1010
 } bit_op_t;
 
-// Write registers in st_interface.v
+// Avalon-MM write registers implemented by `st_interface.sv`.
 typedef enum logic [4:0] {
   IF_CTRL       = 5'b00000,
   INIT_VAL      = 5'b00100,
@@ -88,7 +99,7 @@ typedef enum logic [4:0] {
   GATING_W      = 5'b00111
 } st_if_w_t;
 
-// Read registers in st_interface.v
+// Avalon-MM read registers implemented by `st_interface.sv`.
 typedef enum logic [4:0] {
   IF_STATUS     = 5'b00000,
   EXT_TRIG_IN   = 5'b00001,

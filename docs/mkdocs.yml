@@ -5,6 +5,7 @@ nav:
   - Hardware:
     - ppboards shields: ppboards.md
     - Technicalities: details.md
+    - Streamer subsystem: streamer.md
     - Clock domains: clock_domain.md
     - Combiner subsystem: combiner.md
     - Counter subsystem: counter.md
