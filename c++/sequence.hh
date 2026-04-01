@@ -136,6 +136,12 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
   //   xn <count> <value>          regular BITXNOR element
   //   sl <count> <value>          regular BITSLL element
   //   sr <count> <value>          regular BITSRL element
+  //   store <slot> <op> ...       store a regular element in preprocessor slot <slot>
+  //                               where <op> is one of d, dn, s, c, x, n, a, o, xr, xn, sl, sr
+  //   r <repetitions> <length>    replay a stored subsequence
+  //   rt                          retrigger with the default final value
+  //   pr <count>                  emit pseudo-random values for <count> cycles
+  //   final <value>               terminate the sequence with the selected final output value
   //   t <pattern> <mask>          final trigger-condition element
   //   tn <pattern> <mask>         non-final trigger-condition element
   //   f                           request forced trigger instead of arm-and-wait
@@ -150,47 +156,79 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
       return std::make_pair(parse_count_t(sc), parse_value_t(sv));
     };
 
+    auto parse_regular_element = [&parse_regular_args](const std::string &token_name) {
+      if (token_name == "d") {
+        auto [c, v] = parse_regular_args("d");
+        return el(c, v);
+      } else if (token_name == "dn") {
+        auto [c, v] = parse_regular_args("dn");
+        return el(NoStrobe(c), v);
+      } else if (token_name == "s") {
+        auto [c, v] = parse_regular_args("s");
+        return el(c, BitSet(v));
+      } else if (token_name == "c") {
+        auto [c, v] = parse_regular_args("c");
+        return el(c, BitClear(v));
+      } else if (token_name == "x") {
+        auto [c, v] = parse_regular_args("x");
+        return el(c, BitFlip(v));
+      } else if (token_name == "n") {
+        auto [c, v] = parse_regular_args("n");
+        return el(c, BitNot(v));
+      } else if (token_name == "a") {
+        auto [c, v] = parse_regular_args("a");
+        return el(c, BitAnd(v));
+      } else if (token_name == "o") {
+        auto [c, v] = parse_regular_args("o");
+        return el(c, BitOr(v));
+      } else if (token_name == "xr") {
+        auto [c, v] = parse_regular_args("xr");
+        return el(c, BitXor(v));
+      } else if (token_name == "xn") {
+        auto [c, v] = parse_regular_args("xn");
+        return el(c, BitXnor(v));
+      } else if (token_name == "sl") {
+        auto [c, v] = parse_regular_args("sl");
+        return el(c, BitSll(v));
+      } else if (token_name == "sr") {
+        auto [c, v] = parse_regular_args("sr");
+        return el(c, BitSrl(v));
+      }
+      throw std::runtime_error("Unknown regular sequence token in 'store': '" + token_name + "'");
+    };
+
     while (f) {
       std::string token;
       f >> token;
       if (!f) break;
 
-      if (token == "d") {
-        auto [c, v] = parse_regular_args("d");
-        elements.push_back(el(c, v));
-      } else if (token == "dn") {
-        auto [c, v] = parse_regular_args("dn");
-        elements.push_back(el(NoStrobe(c), v));
-      } else if (token == "s") {
-        auto [c, v] = parse_regular_args("s");
-        elements.push_back(el(c, BitSet(v)));
-      } else if (token == "c") {
-        auto [c, v] = parse_regular_args("c");
-        elements.push_back(el(c, BitClear(v)));
-      } else if (token == "x") {
-        auto [c, v] = parse_regular_args("x");
-        elements.push_back(el(c, BitFlip(v)));
-      } else if (token == "n") {
-        auto [c, v] = parse_regular_args("n");
-        elements.push_back(el(c, BitNot(v)));
-      } else if (token == "a") {
-        auto [c, v] = parse_regular_args("a");
-        elements.push_back(el(c, BitAnd(v)));
-      } else if (token == "o") {
-        auto [c, v] = parse_regular_args("o");
-        elements.push_back(el(c, BitOr(v)));
-      } else if (token == "xr") {
-        auto [c, v] = parse_regular_args("xr");
-        elements.push_back(el(c, BitXor(v)));
-      } else if (token == "xn") {
-        auto [c, v] = parse_regular_args("xn");
-        elements.push_back(el(c, BitXnor(v)));
-      } else if (token == "sl") {
-        auto [c, v] = parse_regular_args("sl");
-        elements.push_back(el(c, BitSll(v)));
-      } else if (token == "sr") {
-        auto [c, v] = parse_regular_args("sr");
-        elements.push_back(el(c, BitSrl(v)));
+      if (token == "d" || token == "dn" || token == "s" || token == "c" || token == "x" ||
+          token == "n" || token == "a" || token == "o" || token == "xr" || token == "xn" ||
+          token == "sl" || token == "sr") {
+        elements.push_back(parse_regular_element(token));
+      } else if (token == "store") {
+        std::string si, op;
+        if (!(f >> si >> op))
+          throw std::runtime_error("Incomplete 'store' record: expected slot and regular-element token");
+        auto e = parse_regular_element(op);
+        elements.push_back(e.store(parse_count_t(si)));
+      } else if (token == "r") {
+        std::string sr, slen;
+        if (!(f >> sr >> slen))
+          throw std::runtime_error("Incomplete 'r' record: expected repetitions and length");
+        elements.push_back(el(Replay{}, parse_count_t(sr), parse_value_t(slen)));
+      } else if (token == "rt") {
+        elements.push_back(el(Retrig{}));
+      } else if (token == "pr") {
+        std::string sc;
+        if (!(f >> sc))
+          throw std::runtime_error("Incomplete 'pr' record: expected count");
+        elements.push_back(el(PseudoRandom{}, parse_count_t(sc)));
+      } else if (token == "final") {
+        std::string sv;
+        if (!(f >> sv))
+          throw std::runtime_error("Incomplete 'final' record: expected value");
+        elements.push_back(el(parse_value_t(sv)));
       } else if (token == "t") {
         std::string sp, sm;
         if (!(f >> sp >> sm))

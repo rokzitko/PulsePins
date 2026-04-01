@@ -424,6 +424,31 @@ TEST_CASE("parse_sequence_from_stream parses stage 3 regular element variants") 
   CHECK(seq[6] == el(13, BitSrl(2)));
 }
 
+TEST_CASE("parse_sequence_from_stream parses stage 4 control-flow elements") {
+  std::istringstream in("store 2 d 3 0x12 store 1 s 4 0x03 r 5 6 rt pr 7");
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+
+  REQUIRE(seq.size() == 5);
+  CHECK(!force_trigger);
+
+  CHECK(seq[0] == el(3, 0x12).store(2));
+  CHECK(seq[1] == el(4, BitSet(0x03)).store(1));
+  CHECK(seq[2] == el(Replay{}, 5, 6));
+  CHECK(seq[3] == el(Retrig{}));
+  CHECK(seq[4] == el(PseudoRandom{}, 7));
+}
+
+TEST_CASE("parse_sequence_from_stream parses explicit final terminator") {
+  std::istringstream in("d 3 0x12 final 0x34");
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+
+  REQUIRE(seq.size() == 2);
+  CHECK(!force_trigger);
+
+  CHECK(seq[0] == el(3, 0x12));
+  CHECK(seq[1] == el(0x34));
+}
+
 TEST_CASE("parse_sequence_from_stream rejects unknown tokens") {
   std::istringstream in("bogus");
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Unknown sequence token: 'bogus'", std::runtime_error);
@@ -460,6 +485,22 @@ TEST_CASE("parse_sequence_from_stream rejects truncated stage 3 regular element 
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_xn), "Incomplete 'xn' record: expected count and value", std::runtime_error);
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_sl), "Incomplete 'sl' record: expected count and value", std::runtime_error);
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_sr), "Incomplete 'sr' record: expected count and value", std::runtime_error);
+}
+
+TEST_CASE("parse_sequence_from_stream rejects malformed stage 4 records") {
+  std::istringstream in_store("store 2");
+  std::istringstream in_store_op("store 2 t 0b1 0b1");
+  std::istringstream in_r("r 5");
+  std::istringstream in_pr("pr");
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_store), "Incomplete 'store' record: expected slot and regular-element token", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_store_op), "Unknown regular sequence token in 'store': 't'", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_r), "Incomplete 'r' record: expected repetitions and length", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_pr), "Incomplete 'pr' record: expected count", std::runtime_error);
+}
+
+TEST_CASE("parse_sequence_from_stream rejects truncated explicit final terminator") {
+  std::istringstream in("final");
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Incomplete 'final' record: expected value", std::runtime_error);
 }
 
 TEST_CASE("parse_sequence_from_stream rejects truncated final trigger records") {
