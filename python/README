@@ -8,3 +8,8 @@ make
 make test
 
 The test should pass without any errors.
+
+The default build now favors lower memory use on the board by using `-O2` and omitting debug info.
+If you need debug symbols while developing bindings, build with:
+
+make PY_DEBUG=1

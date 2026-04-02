@@ -2,3 +2,6 @@ For testing on development computer, install the dependencies using
 
 pip3 install pytest
 pip3 install nanobind
+
+The default Python binding build uses `-O2` and omits `-g` to reduce memory pressure.
+If you need debug symbols, use `make PY_DEBUG=1` in `python/`.

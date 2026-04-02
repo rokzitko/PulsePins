@@ -1,6 +1,14 @@
 NR = 35
 ALT_DEVICE_FAMILY ?= soc_cv_av
-CXXFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
+PY_OPT_LEVEL ?= -O2
+PY_DEBUG ?= 0
+
+PY_DEBUG_FLAGS =
+ifeq ($(PY_DEBUG),1)
+PY_DEBUG_FLAGS += -g
+endif
+
+CXXFLAGS = $(PY_OPT_LEVEL) $(PY_DEBUG_FLAGS) -Wall -DTIDBITNR=${NR} \
   -D$(ALT_DEVICE_FAMILY) \
   -Wformat=0 -std=c++17
 
