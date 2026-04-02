@@ -135,6 +135,14 @@ Copy the current runtime artifacts to the board:
 make copy_all
 ```
 
+Install Bash completion for the `pptool` command family on the live board:
+
+```bash
+sudo ./scripts/install_bash_completion.sh
+```
+
+The prepackaged quick-start SD-card images already ship with this completion installed, so the installer is only needed for manually provisioned systems.
+
 Build only the Python bindings:
 
 ```bash

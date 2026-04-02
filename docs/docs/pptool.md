@@ -77,3 +77,25 @@ See also:
 
 * [C++ API](cpp.md)
 * `c++/README.md`
+
+## Bash completion on the board
+
+PulsePins ships a Bash-completion source file for the `pptool` command family at `contrib/completions/pulsepins.bash`.
+
+It is already installed on the prepackaged quick-start images distributed for SD-card use, so users booting those images do not need to install it manually.
+
+To install it on a live board, run:
+
+```bash
+sudo ./scripts/install_bash_completion.sh
+```
+
+The installer copies the completion file to `/etc/profile.d/pulsepins-completion.sh`, which is sourced automatically by the board's `/etc/profile` for login shells.
+
+After installation, either log out and back in or reload the shell profile manually:
+
+```bash
+source /etc/profile
+```
+
+The first version covers `pptool` and the `pp...` symlink commands, with static completion for common options and file-path completion for arguments such as `ppvcd -file`.
