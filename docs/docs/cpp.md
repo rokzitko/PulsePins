@@ -259,10 +259,16 @@ Clocking-related responsibilities are split deliberately:
 
 Streamer classes (defined in ``basic_multi_dma.hh``):
 
-* ``basic_streamer``: streamer interface and the associated FIFO buffer
-* ``streamer``: high-level interface; adds PLL clock control and FPGA fabric reset interface to the ``basic_streamer``
-* ``dma_streamer``: DMA interface
-* ``multistreamer``: container for four instances of ``basic_streamer``
+* ``basic_streamer``: one streamer instance with its control interface and FIFO transport; the minimal building block for higher-level streamer helpers
+* ``streamer``: single-core helper using the FIFO transport and the Avalon-ST mux default path; it also applies the usual bring-up sequence (initial value, output enable, reset)
+* ``dma_streamer``: single-core helper that reuses the same streamer bring-up but switches the transport to DMA via the ST mux
+* ``multistreamer``: container for four independent ``basic_streamer`` instances with coordinated bring-up of the four streamer cores
+
+The host-side transport split is:
+
+* ``streamer_control.hh`` - register-level lifecycle control, status, gating, CRC, and FIFO statistics
+* ``streamer_fifo.hh`` - direct CPU-driven FIFO transport for short/simple sequence delivery
+* ``streamer_dma.hh`` - SDRAM + MSGDMA transport for longer or repeated transfers
 
 `combiner` (defined in `combiner.hh`) is the interface for advanced multiplexers.
 

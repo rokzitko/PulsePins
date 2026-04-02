@@ -2,6 +2,10 @@
 // Copyright (c) 2026 Rok Zitko
 //
 // DMA-backed sequence transport for the PulsePins streamer.
+//
+// This transport writes the sequence into SDRAM first, then asks the MSGDMA engine to feed
+// that buffer into the streamer ingress path. It is useful when long sequences or repeated
+// replays would make CPU-driven FIFO writes less attractive.
 
 #pragma once
 
@@ -24,7 +28,7 @@
 #include "elements.hh"
 #include "sequence.hh"
 
-// DMA for streaming out
+// DMA transport wrapper for one streamer input path.
 class streamer_dma : private c_dma
 {
 public:
@@ -46,7 +50,7 @@ public:
       reset();
     }
 
-  // Write an element at buffer position i
+  // Materialize one element into the SDRAM staging buffer at logical position `i`.
   void write_element(const int i, const el &e) {
     size_t pos = (BYTES_TOTAL/4)*i; // in units of words (32-bits, 4-bytes); BYTES_TOTAL is the total size of an element in bytes
     if (4*pos + BYTES_TOTAL <= max_size) { // still fits in buffer
@@ -64,7 +68,7 @@ public:
     }
   }
 
-  // Write a sequence in the buffer
+  // Copy the whole sequence into the SDRAM staging buffer and return the byte count.
   size_t prepare(const Sequence &elements) {
     size_t i = 0;
     for(const auto &e : elements)
@@ -74,7 +78,7 @@ public:
     return size; // return the size of the data in bytes
   }
 
-  // Verify the correctness of buffer contents
+  // Re-read the SDRAM staging buffer and check that it matches the source sequence.
   bool verify(const Sequence &elements) {
     size_t pos = 0; // in units of words (32-bits, 4-bytes)
     for(const auto &e : elements) {
@@ -98,7 +102,7 @@ public:
     std::cout << "DMA " << status_string() << std::endl;
   }
 
-  // Perform the transfer
+  // Submit one prepared buffer to the DMA engine and wait for completion.
   void transfer(const size_t size) {
     reset();
     enqueue_src_addr(sdram.get_base(), size);
@@ -107,8 +111,8 @@ public:
     if (v.veryverbose) report();
   }
 
-  // Transfer the same data to the streamer multiple time
-  // 0 = repeat indefinitely
+  // Queue repeated transfers of the same prepared buffer.
+  // `repetitions = 0` means repeat indefinitely.
   void transfer_multiple_times(const size_t size, const size_t repetitions) {
     constexpr size_t depth = MSGDMA_1_DESCRIPTOR_SLAVE_DESCRIPTOR_FIFO_DEPTH;  // Descriptor FIFO depth = 32
     reset();
@@ -127,7 +131,7 @@ public:
     if (v.veryverbose) report();
   }
 
-  // High-level sequence transfer routine
+  // End-to-end helper: prepare, optionally verify, then transfer.
   void send_sequence(const Sequence &elements, const bool verify_buffer = true) {
     const size_t size = prepare(elements);
     if (verify_buffer && verify(elements) == false)

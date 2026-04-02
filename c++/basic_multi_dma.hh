@@ -1,7 +1,17 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Higher-level streamer interfaces and multi-streamer combinations
+// Higher-level streamer interfaces and transport/topology combinations.
+//
+// This header is the main host-side transport-selection seam for streamer-oriented tools.
+// It combines three concerns that are intentionally kept separate in lower layers:
+//   - `streamer_control` for register-level control/status of a streamer instance
+//   - a transport (`streamer_fifo` or `streamer_dma`) for delivering sequence elements
+//   - optional topology glue such as the Avalon-ST mux or four-stream composition
+//
+// The constructors here have important bring-up side effects: they may set initial output
+// values, enable the board outputs, select the active transport, and reset streamer cores.
+// Architectural overview lives in `c++/README.md` and `docs/docs/cpp.md`.
 
 #pragma once
 
@@ -16,7 +26,7 @@
 #include "parser.hh"
 #include "st_mux.hh"
 
-// Streamer interface + asssociated FIFO
+// Minimal host-side view of one streamer instance plus its FIFO transport.
 class basic_streamer {
 public:
   FPGA &fpga;
@@ -48,6 +58,8 @@ public:
                   const std::uintptr_t st_if_base = ST_INTERFACE_1_BASE) :
     basic_streamer(resolve_streamer_options(input), _fpga, fifo_base, fifo_csr_base, st_if_base) {}
 
+  // Initial value must be programmed before the streamer is reset if the caller expects the
+  // post-reset idle output state to match that configured value.
   void set_initial_value_opts(const StreamerOptions &opts, const std::string &param_name = "-i") {
     if (opts.report_initial_value)
       std::cout << "initial_value(" << param_name << ")=" << opts.initial_value << std::endl;
@@ -59,7 +71,7 @@ public:
   }
 };
 
-// High-level interface, single core, with multiplexer (using FIFO transport mechanism)
+// Single-stream bring-up helper using the FIFO transport path.
 class streamer : public basic_streamer {
 public:
   FPGA &fpga;
@@ -71,9 +83,13 @@ public:
     basic_streamer(opts, _fpga, FIFO_1_IN_BASE, FIFO_1_IN_CSR_BASE, ST_INTERFACE_1_BASE),
     fpga (_fpga),
     mux(fpga.dev_h2f, fpga.v, st_mux_base) {
-      basic_streamer::set_initial_value_opts(opts); // set initial value before streamer reset is performed
-      fpga.output_enable(true);    // ensure output is enabled
-      sc.reset();                  // streamer core reset
+      // Bring-up order matters:
+      //   1. program the idle output value
+      //   2. ensure physical outputs are enabled
+      //   3. reset the streamer core so it starts from that known idle state
+      basic_streamer::set_initial_value_opts(opts);
+      fpga.output_enable(true);
+      sc.reset();
     }
 
   streamer(const InputParser &input,
@@ -92,7 +108,7 @@ public:
 constexpr uintptr_t dma_base = 0x20000000UL;
 constexpr uintptr_t dma_size = 0x20000000UL;
 
-// High-level interface, single core, with multiplexer (using DMA transport mechanism)
+// Single-stream helper that swaps the transport from FIFO to DMA via the ST mux.
 class dma_streamer : public streamer {
 public:
   streamer_dma dma;
@@ -100,14 +116,16 @@ public:
   dma_streamer(const StreamerOptions &opts, FPGA &_fpga) :
     streamer(opts, _fpga),
     dma(fpga.dev_h2f, MSGDMA_1_CSR_BASE, MSGDMA_1_DESCRIPTOR_SLAVE_BASE, dma_base, dma_size, fpga.v) {
-      mux.channel(2); // DMA
+      // The underlying streamer bring-up comes from `streamer`; this constructor only needs
+      // to redirect the ST mux so the DMA engine becomes the active producer.
+      mux.channel(2);
     }
 
   dma_streamer(const InputParser &input, FPGA &_fpga) :
     dma_streamer(resolve_streamer_options(input), _fpga) {}
 };
 
-// High-level interface, four cores
+// Four-stream composition helper used by tools that coordinate multiple streamer cores.
 class multistreamer {
 public:
   FPGA &fpga;
@@ -124,7 +142,10 @@ public:
     s3(s3_opts, fpga, FIFO_3_IN_BASE, FIFO_3_IN_CSR_BASE, ST_INTERFACE_3_BASE),
     s4(s4_opts, fpga, FIFO_4_IN_BASE, FIFO_4_IN_CSR_BASE, ST_INTERFACE_4_BASE)
     {
-      fpga.output_enable(true); // ensure output is enabled
+      // Each core is configured independently, but outputs are enabled once globally.
+      // Initial values are set before each per-core reset for the same reason as in the
+      // single-stream helper.
+      fpga.output_enable(true);
       s1.set_initial_value_opts(s1_opts, "-i1");
       s1.sc.reset();
       s2.set_initial_value_opts(s2_opts, "-i2");

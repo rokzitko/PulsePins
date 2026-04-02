@@ -13,6 +13,7 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 - `options.hh` - typed option-resolution helpers shared by startup, trigger, streamer, and measurement code
 - `ppworkflow.hh` - shared send/trigger/readback/check workflow used by several commands
 - `elements.hh` and `sequence.hh` - host-side representation of pulse programs and trigger elements
+- `streamer_control.hh`, `streamer_fifo.hh`, `streamer_dma.hh`, `basic_multi_dma.hh` - host-side streamer lifecycle control and transport/topology helpers
 - `streamer*.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, `freq_meter.hh` - typed wrappers around major FPGA subsystems
 
 ## Host-side architecture
@@ -38,6 +39,7 @@ If you want to customize or extend the host software, the usual starting points 
 - add a new CLI mode: implement a new `pp...` function and register it in the dispatch table in `pptool.cc`
 - add a new sequence construct: extend `elements.hh` and `sequence.hh`, then update the relevant command or parser path
 - change common streamer execution behavior: update `send_and_trig(...)` in `ppworkflow.hh`
+- change how sequences reach hardware: update `streamer_fifo.hh`, `streamer_dma.hh`, and `basic_multi_dma.hh`
 - change default startup behavior: update `apply_fpga_startup_policy(...)` in `startup.hh`
 - change clock-selection or PLL option semantics: update `options.hh` and `pll_rules.hh`
 - expose a new hardware block: add a typed wrapper header, then call it from a command handler or higher-level API
@@ -54,8 +56,9 @@ For a first pass through the codebase, read in this order:
 4. `fpga.hh` and `startup.hh`
 5. `options.hh` and `pll_rules.hh`
 6. `ppworkflow.hh`
-7. `elements.hh` and `sequence.hh`
-8. subsystem wrappers such as `streamer.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, and `freq_meter.hh`
+7. `streamer_control.hh`, `streamer_fifo.hh`, `streamer_dma.hh`, and `basic_multi_dma.hh`
+8. `elements.hh` and `sequence.hh`
+9. subsystem wrappers such as `streamer.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, and `freq_meter.hh`
 
 That order mirrors the path a user command takes from CLI invocation down to FPGA-facing transactions.
 

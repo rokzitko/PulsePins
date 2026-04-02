@@ -2,6 +2,13 @@
 // Copyright (c) 2025-2026 Rok Zitko
 //
 // High-level host-side control interface for the PulsePins streamer.
+//
+// This wrapper is the software-visible lifecycle controller for one streamer instance. It
+// owns the control/status register, output-state visibility, gating configuration, overflow
+// and CRC status, and the FIFO traffic counters used by higher-level workflow checks.
+//
+// Architectural overview lives in `c++/README.md`, `docs/docs/cpp.md`, and
+// `docs/docs/streamer.md`.
 
 #pragma once
 
@@ -24,7 +31,7 @@
 #include "definitions.hh"
 #include "colors.hh"
 
-// Streamer control: high-level interface for controlling a run-length decoding streamer
+// Register-level host wrapper for one streamer interface instance.
 class streamer_control
 {
 private:
@@ -81,10 +88,12 @@ public:
     output_fifo_ctr_out_h (dev.get_loc(base, OUTPUT_FIFO_CTR_OUT_H*4))
     {};
 
+  // Read the combined status/control register as exposed by `st_interface.sv`.
   port_t status() {
     return sc.read();
   }
 
+  // Return the software-side shadow of the control word.
   port_t get_control() {
     return control;
   }
@@ -97,7 +106,7 @@ public:
     return crc32.read();
   }
 
-  // Output signal on the device pins
+  // Current value visible on the actual output pins after any qout override muxing.
   value_t get_qout() {
     if constexpr (std::is_same_v<value_t, uint32_t>) {
       return qout.read();
@@ -106,7 +115,7 @@ public:
     }
   }
 
-  // Output signal from the streamer
+  // Raw streamer output value before the optional qout override path.
   value_t get_qout_streamer() {
     if constexpr (std::is_same_v<value_t, uint32_t>) {
       return qout_streamer.read();
@@ -139,6 +148,7 @@ public:
     return (uint64_t(output_fifo_ctr_out_h.read()) << 32) + uint64_t(output_fifo_ctr_out_l.read());
   }
 
+  // Print transport/fifo accounting information used by higher-level verification paths.
   void statistics() {
     const auto i_ctr1_in  = get_input_fifo1_ctr_in();
     const auto i_ctr1_out = get_input_fifo1_ctr_out();
@@ -177,7 +187,7 @@ public:
     }
   }
 
-  // Initial value is the state of the output bits before the streaming is started.
+  // State of the output bits before the streamer has triggered and begun advancing.
   void set_initial_value(const value_t iv) {
     if constexpr (std::is_same_v<value_t, uint32_t>) {
       initial_value.write(iv);
@@ -186,7 +196,7 @@ public:
     }
   }
 
-  // qout_override is the state of the output bits if we force their values; see qout_select() below
+  // Value presented on the outputs when the qout override path is selected.
   void set_qout_override(const value_t v) {
     if constexpr (std::is_same_v<value_t, uint32_t>) {
       qout_override.write(v);
@@ -195,12 +205,12 @@ public:
     }
   }
 
-  // Returns true if there was an error (FIFO buffer underflow) encountered during streaming out.
+  // True if the output side encountered an underrun/buffer error during streaming.
   bool buffer_error() {
     return status() & BUFFER_ERROR;
   }
 
-  // Returns true if streaming out completed successfully.
+  // True if the streamer reached the end of the buffered output stream.
   bool done() {
     return status() & DONE;
   }
@@ -220,6 +230,7 @@ public:
     return rc;
   }
 
+  // Human-readable state dump combining status bits and the current software control shadow.
   void status_report(std::ostream &F = std::cout) {
     // Status bits
     const auto st = status();
@@ -260,7 +271,8 @@ public:
     sc.write(control);
   }
 
-  // Full reset: sets all registers to zero, then calls reset_streamer()
+  // Full software-visible reset: restore the control word to its persistent defaults, then
+  // pulse the streamer reset bit.
   void reset(const uint32_t usleep_time = 10) {
     control = control_initial_value;
     sc.write(control);
@@ -274,26 +286,25 @@ public:
     sc.write(control);
   }
 
-  // Trigger enable (internal signal)
+  // Arm the internal trigger path; actual triggering still depends on trigger conditions.
   void trigger_enable() {
     BITMASK_SET(control, TRIGGER_ENABLE_INT);
     sc.write(control);
   }
 
-  // Trigger force (internal signal)
+  // Force the internal trigger path active immediately.
   void trigger_force() {
     BITMASK_SET(control, TRIGGER_FORCE_INT);
     sc.write(control);
   }
 
-  // Trigger reset (internal signal)
+  // Reset the internal trigger state machine/path.
   void trigger_reset() {
     BITMASK_SET(control, TRIGGER_RESET_INT);
     sc.write(control);
   }
 
-  // true: qout_override
-  // false: qout_streamer
+  // Select between the override value and the raw streamer output.
   void qout_select(bool s) {
     if (s)  BITMASK_SET(control, QOUT_SELECT);
     if (!s) BITMASK_CLEAR(control, QOUT_SELECT);
@@ -315,16 +326,14 @@ public:
     sc.write(control);
   }
 
-  // Set qout_override value and switch the output immediately to that value.
+  // Convenience helper: update the override register and make it visible immediately.
   void qout_set(const value_t v) {
     set_qout_override(v);
     qout_select(true); // must come *after* set_qout_override()
   }
 
-  // Enable gating: the streaming out from the output FIFO in gating modes depends
-  // on an enable (gate) signal. There is a dedicated input port (gate_in) wired to a
-  // physical pin on the FPGA board. Alternatively, one can gate using the trigger
-  // signals under the control for the gate_mask masking pattern.
+  // Configure output gating. The effective gate can come from the dedicated gate input,
+  // from a masked subset of trigger inputs, or from both.
   void gating(const bool en, const bool gate_in_en, const trigger_t gate_mask) {
     port_t x = (en ? 1 : 0) + (gate_in_en ? 2 : 0) + (port_t(gate_mask) << 2);
     lgating.write(x);
@@ -351,7 +360,7 @@ public:
     return gate_status_string_from_x(gate_status());
   }
 
-  // Control gating parameters from a string (for parsing command-line options)
+  // Parse the compact CLI gating syntax `enabled[:gate_in[:mask]]`.
   void set_gating_from_string(std::string s) {
     bool en = false;
     bool gate_in_en = false;
