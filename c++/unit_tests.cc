@@ -18,6 +18,8 @@
 #include "elements.hh"
 #include "PMODDA3.hh"
 #include "SPI.hh"
+#include "options.hh"
+#include "ppworkflow.hh"
 #include "sequence.hh"
 #include "streamer.hh"
 #include "vcd_parser.hh"
@@ -27,6 +29,10 @@ control_t get_control_bits(const Counter &x) { return x.control_bits(); }
 
 bool contains(const std::string &str, const std::string &substr) {
   return str.find(substr) != std::string::npos;
+}
+
+InputParser make_input(std::initializer_list<std::string> args) {
+  return InputParser(std::vector<std::string>(args));
 }
 
 TEST_CASE("counter class") {
@@ -358,6 +364,167 @@ TEST_CASE("parseuint32_t") {
   CHECK(parse_uint32_t("'b1010") == 10);
 }
 
+TEST_CASE("resolve_clock_selection_options prefers raw -clk") {
+  auto input = make_input({"-int_clk", "-ext_clk", "-clk", "3"});
+  auto opts = resolve_clock_selection_options(input);
+
+  REQUIRE(opts.source.has_value());
+  CHECK(*opts.source == StreamerClockSource::raw_select);
+  REQUIRE(opts.raw_select.has_value());
+  CHECK(*opts.raw_select == 3);
+}
+
+TEST_CASE("resolve_clock_selection_options handles single source flags") {
+  SUBCASE("internal") {
+    auto opts = resolve_clock_selection_options(make_input({"-int_clk"}));
+    REQUIRE(opts.source.has_value());
+    CHECK(*opts.source == StreamerClockSource::internal);
+    CHECK(!opts.raw_select.has_value());
+  }
+
+  SUBCASE("external") {
+    auto opts = resolve_clock_selection_options(make_input({"-ext_clk"}));
+    REQUIRE(opts.source.has_value());
+    CHECK(*opts.source == StreamerClockSource::external);
+    CHECK(!opts.raw_select.has_value());
+  }
+}
+
+TEST_CASE("resolve_core_pll_options captures profile and tuning") {
+  auto opts = resolve_core_pll_options(make_input({"-core_pll", "fast", "-core_pll_charge_pump", "2", "-core_pll_bandwidth", "5"}));
+
+  CHECK(opts.profile == "fast");
+  REQUIRE(opts.charge_pump.has_value());
+  CHECK(*opts.charge_pump == 2);
+  REQUIRE(opts.bandwidth.has_value());
+  CHECK(*opts.bandwidth == 5);
+}
+
+TEST_CASE("resolve_int_pll_options captures profile and tuning") {
+  auto opts = resolve_int_pll_options(make_input({"-int_pll", "slow", "-int_pll_charge_pump", "3", "-int_pll_bandwidth", "6"}));
+
+  CHECK(opts.profile == "slow");
+  REQUIRE(opts.charge_pump.has_value());
+  CHECK(*opts.charge_pump == 3);
+  REQUIRE(opts.bandwidth.has_value());
+  CHECK(*opts.bandwidth == 6);
+}
+
+TEST_CASE("resolve_trigger_options captures mode invert and mask fields") {
+  auto opts = resolve_trigger_options(make_input({
+      "-trig_any",
+      "-invert_trig_result", "1",
+      "-invert_int", "2",
+      "-invert_ext", "3",
+      "-invert_misc", "4",
+      "-mask_int", "5",
+      "-mask_ext", "6",
+      "-mask_misc", "7",
+  }));
+
+  REQUIRE(opts.mode.has_value());
+  CHECK(*opts.mode == TriggerModeOption::any);
+  CHECK(opts.invert_result == std::optional<uint32_t>(1));
+  CHECK(opts.invert_int == std::optional<uint32_t>(2));
+  CHECK(opts.invert_ext == std::optional<uint32_t>(3));
+  CHECK(opts.invert_misc == std::optional<uint32_t>(4));
+  CHECK(opts.mask_int == std::optional<uint32_t>(5));
+  CHECK(opts.mask_ext == std::optional<uint32_t>(6));
+  CHECK(opts.mask_misc == std::optional<uint32_t>(7));
+}
+
+TEST_CASE("resolve_streamer_options reports explicit initial value") {
+  SUBCASE("default") {
+    auto opts = resolve_streamer_options(make_input({}));
+    CHECK(!opts.stop_on_buffer_error);
+    CHECK(opts.initial_value == 0);
+    CHECK(!opts.report_initial_value);
+  }
+
+  SUBCASE("explicit initial value") {
+    auto opts = resolve_streamer_options(make_input({"-sobe", "-i", "0x2a"}));
+    CHECK(opts.stop_on_buffer_error);
+    CHECK(opts.initial_value == 0x2a);
+    CHECK(opts.report_initial_value);
+  }
+}
+
+TEST_CASE("resolve_freq_meter_options captures correction factor") {
+  SUBCASE("absent") {
+    auto opts = resolve_freq_meter_options(make_input({}));
+    CHECK(!opts.correction_factor.has_value());
+  }
+
+  SUBCASE("present") {
+    auto opts = resolve_freq_meter_options(make_input({"-freq_rescale", "1.25"}));
+    REQUIRE(opts.correction_factor.has_value());
+    CHECK(*opts.correction_factor == doctest::Approx(1.25));
+  }
+}
+
+TEST_CASE("append_final_output appends explicit final terminator") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+
+  auto final = append_final_output(seq, make_input({"-t", "0x34"}));
+
+  CHECK(final == 0x34);
+  REQUIRE(seq.size() == 2);
+  CHECK(seq.back() == el(0x34));
+}
+
+TEST_CASE("append_final_output appends final element when -t is absent") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+
+  auto final = append_final_output(seq, make_input({}));
+
+  REQUIRE(seq.size() == 2);
+  CHECK(seq.back().is_final());
+  CHECK(seq.back().value() == final);
+}
+
+TEST_CASE("drop_count0 removes only zero-count elements") {
+  Sequence seq;
+  seq.push_back(el(0, 0x10));
+  seq.push_back(el(3, 0x11));
+  seq.push_back(el(0, 0x12));
+  seq.push_back(el(4, 0x13));
+
+  drop_count0(seq);
+
+  REQUIRE(seq.size() == 2);
+  CHECK(seq[0] == el(3, 0x11));
+  CHECK(seq[1] == el(4, 0x13));
+}
+
+TEST_CASE("convert_for_readback_check normalizes effective output stream") {
+  Sequence seq;
+  seq.push_back(el(1, BitLoad(1)));
+  seq.push_back(el(2, BitSet(2)));
+  seq.push_back(el(3, BitFlip(1)));
+  seq.push_back(el(4, BitLoad(2)));
+
+  Sequence expected;
+  expected.push_back(el(1, BitLoad(1)));
+  expected.push_back(el(2, BitLoad(3)));
+  expected.push_back(el(3, BitLoad(2)));
+  expected.push_back(el(4, BitLoad(2)));
+  expected = expected.merge();
+
+  convert_for_readback_check(seq);
+
+  CHECK(seq == expected);
+}
+
+TEST_CASE("readback_timeout defaults to zero without timeout option") {
+  CHECK(readback_timeout(make_input({})) == doctest::Approx(0.0));
+}
+
+TEST_CASE("readback_timeout parses explicit timeout") {
+  CHECK(readback_timeout(make_input({"-timeout", "0.25"})) == doctest::Approx(0.25));
+}
+
 TEST_CASE("VCD parser") {
   std::ifstream F("unit_tests_input/test1.vcd");
   CHECK(F);
@@ -387,6 +554,26 @@ TEST_CASE("parse_sequence_from_stream parses existing grammar") {
   CHECK(seq[0] == el(3, 0x12));
   CHECK(seq[1] == el(0b01, 0b11, true));
   CHECK(seq[2] == el(4, 0x34));
+}
+
+TEST_CASE("parse_sequence_from_stream accepts empty input") {
+  std::istringstream in("");
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+
+  CHECK(seq.empty());
+  CHECK(!force_trigger);
+}
+
+TEST_CASE("parse_sequence_from_stream handles mixed whitespace") {
+  std::istringstream in("  d 3 0x12\n\n tn 0b01 0b01\n   rt\n final 0x34\n");
+  auto [seq, force_trigger] = parse_sequence_from_stream(in);
+
+  REQUIRE(seq.size() == 4);
+  CHECK(!force_trigger);
+  CHECK(seq[0] == el(3, 0x12));
+  CHECK(seq[1] == el(0b01, 0b01, false));
+  CHECK(seq[2] == el(Retrig{}));
+  CHECK(seq[3] == el(0x34));
 }
 
 TEST_CASE("parse_sequence_from_stream parses non-final triggers") {
@@ -572,4 +759,24 @@ TEST_CASE("write_sequence_to_stream round-trips PMOD DA3 sequence") {
   auto [seq, force_trigger] = parse_sequence_from_stream(in);
   CHECK(force_trigger);
   CHECK(seq == builder.sequence());
+}
+
+TEST_CASE("write_sequence_to_stream round-trips triggers and control-flow elements") {
+  Sequence seq;
+  seq.push_back(el(0x01, 0x03, false));
+  seq.push_back(el(5, 0x12).store(2));
+  seq.push_back(el(Replay{}, 7, 4));
+  seq.push_back(el(Retrig{}));
+  seq.push_back(el(PseudoRandom{}, 9));
+  seq.push_back(el(0x02, 0x03, true));
+  seq.push_back(el(0x34));
+
+  std::ostringstream out;
+  write_sequence_to_stream(seq, out, false);
+
+  std::istringstream in(out.str());
+  auto [roundtrip, force_trigger] = parse_sequence_from_stream(in);
+
+  CHECK(!force_trigger);
+  CHECK(roundtrip == seq);
 }
