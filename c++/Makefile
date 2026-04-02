@@ -22,8 +22,13 @@ CROSS_COMPILE ?= arm-linux-gnueabihf-
 GCC_SUFFIX ?= -7
 
 # Used only for cross-compilation
+ifneq ($(strip $(SYSROOT)),)
 CROSSCFLAGS = --sysroot=$(SYSROOT)
 CROSSCPPFLAGS = --sysroot=$(SYSROOT)
+else
+CROSSCFLAGS =
+CROSSCPPFLAGS =
+endif
 
 CFLAGS   = -O2 -Wall -Wextra -fPIC
 CPPFLAGS = -O3 -g -Wall -DTIDBITNR=${NR} \
