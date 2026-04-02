@@ -180,7 +180,7 @@ public:
     catch (const ReadbackException &e) {
       std::cout << "Caught ReadbackException: " << e.what() << "\n";
     }
-    F << "Readback report: size=" << n << " length=" << len << std::endl;
+    F << "Readback report: size=" << std::dec << n << " length=" << std::dec << len << std::endl;
     if (v.veryverbose)
       status_report();
   }
@@ -196,7 +196,7 @@ public:
     if (v.veryverbose)
       status_report();
     if (v.verbosecheck)
-      F << prefix << "Starting a readback check, size=" << size << " length=" << length << std::endl;
+      F << prefix << "Starting a readback check, size=" << std::dec << size << " length=" << std::dec << length << std::endl;
     size_t n = 0;       // Element counter
     size_t n_error = 0; // Number of errors
     size_t len = 0;     // Total length counter

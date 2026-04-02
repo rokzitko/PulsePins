@@ -309,7 +309,7 @@ public:
       ss << vv->value_str() << " " << vv->desc();
       break;
     case el_type::replay:
-      ss << "Replay: repetitions=" << count() << " length=" << value();
+      ss << "Replay: repetitions=" << std::dec << count() << " length=" << std::dec << value();
       break;
     case el_type::final:
       ss << finalstring;
@@ -318,7 +318,7 @@ public:
       ss << retrigstring;
       break;
     case el_type::prng:
-      ss << prngstring << " length=" << count();
+      ss << prngstring << " length=" << std::dec << count();
       break;
     }
     return ss.str();

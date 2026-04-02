@@ -519,7 +519,7 @@ public:
         len += e.count();
         thr.try_call([n,len,&t]{
           std::cout << "run time=" << std::fixed << std::setprecision(3) << double(t.elapsed<std::chrono::milliseconds>().count())/1000 << "s"
-            << " size=" << n << " length=" << with_underscores(len) << std::endl;
+            << " size=" << std::dec << n << " length=" << with_underscores(len) << std::endl;
         });
         fill = rb.filled();
       }
