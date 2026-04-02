@@ -20,7 +20,7 @@ Relevant targets in `Makefile`:
 * `copy` - copy `pulsepins.rbf` to the target host
 * `copy_boot` - copy the RBF to the boot partition path
 * `copy_all` - copy hardware, C++, Python, tests, and I2C helpers to the target host
-* `copy_all_img` - stage the same content into the image tree
+* `copy_all_img` / `copy_all_image` - stage the same content into the image tree
 * `lint` - run Verible lint on top-level Verilog/SystemVerilog
 * `clean` - remove generated artifacts across subprojects
 
@@ -135,6 +135,8 @@ Copy the current runtime artifacts to the board:
 make copy_all
 ```
 
+This also installs the Bash-completion file for the `pptool` command family onto the live board under `/etc/profile.d/pulsepins-completion.sh`.
+
 Install Bash completion for the `pptool` command family on the live board:
 
 ```bash
@@ -142,6 +144,8 @@ sudo ./scripts/install_bash_completion.sh
 ```
 
 The prepackaged quick-start SD-card images already ship with this completion installed, so the installer is only needed for manually provisioned systems.
+
+If you stage a board image through the repository Makefiles, `make copy_all_img` (or the alias `make copy_all_image`) also stages the same completion file into `image/etc/profile.d/pulsepins-completion.sh`.
 
 Build only the Python bindings:
 

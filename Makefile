@@ -63,12 +63,16 @@ copy_all: copy
 	cd python ; make copy_sources ; make copy_misc
 	cd tests ; make copy
 	cd I2C ; make copy
+	cd contrib/completions ; make copy
 
 copy_all_img: copy_img
 	cd c++ ; make copy_img ; make copy_sources_img
 	cd python ; make copy_sources_img
 	cd tests ; make copy_img
 	cd I2C ; make copy_img
+	cd contrib/completions ; make copy_img
+
+copy_all_image: copy_all_img
 
 lint-verilator:
 	verilator --lint-only -Wall *.sv
