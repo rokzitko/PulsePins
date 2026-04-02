@@ -105,42 +105,52 @@ public:
 
     if (samples < 2)
       throw std::runtime_error("test25 requires at least two samples per sine period");
-    if (!(dwell > 0.0))
-      throw std::runtime_error("test25 requires a positive -dwell");
+    if (!(dwell >= 0.0))
+      throw std::runtime_error("test25 requires a non-negative -dwell");
     if (vmax < vmin)
       throw std::runtime_error("test25 requires the upper voltage bound to be at least the lower bound");
 
     const auto dwell_ticks = static_cast<count_t>(std::llround(dwell * streamer_clk_hz));
-    if (dwell_ticks == 0)
-      throw std::runtime_error("test25 dwell time is shorter than one streamer clock period");
 
     const double vmid = 0.5 * (vmin + vmax);
     const double amplitude = 0.5 * (vmax - vmin);
     const double pi = std::acos(-1.0);
 
     size_t pos = 0;
+    size_t seq_len = 0;
+    size_t total_len = 0;
     for (count_t i = 0; i < samples; i++) {
       const double phase = (2.0 * pi * static_cast<double>(i)) / static_cast<double>(samples);
       const double volts = vmid + amplitude * std::sin(phase);
       auto builder = pmod_da3::transaction_for_voltage(volts, 2.5, cfg);
       const auto &tx = builder.sequence();
+      seq_len = tx.length();
       for (const auto &e : tx) {
         if (4*pos + BYTES_TOTAL > ds.dma.max_size)
           throw std::runtime_error("test25 sequence does not fit in DMA buffer");
         ds.dma.write_element(pos, e);
+        total_len += e.count();
         pos++;
       }
       if (4*pos + BYTES_TOTAL > ds.dma.max_size)
         throw std::runtime_error("test25 sequence does not fit in DMA buffer");
-      ds.dma.write_element(pos, el(dwell_ticks, tx.back().value()));
-      pos++;
+      if (dwell_ticks != 0) {
+        ds.dma.write_element(pos, el(dwell_ticks, tx.back().value()));
+        total_len += dwell_ticks;
+        pos++;
+      }
     }
 
     if (verb.verbose) {
+      std::cout << "dwell_ticks=" << dwell_ticks << " sequence_len=" << seq_len << std::endl;
+      std::cout << "total_len=" << total_len << std::endl; // samples*(dwell_ticks+seq_len)
       const auto period = samples * dwell;
       std::cout << "samples=" << std::dec << samples << " reps=" << reps << " dwell=" << dwell << "s"
                 << " period=" << period << "s"
                 << " waveform_freq=" << (period > 0.0 ? 1.0/period : 0.0) << "Hz" << std::endl;
+      const auto actual_period = samples * (dwell_ticks+seq_len)/streamer_clk_hz;
+      const auto actual_freq = 1/actual_period;
+      std::cout << "actual period=" << actual_period << " s  actual freq=" << actual_freq << " Hz" << std::endl;
       std::cout << "requested SPI clock=" << cfg.spi_clock_hz << "Hz achieved SPI clock="
                 << pmod_da3::transaction_for_voltage(vmid, 2.5, cfg).achieved_spi_clock_hz() << "Hz" << std::endl;
     }
