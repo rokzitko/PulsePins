@@ -11,15 +11,15 @@ The main executable entry point lives in `c++/pptool.cc`.
 
 At startup it performs the shared host-side bootstrap:
 
-1. parse command-line options
-2. enable the common runtime policy from `startup.hh`
-3. construct the single `FPGA` object
-4. apply the default clock/PLL startup policy
+1. build a `HostRuntime` from `c++/host_runtime.hh`
+2. parse command-line options and enable the common runtime policy
+3. construct the single `FPGA` object and apply the default clock/PLL startup policy
+4. run the startup frequency-meter report that also caches `streamer_clk` in the `FPGA` object
 5. dispatch to a tool-specific handler based on the executable name
 
 This means `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and several other commands are all different front doors into the same host-side runtime.
 
-The clock-selection and PLL choices consumed during startup are resolved by `c++/options.hh` and then applied by `c++/startup.hh`, which makes startup behavior a reusable policy layer rather than ad hoc code in each command.
+The clock-selection and PLL choices consumed during startup are resolved by `c++/options.hh`, applied by `c++/startup.hh`, and packaged together by `c++/host_runtime.hh`, which keeps startup behavior aligned across the main executables.
 
 The command catalog itself is declared in `c++/pptool_commands.hh` and implemented mainly in:
 

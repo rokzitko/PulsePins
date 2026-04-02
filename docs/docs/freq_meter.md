@@ -70,6 +70,8 @@ The higher-level `pp_freq_meter` wrapper additionally:
 
 That last step is important because other software layers may rely on the measured streamer clock when converting counts to time-based values.
 
+The shared executable bootstrap in `c++/host_runtime.hh` constructs this wrapper during startup and reports the initial frequencies before command execution begins.
+
 The user-facing command implementation lives in `c++/pptool_measurement.cc`.
 
 ### Standard channels

@@ -41,6 +41,31 @@
 std::mutex lockcout;
 #define LOCKCOUT(z) { lockcout.lock(); z; lockcout.unlock(); }
 
+struct TimestampSession {
+  rstmgr rm;
+  timestamp ts;
+  double timeout;
+
+  TimestampSession(FPGA &fpga, const InputParser &input, const Verbosity &v) :
+    rm(),
+    ts(fpga.dev_h2f,
+      fpga.dev_lw,
+      FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
+      FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
+      PIO_CFG_BASE),
+    timeout(parse_double(input, "-timeout", "0"))
+  {
+    rm.s2f_reset();
+    if (input.exists("-pps_in"))
+      ts.sel_pps_in();
+    if (input.exists("-pps_xtal"))
+      ts.sel_pps_xtal();
+    ts.selA(parse_uint32(input, "-selA", "0"));
+    if (v.verbose)
+      std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
+  }
+};
+
 int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   // Counter workflow:
@@ -118,30 +143,15 @@ int ppts(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   // Timestamp reader entry point. Depending on the switches, this command can read the
   // PPS path, the auxiliary signal-A path, or both concurrently.
-  rstmgr rm;
-  rm.s2f_reset();
-  timestamp ts(fpga.dev_h2f,
-              fpga.dev_lw,
-              FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
-              FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
-              PIO_CFG_BASE);
-  const double timeout = parse_double(input, "-timeout", "0");
+  TimestampSession session(fpga, input, v);
   const bool read_pps = !input.exists("-nopps");
-  if (input.exists("-pps_in"))
-    ts.sel_pps_in();
-  if (input.exists("-pps_xtal"))
-    ts.sel_pps_xtal();
   std::thread ts_pps;
   if (read_pps)
-    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&ts, timeout](){ return ts.read_with_timeout(timeout); }, -1);
+    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&session](){ return session.ts.read_with_timeout(session.timeout); }, -1);
   const bool read_sigA = input.exists("-sigA");
-  const auto selA = parse_uint32(input, "-selA", "0");
-  ts.selA(selA);
-  if (v.verbose)
-    std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
   std::thread ts_sigA;
   if (read_sigA)
-    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, timeout](){ return ts.readA_with_timeout(timeout); }, -1);
+    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session](){ return session.ts.readA_with_timeout(session.timeout); }, -1);
   if (read_pps) ts_pps.join();
   if (read_sigA) ts_sigA.join();
   return RC_OK;
@@ -220,22 +230,7 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   // GPSDO helper: pair PPS and signal-A timestamps, derive timing error, then feed the
   // averaged error into a PID-controlled DAC output.
-  rstmgr rm;
-  rm.s2f_reset();
-  timestamp ts(fpga.dev_h2f,
-              fpga.dev_lw,
-              FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
-              FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
-              PIO_CFG_BASE);
-  const double timeout = parse_double(input, "-timeout", "0");
-  if (input.exists("-pps_in"))
-    ts.sel_pps_in();
-  if (input.exists("-pps_xtal"))
-    ts.sel_pps_xtal();
-  const auto selA = parse_uint32(input, "-selA", "0");
-  ts.selA(selA);
-  if (v.verbose)
-    std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
+  TimestampSession session(fpga, input, v);
   const auto kp = parse_double(input, "-kp", "0.01");
   const auto ki = parse_double(input, "-ki", "0.1");
   const int64_t clip = parse_uint64(input, "-clip", "1000");
@@ -294,13 +289,13 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
       },
       8
   );
-  auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&ts, &agg, timeout](){
-    const auto A = ts.read_with_timeout(timeout);
+  auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&session, &agg](){
+    const auto A = session.ts.read_with_timeout(session.timeout);
     agg.submitA(A);
     return A;
   }, silent_after);
-  auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&ts, &agg, timeout](){
-    const auto B = ts.readA_with_timeout(timeout);
+  auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session, &agg](){
+    const auto B = session.ts.readA_with_timeout(session.timeout);
     agg.submitB(B);
     return B;
   }, silent_after);

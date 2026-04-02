@@ -15,11 +15,10 @@
 
 #include "ppmisc.hh"
 #include "pptool_commands.hh"
+#include "host_runtime.hh"
 #include "ppversion.hh"
-#include "startup.hh"
 #include "delay.hh"
 #include "misc.hh"
-#include "parser.hh"
 #include "definitions.hh"
 
 #define HAS_LUA
@@ -33,21 +32,15 @@
 #include "ppserver.hh"
 #endif
 
-#include "freq_meter.hh"
-
 bool exit_flag = false; // for handling exit requests when waiting (-wait)
 
 int main(int argc, char *argv[])
 {
-  auto progname = get_program_name(argc, argv);
-  about(progname);
-  InputParser input(argc, argv);
-  auto v = set_verbosity(input);
-  auto rt = bootstrap_process(v, version);
-  FPGA fpga(v);
-  apply_fpga_startup_policy(fpga, input);
-  pp_freq_meter fm(input, fpga);
-  fm.report();
+  HostRuntime rt(argc, argv, version);
+  auto &progname = rt.progname;
+  auto &input = rt.input;
+  auto &v = rt.verbosity;
+  auto &fpga = rt.get_fpga();
 #ifdef HAS_LUA
   lua_processor luna(input, v, fpga);
   if (v.veryverbose) luna.test();

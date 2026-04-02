@@ -11,12 +11,11 @@
 #include <utility>
 
 #include "scpi_server.hh"
+#include "host_runtime.hh"
 #include "ppmisc.hh"
 #include "ppversion.hh"
 #include "ppworkflow.hh"
 #include "verbosity.hh"
-#include "freq_meter.hh"
-#include "startup.hh"
 #include "basic_multi_dma.hh"
 
 class TerminateSession : public std::exception {
@@ -162,14 +161,10 @@ protected:
 constexpr int server_port = 5025;
 
 int main(int argc, char *argv[]) {
-  about(get_program_name(argc, argv));
-  InputParser input(argc, argv);
-  auto v = set_verbosity(input);
-  auto rt = bootstrap_process(v, version);
-  FPGA fpga(v);
-  apply_fpga_startup_policy(fpga, input);
-  pp_freq_meter fm(input, fpga);
-  fm.report();
+  HostRuntime rt(argc, argv, version);
+  auto &input = rt.input;
+  auto &v = rt.verbosity;
+  auto &fpga = rt.get_fpga();
   try {
     asio::io_context io;
     PPServer server(io, server_port, input, fpga, v);

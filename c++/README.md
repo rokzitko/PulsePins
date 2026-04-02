@@ -8,6 +8,7 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 - `pptool_commands.hh` - catalog of supported `pp...` command handlers
 - `pptool_streaming.cc` - commands that primarily drive the streamer datapath
 - `pptool_measurement.cc` - commands for readback, counters, timestamps, temperature, and frequency measurement
+- `host_runtime.hh` - shared bootstrap/runtime object used by the main host-side executables
 - `fpga.hh` - top-level ARM-side ownership of memory maps, PLL helpers, trigger monitors, and output-enable GPIO
 - `startup.hh` - common process bootstrap and FPGA startup policy
 - `options.hh` - typed option-resolution helpers shared by startup, trigger, streamer, and measurement code
@@ -20,7 +21,7 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 
 At a high level the control flow is:
 
-1. `main()` in `pptool.cc` parses command-line options, enables the common runtime policy, and constructs the single `FPGA` object.
+1. `main()` in `pptool.cc` builds a `HostRuntime`, which parses options, applies shared process/bootstrap policy, constructs the single `FPGA` object, and performs the startup frequency-meter report.
 2. `startup.hh` applies clock-selection and PLL policy before command execution begins.
 3. The executable name (`pptool`, `ppfg`, `ppcounter`, and so on) selects a command handler from the dispatch table in `pptool.cc`.
 4. Command handlers construct typed subsystem wrappers such as `streamer`, `readback`, `counter`, `timestamp`, or `freq_meter`.
@@ -28,6 +29,7 @@ At a high level the control flow is:
 
 This split is intentional:
 
+- `host_runtime.hh` owns the shared executable bootstrap and startup-report policy.
 - `pptool*.cc` files define user-facing behavior and option handling.
 - wrapper headers expose hardware blocks as typed C++ interfaces.
 - sequence classes model the programmable pulse stream in a way that can be reused by CLI tools, tests, and future bindings.
@@ -52,13 +54,14 @@ For a first pass through the codebase, read in this order:
 
 1. `pptool.cc`
 2. `pptool_commands.hh`
-3. `pptool_streaming.cc` and `pptool_measurement.cc`
-4. `fpga.hh` and `startup.hh`
-5. `options.hh` and `pll_rules.hh`
-6. `ppworkflow.hh`
-7. `streamer_control.hh`, `streamer_fifo.hh`, `streamer_dma.hh`, and `basic_multi_dma.hh`
-8. `elements.hh` and `sequence.hh`
-9. subsystem wrappers such as `streamer.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, and `freq_meter.hh`
+3. `host_runtime.hh`
+4. `pptool_streaming.cc` and `pptool_measurement.cc`
+5. `fpga.hh` and `startup.hh`
+6. `options.hh` and `pll_rules.hh`
+7. `ppworkflow.hh`
+8. `streamer_control.hh`, `streamer_fifo.hh`, `streamer_dma.hh`, and `basic_multi_dma.hh`
+9. `elements.hh` and `sequence.hh`
+10. subsystem wrappers such as `streamer.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, and `freq_meter.hh`
 
 That order mirrors the path a user command takes from CLI invocation down to FPGA-facing transactions.
 

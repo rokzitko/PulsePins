@@ -13,10 +13,9 @@ The main entry point is `c++/pptool.cc`.
 
 At startup it:
 
-1. parses common options
-2. enables the shared runtime policy from `startup.hh`
-3. constructs the single `FPGA` object
-4. dispatches to a command handler based on the executable name
+1. builds a shared `HostRuntime` from `host_runtime.hh`
+2. that runtime parses common options, enables the shared runtime policy, constructs the single `FPGA` object, and performs the startup frequency-meter report
+3. dispatches to a command handler based on the executable name
 
 That dispatch model is why one compiled binary can appear as multiple tools such as `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and `ppvcd`.
 
@@ -24,6 +23,7 @@ The most important host-side layers are:
 
 * `fpga.hh` - top-level ownership of memory maps, PLL helpers, trigger monitors, and GPIO-backed control paths
 * `startup.hh` - common process bootstrap and default FPGA startup policy
+* `host_runtime.hh` - shared bootstrap/runtime object used by the main host-side executables
 * `options.hh`, `pll_rules.hh` - typed option resolution and symbolic PLL presets shared by multiple tools
 * `pptool_streaming.cc`, `pptool_measurement.cc` - user-facing command implementations
 * `ppworkflow.hh` - shared streaming workflow used by commands that send sequences, arm/force triggers, and optionally validate readback
@@ -45,7 +45,7 @@ For streamer-oriented tools, the typical host-side path is:
 
 That common pattern is centralized in `send_and_trig(...)` in `ppworkflow.hh` so that behavior stays consistent across multiple tools.
 
-The startup path follows the same philosophy: CLI and environment inputs are first normalized by `options.hh`, then `startup.hh` applies the resulting clock-selection and PLL policy through the `FPGA` wrapper.
+The startup path follows the same philosophy: `HostRuntime` centralizes executable bootstrap, CLI and environment inputs are normalized by `options.hh`, then `startup.hh` applies the resulting clock-selection and PLL policy through the `FPGA` wrapper.
 
 Trigger configuration follows a similar split:
 
