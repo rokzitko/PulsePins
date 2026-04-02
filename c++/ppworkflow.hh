@@ -68,35 +68,43 @@ inline auto readback_timeout(const InputParser &input) {
   return timeout;
 }
 
-template<typename Transport, typename Convert>
-inline int send_and_trig(Transport &tr,
-                        streamer_control &sc,
-                        readback &rb,
-                        counter &ctr,
-                        Sequence &elements,
-                        const InputParser &input,
-                        const bool force_trigger,
-                        const Verbosity &v,
-                        Convert convert)
+inline value_t append_final_output(Sequence &elements, const InputParser &input)
 {
-  // Contract:
-  // - `elements` is the sequence requested by the caller and is modified in place.
-  // - a final output element is always appended so the post-run qout state can be checked.
-  // - if `-check` is enabled, the same sequence may be converted into a readback-friendly
-  //   form before comparison.
-  // - the return code accumulates multiple error bits instead of stopping at first failure.
-  int rc = RC_OK;
   const value_t final = input.exists("-t") ? parse_value(input, "-t", "0") : random_value();
   elements.push_back(el(final));
-  if (v.veryverbose) elements.dump(std::cout, "| ");
-  if (v.veryverbose) tr.report();
+  return final;
+}
+
+inline void dump_sequence(const Sequence &elements, const Verbosity &v)
+{
+  if (v.veryverbose)
+    elements.dump(std::cout, "| ");
+}
+
+template<typename Transport>
+inline void transmit_sequence(Transport &tr,
+                              streamer_control &sc,
+                              Sequence &elements,
+                              const Verbosity &v)
+{
+  if (v.veryverbose)
+    tr.report();
   if (elements.size() > max_size)
     std::cout << red << "Sequence will not fit in buffers. size=" << elements.size() << " max_size=" << max_size << rst << std::endl;
   tr.send_sequence(elements);
   sc.status_report();
-  if (v.veryverbose) tr.report();
+  if (v.veryverbose)
+    tr.report();
+}
+
+inline void activate_trigger(streamer_control &sc,
+                            const InputParser &input,
+                            const bool force_trigger,
+                            const Verbosity &v)
+{
   if (force_trigger) {
-    if (v.verbose) std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
+    if (v.verbose)
+      std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
     if (input.exists("-delay")) {
       const double delay = parse_time(input, "-delay", "0");
       sleep(delay);
@@ -104,13 +112,22 @@ inline int send_and_trig(Transport &tr,
     sc.trigger_force();
     sc.status_report();
   } else {
-    if (v.verbose) std::cout << cyan << " --->  Arming trigger." << rst << std::endl;
+    if (v.verbose)
+      std::cout << cyan << " --->  Arming trigger." << rst << std::endl;
     sc.trigger_enable();
     sc.status_report();
   }
+}
 
-  const double timeout = readback_timeout(input);
-
+template<typename Convert>
+inline bool run_readback_check_phase(readback &rb,
+                                    Sequence &elements,
+                                    const InputParser &input,
+                                    const Verbosity &v,
+                                    Convert convert,
+                                    const double timeout,
+                                    int &rc)
+{
   bool rb_failure = false;
   if (input.exists("-check")) {
     // Readback comparison is done against the effective output stream, not necessarily
@@ -120,22 +137,38 @@ inline int send_and_trig(Transport &tr,
     drop_count0(elements);
     if (v.veryverbose && input.exists("-dump-converted"))
       elements.dump(std::cout, "% ");
-    if (v.veryverbose) rb.check_fill_status();
+    if (v.veryverbose)
+      rb.check_fill_status();
     const auto successful = rb.check(elements, timeout);
     if (!successful) {
       rb_failure = true;
       rc |= RC_ERROR_CHECK;
     }
   }
+  return rb_failure;
+}
 
+inline void run_readback_dump_phase(readback &rb,
+                                    const InputParser &input,
+                                    const Verbosity &v,
+                                    const double timeout)
+{
   if (input.exists("-read")) {
-    if (v.veryverbose) rb.check_fill_status();
+    if (v.veryverbose)
+      rb.check_fill_status();
     rb.read_all(timeout);
   }
+}
 
-  if (input.exists("-dont_wait"))
-    return rc;
-
+inline int run_post_execution_checks(streamer_control &sc,
+                                    readback &rb,
+                                    counter &ctr,
+                                    const value_t final,
+                                    const bool rb_failure,
+                                    const InputParser &input,
+                                    const Verbosity &v,
+                                    int rc)
+{
   // The remaining checks are post-completion invariants for the whole streamer path.
   sc.wait_to_complete(v);
   sleep_1ms();
@@ -191,6 +224,39 @@ inline int send_and_trig(Transport &tr,
     if (input.exists("-ignore_rb_error_if_crc_ok") || envVarExists("PP_IGNORE_RB_ERROR_IF_CRC_OK"))
       rc &= ~RC_ERROR_CHECK;
   return rc;
+}
+
+template<typename Transport, typename Convert>
+inline int send_and_trig(Transport &tr,
+                        streamer_control &sc,
+                        readback &rb,
+                        counter &ctr,
+                        Sequence &elements,
+                        const InputParser &input,
+                        const bool force_trigger,
+                        const Verbosity &v,
+                        Convert convert)
+{
+  // Contract:
+  // - `elements` is the sequence requested by the caller and is modified in place.
+  // - a final output element is always appended so the post-run qout state can be checked.
+  // - if `-check` is enabled, the same sequence may be converted into a readback-friendly
+  //   form before comparison.
+  // - the return code accumulates multiple error bits instead of stopping at first failure.
+  int rc = RC_OK;
+  const value_t final = append_final_output(elements, input);
+  dump_sequence(elements, v);
+  transmit_sequence(tr, sc, elements, v);
+  activate_trigger(sc, input, force_trigger, v);
+
+  const double timeout = readback_timeout(input);
+  bool rb_failure = run_readback_check_phase(rb, elements, input, v, convert, timeout, rc);
+  run_readback_dump_phase(rb, input, v, timeout);
+
+  if (input.exists("-dont_wait"))
+    return rc;
+
+  return run_post_execution_checks(sc, rb, ctr, final, rb_failure, input, v, rc);
 }
 
 template<typename Transport>
