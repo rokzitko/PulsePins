@@ -255,12 +255,12 @@ wire clk_ena;
 //
 // The additional lock/hold/reset-sync logic below exists to support cleaner reset release
 // after PLL lock has been stable for a while. The design currently exposes those structured
-// reset signals for visibility (`rst_out`, `reset_out`), but the active global `reset` used
+// reset signals for visibility (`reset_out`), but the active global `reset` used
 // by most top-level logic is still driven directly from `h2f_reset`.
 //
 // In other words:
 // - `h2f_reset` is the currently active top-level reset
-// - `core_clk_pll_ready`, `sys_reset_hold`, `rst_out`, and `reset_out` document and expose
+// - `core_clk_pll_ready`, `sys_reset_hold`, `reset_out` document and expose
 //   a more structured release path that maintainers may want to revisit later
 
 // RESET LOGIC
@@ -292,7 +292,7 @@ always_ff @(posedge ref_clk or posedge h2f_reset or negedge core_clk_pll_locked)
   end
 end
 
-logic rst_out;
+logic reset_out;
 reset_sync2_hold #(
  .ACTIVE_LOW(0),
  .STAGES(3),
@@ -301,22 +301,27 @@ reset_sync2_hold #(
 .clk(core_clk),
 .rst1_in(h2f_reset),
 .rst2_in(sys_reset_hold),
-.rst_out(rst_out)
+.rst_out(reset_out)
 );
 
-// inputs to reset controller
-logic reset_in0, reset_in1;
-assign reset_in0 = h2f_reset;
-assign reset_in1 = sys_reset_hold;
-// output from reset controller
-logic reset_out;
+
+// Active top-level reset selection.
+// Uncomment one (and only one) of the following:
+//`define DIRECT_RESET
+`define CONTROLED_RELEASE_RESET
 
 // Reset signal to the FPGA design
 logic reset;
-// Active top-level reset selection.
-// `reset` currently follows the HPS-driven functional reset directly.
-//assign reset = rst_out;
+
+`ifdef DIRECT_RESET
+// Follows the HPS-driven functional reset directly.
 assign reset = h2f_reset;
+`endif
+
+`ifdef CONTROLED_RELEASE_RESET
+// Ensure PLL clock is stable before releasing reset.
+assign reset = rst_out;
+`endif
 
 // Streamer aggregation model.
 //
@@ -519,10 +524,6 @@ base_hps u0 (
 
       .clk_1_clk_clk(core_clk),
 
-      .reset_controller_0_reset_in0_reset(reset_in0),
-      .reset_controller_0_reset_in1_reset(reset_in1),
-      .reset_controller_0_reset_out_reset(reset_out),
-
 .st_interface_1_conduit_end_streamer_clk(streamer_clk),                     // input
 .st_interface_1_conduit_end_qout(streamer1_qout),                           // output
 .st_interface_1_conduit_end_qout_valid(streamer1_qout_valid),               // output
@@ -631,9 +632,8 @@ assign gp_in[1] = int_clk_pll_locked;
 assign gp_in[3] = core_clk_pll_ready;
 assign gp_in[4] = sys_reset_hold;
 assign gp_in[5] = activity;
-assign gp_in[6] = rst_out;
-assign gp_in[7] = reset_out;
-assign gp_in[31:8] = 0;
+assign gp_in[6] = reset_out;
+assign gp_in[31:7] = 0;
 
 // Clock source switching
 assign sel_clk = gp_out[1:0]; // bits [0:1] control clock source
