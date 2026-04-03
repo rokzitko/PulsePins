@@ -1,0 +1,5 @@
+#!/bin/bash
+# Generates a sine wave on PMOD DA3
+ppdmatest 25 -samples 1000 -spi_clock 10e6 -dwell 0 -reps 1000
+ppdmatest 25 -samples 100 -spi_clock 30e6 -dwell 10us -reps 1000
+ppdmatest 25 -samples 100 -spi_clock 50e6 -dwell 100us -reps 200
