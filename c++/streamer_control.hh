@@ -108,20 +108,18 @@ public:
 
   // Current value visible on the actual output pins after any qout override muxing.
   value_t get_qout() {
-    if constexpr (std::is_same_v<value_t, uint32_t>) {
+    if constexpr (std::is_same<value_t, uint32_t>::value) {
       return qout.read();
-    } else {
-      assert(false && "Not implemented");
     }
+    static_assert(std::is_same<value_t, uint32_t>::value, "Only uint32_t value_t is currently supported");
   }
 
   // Raw streamer output value before the optional qout override path.
   value_t get_qout_streamer() {
-    if constexpr (std::is_same_v<value_t, uint32_t>) {
+    if constexpr (std::is_same<value_t, uint32_t>::value) {
       return qout_streamer.read();
-    } else {
-      assert(false && "Not implemented");
     }
+    static_assert(std::is_same<value_t, uint32_t>::value, "Only uint32_t value_t is currently supported");
   }
 
   uint64_t get_input_fifo1_ctr_in() {
@@ -189,20 +187,18 @@ public:
 
   // State of the output bits before the streamer has triggered and begun advancing.
   void set_initial_value(const value_t iv) {
-    if constexpr (std::is_same_v<value_t, uint32_t>) {
+    if constexpr (std::is_same<value_t, uint32_t>::value) {
       initial_value.write(iv);
-    } else {
-      assert(false && "Not implemented");
     }
+    static_assert(std::is_same<value_t, uint32_t>::value, "Only uint32_t value_t is currently supported");
   }
 
   // Value presented on the outputs when the qout override path is selected.
   void set_qout_override(const value_t v) {
-    if constexpr (std::is_same_v<value_t, uint32_t>) {
+    if constexpr (std::is_same<value_t, uint32_t>::value) {
       qout_override.write(v);
-    } else {
-      assert(false && "Not implemented");
     }
+    static_assert(std::is_same<value_t, uint32_t>::value, "Only uint32_t value_t is currently supported");
   }
 
   // True if the output side encountered an underrun/buffer error during streaming.
