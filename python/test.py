@@ -176,7 +176,7 @@ def test_el4():
    assert e.count() == 1
    assert e.value() == 42
 
-def test_el7():
+def test_el7_count_and_int_value():
    c = 1
    v = 2
    e = pp.el(c,v)
@@ -184,7 +184,7 @@ def test_el7():
    assert e.count() == 1
    assert e.value() == 2
 
-def test_el7():
+def test_el7_counter_and_int_value():
    c = pp.Counter(1)
    v = 2
    e = pp.el(c,v)
@@ -192,7 +192,7 @@ def test_el7():
    assert e.count() == 1
    assert e.value() == 2
 
-def test_el7():
+def test_el7_counter_and_value():
    c = pp.Counter(1)
    v = pp.Value(2)
    e = pp.el(c,v)
