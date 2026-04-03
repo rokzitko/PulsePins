@@ -479,7 +479,7 @@ NB_MODULE(pp, m) {
   m.attr("QOUT_STREAMER") = QOUT_STREAMER;
   m.attr("EXT_TRIG_CTRL") = EXT_TRIG_CTRL;
   m.attr("QOUT") = QOUT;
-  m.attr("OVERFLOW") = OVERFLOW;
+  m.attr("FIFO_OVERFLOW") = FIFO_OVERFLOW;
   m.attr("GATING_R") = GATING_R;
 
   m.attr("INPUT_FIFO1_CTR_IN_L") = INPUT_FIFO1_CTR_IN_L;
