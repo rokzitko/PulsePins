@@ -240,7 +240,7 @@ public:
   void sel_clk(uint32_t sel) {
     // Only the low two configuration bits currently map to the top-level clock selector.
     sel &= 3; // only bits 0 and 1 are relevant for sel_clk
-    cfg = (cfg | 3) + sel;
+    cfg = (cfg & ~uint32_t(3)) | sel;
     if (v.verbose) {
       std::cout << "Setting clock select bits (sel_clk) to " << std::bitset<2>(sel) << ".";
       switch (sel) {

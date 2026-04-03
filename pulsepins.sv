@@ -817,11 +817,11 @@ assign GPI0GPIO25 = streamer_trigger_in[0];          // D15~d7 (violet)
 `endif
 
 `ifdef EXTRA_SETB
-wire rnd1, rnd2, rnd3, rnd4;
+wire rnd1, rnd2;
 assign GPI0GPIO22 = rnd1;
 assign GPI0GPIO23 = rnd2;
-assign GPI0GPIO24 = rnd3;
-assign GPI0GPIO25 = rnd4;
+assign GPI0GPIO24 = 1'b0;
+assign GPI0GPIO25 = 1'b0;
 
 rand_signal_gen #(
   .MIN_PERIOD_CYCLES (1),
