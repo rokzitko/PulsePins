@@ -29,8 +29,8 @@ The following symbols are used in project TODO lists:
       freq_meter/    # Frequency-meter core
       misc/          # Small reusable support blocks
       st_mux/        # Avalon-ST multiplexer (implemented in st_mux_if.sv)
-      streamer/      # IP for the RTE decoder engine
-      rl_encoder_if/ # IP for the RTE encoder engine
+      streamer/      # IP for the run-length decoder engine
+      rl_encoder_if/ # IP for the run-length encoder engine
       ts_core/       # IP for timestamp capture / time tagging
     c++/             # C++ source code for API, pptool
     python/          # Python binding

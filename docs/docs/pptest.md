@@ -150,8 +150,8 @@ default is 10000 (10ms)
 
 ### Test15
 
-Test for retriggering. It alternates between two trigger conditions, one set by ``-p``, ``-m` and
-anoteher set by ``-r`` and ``-n`` pair.
+Test for retriggering. It alternates between two trigger conditions, one set by ``-p``, ``-m`` and
+another set by ``-r`` and ``-n`` pair.
 
 Additional parameters:
 
