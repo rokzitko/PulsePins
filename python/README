@@ -1,4 +1,8 @@
-This has to be built on the DE10-Nano board.
+This is the supported production build path for the Python bindings.
+
+The Python extension modules are intended to be built on the DE10-Nano board itself.
+Host-side Python builds are useful for import/syntax/API testing, but true cross-compilation of
+the Python bindings is not currently supported.
 
 On the DE10-Nano, do the following:
 

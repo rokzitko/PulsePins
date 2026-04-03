@@ -46,7 +46,7 @@ Expected result:
 
 * the command exits successfully
 * it prints a clear pass message
-* it currently takes a few minutes, around 5 minutes at the default 100 MHz streaming frequency
+* it currently takes a few minutes, around 7 minutes at the default 100 MHz streaming frequency
 
 Treat the runtime as approximate; it is expected to evolve as more tests are added.
 

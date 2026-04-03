@@ -1,7 +1,11 @@
-For testing on development computer, install the dependencies using
+For host-side development and testing on a development computer, install the dependencies using
 
 pip3 install pytest
 pip3 install nanobind
+
+Host-side builds are meant for import/syntax/API testing only. They are useful for checking that
+the binding code compiles and the module imports, but they are not a supported replacement for
+building the production module on the DE10-Nano.
 
 The default Python binding build uses `-O2` and omits `-g` to reduce memory pressure.
 If you need debug symbols, use `make PY_DEBUG=1` in `python/`.

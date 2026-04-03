@@ -21,7 +21,7 @@ You can contribute without a board if you work on:
 
 - documentation under `docs/` and top-level `README*` files
 - sequence parsing and representation in `c++/`
-- Python bindings in `python/`
+- Python bindings in `python/` (host-side build/import testing is useful, but production Python builds still happen on the DE10-Nano)
 - HDL test benches and simulation-only RTL work under `ip/`
 - recipes, examples, and test infrastructure
 
@@ -33,6 +33,12 @@ make -C python build
 make -C python test
 make -C ip test
 ```
+
+For Python specifically:
+
+- host-side `make -C python build` is useful for syntax/import/API testing
+- the supported production build of the Python modules still happens on the DE10-Nano board
+- true Python cross-compilation is not currently supported
 
 ### Hardware helps, but is not always required
 
@@ -71,7 +77,7 @@ For that baseline, the board:
 | ---- | ------------- | --------------- | ------------ |
 | Docs | `docs/` | no | `make -C docs site` |
 | C++ host tools | `c++/` | not always | `make -C c++ build` |
-| Python bindings | `python/` | no | `make -C python build && make -C python test` |
+| Python bindings | `python/` | not always | `make -C python build && make -C python test` |
 | RTL simulation | `ip/` | no | `make -C ip test` |
 | Full FPGA build | repo root | toolchain required | `make` |
 | Board deployment | repo root, `image/` | yes | `make copy_all` |
@@ -88,7 +94,7 @@ Expected result:
 
 - the command exits successfully
 - it prints a clear pass message
-- it currently takes a few minutes, roughly around 5 minutes at the default 100 MHz streaming frequency
+- it currently takes a few minutes, roughly around 7 minutes at the default 100 MHz streaming frequency
 
 That runtime should be treated as approximate; it may change as the test suite grows.
 

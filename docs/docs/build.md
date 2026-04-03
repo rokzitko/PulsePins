@@ -80,6 +80,10 @@ The host-side ownership split is deliberate:
 
 The Python bindings live in `python/` and are built with CMake and nanobind.
 
+Production Python builds are currently expected to happen on the DE10-Nano board itself.
+Host-side builds are still useful for syntax/import/API testing, but true Python cross-
+compilation is not currently supported.
+
 The `python/Makefile` provides:
 
 * `build` - configure and build the extension modules under `python/build`

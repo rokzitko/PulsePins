@@ -7,8 +7,11 @@ tool. A collection of shell scripts can be found in the `tests/` subdirectory. T
 of the test battery, run ``run_all_tests``. If any error is encountered, testing stops immediately.
 Successful completion is reported by printing the message ``SUCCESS.`` in green.
 
+In current practice the script prints ``SUCCESS`` on successful completion.
+
 One can run the tests continuously using ``run_all_tests_forever`` to perform intensive
-stress testing. The results are collected in /var/volatile for inspection.
+stress testing. The main report is written in the current directory as `report`, and per-test
+logs are collected under `/var/volatile` for inspection.
 
 ## Wiring up for testing
 
