@@ -8,4 +8,4 @@
 #define VERSION "2025.1"
 
 const int tidbit = TIDBITNR;
-const int version = 2;
+const int version = 2; // firmware version (should match SYSID_QSYS_1_ID)
