@@ -1,5 +1,8 @@
 NR = 35
 ALT_DEVICE_FAMILY ?= soc_cv_av
+
+# Default to a lighter-weight board build. Host-side builds are mainly for import/syntax/API
+# testing, while production Python modules are still expected to be built on the DE10-Nano.
 PY_OPT_LEVEL ?= -O2
 PY_DEBUG ?= 0
 
@@ -17,19 +20,20 @@ CC = gcc$(GCC_SUFFIX)
 
 .PHONY: build test clean copy_sources copy_tests
 
+# Configure and build the nanobind extension modules.
 build:
 	mkdir -p build
 	cmake -S . -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_CXX_FLAGS="$(CXXFLAGS)" -B build
 	cmake --build build
 
-# Unit tests
+# Python-side test entry point.
 test:
 	pytest test.py
 
 clean:
 	rm -rf build
 
-# Copy source files to the DE10 nano board
+# Copy source files to the DE10-Nano board for native module builds.
 PYDIR=python/
 SOURCES=$(wildcard *.cc) pptool.py
 MISCFILES=CMakeLists.txt Makefile test.py
@@ -43,6 +47,7 @@ copy_misc:
 
 IMGROOT=../image/ext/home/root
 
+# Stage the same source bundle into the image tree.
 copy_sources_img:
 	mkdir -p $(IMGROOT)/$(PYDIR)
 	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(PYDIR)

@@ -2,6 +2,7 @@ NR = 35
 TARGETHOST ?= de10nano
 TIDBIT_DIR ?= ../tidbit
 
+# Embed the current short git hash into host-side binaries for version/status reporting.
 GIT_HASH := $(shell git rev-parse --short HEAD)
 
 # For low-level troubleshooting, uncomment the following line for tracing out all memory-mapped I/O to FPGA.
@@ -21,7 +22,8 @@ HWLIBS_ROOT ?= $(SOCEDS_ROOT)/ip/altera/hps/altera_hps/hwlib
 CROSS_COMPILE ?= arm-linux-gnueabihf-
 GCC_SUFFIX ?= -7
 
-# Used only for cross-compilation
+# `SYSROOT` is only meaningful for the ARM cross-build. Leaving it empty allows host-side
+# compile checks without emitting a broken `--sysroot=` flag.
 ifneq ($(strip $(SYSROOT)),)
 CROSSCFLAGS = --sysroot=$(SYSROOT)
 CROSSCPPFLAGS = --sysroot=$(SYSROOT)
@@ -59,8 +61,11 @@ ifeq ($(GCC_VERSION),8)
 endif
 endif
 
+# Main host-tools build. `pptool` and `ppscpi` are cross-compiled for the board, while
+# `unit_tests` is intentionally built with the host compiler for fast syntax/API checking.
 build: pptool ppscpi unit_tests
 
+# Whitespace policy check for project-owned C++ sources.
 lint-whitespace:
 	python3 ../scripts/check_cpp_whitespace.py .
 
@@ -89,7 +94,7 @@ $(LUA_DIR)/%.o: $(LUA_DIR)/%.c
 # Targets that run on DE10 board
 TARGETS = pptool ppscpi
 
-# Symlinks to pptool
+# Multi-call command entry points created as symlinks to `pptool` on the target.
 SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
            ppgpsdo pptemp ppfreq ppread ppvcd pphelloworld
 
@@ -127,17 +132,20 @@ ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
 clean:
 	rm -f $(TARGETS) unit_tests *.a *.o *~
 
+# Copy the built executables to a live board and recreate the usual `pptool` symlink family.
 copy: $(TARGETS)
 	scp $(TARGETS) @$(TARGETHOST):
 	ssh $(TARGETHOST) 'for L in $(SYMLINKS); do ln -sf pptool $$L; done'
 
 IMGROOT=../image/ext/home/root
 
+# Stage the same executables into the image tree.
 copy_img: $(TARGETS)
 	cp -v $(TARGETS) $(IMGROOT)
 	cd $(IMGROOT) ; for L in $(SYMLINKS); do ln -sf pptool $$L; done
 
-# Copy source files to the DE10 nano board for local compiling
+# Copy source files to the DE10-Nano for local compilation. This is useful because the board can
+# build Python bindings natively and can also rebuild the C++ tools from source when needed.
 CPPDIR=c++/
 SOURCES=$(HEADERS) $(wildcard *.cc)
 MISCFILES=Makefile
@@ -152,6 +160,7 @@ copy_sources:
 	scp -r third_party/asio @$(TARGETHOST):$(CPPDIR)/third_party
 	scp include/doctest.h @$(TARGETHOST):$(CPPDIR)/include
 
+# Stage the same source bundle into the image tree for image-based rebuild workflows.
 copy_sources_img:
 	mkdir -p $(IMGROOT)/$(CPPDIR)
 	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(CPPDIR)
