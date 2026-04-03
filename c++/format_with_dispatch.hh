@@ -3,6 +3,8 @@
 //
 // Formatter helpers for dispatching placeholder expansion by token.
 
+#pragma once
+
 #include <cctype>
 #include <functional>
 #include <stdexcept>

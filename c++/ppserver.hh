@@ -3,6 +3,9 @@
 //
 // Minimal TCP and UDP server helpers used by PulsePins host tools.
 
+#pragma once
+
+#include <array>
 #include <atomic>
 #include <cerrno>
 #include <cstring>

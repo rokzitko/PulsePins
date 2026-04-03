@@ -56,7 +56,7 @@ private:
   void build_tree() {
     // *IDN?
     add_node({"*IDN"}, {}, [this]() {
-      return "PulsePins,2025.11";
+      return std::string("PulsePins,") + VERSION;
     });
     // *RST
     add_node({"*RST"}, [this](const std::string&) {
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
   try {
     asio::io_context io;
     PPServer server(io, server_port, input, fpga, v);
-    std::cout << "ppserver running on port " << server_port << std::endl;
+    std::cout << "ppscpi running on port " << server_port << std::endl;
     io.run();
   } catch (std::exception& e) {
     std::cerr << "Fatal: " << e.what() << "\n";
