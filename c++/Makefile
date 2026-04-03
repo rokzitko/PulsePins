@@ -156,7 +156,7 @@ copy_sources:
 	cd third_party/lua ; make clean
 	ssh $(TARGETHOST) mkdir -p $(CPPDIR)/third_party
 	scp -r third_party/lua-5.5.0 @$(TARGETHOST):$(CPPDIR)/third_party
-	ssh $(TARGETHOST) cd c++/third_party ; ln -s lua-5.5.0 lua
+	ssh $(TARGETHOST) "cd c++/third_party ; ln -s lua-5.5.0 lua"
 	scp -r third_party/asio @$(TARGETHOST):$(CPPDIR)/third_party
 	scp include/doctest.h @$(TARGETHOST):$(CPPDIR)/include
 
