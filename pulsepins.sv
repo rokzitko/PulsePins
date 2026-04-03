@@ -126,10 +126,10 @@ module pulsepins(
     input                       GPI0GPIO12, // ext_trigger_reset
     input                       GPI0GPIO13, // gate_in
     input [`WIDTH_TRIGGER-1:0]  GPI0TRIG,   // ext_trigger_in
-    output                      GPI0GPIO22, // extra (setA: streamer_trigger_enable)
-    output                      GPI0GPIO23, // extra (setA: streamer_trigger_force)
-    output                      GPI0GPIO24, // extra (setA: streamer_trigger_reset)
-    output                      GPI0GPIO25, // extra (setA: streamer_trigger_in[0])
+    output                      GPI0GPIO22, // extra/debug muxed output
+    output                      GPI0GPIO23, // extra/debug muxed output
+    output                      GPI0GPIO24, // extra/debug muxed output
+    output                      GPI0GPIO25, // extra/debug muxed output
     inout                       GPI0GPIO26, // SCL
     inout                       GPI0GPIO27, // SDA
     inout  [`WIDTH_AUX-1:0]     GPI0AUX,    // AUX I/O
@@ -254,14 +254,16 @@ wire clk_ena;
 // software normally manipulates.
 //
 // The additional lock/hold/reset-sync logic below exists to support cleaner reset release
-// after PLL lock has been stable for a while. The design currently exposes those structured
-// reset signals for visibility (`reset_out`), but the active global `reset` used
-// by most top-level logic is still driven directly from `h2f_reset`.
+// after PLL lock has been stable for a while. In the currently selected mode, that
+// controlled-release path drives the top-level `reset` signal, while the Platform Designer
+// system in `base_hps` still receives the direct HPS reset input.
 //
 // In other words:
-// - `h2f_reset` is the currently active top-level reset
-// - `core_clk_pll_ready`, `sys_reset_hold`, `reset_out` document and expose
-//   a more structured release path that maintainers may want to revisit later
+// - `h2f_reset` is the direct HPS-driven reset source
+// - `reset_out` is the currently selected top-level reset release path
+// - `base_hps` still uses direct HPS reset
+// - `core_clk_pll_ready` and `sys_reset_hold` are active parts of the top-level
+//   controlled-release logic
 
 // RESET LOGIC
 // h2f_reset: general-purpose reset from HPS software or reset controllers; used as a
@@ -308,7 +310,7 @@ reset_sync2_hold #(
 // Active top-level reset selection.
 // Uncomment one (and only one) of the following:
 //`define DIRECT_RESET
-`define CONTROLED_RELEASE_RESET
+`define CONTROLLED_RELEASE_RESET
 
 // Reset signal to the FPGA design
 logic reset;
@@ -318,9 +320,9 @@ logic reset;
 assign reset = h2f_reset;
 `endif
 
-`ifdef CONTROLED_RELEASE_RESET
+`ifdef CONTROLLED_RELEASE_RESET
 // Ensure PLL clock is stable before releasing reset.
-assign reset = rst_out;
+assign reset = reset_out;
 `endif
 
 // Streamer aggregation model.
@@ -799,8 +801,10 @@ assign ext_trigger_in = GPI0TRIG;
 // GPIO[25:22] can expose either trigger-related visibility (`EXTRA_SETA`) or synthetic random
 // signals (`EXTRA_SETB`) for probing and bring-up experiments.
 
-// GPIO0GPIO[25:22] are extra signals that may be configures in various ways.
-// Default is setA.
+// GPIO0GPIO[25:22] are extra signals that may be configured in various ways by the end user.
+// The currently selected set is `EXTRA_SETB`. This interface is intentionally not stable:
+// end users may want to repurpose these pins, and future top-level revisions may assign
+// different debug signals here without treating that as an interface break.
 //`define EXTRA_SETA
 `define EXTRA_SETB
 
@@ -840,7 +844,6 @@ rand_signal_gen #(
   .oe     ('1),
   .signal (rnd2)
 );
-
 `endif
 
 // I2C
