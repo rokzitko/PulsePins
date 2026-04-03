@@ -5,9 +5,7 @@ reason, the FPGA fabric includes a run-length encoder for reading back the gener
 comparing it against expected results. These tests are performed with the [pptest](pptest.md)
 tool. A collection of shell scripts can be found in the `tests/` subdirectory. To start one sweep
 of the test battery, run ``run_all_tests``. If any error is encountered, testing stops immediately.
-Successful completion is reported by printing the message ``SUCCESS.`` in green.
-
-In current practice the script prints ``SUCCESS`` on successful completion.
+Successful completion is reported by printing the message ``SUCCESS``.
 
 One can run the tests continuously using ``run_all_tests_forever`` to perform intensive
 stress testing. The main report is written in the current directory as `report`, and per-test

@@ -12,7 +12,7 @@ On startup it:
 
 * configures realtime scheduling and locks memory pages
 * resets the FPGA fabric
-* creates the normal `FPGA`, streamer, readback, and counter interfaces
+* creates the shared `HostRuntime` and top-level `FPGA` wrapper
 * reports the measured clocks using the frequency-meter block
 * accepts SCPI-style commands over the network
 
@@ -22,6 +22,7 @@ Each client connection gets its own SCPI session object.
 
 Session state includes:
 
+* one `streamer`, `readback`, and `counter` wrapper set bound to the shared `FPGA`
 * the currently loaded `Sequence`
 * whether readback checking is enabled
 * whether streaming should use forced triggering
