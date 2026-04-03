@@ -251,7 +251,7 @@ public:
         std::cout << " streamer_clk=int_clk" << std::endl;
         break;
       default:
-        std::cout << " WARNING: invalid setting." << std::endl;
+        std::cout << " WARNING: invalid clock-select setting." << std::endl;
       }
     }
     mgr.gpio_write(cfg);

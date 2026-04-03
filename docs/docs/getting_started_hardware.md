@@ -45,7 +45,7 @@ run_all_tests
 Expected result:
 
 * the command exits successfully
-* it prints a clear pass message
+* it prints `SUCCESS`
 * it currently takes a few minutes, around 7 minutes at the default 100 MHz streaming frequency
 
 Treat the runtime as approximate; it is expected to evolve as more tests are added.
