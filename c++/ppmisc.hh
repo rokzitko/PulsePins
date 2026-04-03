@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
-// Miscelanous general functions
+// Miscellaneous general functions
 
 #pragma once
 

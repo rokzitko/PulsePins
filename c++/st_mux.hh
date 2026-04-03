@@ -34,7 +34,7 @@ public:
   // Switch between the two upstream Avalon-ST sources.
   void channel(const int ch) {
     if (ch != 1 && ch != 2)
-      throw std::runtime_error("Only channels 1 and 2 are availble");
+      throw std::runtime_error("Only channels 1 and 2 are available");
     if (v.veryverbose)
       std::cout << "st_mux, channel=" << ch << std::endl;
     lchannel.write(ch-1);
