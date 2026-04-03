@@ -140,7 +140,9 @@ prng_xoroshiro128plus prng(
 );
 
 logic valid, wr_last;
-assign valid   = rdreq && is_data && !empty && !done && !retrig_requested && !is_no_strobe; // XXX: retrig_requested needed?
+// `retrig_requested` blocks normal output advancement while the streamer is waiting to re-arm on
+// a later trigger event, so valid data writes are suppressed in that state.
+assign valid   = rdreq && is_data && !empty && !done && !retrig_requested && !is_no_strobe;
 assign wr_last = rdreq && is_last && !empty && !done;
 
 always_ff @(posedge rdclk) begin

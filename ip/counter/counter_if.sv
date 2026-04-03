@@ -53,7 +53,9 @@ logic [width_addr-1:0] addr;
 logic [width_data-1:0] d_reg;
 logic d_valid_reg;
 
-// TODO: we only need to register a subset (d0, d1, d2) -> (d0_reg, d1_reg, d2_reg)
+// The full input bus is registered here for simplicity. Only a few selected channels are used
+// downstream, so this remains a candidate for later area-focused optimization rather than a
+// functional requirement.
 always_ff @(posedge d_clk) begin
   if (d_reset) begin
     d_reg <= '0;
