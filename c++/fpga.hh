@@ -10,6 +10,8 @@
 // Architectural overview lives in `c++/README.md`, `docs/docs/cpp.md`, and
 // `docs/docs/clock_domain.md`.
 
+#pragma once
+
 // Clock mapping needs to be checked using pptool: e.g. pptool -clk 0 -int_pll 25M, pptool -clk 3 -int_pll 25M, etc.
 #define SELECT_CLK_CLEAN
 
@@ -21,8 +23,6 @@
   static const int ch_ext = 3;
   static const int ch_int = 0;
 #endif
-
-#pragma once
 
 #include <iostream>
 #include <iomanip>

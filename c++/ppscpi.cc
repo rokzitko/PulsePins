@@ -137,7 +137,7 @@ private:
               });
     // *WAI
     add_node({"*WAI"}, [this](const std::string&) { return ""; });
-    // Terminate ppserver program
+    // Terminate `ppscpi`
     add_node({"TERMINATE"}, [this](const std::string&) { throw TerminateSession(); return ""; });
   }
 };
