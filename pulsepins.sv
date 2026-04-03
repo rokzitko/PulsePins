@@ -1011,8 +1011,8 @@ assign pio_trig_monitor[15:11]                                = '0;
 `define PIO_TRIG_OFFSET 16
 assign pio_trig_monitor[`PIO_TRIG_OFFSET+`WIDTH_TRIGGER-1:16] = streamer_trigger_in; // trigger signals as seen by the streamer
 assign pio_trig_monitor[`PIO_TRIG_OFFSET+`POS_TRIG_ENABLE]    = streamer_trigger_enable;
-assign pio_trig_monitor[`PIO_TRIG_OFFSET+`POS_TRIG_FORCE]     = streamer_trigger_enable;
-assign pio_trig_monitor[`PIO_TRIG_OFFSET+`POS_TRIG_RESET]     = streamer_trigger_enable;
+assign pio_trig_monitor[`PIO_TRIG_OFFSET+`POS_TRIG_FORCE]     = streamer_trigger_force;
+assign pio_trig_monitor[`PIO_TRIG_OFFSET+`POS_TRIG_RESET]     = streamer_trigger_reset;
 assign pio_trig_monitor[31:27]                                = '0;
 
 logic PPS_XTAL; // not a true atomic-clock-derived PPS, just a divided crystal oscillator clock
