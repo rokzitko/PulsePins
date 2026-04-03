@@ -18,7 +18,7 @@ CXXFLAGS = $(PY_OPT_LEVEL) $(PY_DEBUG_FLAGS) -Wall -DTIDBITNR=${NR} \
 CXX = g++$(GCC_SUFFIX)
 CC = gcc$(GCC_SUFFIX)
 
-.PHONY: build test clean copy_sources copy_tests
+.PHONY: build test clean copy_sources copy_misc copy_sources_img
 
 # Configure and build the nanobind extension modules.
 build:
