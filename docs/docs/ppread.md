@@ -16,3 +16,26 @@ the last element read. If negative, interpreted as time after starting the tool.
 If either ``-vcd`` or ``-save-text`` is specified, `ppread` switches into export mode: it captures
 the readback stream into a `Sequence`, writes the requested file(s), and prints a concise summary
 instead of dumping every captured run to the terminal.
+
+## Examples
+
+Capture for one second and save the waveform as VCD:
+
+```bash
+ppread -timeout 1 -vcd capture.vcd
+```
+
+Capture for one second and save the readback stream in PulsePins text sequence format:
+
+```bash
+ppread -timeout 1 -save-text capture.seq
+```
+
+Save both formats at the same time:
+
+```bash
+ppread -timeout 1 -vcd capture.vcd -save-text capture.seq
+```
+
+When `-oe 0` is used, this becomes a simple external logic-analyzer capture workflow for the
+qout bus and valid signal.

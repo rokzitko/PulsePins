@@ -61,6 +61,14 @@ Besides the text sequence format used by several tools, `Sequence` also supports
 
 In practice this also makes PulsePins useful as a simple logic-analyzer backend for deterministic readback waveforms.
 
+Current serialization capability matrix:
+
+| Format | C++ | Python | CLI |
+| ------ | --- | ------ | --- |
+| PulsePins text sequence format | import + export | import + export | export via `ppread -save-text`; import in selected workflows |
+| VCD | import + export | import + export | import via `ppvcd`; export via `ppread -vcd` |
+| Raw binary element transport | internal transport only | internal transport only | not exposed as a file format |
+
 Class hierarchy for counter value objects:
 
 * ``Counter`` (defined in ``elements.hh``): containers that hold the count value (number of repetitions)
