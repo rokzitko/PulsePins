@@ -25,5 +25,6 @@ int ppts(FPGA &fpga, const InputParser &input, const Verbosity &v);
 int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v);
 int pptemp(FPGA &fpga, const InputParser &input, const Verbosity &v);
 int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v);
+int ppplay(FPGA &fpga, const InputParser &input, const Verbosity &v);
 int ppvcd(FPGA &fpga, const InputParser &input, const Verbosity &v);
 int pphelloworld(FPGA &fpga, const InputParser &input, const Verbosity &v);

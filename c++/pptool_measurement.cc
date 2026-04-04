@@ -31,6 +31,7 @@
 #include "MCP9808.hh"
 #include "freq_meter.hh"
 #include "sequence.hh"
+#include "sequence_file_format.hh"
 #include "elements.hh"
 #include "definitions.hh"
 #include "basic_multi_dma.hh"
@@ -387,30 +388,94 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
   return RC_OK;
 }
 
+std::pair<Sequence, bool> load_sequence_from_file(const InputParser &input,
+                                                  const std::string &filename,
+                                                  const SequenceFileFormat format)
+{
+  switch (format) {
+    case SequenceFileFormat::vcd: {
+      Sequence seq;
+      const std::string target_name = input.get_string("-target", "outs");
+      const auto scale_factor = input.get_uint32("-scale", 10);
+      seq.load_VCD(filename, target_name, scale_factor);
+      const bool force_now = input.exists("-force") ? force_trigger : do_not_force_trigger;
+      return {seq, force_now};
+    }
+    case SequenceFileFormat::text: {
+      std::ifstream f(filename);
+      if (!f)
+        throw std::runtime_error("Could not open sequence file: " + filename);
+      auto [seq, force_trigger] = parse_sequence_from_stream(f);
+      if (input.exists("-force"))
+        force_trigger = true;
+      return {seq, force_trigger};
+    }
+    case SequenceFileFormat::binary:
+      throw std::runtime_error("Binary sequence file format is not implemented yet");
+  }
+  throw std::runtime_error("Unhandled sequence file format");
+}
+
+int play_loaded_sequence(FPGA &fpga,
+                        const InputParser &input,
+                        const Verbosity &v,
+                        Sequence seq,
+                        const bool force_trigger)
+{
+  streamer s(input, fpga);
+  trigger tr(input, fpga);
+  readback rb(input, fpga);
+  counter ctr(input, fpga);
+  ctr.reset_all();
+  return send_and_trig(s.fifo, s.sc, rb, ctr, seq, input, force_trigger, v);
+}
+
+int ppplay(FPGA &fpga, const InputParser &input, const Verbosity &v)
+{
+  try {
+    const std::string filename = input.get_string("-file", "");
+    if (filename.empty())
+      throw std::runtime_error("Missing required -file argument.");
+    const auto format = resolve_sequence_file_format(input, filename);
+    validate_sequence_file_options(input, format);
+    auto [seq, force_now] = load_sequence_from_file(input, filename, format);
+    if (v.verbose) {
+      std::cout << "ppplay: file=" << filename
+                << " format=" << (format == SequenceFileFormat::vcd ? "vcd" : format == SequenceFileFormat::text ? "text" : "binary")
+                << " force_trigger=" << (force_now ? "true" : "false") << std::endl;
+    }
+    if (v.veryverbose)
+      seq.dump(std::cout, "| ");
+    return play_loaded_sequence(fpga, input, v, std::move(seq), force_now);
+  }
+  catch (const std::exception &e) {
+    std::cout << "exception: " << e.what() << std::endl;
+    return RC_EXCEPTION;
+  }
+}
+
 int ppvcd(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   try {
-    streamer s(input, fpga);
-    trigger tr(input, fpga);
-    readback rb(input, fpga);
-    counter ctr(input, fpga);
-    ctr.reset_all();
     const std::string filename = input.get_string("-file", "");
     if (filename == "") {
       std::cout << "Specify filename using -file." << std::endl;
       return 0;
     }
-    const std::string target_name = input.get_string("-target", "outs");
-    const auto scale_factor = input.get_uint32("-scale", 10);
-    const bool trig = input.exists("-force") ? force_trigger : do_not_force_trigger;
+    const auto format = resolve_sequence_file_format(input, filename, SequenceFileFormat::vcd);
+    if (format != SequenceFileFormat::vcd)
+      throw std::runtime_error("ppvcd only supports VCD input. Use ppplay for other formats.");
+    validate_sequence_file_options(input, format);
+    auto [seq, force_now] = load_sequence_from_file(input, filename, format);
     if (v.verbose)
-      std::cout << "Loading sequence from " << filename << " target=" << target_name << " scale=" << scale_factor << std::endl;
-    Sequence elements;
-    elements.load_VCD(filename, target_name, scale_factor);
-    return send_and_trig(s.fifo, s.sc, rb, ctr, elements, input, trig, v);
+      std::cout << "ppvcd: compatibility alias for ppplay -format vcd" << std::endl;
+    if (v.veryverbose)
+      seq.dump(std::cout, "| ");
+    return play_loaded_sequence(fpga, input, v, std::move(seq), force_now);
   }
-  catch (const char *e) {
-    std::cout << "exception: " << e << std::endl;
+  catch (const std::exception &e) {
+    std::cout << "exception: " << e.what() << std::endl;
+    return RC_EXCEPTION;
   }
-  return 0;
+  return RC_OK;
 }

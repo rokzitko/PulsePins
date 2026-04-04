@@ -96,7 +96,7 @@ TARGETS = pptool ppscpi
 
 # Multi-call command entry points created as symlinks to `pptool` on the target.
 SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
-           ppgpsdo pptemp ppfreq ppread ppvcd pphelloworld
+           ppgpsdo pptemp ppfreq ppread ppplay ppvcd pphelloworld
 
 PPTOOL_OBJS = pptool.o pptool_streaming.o pptool_measurement.o
 

@@ -1,38 +1,20 @@
-## ppvcd
+# ppvcd
 
-`ppvcd` loads a waveform from a VCD file, converts it to a PulsePins sequence, and sends it to the streamer.
+`ppvcd` is the VCD-specific compatibility alias for `ppplay`.
 
-It is implemented in `c++/pptool.cc` and uses the VCD parser support in `c++/vcd_parser.hh` together with the normal
-streamer, trigger, readback, and counter interfaces.
+It preserves the traditional PulsePins workflow of loading a VCD waveform and replaying it through
+the streamer hardware, but the canonical general-purpose tool is now `ppplay`.
 
-The tool is intended for taking a waveform description that already exists in simulation form and replaying it through the PulsePins streamer hardware.
+Equivalent usage:
 
-Common options:
+```bash
+ppvcd -file waveform.vcd -target outs -scale 10 -force
+```
 
-* `-file PATH`: input VCD file to load
-* `-target NAME`: VCD signal name to convert; defaults to `outs`
-* `-scale N`: output period in ns for each VCD time unit; defaults to `10`
-* `-force`: force triggering after loading the sequence
+corresponds to:
 
-### How conversion works
+```bash
+ppplay -format vcd -file waveform.vcd -target outs -scale 10 -force
+```
 
-The parser scans the VCD definitions, finds the requested signal by name, and then records value changes for that signal.
-
-For each update:
-
-* the VCD timestamp is parsed
-* the timestamp is divided by the scale factor
-* the resulting value/time pair is converted into a PulsePins sequence update
-
-At the end of parsing, the converter appends a final zero-valued end event so the generated sequence has a defined terminal point.
-
-The current implementation supports:
-
-* vector changes of the form `b1010 <id>`
-* scalar changes of the form `0<id>` and `1<id>`
-
-### Practical use
-
-Use `ppvcd` when a waveform is easiest to define in HDL simulation or when you already have a VCD trace from another design and want to reproduce it on the physical outputs.
-
-If `-force` is given, the tool forces the trigger path so playback starts immediately after the sequence is loaded.
+For current format support, option descriptions, and examples, see [ppplay](ppplay.md).

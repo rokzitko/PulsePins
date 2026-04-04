@@ -21,6 +21,7 @@
 #include "SPI.hh"
 #include "options.hh"
 #include "ppworkflow.hh"
+#include "sequence_file_format.hh"
 #include "sequence.hh"
 #include "streamer.hh"
 #include "vcd_parser.hh"
@@ -461,6 +462,46 @@ TEST_CASE("resolve_freq_meter_options captures correction factor") {
     REQUIRE(opts.correction_factor.has_value());
     CHECK(*opts.correction_factor == doctest::Approx(1.25));
   }
+}
+
+TEST_CASE("parse_sequence_file_format accepts supported names") {
+  CHECK(parse_sequence_file_format("vcd") == SequenceFileFormat::vcd);
+  CHECK(parse_sequence_file_format("text") == SequenceFileFormat::text);
+  CHECK(parse_sequence_file_format("binary") == SequenceFileFormat::binary);
+}
+
+TEST_CASE("parse_sequence_file_format rejects unknown names") {
+  CHECK_THROWS_AS(parse_sequence_file_format("txt"), std::runtime_error);
+  CHECK_THROWS_AS(parse_sequence_file_format("foo"), std::runtime_error);
+}
+
+TEST_CASE("infer_sequence_file_format_from_filename infers known extensions") {
+  CHECK(infer_sequence_file_format_from_filename("waveform.vcd") == SequenceFileFormat::vcd);
+  CHECK(infer_sequence_file_format_from_filename("capture.seq") == SequenceFileFormat::text);
+  CHECK(infer_sequence_file_format_from_filename("capture.txt") == SequenceFileFormat::text);
+  CHECK(infer_sequence_file_format_from_filename("capture.bin") == SequenceFileFormat::binary);
+  CHECK(infer_sequence_file_format_from_filename("capture.ppbin") == SequenceFileFormat::binary);
+}
+
+TEST_CASE("resolve_sequence_file_format prefers explicit format") {
+  auto input = make_input({"-format", "text"});
+  CHECK(resolve_sequence_file_format(input, "capture.vcd") == SequenceFileFormat::text);
+}
+
+TEST_CASE("resolve_sequence_file_format uses forced default") {
+  auto input = make_input({});
+  CHECK(resolve_sequence_file_format(input, "capture.unknown", SequenceFileFormat::vcd) == SequenceFileFormat::vcd);
+}
+
+TEST_CASE("resolve_sequence_file_format rejects ambiguous filename") {
+  auto input = make_input({});
+  CHECK_THROWS_AS(resolve_sequence_file_format(input, "capture"), std::runtime_error);
+}
+
+TEST_CASE("validate_sequence_file_options enforces VCD-only options") {
+  CHECK_NOTHROW(validate_sequence_file_options(make_input({"-target", "outs", "-scale", "10"}), SequenceFileFormat::vcd));
+  CHECK_THROWS_AS(validate_sequence_file_options(make_input({"-target", "outs"}), SequenceFileFormat::text), std::runtime_error);
+  CHECK_THROWS_AS(validate_sequence_file_options(make_input({"-scale", "10"}), SequenceFileFormat::text), std::runtime_error);
 }
 
 TEST_CASE("append_final_output appends explicit final terminator") {

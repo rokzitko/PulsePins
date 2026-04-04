@@ -61,6 +61,10 @@ _pulsepins_ppvcd_opts="
 -file -target -scale -force -check -read -timeout -t -dont_wait
 "
 
+_pulsepins_ppplay_opts="
+-file -format -force -target -scale -check -read -timeout -t -dont_wait
+"
+
 _pulsepins_pptest_opts="
 -c -v -v0 -v1 -t -i -iv -trig -p -m -r -n -check -timeout -dump-converted
 -rnd -cycles -delay -repetitions -nr_replays -pre -mid -sep -post -report
@@ -72,7 +76,7 @@ _pulsepins_ppcounter_opts="
 "
 
 _pulsepins_ppread_opts="
--oe -timeout -rbmode
+-oe -timeout -rbmode -vcd -save-text
 "
 
 _pulsepins_ppts_opts="
@@ -115,6 +119,7 @@ ppgpsdo
 pptemp
 ppfreq
 ppread
+ppplay
 ppvcd
 pphelloworld
 "
@@ -125,6 +130,7 @@ _pulsepins_cmd_opts() {
     ppdelay) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_ppdelay_opts")" ;;
     pptrig) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_pptrig_opts")" ;;
     ppqout) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_ppqout_opts")" ;;
+    ppplay) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_ppplay_opts")" ;;
     ppvcd) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_ppvcd_opts")" ;;
     pptest) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_pptest_opts")" ;;
     ppcounter) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_ppcounter_opts")" ;;
@@ -165,6 +171,10 @@ _pulsepins_complete() {
       _pulsepins_complete_files "$cur"
       return 0
       ;;
+    -format)
+      COMPREPLY=( $(compgen -W "vcd text" -- "$cur") )
+      return 0
+      ;;
   esac
 
   opts=$(_pulsepins_cmd_opts "$cmd")
@@ -174,4 +184,4 @@ _pulsepins_complete() {
 
 complete -F _pulsepins_complete pptool
 complete -F _pulsepins_complete pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout
-complete -F _pulsepins_complete ppaux ppcounter ppts ppgpsdo pptemp ppfreq ppread ppvcd pphelloworld
+complete -F _pulsepins_complete ppaux ppcounter ppts ppgpsdo pptemp ppfreq ppread ppplay ppvcd pphelloworld

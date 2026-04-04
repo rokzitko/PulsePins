@@ -31,7 +31,7 @@ The command catalog itself is declared in `c++/pptool_commands.hh` and implement
 
 Broadly, the commands fall into these groups:
 
-* streaming/output generation - `ppfg`, `ppdelay`, `ppvcd`, `pptest`, `ppdmatest`, `ppmstest`
+* streaming/output generation - `ppfg`, `ppdelay`, `ppplay`, `ppvcd`, `pptest`, `ppdmatest`, `ppmstest`
 * trigger/output debugging - `pptrig`, `ppqout`, `ppaux`, `ppreset`
 * measurement/readback - `ppread`, `ppcounter`, `ppts`, `ppfreq`, `pptemp`, `ppgpsdo`
 * onboarding/smoke test - `pphelloworld`
@@ -56,6 +56,7 @@ This keeps the high-level user interface stable while letting the internal imple
 * [ppmstest](pptest.md#ppmstest)
 * [ppdmatest](pptest.md#ppdmatest)
 * [ppfg](ppfg.md)
+* [ppplay](ppplay.md)
 * [ppdelay](ppdelay.md)
 * [ppreset](ppreset.md)
 * [pptrig](pptrig.md)
@@ -66,7 +67,7 @@ This keeps the high-level user interface stable while letting the internal imple
 * [ppgpsdo](ppgpsdo.md)
 * [pptemp](pptemp.md)
 * [ppfreq](ppfreq.md)
-* [ppvcd](ppvcd.md)
+* [ppvcd](ppvcd.md) - VCD compatibility alias for `ppplay`
 * [pphelloworld](pphelloworld.md)
 
 Related non-symlink tool:

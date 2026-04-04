@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
     {"ppgpsdo", ppgpsdo},
     {"pptemp", pptemp},
     {"ppfreq", ppfreq},
+    {"ppplay", ppplay},
     {"ppvcd", ppvcd},
     {"pphelloworld", pphelloworld}
   };

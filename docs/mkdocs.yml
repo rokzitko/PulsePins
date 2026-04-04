@@ -33,6 +33,7 @@ nav:
     - ppfreq - frequency meter: ppfreq.md
     - ppgpsdo - GNSS disciplined oscillator: ppgpsdo.md
     - pphelloworld - quick test: pphelloworld.md
+    - ppplay - sequence file playback: ppplay.md
     - ppqout - multiplexer test: ppqout.md
     - ppread - readback tool: ppread.md
     - ppreset - reset tool: ppreset.md
