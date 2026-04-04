@@ -1,4 +1,9 @@
-// Test Avalon MM interface
+// Avalon-MM interface testbench for the combinational qout combiner.
+//
+// This complements `tb1.sv`: the datapath semantics are still checked, but mode selection is
+// exercised through the software-visible Avalon-MM register instead of by forcing `cfg`
+// internally. Because the DUT is combinational, assertions can follow the write transaction
+// almost immediately.
 // Rok Zitko, 2025
 
 `default_nettype none
@@ -11,6 +16,7 @@ timeprecision 1ps;
 logic clk;
 logic reset;
 
+// Simple 1 ns clock and short reset pulse used only to establish deterministic initial state.
 initial clk = 1;
 always #0.5 clk = ~clk;
 
@@ -32,6 +38,7 @@ logic [31:0] avs_s0_readdata;
 logic avs_s0_write;
 logic [31:0] avs_s0_writedata;
 
+// Trace the externally visible register-selected mode while iterating over randomized checks.
 always @(posedge clk) begin
   $strobe("t=%8.3f in1=%h in2=%h in3=%h in4=%h cfg=%d o=%h", $realtime, in1, in2, in3, in4, dut.cfg, o);
 end
@@ -51,6 +58,7 @@ combiner_comb dut(
  .avs_s0_writedata
 );
 
+// Helper modeling a single Avalon-MM register write to the mode/config register.
 task set_cfg(input logic [31:0] cfg);
   $display("cfg=%h", cfg);
   avs_s0_address = 0;
@@ -61,6 +69,8 @@ task set_cfg(input logic [31:0] cfg);
   #1;
 endtask
 
+// Randomized repeated sanity pass across the supported register-programmed modes.
+// The combinational DUT means the checks use minimal delay after each configuration write.
 task testit;
   in1 = $urandom();
   in2 = $urandom();
@@ -120,6 +130,7 @@ task testit;
   set_cfg(dut.DIFF12);
   assert(o == (in1-in2)) else $fatal;
 
+  // Invalid mode should fall back to the DUT's safe default behavior.
   #1;
   set_cfg('hF);
   assert(o == 0) else $fatal;
