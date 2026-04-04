@@ -10,8 +10,64 @@ from pathlib import Path
 import time
 usleep = lambda x: time.sleep(x/1000000.0)
 
+
+def make_fpga_and_h2f():
+   v = pp.Verbosity()
+   fpga = pp.FPGA(v)
+   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
+   return fpga, dev_h2f
+
+
+def make_readback():
+   fpga, dev_h2f = make_fpga_and_h2f()
+   rb = pp.readback(fpga, dev_h2f,
+                    pp_impl.FIFO_RL_OUT_BASE,
+                    pp_impl.FIFO_RL_IN_CSR_BASE,
+                    pp_impl.RL_ENCODER_IF_BASE)
+   return fpga, dev_h2f, rb
+
+
+def make_streamer_fifo():
+   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
+   fifo = pp.streamer_fifo(dev_h2f, pp_impl.FIFO_1_IN_BASE, pp_impl.FIFO_1_IN_CSR_BASE)
+   return dev_h2f, fifo
+
+
+def make_streamer_control():
+   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
+   sc = pp.streamer_control(dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
+   return dev_h2f, sc
+
 def test_the_answer():
    assert pp.the_answer == 42
+
+
+def test_InputParser_exists_and_get():
+   p = pp.InputParser(["-a", "1", "-b", "hello"])
+   assert p.exists("-a") is True
+   assert p.exists("-b") is True
+   assert p.exists("-c") is False
+   assert p.get("-a") == "1"
+   assert p.get("-b") == "hello"
+
+
+def test_InputParser_get_string_default():
+   p = pp.InputParser([])
+   assert p.get_string("-missing", "fallback") == "fallback"
+
+
+def test_InputParser_get_double_and_uint32():
+   p = pp.InputParser(["-x", "1.25", "-y", "42"])
+   assert p.get_double("-x", 0.0) == 1.25
+   assert p.get_uint32("-y", 0) == 42
+
+
+def test_InputParser_add_and_add_with_arg():
+   p = pp.InputParser([])
+   p.add("-flag")
+   p.add_with_arg("-name", "value")
+   assert p.exists("-flag") is True
+   assert p.get_string("-name", "") == "value"
 
 def test_Counter():
    c = pp.Counter(10)
@@ -398,6 +454,77 @@ def test_sequence_binary_roundtrip_control_flow_and_force_trigger():
       seq2, force_trigger = pp.read_sequence_binary(str(path))
       assert force_trigger == True
       assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
+
+
+def test_readback_mode_set_smoke():
+   _, _, rb = make_readback()
+   rb.mode(0)
+   rb.mode(1)
+
+
+def test_readback_status_report_smoke():
+   _, _, rb = make_readback()
+   rb.status_report()
+
+
+def test_readback_check_fill_status_smoke():
+   _, _, rb = make_readback()
+   rb.check_fill_status()
+
+
+def test_readback_clear_fifo_and_reset_smoke():
+   _, _, rb = make_readback()
+   rb.clear_fifo()
+   rb.reset()
+
+
+def test_readback_filled_and_overflow_smoke():
+   _, _, rb = make_readback()
+   assert isinstance(bool(rb.filled()), bool)
+   assert isinstance(bool(rb.overflow()), bool)
+
+
+def test_streamer_fifo_report_smoke():
+   _, fifo = make_streamer_fifo()
+   fifo.report()
+
+
+def test_streamer_fifo_check_fill_status_smoke():
+   _, fifo = make_streamer_fifo()
+   fifo.check_fill_status()
+
+
+def test_sc_qout_set_and_select_smoke():
+   _, sc = make_streamer_control()
+   sc.qout_set(0x1234)
+   sc.qout_select(True)
+   sc.qout_select(False)
+
+
+def test_sc_trigger_controls_smoke():
+   _, sc = make_streamer_control()
+   sc.trigger_enable()
+   sc.trigger_force()
+   sc.trigger_reset()
+
+
+def test_sc_stop_on_buffer_error_smoke():
+   _, sc = make_streamer_control()
+   sc.stop_on_buffer_error(True)
+   sc.stop_on_buffer_error(False)
+
+
+def test_sc_gating_smoke():
+   _, sc = make_streamer_control()
+   sc.gating(True, False, 0)
+   sc.gating(True, True, 0x1)
+
+
+def test_sc_gate_status_helpers_smoke():
+   _, sc = make_streamer_control()
+   sc.gate_status()
+   sc.gate_status_string()
+   sc.gate_status_string_from_x(0)
 
 def test_check_firmware():
    pp.check_firmware()
