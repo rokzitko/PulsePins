@@ -17,7 +17,7 @@ At startup it:
 2. that runtime parses common options, enables the shared runtime policy, constructs the single `FPGA` object, and performs the startup frequency-meter report
 3. dispatches to a command handler based on the executable name
 
-That dispatch model is why one compiled binary can appear as multiple tools such as `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and `ppvcd`.
+That dispatch model is why one compiled binary can appear as multiple tools such as `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and `ppplay`.
 
 The most important host-side layers are:
 

@@ -99,4 +99,4 @@ After installation, either log out and back in or reload the shell profile manua
 source /etc/profile
 ```
 
-The first version covers `pptool` and the `pp...` symlink commands, with static completion for common options and file-path completion for arguments such as `ppvcd -file`.
+The first version covers `pptool` and the `pp...` symlink commands, with static completion for common options and file-path completion for arguments such as `ppplay -file`.

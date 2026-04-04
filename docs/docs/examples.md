@@ -17,7 +17,7 @@ The following application areas would especially benefit from community-contribu
 
 * generate a periodic square-wave pattern
 * use PulsePins as a delay generator
-* replay a waveform from a VCD file with `ppvcd`
+* replay a waveform from a VCD file with `ppplay`
 * measure an external clock with `ppfreq`
 * inspect PPS timing with `ppts`
 * compose two streamer outputs with the combiner

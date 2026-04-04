@@ -200,7 +200,7 @@ On the host side, the main C++ entry points are:
 * `c++/ppworkflow.hh` - shared send/trigger/check flow used by multiple tools
 * `c++/sequence.hh` and `c++/elements.hh` - host-side sequence representation
 
-CLI tools such as `ppfg`, `ppdelay`, `ppvcd`, and `pptest` all eventually program this subsystem.
+CLI tools such as `ppfg`, `ppdelay`, `ppplay`, and `pptest` all eventually program this subsystem.
 
 ## How to customize it safely
 

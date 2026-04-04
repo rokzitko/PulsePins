@@ -1,3 +1,3 @@
 #!/bin/bash
 source defs.sh
-ppvcd -file vcd.simple1 -force -veryverbose -check
+ppplay -file vcd.simple1 -force -veryverbose -check
