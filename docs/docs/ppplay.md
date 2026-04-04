@@ -9,13 +9,14 @@ Current supported formats:
 
 * `vcd`
 * PulsePins text sequence format (`text`)
+* PulsePins binary sequence format (`binary`)
 
-The format-selection layer already reserves a future `binary` mode, but binary playback is not enabled yet.
+The binary format is exact and lossless: it preserves the full internal sequence representation, including control-flow elements and the force-trigger flag.
 
 ## Common options
 
 * `-file PATH`: input sequence file to load
-* `-format vcd|text`: explicitly select the file format
+* `-format vcd|text|binary`: explicitly select the file format
 * `-force`: force triggering after loading the sequence; for text input this overrides the in-file `f` flag
 
 Shared playback options such as `-check`, `-read`, `-timeout`, `-t`, and `-dont_wait` behave as they do for the other streaming tools.
@@ -34,6 +35,8 @@ If `-format` is not provided, `ppplay` tries to infer the format from the file e
 * `.vcd` -> `vcd`
 * `.seq` -> `text`
 * `.txt` -> `text`
+* `.bin` -> `binary`
+* `.ppbin` -> `binary`
 
 If the extension is ambiguous, `ppplay` exits with an error and asks for `-format`.
 
@@ -67,4 +70,10 @@ Force playback even when a text file does not request force-triggering:
 
 ```bash
 ppplay -file capture.seq -force
+```
+
+Replay an exact binary sequence capture:
+
+```bash
+ppplay -file capture.ppbin
 ```

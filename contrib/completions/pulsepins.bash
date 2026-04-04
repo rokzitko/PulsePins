@@ -172,7 +172,7 @@ _pulsepins_complete() {
       return 0
       ;;
     -format)
-      COMPREPLY=( $(compgen -W "vcd text" -- "$cur") )
+      COMPREPLY=( $(compgen -W "vcd text binary" -- "$cur") )
       return 0
       ;;
   esac

@@ -394,24 +394,39 @@ std::pair<Sequence, bool> load_sequence_from_file(const InputParser &input,
 {
   switch (format) {
     case SequenceFileFormat::vcd: {
-      Sequence seq;
-      const std::string target_name = input.get_string("-target", "outs");
-      const auto scale_factor = input.get_uint32("-scale", 10);
-      seq.load_VCD(filename, target_name, scale_factor);
-      const bool force_now = input.exists("-force") ? force_trigger : do_not_force_trigger;
-      return {seq, force_now};
+      try {
+        Sequence seq;
+        const std::string target_name = input.get_string("-target", "outs");
+        const auto scale_factor = input.get_uint32("-scale", 10);
+        seq.load_VCD(filename, target_name, scale_factor);
+        const bool force_now = input.exists("-force") ? force_trigger : do_not_force_trigger;
+        return {seq, force_now};
+      }
+      catch (const std::exception &e) {
+        throw std::runtime_error("Error loading VCD file '" + filename + "': " + e.what());
+      }
     }
     case SequenceFileFormat::text: {
-      std::ifstream f(filename);
-      if (!f)
-        throw std::runtime_error("Could not open sequence file: " + filename);
-      auto [seq, force_trigger] = parse_sequence_from_stream(f);
-      if (input.exists("-force"))
-        force_trigger = true;
-      return {seq, force_trigger};
+      try {
+        std::ifstream f(filename);
+        if (!f)
+          throw std::runtime_error("Could not open sequence file");
+        auto [seq, force_trigger] = parse_sequence_from_stream(f);
+        if (input.exists("-force"))
+          force_trigger = true;
+        return {seq, force_trigger};
+      }
+      catch (const std::exception &e) {
+        throw std::runtime_error("Error parsing sequence file '" + filename + "': " + e.what());
+      }
     }
     case SequenceFileFormat::binary:
-      throw std::runtime_error("Binary sequence file format is not implemented yet");
+      try {
+        return Sequence::read_binary_file(filename);
+      }
+      catch (const std::exception &e) {
+        throw std::runtime_error("Error reading binary sequence file '" + filename + "': " + e.what());
+      }
   }
   throw std::runtime_error("Unhandled sequence file format");
 }

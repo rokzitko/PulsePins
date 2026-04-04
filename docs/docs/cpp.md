@@ -69,7 +69,7 @@ Current serialization capability matrix:
 | ------ | --- | ------ | --- |
 | PulsePins text sequence format | import + export | import + export | export via `ppread -save-text`; import in selected workflows |
 | VCD | import + export | import + export | import via `ppvcd`; export via `ppread -vcd` |
-| PulsePins binary sequence format | import + export | not yet exposed | reserved in `ppplay`, not yet enabled there |
+| PulsePins binary sequence format | import + export | not yet exposed | import via `ppplay` |
 
 Class hierarchy for counter value objects:
 
