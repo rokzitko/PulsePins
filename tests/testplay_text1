@@ -1,0 +1,3 @@
+#!/bin/bash
+source defs.sh
+ppplay -file sequence.simple -veryverbose -check

@@ -3,3 +3,4 @@ A comprehensive collection of tests covering most of the implemented functionali
 * run_all_tests: runs (almost) all tests from the collection once
 * run_all_tests_forever: repeatedly runs all tests for burn-in testing (a log file named `report` is generated in the current directory; per-test logs go to `/var/volatile`)
 * command recipe files now live in `../recipes/`
+* sequence fixture files such as `sequence.simple`, `sequence.simple.ppbin`, and `vcd.simple1` are copied together with the executable tests and are used by the `ppplay` playback checks
