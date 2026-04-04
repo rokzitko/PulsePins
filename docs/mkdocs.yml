@@ -41,7 +41,7 @@ nav:
     - pptemp - temperature reader: pptemp.md
     - pptest - self-tests: pptest.md
     - pptrig - trigger debugging tool: pptrig.md
-    - ppvcd - VCD loader: ppvcd.md
+    - ppvcd - VCD compatibility alias: ppvcd.md
     - ppscpi - network server: ppscpi.md
   - Testing:
     - Test infrastructure: testing.md
