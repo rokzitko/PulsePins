@@ -55,6 +55,7 @@ seq, force_trigger = pp.parse_sequence_text("d 3 0x12\nfinal 0x34\n")
 text = pp.write_sequence_text(seq)
 seq.write_VCD_file("capture.vcd")
 seq.write_binary_file("capture.ppbin")
+seq2, force_trigger2 = pp.read_sequence_binary("capture.ppbin")
 ```
 
 ## Testing expectations

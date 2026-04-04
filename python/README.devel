@@ -9,3 +9,12 @@ building the production module on the DE10-Nano.
 
 The default Python binding build uses `-O2` and omits `-g` to reduce memory pressure.
 If you need debug symbols, use `make PY_DEBUG=1` in `python/`.
+
+Current Python sequence-serialization helpers include:
+
+* `pp.parse_sequence_text(...)`
+* `pp.write_sequence_text(...)`
+* `Sequence.load_VCD(...)`
+* `Sequence.write_VCD_file(...)`
+* `pp.read_sequence_binary(...)`
+* `Sequence.write_binary_file(...)`
