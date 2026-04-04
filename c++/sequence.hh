@@ -11,15 +11,24 @@
 
 #pragma once
 
+#include <algorithm>
+#include <bitset>
 #include <deque>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "elements.hh"
+#include "ppversion.hh"
 #include "vcd_parser.hh"
+
+inline std::string value_to_vcd_binary(value_t v)
+{
+  return std::bitset<WIDTH_DATA>(static_cast<unsigned long long>(v)).to_string();
+}
 
 // Thin extension of `std::deque<el>` with helpers that reflect the semantics of a
 // pulse sequence rather than just container operations.
@@ -70,7 +79,7 @@ public:
     // Convert regular data elements into the effective output-value stream. This is
     // mainly used for readback checking, where comparisons are done against the data
     // observed at the streamer output rather than the original update operators.
-    Sequence convert_to_BitLoad() {
+    Sequence convert_to_BitLoad() const {
     Sequence s;
     size_t n = 0; // counts regular elements only
     value_t v_prev;
@@ -90,7 +99,7 @@ public:
   }
 
     // Merge adjacent regular elements that produce the same output state.
-    Sequence merge() {
+    Sequence merge() const {
     Sequence s = *this; // make a copy
     merge_adjacent<el>(s,
                         [](const el &x, const el &y){ return x.is_regular() && y.is_regular() && x.control() == y.control() && x.value() == y.value(); },
@@ -105,9 +114,78 @@ public:
     auto l = parseVcdUpdates(F, target_name, scale_factor);
     for (size_t i = 0; i < l.size()-1; i++) {
       Counter c = l[i+1].count-l[i].count;
-      Value v = l[i].value;
-      this->push_back(el(c, v));
+      this->push_back(el(c, l[i].value));
     }
+  }
+
+  void write_VCD(std::ostream &f,
+                const std::string &target_name = "outs",
+                const std::string &timescale = "1ns") const {
+    Sequence s;
+    value_t current_value = 0;
+    for (const auto &e : *this) {
+      if (!e.is_regular()) {
+        s.push_back(e);
+        continue;
+      }
+      current_value = e.updated_value(current_value);
+      s.push_back(el(e.count(), current_value));
+    }
+    s.erase(std::remove_if(s.begin(), s.end(), [](const el &e) {
+      return e.is_regular() && e.count() == 0;
+    }), s.end());
+    s = s.merge();
+
+    for (const auto &e : s) {
+      if (!e.is_regular())
+        throw std::runtime_error("VCD export requires a deterministic regular sequence");
+    }
+
+    f << "$date\n";
+    f << "  " << __DATE__ << " " << __TIME__ << "\n";
+    f << "$end\n";
+    f << "$version\n";
+    f << "  PulsePins " << VERSION << "\n";
+    f << "$end\n";
+    f << "$timescale " << timescale << " $end\n";
+    f << "$scope module pulsepins $end\n";
+    f << "$var reg " << WIDTH_DATA << " ! " << target_name << " [" << (WIDTH_DATA - 1) << ":0] $end\n";
+    f << "$upscope $end\n";
+    f << "$enddefinitions $end\n";
+
+    if (s.empty()) {
+      f << "#0\n";
+      f << "b" << value_to_vcd_binary(0) << " !\n";
+      return;
+    }
+
+    count_t time = 0;
+    value_t last_value = s.front().value();
+    f << "#0\n";
+    f << "b" << value_to_vcd_binary(last_value) << " !\n";
+
+    for (size_t i = 0; i < s.size(); ++i) {
+      time += s[i].count();
+      if (i + 1 >= s.size())
+        break;
+      const value_t next_value = s[i + 1].value();
+      if (next_value == last_value)
+        continue;
+      f << "#" << time << "\n";
+      f << "b" << value_to_vcd_binary(next_value) << " !\n";
+      last_value = next_value;
+    }
+
+    f << "#" << time << "\n";
+  }
+
+  void write_VCD_file(const std::string &filename,
+                      const std::string &target_name = "outs",
+                      const std::string &timescale = "1ns") const {
+    std::ofstream f(filename);
+    if (!f)
+      throw std::runtime_error("Could not open VCD output file: " + filename);
+    write_VCD(f, target_name, timescale);
   }
 
   virtual ~Sequence() = default;

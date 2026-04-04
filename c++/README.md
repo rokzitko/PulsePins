@@ -13,7 +13,7 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 - `startup.hh` - common process bootstrap and FPGA startup policy
 - `options.hh` - typed option-resolution helpers shared by startup, trigger, streamer, and measurement code
 - `ppworkflow.hh` - shared send/trigger/readback/check workflow used by several commands
-- `elements.hh` and `sequence.hh` - host-side representation of pulse programs and trigger elements
+- `elements.hh` and `sequence.hh` - host-side representation of pulse programs and trigger elements, including text/VCD import and deterministic waveform export to VCD
 - `streamer_control.hh`, `streamer_fifo.hh`, `streamer_dma.hh`, `basic_multi_dma.hh` - host-side streamer lifecycle control and transport/topology helpers
 - `streamer*.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, `freq_meter.hh` - typed wrappers around major FPGA subsystems
 

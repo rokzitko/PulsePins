@@ -8,6 +8,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <cstdio>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -544,6 +545,115 @@ TEST_CASE("VCD parser") {
   CHECK(v[5].count == 500);
 }
 
+TEST_CASE("write_VCD exports simple BitLoad waveform") {
+  Sequence seq;
+  seq.push_back(el(3, 0x1));
+  seq.push_back(el(2, 0x3));
+
+  std::ostringstream out;
+  seq.write_VCD(out);
+  const std::string vcd = out.str();
+
+  CHECK(contains(vcd, "$scope module pulsepins $end"));
+  CHECK(contains(vcd, "$var reg 32 ! outs [31:0] $end"));
+  CHECK(contains(vcd, "#0\n"));
+  CHECK(contains(vcd, "b" + value_to_vcd_binary(0x1) + " !\n"));
+  CHECK(contains(vcd, "#3\n"));
+  CHECK(contains(vcd, "b" + value_to_vcd_binary(0x3) + " !\n"));
+}
+
+TEST_CASE("write_VCD merges unchanged adjacent output states") {
+  Sequence seq;
+  seq.push_back(el(2, 0x5));
+  seq.push_back(el(3, 0x5));
+  seq.push_back(el(1, 0x7));
+
+  std::ostringstream out;
+  seq.write_VCD(out);
+  const std::string vcd = out.str();
+
+  const std::string five = "b" + value_to_vcd_binary(0x5) + " !\n";
+  CHECK(vcd.find(five) != std::string::npos);
+  CHECK(vcd.find(five, vcd.find(five) + 1) == std::string::npos);
+  CHECK(contains(vcd, "#5\n"));
+  CHECK(contains(vcd, "b" + value_to_vcd_binary(0x7) + " !\n"));
+}
+
+TEST_CASE("write_VCD normalizes deterministic regular operators") {
+  Sequence seq;
+  seq.push_back(el(1, BitLoad(1)));
+  seq.push_back(el(2, BitSet(2)));
+  seq.push_back(el(3, BitFlip(1)));
+
+  std::ostringstream out;
+  seq.write_VCD(out);
+  const std::string vcd = out.str();
+
+  CHECK(contains(vcd, "#0\n"));
+  CHECK(contains(vcd, "b" + value_to_vcd_binary(1) + " !\n"));
+  CHECK(contains(vcd, "#1\n"));
+  CHECK(contains(vcd, "b" + value_to_vcd_binary(3) + " !\n"));
+  CHECK(contains(vcd, "#3\n"));
+  CHECK(contains(vcd, "b" + value_to_vcd_binary(2) + " !\n"));
+}
+
+TEST_CASE("write_VCD accepts empty sequence") {
+  Sequence seq;
+
+  std::ostringstream out;
+  seq.write_VCD(out);
+  const std::string vcd = out.str();
+
+  CHECK(contains(vcd, "$scope module pulsepins $end"));
+  CHECK(contains(vcd, "#0\n"));
+  CHECK(contains(vcd, "b" + value_to_vcd_binary(0) + " !\n"));
+}
+
+TEST_CASE("write_VCD rejects trigger elements") {
+  Sequence seq;
+  seq.push_back(el(0x1, 0x1, true));
+
+  std::ostringstream out;
+  CHECK_THROWS_AS(seq.write_VCD(out), std::runtime_error);
+}
+
+TEST_CASE("write_VCD rejects replay retrig and prng elements") {
+  SUBCASE("replay") {
+    Sequence seq;
+    seq.push_back(el(Replay{}, 3, 4));
+    std::ostringstream out;
+    CHECK_THROWS_AS(seq.write_VCD(out), std::runtime_error);
+  }
+  SUBCASE("retrigger") {
+    Sequence seq;
+    seq.push_back(el(Retrig{}));
+    std::ostringstream out;
+    CHECK_THROWS_AS(seq.write_VCD(out), std::runtime_error);
+  }
+  SUBCASE("prng") {
+    Sequence seq;
+    seq.push_back(el(PseudoRandom{}, 5));
+    std::ostringstream out;
+    CHECK_THROWS_AS(seq.write_VCD(out), std::runtime_error);
+  }
+}
+
+TEST_CASE("BitLoad sequence VCD round-trips through load_VCD") {
+  Sequence seq;
+  seq.push_back(el(3, 0x1));
+  seq.push_back(el(2, 0x3));
+  seq.push_back(el(4, 0x0));
+
+  const std::string filename = "unit_tests_output_roundtrip.vcd";
+  seq.write_VCD_file(filename, "outs", "1ns");
+
+  Sequence roundtrip;
+  roundtrip.load_VCD(filename, "outs", 1);
+
+  CHECK(compare(roundtrip, seq));
+  std::remove(filename.c_str());
+}
+
 TEST_CASE("parse_sequence_from_stream parses existing grammar") {
   std::istringstream in("d 3 0x12 t 0b01 0b11 f d 4 0x34");
   auto [seq, force_trigger] = parse_sequence_from_stream(in);
@@ -778,5 +888,5 @@ TEST_CASE("write_sequence_to_stream round-trips triggers and control-flow elemen
   auto [roundtrip, force_trigger] = parse_sequence_from_stream(in);
 
   CHECK(!force_trigger);
-  CHECK(roundtrip == seq);
+  CHECK(compare(roundtrip, seq));
 }

@@ -127,9 +127,9 @@ inline uint8_t parse_uint8_t(std::string s)
   } else {
     std::stringstream ss(s);
     ss >> std::setbase(0);
-    uint8_t i;
+    unsigned int i;
     ss >> i;
-    return i;
+    return static_cast<uint8_t>(i);
   }
 }
 
