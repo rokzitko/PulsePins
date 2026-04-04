@@ -5,7 +5,10 @@ SUBDIRS := $(wildcard tb_*)
 
 .PHONY: test clean $(SUBDIRS) lint
 
-test:
+test: $(SUBDIRS)
+
+$(SUBDIRS):
+	$(MAKE) -C $@ test
 
 clean: $(SUBDIRS:%=%-clean)
 	rm -rf report.txt report_dir/

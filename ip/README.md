@@ -29,7 +29,7 @@ That path covers the core programming model, verification path, and measurement 
 ## Verification and related docs
 
 - test benches use ModelSim or Icarus
-- main command: `make -C ip test` (integrated HDL regression target; some local TB directories still require direct invocation)
+- main command: `make -C ip test`
 - testbench tree overview: `TESTBENCHES.md`
 - web docs entry points:
   - `docs/docs/streamer.md`

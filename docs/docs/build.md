@@ -105,12 +105,11 @@ Running `make -C ip test` executes the currently integrated per-IP test targets 
 * `combiner`
 * `combiner_comb`
 * `combiner_trig`
+* `counter`
 * `rl_encoder_if`
 * `st_mux`
 * `streamer`
 * `ts_core`
-
-Some IP directories still have local testbench trees that are not yet fully wired into this top-level regression entry point, so `make -C ip test` should be read as the integrated HDL regression target rather than as a promise that every single `ip/**/tb_*` directory is executed.
 
 ### Image assembly
 
