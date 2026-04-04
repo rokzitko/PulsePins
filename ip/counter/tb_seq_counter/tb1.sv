@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
+// Purpose: sequence-histogram counter directed testbench.
+//
+// Verifies histogram updates for short bit-pattern windows on a selected signal.
+
 // Test: non-overlapping (rolling=0)
 
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution

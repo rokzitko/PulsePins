@@ -1,3 +1,7 @@
+// Shared symbolic control values for the input-FIFO + preprocessor integration tests.
+//
+// These constants describe whether an element passes through immediately, is stored for later
+// replay, terminates the stream, or requests replay behavior.
 localparam [31:0] PASS = 0;
 localparam [31:0] NOPASS = 1 << BIT_NOPASS;
 localparam [31:0] TERMINATE = 1 << BIT_TERMINATE;

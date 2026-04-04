@@ -1,3 +1,7 @@
+// Purpose: directed top-level trigger-element test.
+//
+// Loads trigger-program data into the top-level streamer and checks that trigger-specific
+// handling is accepted by the integration path instead of being treated like normal output data.
 // Load a trigger condition
 // Rok Zitko, 2025
 

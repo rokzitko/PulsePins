@@ -1,3 +1,7 @@
+// Purpose: basic directed ingress FIFO test.
+//
+// Checks that a short sequence of input words can be enqueued and later drained in order from
+// the input FIFO, establishing the basic pass-through contract.
 // Simple simulation test bench
 // Rok Zitko, 2025
 

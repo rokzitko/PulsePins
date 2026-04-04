@@ -1,3 +1,7 @@
+// Purpose: pulse/tick generator testbench.
+//
+// Verifies the periodic pulse outputs used as shared low-rate timing utilities elsewhere in the
+// design.
 `timescale 1ns/1ps
 `default_nettype none
 

@@ -1,3 +1,7 @@
+// Purpose: retrigger-related edge-case test for the run-length encoder core.
+//
+// Covers a corner case analogous to no-strobe handling, but in the presence of retrigger-like
+// behavior.
 // Case of retriggering (similar to no_strobe)
 // Rok Zitko, 2025
 

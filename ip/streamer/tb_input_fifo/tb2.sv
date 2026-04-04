@@ -1,3 +1,7 @@
+// Purpose: ingress FIFO backpressure test.
+//
+// Exercises the FIFO under sustained writes/reads so the ready/full behavior and delayed drain
+// timing stay correct under pressure.
 // Test backpressure
 // Rok Zitko, 2025
 

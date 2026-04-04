@@ -1,3 +1,8 @@
+// Purpose: directed top-level streamer smoke test.
+//
+// Loads a short deterministic element stream and checks that regular elements reach the
+// streamer datapath/output FIFO as expected. This is the simplest top-level functional check
+// of the `streamer` integration path.
 // Load 3 elements in output FIFO
 // Rok Zitko, 2025
 

@@ -1,3 +1,7 @@
+// Purpose: backpressure test for the combined FIFO + preprocessor path.
+//
+// Verifies that replay/storage behavior remains correct even when downstream readiness applies
+// pressure to the integrated ingress path.
 // Test backpressure in preprocessor
 // Rok Zitko, 2025
 

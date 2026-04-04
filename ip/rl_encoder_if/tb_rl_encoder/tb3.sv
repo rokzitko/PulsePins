@@ -1,3 +1,7 @@
+// Purpose: no-strobe/readback edge-case test for the run-length encoder core.
+//
+// Exercises a corner case related to no-strobe style behavior and the corresponding activation
+// handling in the encoder.
 // Case of no-strobe element: this situation would require restoring the "activated" signal.
 // Rok Zitko, 2025
 

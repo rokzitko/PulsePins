@@ -1,3 +1,7 @@
+// Purpose: randomized sanity test for the full `st_interface` wrapper path.
+//
+// Repeats wrapper-level transactions under fuzzed inputs to catch integration regressions that
+// directed wrapper tests might miss.
 // Fuzzing test of the whole design
 // Rok Zitko, 2025
 

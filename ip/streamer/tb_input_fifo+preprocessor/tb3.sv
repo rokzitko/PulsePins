@@ -1,3 +1,7 @@
+// Purpose: directed FIFO + preprocessor timing/ordering test.
+//
+// Focuses on another interaction pattern between ingress buffering and replay expansion to make
+// ordering guarantees explicit.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 

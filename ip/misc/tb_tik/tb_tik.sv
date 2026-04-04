@@ -1,3 +1,6 @@
+// Purpose: timing helper / tick-generation testbench.
+//
+// Exercises the small timing utility block used by other low-level support modules.
 `timescale 1ns/1ps
 `default_nettype none
 

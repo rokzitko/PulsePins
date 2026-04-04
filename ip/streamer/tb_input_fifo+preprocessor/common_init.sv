@@ -1,3 +1,8 @@
+// Shared initialization, tracing, and symbolic control encodings for the combined
+// input-FIFO + preprocessor testbench family.
+//
+// These tests focus on how ingress buffering and the store/replay preprocessor interact, so the
+// common file provides the repeated clock/reset setup, DUT wiring, and debug visibility.
 reg clk;
 reg reset;
 

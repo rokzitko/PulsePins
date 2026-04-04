@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
+// Purpose: basic single-channel statistics counter testbench.
+//
+// Verifies total/high/low/edge counters for a sampled one-bit input stream.
+
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution
 
 `default_nettype none

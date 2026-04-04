@@ -1,3 +1,6 @@
+// Purpose: Avalon-ST multiplexer functional testbench.
+//
+// Verifies source selection and counter behavior of the simple two-input streaming multiplexer.
 // Simple simulation test bench
 // Rok Zitko, 2025
 

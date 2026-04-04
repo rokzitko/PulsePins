@@ -1,3 +1,7 @@
+// Purpose: directed preprocessor corner-case test.
+//
+// Exercises a less common preprocessor scenario in isolation, complementing the earlier
+// directed replay/storage tests.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 

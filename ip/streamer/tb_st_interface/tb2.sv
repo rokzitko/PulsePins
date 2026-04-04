@@ -1,3 +1,7 @@
+// Purpose: small end-to-end wrapper test for `st_interface`.
+//
+// Drives a short two-element transaction sequence through the wrapper to validate that the
+// software-visible transport path and the underlying streamer integration work together.
 // Two-element sequence full simulation
 // Rok Zitko, 2025
 

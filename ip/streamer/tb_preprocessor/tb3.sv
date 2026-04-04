@@ -1,3 +1,7 @@
+// Purpose: further directed preprocessor replay/storage test.
+//
+// Focuses on another corner of the preprocessor state machine so replay sequencing remains
+// understandable and regression-resistant.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 

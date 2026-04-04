@@ -1,3 +1,7 @@
+// Purpose: random debug-signal generator testbench.
+//
+// Checks that the lightweight pseudo-random debug source produces activity as expected for use in
+// bring-up/probing paths.
 `timescale 1ns/1ps
 
 module tb_rand_signal_gen;

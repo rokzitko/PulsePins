@@ -1,3 +1,6 @@
+// Purpose: directed core run-length encoder test.
+//
+// Verifies the basic compression behavior of the readback encoder core on ordinary sample runs.
 // Rok Zitko, 2025
 
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution

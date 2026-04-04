@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
+// Purpose: top-level counter wrapper interface testbench.
+//
+// Checks channel selection, latch/reset behavior, and multiplexed readout through the shared
+// software-visible counter interface.
+
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution
 
 `default_nettype none

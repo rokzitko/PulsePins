@@ -1,3 +1,7 @@
+// Purpose: top-level preprocessor/replay integration test.
+//
+// Exercises store + replay behavior through the full `streamer` wrapper and checks that replay
+// expands into the expected number and ordering of output elements in the output FIFO.
 // Test for preprocessor sequences; check for the number of elements in the output FIFO
 // Rok Zitko, 2025
 

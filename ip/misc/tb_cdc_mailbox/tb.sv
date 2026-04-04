@@ -1,3 +1,7 @@
+// Purpose: clock-domain crossing mailbox testbench.
+//
+// Verifies that the mailbox-style CDC helper safely transfers data/events between unrelated clock
+// domains.
 `timescale 1ns/1ps
 
 module tb;

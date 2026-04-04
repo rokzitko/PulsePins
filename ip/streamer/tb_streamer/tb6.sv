@@ -1,3 +1,7 @@
+// Purpose: final-qout behavior test for the top-level streamer.
+//
+// Verifies that the final programmed output value is the one left visible after sequence
+// completion, which is important for host-side final-state checks.
 // Final qout setting test
 // Rok Zitko, 2025
 

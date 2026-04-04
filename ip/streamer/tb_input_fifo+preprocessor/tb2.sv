@@ -1,3 +1,7 @@
+// Purpose: additional directed storage/replay integration scenario.
+//
+// Exercises a second pass/store/replay pattern so the combined FIFO + preprocessor path is
+// checked beyond the simplest directed case.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 

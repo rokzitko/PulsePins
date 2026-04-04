@@ -1,3 +1,7 @@
+// Purpose: directed storage/replay integration test for input FIFO + preprocessor.
+//
+// Verifies which elements pass through immediately, which are stored, how replay expands, and
+// how downstream consumption sees the resulting sequence.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 

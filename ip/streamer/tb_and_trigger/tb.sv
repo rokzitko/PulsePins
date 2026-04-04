@@ -1,3 +1,7 @@
+// Purpose: focused functional test for the simple single-stage trigger primitive.
+//
+// This testbench verifies the mask/pattern trigger behavior used as a building block for more
+// complex trigger routing.
 // Simple simulation test bench
 // Rok Zitko, 2025
 

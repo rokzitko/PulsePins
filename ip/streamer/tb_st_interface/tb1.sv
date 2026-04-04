@@ -1,3 +1,7 @@
+// Purpose: Avalon-ST ingress endianness/word-order test.
+//
+// Verifies that the software-visible 96-bit transport order is mapped into the internal
+// `control/counter/data` layout expected by the streamer wrapper.
 // Endianness test
 // Rok Zitko, 2025
 

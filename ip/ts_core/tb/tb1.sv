@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
+// Purpose: timestamp-capture core testbench.
+//
+// Verifies that asynchronous timing events are captured into timestamp records on the expected
+// output path.
+
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution
 
 `default_nettype none

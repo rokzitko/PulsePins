@@ -1,3 +1,7 @@
+// Purpose: empty-sequence corner-case test for the top-level streamer.
+//
+// Verifies that the streamer handles an empty or near-empty programmed stream cleanly without
+// spurious output elements or invalid completion behavior.
 // Test for empty sequences
 // Rok Zitko, 2025
 

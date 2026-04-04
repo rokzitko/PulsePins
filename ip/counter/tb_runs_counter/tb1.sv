@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
+// Purpose: run-length statistics counter directed testbench.
+//
+// Checks counting of low/high runs, run-length accumulation, and related statistics on a sampled
+// one-bit signal.
+
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution
 
 `default_nettype none

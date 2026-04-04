@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
+// Purpose: crosscorrelation counter directed testbench.
+//
+// Verifies lag-based correlation accumulation between two sampled input streams.
+
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution
 
 `default_nettype none

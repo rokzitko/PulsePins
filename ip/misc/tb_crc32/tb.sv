@@ -1,3 +1,6 @@
+// Purpose: CRC32 helper testbench.
+//
+// Confirms that the CRC block updates deterministically for known input data sequences.
 `timescale 1ns/1ps
 
 module tb_crc32;

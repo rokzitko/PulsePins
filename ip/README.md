@@ -30,6 +30,7 @@ That path covers the core programming model, verification path, and measurement 
 
 - test benches use ModelSim or Icarus
 - main command: `make -C ip test`
+- testbench tree overview: `TESTBENCHES.md`
 - web docs entry points:
   - `docs/docs/streamer.md`
   - `docs/docs/readback.md`

@@ -1,3 +1,7 @@
+// Purpose: retriggering integration test for the top-level streamer.
+//
+// Checks that a sequence which pauses for retriggering behaves correctly when the trigger path
+// is re-armed and resumed through the integrated streamer datapath.
 // Retriggering test
 // Rok Zitko, 2025
 

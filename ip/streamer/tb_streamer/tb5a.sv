@@ -1,3 +1,7 @@
+// Purpose: retriggering variant test for the top-level streamer.
+//
+// Covers a second retrigger timing/order scenario so the integrated retrigger path is exercised
+// under more than one directed condition.
 // Retriggering test
 // Rok Zitko, 2025
 

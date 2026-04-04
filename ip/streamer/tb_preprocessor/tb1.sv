@@ -1,3 +1,7 @@
+// Purpose: directed preprocessor storage/replay test.
+//
+// Exercises the preprocessor in isolation so storage, replay expansion, and pass/discard rules
+// can be validated without the rest of the streamer integration path.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 

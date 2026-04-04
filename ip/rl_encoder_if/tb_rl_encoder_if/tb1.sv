@@ -1,3 +1,7 @@
+// Purpose: software-visible wrapper test for the readback encoder interface.
+//
+// Checks that the Avalon-ST/Avalon-MM wrapper around the encoder core exposes the expected
+// transport and status behavior.
 // Rok Zitko, 2025
 
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution

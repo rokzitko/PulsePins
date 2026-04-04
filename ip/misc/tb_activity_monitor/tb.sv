@@ -1,3 +1,7 @@
+// Purpose: activity-monitor testbench.
+//
+// Checks that low-rate activity detection and related status behavior respond correctly to input
+// toggling over time.
 `timescale 1ns/1ps
 
 module tb_presence_detector;

@@ -1,3 +1,7 @@
+// Purpose: frequency-meter functional testbench.
+//
+// Verifies that the frequency-meter datapath counts input-clock activity over a gate interval and
+// exposes the expected measurement result through its wrapper logic.
 `timescale 1ns/1ps
 
 module tb1;

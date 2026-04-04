@@ -1,3 +1,7 @@
+// Purpose: additional directed preprocessor behavior test.
+//
+// Covers a second storage/replay scenario to confirm preprocessor state handling and output
+// ordering under a different directed input pattern.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 

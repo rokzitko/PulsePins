@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
+// Purpose: additional sequence-histogram counter scenario.
+//
+// Extends coverage of the bit-pattern histogram logic beyond the primary directed case.
+
 // Test: rolling
 
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution

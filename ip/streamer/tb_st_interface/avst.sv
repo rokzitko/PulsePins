@@ -1,3 +1,7 @@
+// Shared lightweight Avalon-ST source BFM used by `tb_st_interface/*`.
+//
+// This is local testbench infrastructure that keeps the wrapper tests self-contained without
+// depending on the full vendor-provided BFM stack.
 // my_avst_source_fm.sv — lightweight stand-in for avalon_st_source_bfm
 module avalon_st_source_bfm #(
   parameter int AVALON_ST_DATA_WIDTH = 96

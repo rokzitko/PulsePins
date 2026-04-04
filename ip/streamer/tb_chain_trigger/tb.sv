@@ -1,3 +1,7 @@
+// Purpose: directed multi-stage trigger-program test.
+//
+// Loads a small trigger program, advances through the stages with matching input patterns, and
+// checks final trigger assertion and trigger-reset behavior in the chain trigger engine.
 // Three-step triggering
 // Rok Zitko, 2025
 

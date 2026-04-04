@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Rok Zitko
 
+// Purpose: packet-statistics counter testbench.
+//
+// Verifies valid/idle accounting and packet-length statistics for a stream with packet-style
+// validity.
+
 `timescale 1ns/1ps   // 1ns time unit, 1ps resolution
 
 `default_nettype none

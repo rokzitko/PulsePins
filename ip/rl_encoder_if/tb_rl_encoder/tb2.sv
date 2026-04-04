@@ -1,3 +1,7 @@
+// Purpose: final-count edge-case test for the run-length encoder core.
+//
+// Covers the special case where the final encoded run has count 1 so end-of-stream handling stays
+// correct.
 // Case of count=1 final element
 // Rok Zitko, 2025
 

@@ -1,3 +1,7 @@
+// Purpose: additional ingress FIFO backpressure scenario.
+//
+// Complements `tb2` with a second directed flow-control pattern so FIFO backpressure handling is
+// checked under more than one timing relationship.
 // Test backpressure
 // Rok Zitko, 2025
 

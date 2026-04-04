@@ -1,3 +1,6 @@
+// Purpose: signal-multiplexer helper testbench.
+//
+// Verifies the small reusable mux block used in miscellaneous routing situations.
 `timescale 1ns/1ps
 `default_nettype none
 

@@ -1,3 +1,7 @@
+// Purpose: additional combined FIFO + preprocessor integration test.
+//
+// Extends coverage of combined-path corner cases beyond the earlier directed and backpressure
+// scenarios.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 

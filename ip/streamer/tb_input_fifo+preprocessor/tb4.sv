@@ -1,3 +1,7 @@
+// Purpose: directed FIFO + preprocessor corner-case test.
+//
+// Covers a less common combined-path scenario so regressions in pass/store/replay interaction are
+// easier to localize.
 // Storage of elements, etc.
 // Rok Zitko, 2025
 
