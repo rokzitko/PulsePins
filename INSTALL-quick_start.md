@@ -8,13 +8,13 @@
 network configuration (e.g. to modify the MAC address or to set up a static IP address), connect to the board through
 the serial console. That is the USB mini port marked UART on the board. Use username root and password eit.
 
-5. Connect to the board (via SSH or the serial console) and run `run_all_tests`. It should report `PASSED` when all
+5. Connect to the board (via SSH or the serial console) and run `run_all_tests`. It should report `SUCCESS` when all
 tests are complete. At the default 100 MHz streaming clock, the test run should take about 7 minutes.
 
 Optionally (recommended):
 
 6. Perform burn-in testing by running `run_all_tests_forever`. Let it run overnight or longer.
-A short report is stored in the text file `results`, while full log files are stored in `/var/volatile`.
+A short report is stored in the text file `report`, while full log files are stored in `/var/volatile`.
 
 7. Change the root password from the default 'eit'.
 
