@@ -11,32 +11,47 @@ import time
 usleep = lambda x: time.sleep(x/1000000.0)
 
 
-def make_fpga_and_h2f():
-   v = pp.Verbosity()
-   fpga = pp.FPGA(v)
-   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
-   return fpga, dev_h2f
+@pytest.fixture(scope="session")
+def verbosity():
+   return pp.Verbosity()
 
 
-def make_readback():
-   fpga, dev_h2f = make_fpga_and_h2f()
+@pytest.fixture(scope="session")
+def fpga(verbosity):
+   board = pp.FPGA(verbosity)
+   opts = pp.InputParser([])
+   # Mirror the normal host-runtime startup path and ensure streamer clock is measured before
+   # wrappers such as readback use streamer-clock-based waits.
+   pp.pp_freq_meter(opts, board, True)
+   return board
+
+
+@pytest.fixture(scope="session")
+def dev_h2f():
+   return pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
+
+
+@pytest.fixture(scope="session")
+def dev_lw():
+   return pp.mm(pp_impl.LWHPSFPGA_OFST, pp_impl.LWH2F_RANGE)
+
+
+def make_readback(fpga, dev_h2f):
    rb = pp.readback(fpga, dev_h2f,
                     pp_impl.FIFO_RL_OUT_BASE,
                     pp_impl.FIFO_RL_IN_CSR_BASE,
                     pp_impl.RL_ENCODER_IF_BASE)
-   return fpga, dev_h2f, rb
+   return rb
 
 
-def make_streamer_fifo():
-   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
+def make_streamer_fifo(dev_h2f):
    fifo = pp.streamer_fifo(dev_h2f, pp_impl.FIFO_1_IN_BASE, pp_impl.FIFO_1_IN_CSR_BASE)
-   return dev_h2f, fifo
+   return fifo
 
 
-def make_streamer_control():
-   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
+def make_streamer_control(dev_h2f):
    sc = pp.streamer_control(dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
-   return dev_h2f, sc
+   return sc
 
 def test_the_answer():
    assert pp.the_answer == 42
@@ -456,72 +471,72 @@ def test_sequence_binary_roundtrip_control_flow_and_force_trigger():
       assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
 
 
-def test_readback_mode_set_smoke():
-   _, _, rb = make_readback()
+def test_readback_mode_set_smoke(fpga, dev_h2f):
+   rb = make_readback(fpga, dev_h2f)
    rb.mode(0)
    rb.mode(1)
 
 
-def test_readback_status_report_smoke():
-   _, _, rb = make_readback()
+def test_readback_status_report_smoke(fpga, dev_h2f):
+   rb = make_readback(fpga, dev_h2f)
    rb.status_report()
 
 
-def test_readback_check_fill_status_smoke():
-   _, _, rb = make_readback()
+def test_readback_check_fill_status_smoke(fpga, dev_h2f):
+   rb = make_readback(fpga, dev_h2f)
    rb.check_fill_status()
 
 
-def test_readback_clear_fifo_and_reset_smoke():
-   _, _, rb = make_readback()
+def test_readback_clear_fifo_and_reset_smoke(fpga, dev_h2f):
+   rb = make_readback(fpga, dev_h2f)
    rb.clear_fifo()
    rb.reset()
 
 
-def test_readback_filled_and_overflow_smoke():
-   _, _, rb = make_readback()
+def test_readback_filled_and_overflow_smoke(fpga, dev_h2f):
+   rb = make_readback(fpga, dev_h2f)
    assert isinstance(bool(rb.filled()), bool)
    assert isinstance(bool(rb.overflow()), bool)
 
 
-def test_streamer_fifo_report_smoke():
-   _, fifo = make_streamer_fifo()
+def test_streamer_fifo_report_smoke(dev_h2f):
+   fifo = make_streamer_fifo(dev_h2f)
    fifo.report()
 
 
-def test_streamer_fifo_check_fill_status_smoke():
-   _, fifo = make_streamer_fifo()
+def test_streamer_fifo_check_fill_status_smoke(dev_h2f):
+   fifo = make_streamer_fifo(dev_h2f)
    fifo.check_fill_status()
 
 
-def test_sc_qout_set_and_select_smoke():
-   _, sc = make_streamer_control()
+def test_sc_qout_set_and_select_smoke(dev_h2f):
+   sc = make_streamer_control(dev_h2f)
    sc.qout_set(0x1234)
    sc.qout_select(True)
    sc.qout_select(False)
 
 
-def test_sc_trigger_controls_smoke():
-   _, sc = make_streamer_control()
+def test_sc_trigger_controls_smoke(dev_h2f):
+   sc = make_streamer_control(dev_h2f)
    sc.trigger_enable()
    sc.trigger_force()
    sc.trigger_reset()
 
 
-def test_sc_stop_on_buffer_error_smoke():
-   _, sc = make_streamer_control()
+def test_sc_stop_on_buffer_error_smoke(dev_h2f):
+   sc = make_streamer_control(dev_h2f)
    sc.stop_on_buffer_error(True)
    sc.stop_on_buffer_error(False)
 
 
-def test_sc_gating_smoke():
-   _, sc = make_streamer_control()
+def test_sc_gating_smoke(dev_h2f):
+   sc = make_streamer_control(dev_h2f)
    sc.gating(True, False, 0)
    sc.gating(True, True, 0x1)
 
 
-def test_sc_gate_status_helpers_smoke():
-   _, sc = make_streamer_control()
+def test_sc_gate_status_helpers_smoke(dev_h2f):
+   sc = make_streamer_control(dev_h2f)
    sc.gate_status()
    sc.gate_status_string()
    sc.gate_status_string_from_x(0)
@@ -529,34 +544,30 @@ def test_sc_gate_status_helpers_smoke():
 def test_check_firmware():
    pp.check_firmware()
 
-def test_mm():
+def test_mm(dev_lw):
    assert pp_impl.LWHPSFPGA_OFST == 0xFF200000
    assert pp_impl.LWH2F_RANGE == pp_impl.LWHPSFPGA_END - pp_impl.LWHPSFPGA_OFST
-   dev_lw = pp.mm(pp_impl.LWHPSFPGA_OFST, pp_impl.LWH2F_RANGE)
    loc = dev_lw.get_loc(pp_impl.ST_INTERFACE_1_BASE, 0)
 
 # check_ID() from misc.hh
 def test_check_ID():
    dev = pp.mm(pp_impl.LWHPSFPGA_OFST, pp_impl.LWH2F_RANGE)
-   id1 = pp.sysid(dev, pp_impl.SYSID_BASE, pp_impl.SYSID_ID)
+   pp.sysid(dev, pp_impl.SYSID_BASE, pp_impl.SYSID_ID)
 
-def test_streamer_control():
-   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
-   sc = pp.streamer_control(dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
+def test_streamer_control(dev_h2f):
+   pp.streamer_control(dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
 
-def test_sc_initial_value():
-   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
-   sc = pp.streamer_control(dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
+def test_sc_initial_value(dev_h2f):
+   sc = make_streamer_control(dev_h2f)
    v = 42
    sc.set_initial_value(v)
    sc.reset() # required
    v2 = sc.get_qout()
    assert v == v2
 
-def test_sc_reset():
-   dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST, pp_impl.H2F_RANGE)
-   sc = pp.streamer_control(dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
-   fifo = pp.streamer_fifo(dev_h2f, pp_impl.FIFO_1_IN_BASE, pp_impl.FIFO_1_IN_CSR_BASE)
+def test_sc_reset(dev_h2f):
+   sc = make_streamer_control(dev_h2f)
+   fifo = make_streamer_fifo(dev_h2f)
    sc.reset()
    st = sc.status()
    assert (st & 0b1111) == 0 # Use the mask!
@@ -570,19 +581,11 @@ def test_Verbosity():
    v.veryverbose = True
    v.verbosecheck = True
 
-def test_FPGA():
-   params = ["-test"]
-   input = pp.InputParser(params)
-   v = pp.Verbosity()
-   v.veryverbose = True
-   v.verbosecheck = True
-   fpga = pp.FPGA(v)
-#   fpga.mgr.status()
+def test_FPGA(fpga):
    fpga.status()
 
-def test_pll():
-    dev_lw  = pp.mm(pp_impl.LWHPSFPGA_OFST, pp_impl.LWH2F_RANGE)
-    pll = pp.pll(dev_lw, pp_impl.PLL_RECONFIG_INT_CLK_BASE)
-    pll.set_M(32,True)
-    pll.set_N(5,True)
-    pll.set_C(8,True,0)
+def test_pll(dev_lw):
+   pll = pp.pll(dev_lw, pp_impl.PLL_RECONFIG_INT_CLK_BASE)
+   pll.set_M(32,True)
+   pll.set_N(5,True)
+   pll.set_C(8,True,0)
