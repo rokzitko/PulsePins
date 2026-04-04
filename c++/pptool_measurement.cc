@@ -106,20 +106,26 @@ int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
   }
   readback rb(input, fpga);
   const double timeout = readback_timeout(input);
-  const bool export_vcd = input.exists("-vcd");
+  const bool export_vcd = input.exists("-save-vcd");
   const bool export_text = input.exists("-save-text");
-  if (export_vcd || export_text) {
+  const bool export_binary = input.exists("-save-binary");
+  if (export_vcd || export_text || export_binary) {
     Sequence captured = rb.capture_sequence(timeout);
+    const std::string vcd_filename = input.get_string("-save-vcd", "capture.vcd");
     if (export_text)
       write_sequence_to_file(captured, input.get_string("-save-text", "capture.seq"), false);
     if (export_vcd)
-      captured.write_VCD_file(input.get_string("-vcd", "capture.vcd"));
+      captured.write_VCD_file(vcd_filename);
+    if (export_binary)
+      captured.write_binary_file(input.get_string("-save-binary", "capture.ppbin"), false);
     std::cout << "Readback capture: size=" << std::dec << captured.size()
               << " length=" << captured.length() << std::endl;
     if (export_text)
       std::cout << "Saved text capture to " << input.get_string("-save-text", "capture.seq") << std::endl;
     if (export_vcd)
-      std::cout << "Saved VCD capture to " << input.get_string("-vcd", "capture.vcd") << std::endl;
+      std::cout << "Saved VCD capture to " << vcd_filename << std::endl;
+    if (export_binary)
+      std::cout << "Saved binary capture to " << input.get_string("-save-binary", "capture.ppbin") << std::endl;
   } else {
     if (v.veryverbose)
       rb.check_fill_status();

@@ -76,7 +76,7 @@ _pulsepins_ppcounter_opts="
 "
 
 _pulsepins_ppread_opts="
--oe -timeout -rbmode -vcd -save-text
+-oe -timeout -rbmode -save-vcd -save-text -save-binary
 "
 
 _pulsepins_ppts_opts="

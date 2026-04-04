@@ -68,8 +68,8 @@ Current serialization capability matrix:
 | Format | C++ | Python | CLI |
 | ------ | --- | ------ | --- |
 | PulsePins text sequence format | import + export | import + export | export via `ppread -save-text`; import in selected workflows |
-| VCD | import + export | import + export | import via `ppvcd`; export via `ppread -vcd` |
-| PulsePins binary sequence format | import + export | import + export | import via `ppplay` |
+| VCD | import + export | import + export | import via `ppvcd`; export via `ppread -save-vcd` |
+| PulsePins binary sequence format | import + export | import + export | import via `ppplay`, export via `ppread -save-binary` |
 
 Class hierarchy for counter value objects:
 
