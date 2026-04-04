@@ -28,7 +28,7 @@ build:
 
 # Python-side test entry point.
 test:
-	pytest test.py
+	PYTHONPATH=./build pytest test.py
 
 clean:
 	rm -rf build
