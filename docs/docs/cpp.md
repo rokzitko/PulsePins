@@ -59,6 +59,8 @@ The host-side sequence model mirrors the encoded data consumed by the streamer c
 
 Besides the text sequence format used by several tools, `Sequence` also supports VCD import and deterministic waveform export back to VCD. The export path targets sequences that can be reduced to a regular effective output waveform; control-flow and random elements are intentionally rejected.
 
+In practice this also makes PulsePins useful as a simple logic-analyzer backend for deterministic readback waveforms.
+
 Class hierarchy for counter value objects:
 
 * ``Counter`` (defined in ``elements.hh``): containers that hold the count value (number of repetitions)

@@ -31,6 +31,7 @@ PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit 
 * High-level, modern, object-oriented C++ API.
 * Python bindings for the C++ API (nanobind), with unit tests based on pytest.
 * Buffer-underrun detection and read-back circuitry with an on-chip run-length encoder for verification and high-assurance scenarios where reliability and correctness under all operating conditions are critical.
+* Simple built-in logic-analyzer capability: the readback path can capture deterministic digital waveforms and export them as VCD files for inspection in standard waveform viewers.
 * Comprehensive hardware self-tests via the read-back interface and a suite of test cases for systematic, intensive validation of correct device operation; most of the functionality is covered by these tests.
 * 8-bit auxiliary input/output lines for general-purpose use.
 * Time-stamping circuit for synchronization and timing purposes.
@@ -53,6 +54,7 @@ PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit 
 * Protocol emulation (I²C, SPI, and other serial buses).
 * Generation of periodic signals (repetitive bit patterns) or pseudorandom sequences for communications testing.
 * Burn-in and stress testing.
+* Simple logic-analyzer-style capture and VCD export of digital patterns for debugging, verification, and regression checking.
 
 ## Documentation
 

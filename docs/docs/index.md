@@ -26,6 +26,8 @@ individual needs, and as a pre-built SD-card image for a quick start.
 This web site serves as the reference and user manual for PulsePins. It provides low-level implementation details,
 interfacing with the hard processor system (HPS), API, software library (C++ and Python interfaces), and testing tools. Timing diagrams are also provided.
 
+PulsePins is not only a digital pulse sequencer: through its readback path it can also serve as a simple digital logic analyzer, including VCD export for captured deterministic waveforms.
+
 ![PulsePins diagram](img/PulsePins.001.png){: style="height:300px"}
 
 HPS = hard processor system (ARM cores), ST = Avalon streaming interface, MM = Avalon memory-mapped interface, PIO = programmable input/output.

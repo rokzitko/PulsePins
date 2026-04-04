@@ -4,6 +4,8 @@ Readback is the name of the run-length encoder subsystem connected directly to t
 
 Its job is to observe streamed symbols, compress them back into `{count, value}` runs, and expose those runs to software for verification, debugging, and external-signal capture. PulsePins uses this path heavily for self-test: software can compare the observed output stream against the reference sequence that was originally sent to the streamer.
 
+Besides verification, the readback path lets PulsePins act as a simple digital logic analyzer: it can observe digital activity, compress it on-chip, and export the captured deterministic waveform as a VCD file for standard waveform viewers.
+
 The acquired sequence uses the same top-level element format as the streamer (`control`, `counter`, `value`), but in practice the control field is always zero and software interprets the readback as plain `BITLOAD` output states.
 
 The bus widths in ``ip/rl_encoder_if/rl_config.vh`` need to match those in ``ip/streamer/config.vh``.
@@ -59,6 +61,8 @@ The key member functions are:
   * `read_all`: dump the captured stream until timeout or external termination
   * `check`: compare the captured stream against a reference `Sequence`
 
+Captured deterministic waveforms can also be turned into VCD files through the `Sequence` export path in `c++/sequence.hh`.
+
 The `check` function returns true if no errors are detected. A timeout argument can be provided; if no new elements are received during the specified interval, an exception is raised. An exception is also raised if the reference sequence is exhausted and a new element is received from the encoder. A report is produced when the check completes, including the number and ratio of errors plus the difference in encoded size and effective output length.
 
 ## Readback of external signals
@@ -68,4 +72,5 @@ pins, i.e. the 32 `qout` pins actually act as inputs, and the `streamer_qout_val
 acting as the valid signal input port. The [ppread](ppread.md) tool can be used to read the
 generated data stream. One application of this tool is to troubleshoot another PulsePins board
 by connecting the qout and qout_valid ports together and clocking both devices from the same clock
-source.
+source. In this mode, PulsePins effectively becomes a simple external digital logic analyzer for
+the qout bus and valid signal.
