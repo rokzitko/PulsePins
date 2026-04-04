@@ -1,6 +1,8 @@
 ## ppread
 
-ppread is a tool for reading data using runlength-encoding compression.
+`ppread` is the user-facing readback capture tool. It can dump captured run-length encoded data,
+or it can switch into export mode and save the capture either as PulsePins text sequence format,
+as VCD, or as both at the same time.
 
 Command line arguments:
 
@@ -8,3 +10,9 @@ Command line arguments:
 reading external data on the device I/O pins. If unspecified, use the hardware default (false).
 * ``-timeout``: timeout in seconds (floating point number). If positive, interpreted as time after
 the last element read. If negative, interpreted as time after starting the tool.
+* ``-vcd <file>``: capture the readback stream and save it as a VCD waveform file.
+* ``-save-text <file>``: capture the readback stream and save it in PulsePins text sequence format.
+
+If either ``-vcd`` or ``-save-text`` is specified, `ppread` switches into export mode: it captures
+the readback stream into a `Sequence`, writes the requested file(s), and prints a concise summary
+instead of dumping every captured run to the terminal.

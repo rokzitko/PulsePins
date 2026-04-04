@@ -4,6 +4,8 @@
 import pytest
 import pp
 import pp_impl
+import tempfile
+from pathlib import Path
 
 import time
 usleep = lambda x: time.sleep(x/1000000.0)
@@ -313,6 +315,66 @@ def test_eq():
    e2 = pp.el(pp.el_type.regular, c2, v2)
    assert e1 == e1bis
    assert e1 != e2
+
+def test_parse_sequence_text_roundtrip_regular():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(3, 0x12))
+   seq.push_back(pp.el(4, 0x34))
+
+   text = pp.write_sequence_text(seq)
+   seq2, force_trigger = pp.parse_sequence_text(text)
+
+   assert force_trigger == False
+   assert pp.write_sequence_text(seq2) == text
+
+def test_parse_sequence_text_roundtrip_control_flow():
+   text = "tn 0x1 0x3\nstore 2 d 5 0x12\nr 7 0x4\nrt\npr 9\nt 0x2 0x3\nfinal 0x34\n"
+
+   seq, force_trigger = pp.parse_sequence_text(text)
+
+   assert force_trigger == False
+   assert pp.write_sequence_text(seq) == text
+
+def test_sequence_vcd_roundtrip_bitload():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(3, 0x1))
+   seq.push_back(pp.el(2, 0x3))
+   seq.push_back(pp.el(4, 0x0))
+
+   with tempfile.TemporaryDirectory() as tmpdir:
+      path = Path(tmpdir) / "roundtrip.vcd"
+      seq.write_VCD_file(str(path), "outs", "1ns")
+      seq2 = pp.Sequence()
+      seq2.load_VCD(str(path), "outs", 1)
+      assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
+
+def test_sequence_vcd_export_rejects_trigger():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(0x1, 0x3, True))
+
+   with tempfile.TemporaryDirectory() as tmpdir:
+      path = Path(tmpdir) / "bad.vcd"
+      with pytest.raises(RuntimeError):
+         seq.write_VCD_file(str(path), "outs", "1ns")
+
+def test_sequence_vcd_export_rejects_replay():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(pp.Replay(), 3, 4))
+
+   with tempfile.TemporaryDirectory() as tmpdir:
+      path = Path(tmpdir) / "bad.vcd"
+      with pytest.raises(RuntimeError):
+         seq.write_VCD_file(str(path), "outs", "1ns")
+
+def test_sequence_vcd_export_empty_sequence():
+   seq = pp.Sequence()
+
+   with tempfile.TemporaryDirectory() as tmpdir:
+      path = Path(tmpdir) / "empty.vcd"
+      seq.write_VCD_file(str(path), "outs", "1ns")
+      data = path.read_text()
+      assert "$scope module pulsepins $end" in data
+      assert "#0" in data
 
 def test_check_firmware():
    pp.check_firmware()

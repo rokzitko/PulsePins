@@ -104,10 +104,26 @@ int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
     fpga.output_enable(oe);
   }
   readback rb(input, fpga);
-  if (v.veryverbose)
-    rb.check_fill_status();
   const double timeout = readback_timeout(input);
-  rb.read_all(timeout);
+  const bool export_vcd = input.exists("-vcd");
+  const bool export_text = input.exists("-save-text");
+  if (export_vcd || export_text) {
+    Sequence captured = rb.capture_sequence(timeout);
+    if (export_text)
+      write_sequence_to_file(captured, input.get_string("-save-text", "capture.seq"), false);
+    if (export_vcd)
+      captured.write_VCD_file(input.get_string("-vcd", "capture.vcd"));
+    std::cout << "Readback capture: size=" << std::dec << captured.size()
+              << " length=" << captured.length() << std::endl;
+    if (export_text)
+      std::cout << "Saved text capture to " << input.get_string("-save-text", "capture.seq") << std::endl;
+    if (export_vcd)
+      std::cout << "Saved VCD capture to " << input.get_string("-vcd", "capture.vcd") << std::endl;
+  } else {
+    if (v.veryverbose)
+      rb.check_fill_status();
+    rb.read_all(timeout);
+  }
   return RC_OK;
 }
 

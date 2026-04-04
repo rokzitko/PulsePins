@@ -140,6 +140,47 @@ public:
     return el{count, value}; // regular element
   }
 
+  Sequence capture_sequence(const double timeout = 0.0) {
+    if (v.veryverbose)
+      status_report();
+    Sequence captured;
+    std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point last_read;
+    size_t n = 0;
+    try {
+      while (1) {
+        auto fill = filled();
+        while (fill > 0) {
+          el e = read();
+          captured.push_back(e);
+          last_read = std::chrono::steady_clock::now();
+          n++;
+          fill = filled();
+          if (timeout < 0) {
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
+            if (elapsed.count() > abs(timeout))
+              throw ReadbackException("Timeout.");
+          }
+        }
+        if (timeout != 0.0 && (timeout > 0 ? n : true)) {
+          auto now = std::chrono::steady_clock::now();
+          auto elapsed = (timeout > 0 ? std::chrono::duration_cast<std::chrono::duration<double>>(now - last_read) :
+                                        std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time));
+          if (elapsed.count() > abs(timeout))
+            throw ReadbackException("Timeout.");
+        }
+      }
+    }
+    catch (const ReadbackException &e) {
+      if (v.veryverbose)
+        std::cout << "Caught ReadbackException: " << e.what() << "\n";
+    }
+    if (v.veryverbose)
+      status_report();
+    return captured;
+  }
+
     // Read back indefinitely and print each captured run if verbosity is enabled.
     // If timeout>0: timeout in seconds after the last data were read.
     // If timeout<0: timeout in seconds (abs value) after the initial time.

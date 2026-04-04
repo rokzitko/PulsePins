@@ -63,6 +63,8 @@ The key member functions are:
 
 Captured deterministic waveforms can also be turned into VCD files through the `Sequence` export path in `c++/sequence.hh`.
 
+At the CLI level, `ppread` can now save captures either as PulsePins text sequence files or directly as VCD waveforms.
+
 The `check` function returns true if no errors are detected. A timeout argument can be provided; if no new elements are received during the specified interval, an exception is raised. An exception is also raised if the reference sequence is exhausted and a new element is received from the encoder. A report is produced when the check completes, including the number and ratio of errors plus the difference in encoded size and effective output length.
 
 ## Readback of external signals

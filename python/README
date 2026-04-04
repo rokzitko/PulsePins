@@ -17,3 +17,10 @@ The default build now favors lower memory use on the board by using `-O2` and om
 If you need debug symbols while developing bindings, build with:
 
 make PY_DEBUG=1
+
+The Python bindings now expose sequence serialization helpers too:
+
+* `pp.parse_sequence_text(...)`
+* `pp.write_sequence_text(...)`
+* `Sequence.load_VCD(...)`
+* `Sequence.write_VCD_file(...)`

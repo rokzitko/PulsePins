@@ -4,7 +4,9 @@
 
 #include <iostream>
 #include <deque>
+#include <sstream>
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
@@ -325,7 +327,28 @@ NB_MODULE(pp, m) {
     .def("data_size", &Sequence::data_size)
     .def("dump", &Sequence::dump_py)
     .def("convert_to_BitLoad", &Sequence::convert_to_BitLoad)
-    .def("merge", &Sequence::merge);
+    .def("merge", &Sequence::merge)
+    .def("load_VCD", &Sequence::load_VCD,
+         "filename"_a,
+         "target_name"_a = "outs",
+         "scale_factor"_a = 10)
+    .def("write_VCD_file", &Sequence::write_VCD_file,
+         "filename"_a,
+         "target_name"_a = "outs",
+         "timescale"_a = "1ns");
+
+  m.def("parse_sequence_text", [](const std::string &text) {
+    std::istringstream in(text);
+    return parse_sequence_from_stream(in);
+  });
+
+  m.def("write_sequence_text", [](const Sequence &seq, const bool include_force_trigger) {
+    std::ostringstream out;
+    write_sequence_to_stream(seq, out, include_force_trigger);
+    return out.str();
+  },
+  "seq"_a,
+  "include_force_trigger"_a = false);
 
   nb::class_<pll>(m, "pll")
     .def(nb::init<mm &, std::uintptr_t>())
