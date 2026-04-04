@@ -335,7 +335,10 @@ NB_MODULE(pp, m) {
     .def("write_VCD_file", &Sequence::write_VCD_file,
          "filename"_a,
          "target_name"_a = "outs",
-         "timescale"_a = "1ns");
+         "timescale"_a = "1ns")
+    .def("write_binary_file", &Sequence::write_binary_file,
+         "filename"_a,
+         "force_trigger"_a = false);
 
   m.def("parse_sequence_text", [](const std::string &text) {
     std::istringstream in(text);
@@ -349,6 +352,10 @@ NB_MODULE(pp, m) {
   },
   "seq"_a,
   "include_force_trigger"_a = false);
+
+  m.def("read_sequence_binary", [](const std::string &filename) {
+    return Sequence::read_binary_file(filename);
+  });
 
   nb::class_<pll>(m, "pll")
     .def(nb::init<mm &, std::uintptr_t>())

@@ -11,6 +11,7 @@ At the sequence-serialization level, Python now exposes the same practical forma
 
 * PulsePins text sequence format via `parse_sequence_text(...)` and `write_sequence_text(...)`
 * VCD import/export via `Sequence.load_VCD(...)` and `Sequence.write_VCD_file(...)`
+* exact binary sequence import/export via `read_sequence_binary(...)` and `Sequence.write_binary_file(...)`
 
 ## Supported build modes
 
@@ -53,6 +54,7 @@ import pp
 seq, force_trigger = pp.parse_sequence_text("d 3 0x12\nfinal 0x34\n")
 text = pp.write_sequence_text(seq)
 seq.write_VCD_file("capture.vcd")
+seq.write_binary_file("capture.ppbin")
 ```
 
 ## Testing expectations

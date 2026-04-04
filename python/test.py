@@ -376,6 +376,29 @@ def test_sequence_vcd_export_empty_sequence():
       assert "$scope module pulsepins $end" in data
       assert "#0" in data
 
+def test_sequence_binary_roundtrip_regular():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(3, 0x12))
+   seq.push_back(pp.el(pp.NoStrobe(4), 0x34))
+
+   with tempfile.TemporaryDirectory() as tmpdir:
+      path = Path(tmpdir) / "roundtrip.ppbin"
+      seq.write_binary_file(str(path), False)
+      seq2, force_trigger = pp.read_sequence_binary(str(path))
+      assert force_trigger == False
+      assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
+
+def test_sequence_binary_roundtrip_control_flow_and_force_trigger():
+   text = "tn 0x1 0x3\nstore 2 d 5 0x12\nr 7 0x4\nrt\npr 9\nt 0x2 0x3\nfinal 0x34\n"
+   seq, _ = pp.parse_sequence_text(text)
+
+   with tempfile.TemporaryDirectory() as tmpdir:
+      path = Path(tmpdir) / "roundtrip.ppbin"
+      seq.write_binary_file(str(path), True)
+      seq2, force_trigger = pp.read_sequence_binary(str(path))
+      assert force_trigger == True
+      assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
+
 def test_check_firmware():
    pp.check_firmware()
 

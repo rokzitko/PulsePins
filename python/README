@@ -24,3 +24,5 @@ The Python bindings now expose sequence serialization helpers too:
 * `pp.write_sequence_text(...)`
 * `Sequence.load_VCD(...)`
 * `Sequence.write_VCD_file(...)`
+* `pp.read_sequence_binary(...)`
+* `Sequence.write_binary_file(...)`
