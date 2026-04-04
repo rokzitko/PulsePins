@@ -80,3 +80,12 @@ High-value future streamer tests would include:
 * `st_interface` reset/default register readback checks
 
 Those areas are where the remaining subtle integration risks are most likely to live.
+
+Recent additions in the streamer family now cover:
+
+* delayed-start gating
+* mid-stream gate pause/resume
+* underrun / `buffer_error`
+* trigger + replay interaction
+* wrapper-level `gate_in` gating
+* wrapper-level trigger-mask gating

@@ -1,0 +1,6 @@
+#!/bin/sh
+rm -rf work
+rm -f SUCCESS
+vlib work
+vlog -sv -cover bcesft tb8.sv ../input_fifo.sv ../rl_decoder.sv ../output_fifo.sv ../chain_trigger.sv ../and_trigger.sv ../level_to_pulse.sv ../preprocessor.sv ../streamer.sv ../prng.sv ../../misc/sync.sv
+vsim -L altera_mf -L lpm -c -do "run -all" -coverage tb_st_8
