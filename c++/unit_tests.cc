@@ -695,6 +695,117 @@ TEST_CASE("BitLoad sequence VCD round-trips through load_VCD") {
   std::remove(filename.c_str());
 }
 
+TEST_CASE("binary round-trips regular sequence exactly") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  seq.push_back(el(NoStrobe(4), 0x34));
+  seq.push_back(el(5, BitSet(0x40)).store(2));
+
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  std::istringstream in(out.str(), std::ios::binary);
+  auto [roundtrip, force_trigger] = Sequence::read_binary(in);
+
+  CHECK(!force_trigger);
+  CHECK(compare(roundtrip, seq));
+}
+
+TEST_CASE("binary round-trips mixed sequence exactly") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  seq.push_back(el(NoStrobe(4), 0x34));
+  seq.push_back(el(5, BitFlip(0x40)).store(2));
+  seq.push_back(el(0x01, 0x03, false));
+  seq.push_back(el(Replay{}, 7, 4));
+  seq.push_back(el(Retrig{}));
+  seq.push_back(el(PseudoRandom{}, 9));
+  seq.push_back(el(0x02, 0x03, true));
+  seq.push_back(el(0x34));
+
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, true);
+  std::istringstream in(out.str(), std::ios::binary);
+  auto [roundtrip, force_trigger] = Sequence::read_binary(in);
+
+  CHECK(force_trigger);
+  CHECK(compare(roundtrip, seq));
+}
+
+TEST_CASE("binary round-trips empty sequence") {
+  Sequence seq;
+
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, true);
+  std::istringstream in(out.str(), std::ios::binary);
+  auto [roundtrip, force_trigger] = Sequence::read_binary(in);
+
+  CHECK(force_trigger);
+  CHECK(roundtrip.empty());
+}
+
+TEST_CASE("binary reader rejects bad magic") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data[0] = 'X';
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
+TEST_CASE("binary reader rejects unsupported major version") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data[4] = char(2);
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
+TEST_CASE("binary reader rejects width mismatch") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data[8] = char(0x10);
+  data[9] = char(0x00);
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
+TEST_CASE("binary reader rejects payload size mismatch") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data[32] = char(0x01);
+  data[33] = char(0x00);
+  data[34] = char(0x00);
+  data[35] = char(0x00);
+  data[36] = char(0x00);
+  data[37] = char(0x00);
+  data[38] = char(0x00);
+  data[39] = char(0x00);
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
+TEST_CASE("binary reader rejects truncated payload") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data.resize(data.size() - 1);
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
 TEST_CASE("parse_sequence_from_stream parses existing grammar") {
   std::istringstream in("d 3 0x12 t 0b01 0b11 f d 4 0x34");
   auto [seq, force_trigger] = parse_sequence_from_stream(in);

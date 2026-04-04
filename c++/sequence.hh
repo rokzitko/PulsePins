@@ -12,7 +12,9 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <bitset>
+#include <cstdint>
 #include <deque>
 #include <fstream>
 #include <iostream>
@@ -28,6 +30,177 @@
 inline std::string value_to_vcd_binary(value_t v)
 {
   return std::bitset<WIDTH_DATA>(static_cast<unsigned long long>(v)).to_string();
+}
+
+struct BinarySequenceHeader {
+  std::array<char, 4> magic;
+  uint8_t version_major;
+  uint8_t version_minor;
+  uint8_t endianness;
+  uint8_t payload_kind;
+  uint16_t width_control;
+  uint16_t width_counter;
+  uint16_t width_value;
+  uint16_t width_trigger;
+  uint32_t flags;
+  uint32_t header_size;
+  uint64_t element_count;
+  uint64_t payload_size_bytes;
+  uint32_t reserved0;
+  uint32_t reserved1;
+};
+
+inline constexpr std::array<char, 4> PPBF_MAGIC{{'P', 'P', 'B', 'F'}};
+inline constexpr uint8_t PPBF_VERSION_MAJOR = 1;
+inline constexpr uint8_t PPBF_VERSION_MINOR = 0;
+inline constexpr uint8_t PPBF_ENDIAN_LITTLE = 1;
+inline constexpr uint8_t PPBF_PAYLOAD_RAW_TRIPLES = 0;
+inline constexpr uint32_t PPBF_FLAG_FORCE_TRIGGER = 1u << 0;
+inline constexpr uint32_t PPBF_HEADER_SIZE = 48;
+
+template<typename T>
+inline void write_le(std::ostream &f, T value)
+{
+  for (size_t i = 0; i < sizeof(T); ++i)
+    f.put(static_cast<char>((static_cast<uint64_t>(value) >> (8 * i)) & 0xFF));
+  if (!f)
+    throw std::runtime_error("Failed to write binary sequence data");
+}
+
+template<typename T>
+inline T read_le(std::istream &f)
+{
+  uint64_t value = 0;
+  for (size_t i = 0; i < sizeof(T); ++i) {
+    const int ch = f.get();
+    if (ch == std::char_traits<char>::eof())
+      throw std::runtime_error("Unexpected end of binary sequence data");
+    value |= uint64_t(static_cast<uint8_t>(ch)) << (8 * i);
+  }
+  return static_cast<T>(value);
+}
+
+inline void write_binary_header(std::ostream &f,
+                                const uint64_t element_count,
+                                const uint64_t payload_size_bytes,
+                                const bool force_trigger)
+{
+  for (const auto c : PPBF_MAGIC)
+    f.put(c);
+  write_le<uint8_t>(f, PPBF_VERSION_MAJOR);
+  write_le<uint8_t>(f, PPBF_VERSION_MINOR);
+  write_le<uint8_t>(f, PPBF_ENDIAN_LITTLE);
+  write_le<uint8_t>(f, PPBF_PAYLOAD_RAW_TRIPLES);
+  write_le<uint16_t>(f, WIDTH_CONTROL);
+  write_le<uint16_t>(f, WIDTH_COUNTER);
+  write_le<uint16_t>(f, WIDTH_DATA);
+  write_le<uint16_t>(f, WIDTH_TRIGGER);
+  write_le<uint32_t>(f, force_trigger ? PPBF_FLAG_FORCE_TRIGGER : 0u);
+  write_le<uint32_t>(f, PPBF_HEADER_SIZE);
+  write_le<uint64_t>(f, element_count);
+  write_le<uint64_t>(f, payload_size_bytes);
+  write_le<uint32_t>(f, 0u);
+  write_le<uint32_t>(f, 0u);
+}
+
+inline BinarySequenceHeader read_binary_header(std::istream &f)
+{
+  BinarySequenceHeader h{};
+  for (auto &c : h.magic) {
+    const int ch = f.get();
+    if (ch == std::char_traits<char>::eof())
+      throw std::runtime_error("Unexpected end of binary sequence header");
+    c = static_cast<char>(ch);
+  }
+  h.version_major = read_le<uint8_t>(f);
+  h.version_minor = read_le<uint8_t>(f);
+  h.endianness = read_le<uint8_t>(f);
+  h.payload_kind = read_le<uint8_t>(f);
+  h.width_control = read_le<uint16_t>(f);
+  h.width_counter = read_le<uint16_t>(f);
+  h.width_value = read_le<uint16_t>(f);
+  h.width_trigger = read_le<uint16_t>(f);
+  h.flags = read_le<uint32_t>(f);
+  h.header_size = read_le<uint32_t>(f);
+  h.element_count = read_le<uint64_t>(f);
+  h.payload_size_bytes = read_le<uint64_t>(f);
+  h.reserved0 = read_le<uint32_t>(f);
+  h.reserved1 = read_le<uint32_t>(f);
+  return h;
+}
+
+inline void validate_binary_header(const BinarySequenceHeader &h)
+{
+  if (h.magic != PPBF_MAGIC)
+    throw std::runtime_error("Invalid binary sequence magic");
+  if (h.version_major != PPBF_VERSION_MAJOR)
+    throw std::runtime_error("Unsupported binary sequence major version");
+  if (h.endianness != PPBF_ENDIAN_LITTLE)
+    throw std::runtime_error("Unsupported binary sequence endianness");
+  if (h.payload_kind != PPBF_PAYLOAD_RAW_TRIPLES)
+    throw std::runtime_error("Unsupported binary sequence payload kind");
+  if (h.width_control != WIDTH_CONTROL || h.width_counter != WIDTH_COUNTER || h.width_value != WIDTH_DATA || h.width_trigger != WIDTH_TRIGGER)
+    throw std::runtime_error("Binary sequence width mismatch");
+  if (h.header_size != PPBF_HEADER_SIZE)
+    throw std::runtime_error("Unsupported binary sequence header size");
+  if (h.payload_size_bytes != h.element_count * (sizeof(control_t) + sizeof(count_t) + sizeof(value_t)))
+    throw std::runtime_error("Binary sequence payload size mismatch");
+}
+
+inline Value regular_value_from_control(control_t control, value_t value)
+{
+  switch (control & MODEBITS) {
+    case BITLOAD: return BitLoad(value);
+    case BITSET: return BitSet(value);
+    case BITCLEAR: return BitClear(value);
+    case BITFLIP: return BitFlip(value);
+    case BITNOT: return BitNot(value);
+    case BITAND: return BitAnd(value);
+    case BITOR: return BitOr(value);
+    case BITXOR: return BitXor(value);
+    case BITXNOR: return BitXnor(value);
+    case BITSLL: return BitSll(value);
+    case BITSRL: return BitSrl(value);
+    default:
+      throw std::runtime_error("Unsupported regular element mode in binary sequence reader");
+  }
+}
+
+inline el element_from_raw_triplet(control_t control, count_t count, value_t value)
+{
+  if ((control & TRIGGERBITS) == TRIGGER || (control & TRIGGERBITS) == (TRIGGER | TRIGGERFINAL)) {
+    const auto pattern = static_cast<trigger_t>(value & TRIGGER_MASK);
+    const auto mask = static_cast<trigger_t>((value >> WIDTH_TRIGGER) & TRIGGER_MASK);
+    const bool final = (control & TRIGGERFINAL) == TRIGGERFINAL;
+    el e(pattern, mask, final);
+    e.set_control(control);
+    return e;
+  }
+  if ((control & REPLAY) == REPLAY) {
+    el e(Replay{}, count, value);
+    e.set_control(control);
+    return e;
+  }
+  if ((control & RETRIG) == RETRIG) {
+    el e(Retrig{}, value);
+    e.set_control(control);
+    return e;
+  }
+  if ((control & PRNG) == PRNG) {
+    el e(PseudoRandom{}, count);
+    e.set_control(control);
+    return e;
+  }
+  if ((control & TERMINATE) == TERMINATE) {
+    el e(value);
+    e.set_control(control);
+    return e;
+  }
+
+  Value regular_value = regular_value_from_control(control, value);
+  el e = ((control & NOSTROBE) == NOSTROBE) ? el(NoStrobe(count), regular_value) : el(Counter(count), regular_value);
+  e.set_control(control);
+  return e;
 }
 
 // Thin extension of `std::deque<el>` with helpers that reflect the semantics of a
@@ -186,6 +359,47 @@ public:
     if (!f)
       throw std::runtime_error("Could not open VCD output file: " + filename);
     write_VCD(f, target_name, timescale);
+  }
+
+  void write_binary(std::ostream &f, const bool force_trigger = false) const {
+    const uint64_t element_count = size();
+    const uint64_t payload_size_bytes = element_count * (sizeof(control_t) + sizeof(count_t) + sizeof(value_t));
+    write_binary_header(f, element_count, payload_size_bytes, force_trigger);
+    for (const auto &e : *this) {
+      write_le<control_t>(f, e.control());
+      write_le<count_t>(f, e.count());
+      write_le<value_t>(f, e.value());
+    }
+  }
+
+  void write_binary_file(const std::string &filename, const bool force_trigger = false) const {
+    std::ofstream f(filename, std::ios::binary);
+    if (!f)
+      throw std::runtime_error("Could not open binary sequence output file: " + filename);
+    write_binary(f, force_trigger);
+  }
+
+  static std::pair<Sequence, bool> read_binary(std::istream &f) {
+    const auto header = read_binary_header(f);
+    validate_binary_header(header);
+    Sequence seq;
+    for (uint64_t i = 0; i < header.element_count; ++i) {
+      const auto control = read_le<control_t>(f);
+      const auto count = read_le<count_t>(f);
+      const auto value = read_le<value_t>(f);
+      seq.push_back(element_from_raw_triplet(control, count, value));
+    }
+    if (f.peek() != std::char_traits<char>::eof())
+      throw std::runtime_error("Trailing data after binary sequence payload");
+    const bool force_trigger = (header.flags & PPBF_FLAG_FORCE_TRIGGER) != 0;
+    return {seq, force_trigger};
+  }
+
+  static std::pair<Sequence, bool> read_binary_file(const std::string &filename) {
+    std::ifstream f(filename, std::ios::binary);
+    if (!f)
+      throw std::runtime_error("Could not open binary sequence input file: " + filename);
+    return read_binary(f);
   }
 
   virtual ~Sequence() = default;

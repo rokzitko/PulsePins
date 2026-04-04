@@ -59,6 +59,8 @@ The host-side sequence model mirrors the encoded data consumed by the streamer c
 
 Besides the text sequence format used by several tools, `Sequence` also supports VCD import and deterministic waveform export back to VCD. The export path targets sequences that can be reduced to a regular effective output waveform; control-flow and random elements are intentionally rejected.
 
+For exact, lossless interchange, `Sequence` also supports a self-describing binary format that preserves the full internal sequence representation, including control-flow elements and the force-trigger flag.
+
 In practice this also makes PulsePins useful as a simple logic-analyzer backend for deterministic readback waveforms.
 
 Current serialization capability matrix:
@@ -67,7 +69,7 @@ Current serialization capability matrix:
 | ------ | --- | ------ | --- |
 | PulsePins text sequence format | import + export | import + export | export via `ppread -save-text`; import in selected workflows |
 | VCD | import + export | import + export | import via `ppvcd`; export via `ppread -vcd` |
-| Raw binary element transport | internal transport only | internal transport only | not exposed as a file format |
+| PulsePins binary sequence format | import + export | not yet exposed | reserved in `ppplay`, not yet enabled there |
 
 Class hierarchy for counter value objects:
 

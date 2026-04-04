@@ -10,7 +10,7 @@ Current supported formats:
 * `vcd`
 * PulsePins text sequence format (`text`)
 
-Binary sequence-file support is planned, but not implemented yet.
+The format-selection layer already reserves a future `binary` mode, but binary playback is not enabled yet.
 
 ## Common options
 
