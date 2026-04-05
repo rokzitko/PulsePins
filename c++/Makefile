@@ -154,11 +154,12 @@ copy_sources:
 	scp $(SOURCES) $(MISCFILES) @$(TARGETHOST):$(CPPDIR)
 	scp ../hps_0.h @$(TARGETHOST):
 	cd third_party/lua ; make clean
-	ssh $(TARGETHOST) "mkdir -p $(CPPDIR)/third_party $(CPPDIR)/include"
+	ssh $(TARGETHOST) "mkdir -p $(CPPDIR)/third_party"
 	scp -r third_party/lua-5.5.0 @$(TARGETHOST):$(CPPDIR)/third_party
-	ssh $(TARGETHOST) "cd c++/third_party ; ln -s lua-5.5.0 lua"
+	ssh $(TARGETHOST) "cd c++/third_party ; ln -fs lua-5.5.0 lua"
 	scp -r third_party/asio @$(TARGETHOST):$(CPPDIR)/third_party
-	scp include/doctest.h @$(TARGETHOST):$(CPPDIR)/include
+	scp -r include/ @$(TARGETHOST):$(CPPDIR)
+	scp -r unit_tests_input/ @$(TARGETHOST):$(CPPDIR)
 
 # Stage the same source bundle into the image tree for image-based rebuild workflows.
 copy_sources_img:
@@ -166,8 +167,9 @@ copy_sources_img:
 	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(CPPDIR)
 	cp -v ../hps_0.h $(IMGROOT)
 	cd third_party/lua ; make clean
-	mkdir -p $(CPPDIR)/third_party $(CPPDIR)/include
+	mkdir -p $(CPPDIR)/third_party
 	cp -r third_party/lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party
-	ln -s $(CPPDIR)/third_party/lua-5.5.0 $(CPPDIR)/third_party/lua
+	ln -fs $(CPPDIR)/third_party/lua-5.5.0 $(CPPDIR)/third_party/lua
 	cp -r third_party/asio $(IMGROOT)/$(CPPDIR)/third_party
-	cp include/doctest.h $(IMGROOT)/$(CPPDIR)/include
+	cp -r include/ $(IMGROOT)/$(CPPDIR)
+	cp -r unit_tests_input/ $(IMGROOT)/$(CPPDIR)
