@@ -1,0 +1,15 @@
+# display OFF
+sudo i2ctransfer -f -y 1 w2@0x3c 0x00 0xAE
+
+# display ON
+sudo i2ctransfer -f -y 1 w2@0x3c 0x00 0xAF
+
+# force ALL pixels ON, independent of display RAM
+sudo i2ctransfer -f -y 1 w2@0x3c 0x00 0xA5
+
+# return to RAM-driven display mode
+sudo i2ctransfer -f -y 1 w2@0x3c 0x00 0xA4
+
+# invert / uninvert
+sudo i2ctransfer -f -y 1 w2@0x3c 0x00 0xA7
+sudo i2ctransfer -f -y 1 w2@0x3c 0x00 0xA6
