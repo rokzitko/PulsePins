@@ -9,6 +9,8 @@ It is scriptable via Python and C++. It can run on small compact FPGA modules, s
 [Terasic DE10-Nano FPGA](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046)
 (68.6mmx107mm footprint) using Ethernet connectivity.
 
+The predecessor to this code was written in 2020-2021. PulsePins was first released to the public in November 2025.
+
 Project repository: [https://github.com/rokzitko/PulsePins](https://github.com/rokzitko/PulsePins).
 
 ## Run-length encoding
