@@ -1,5 +1,6 @@
 site_name: PulsePins Pulse Sequencer
 repo_url: https://github.com/rokzitko/pulsepins
+edit_uri: edit/main/docs/docs/
 nav:
   - Sequencer: index.md
   - Hardware:
