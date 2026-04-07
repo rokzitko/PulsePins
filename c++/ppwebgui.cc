@@ -11,6 +11,7 @@
 #include <exception>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -635,8 +636,12 @@ const char *app_js = R"JS((() => {
     try {
       const body = new URLSearchParams();
       body.set('sequence_text', streamForm.querySelector('[name="sequence_text"]').value);
-      body.set('force_trigger', boolValue(streamForm, 'force_trigger'));
-      body.set('check_readback', boolValue(streamForm, 'check_readback'));
+      if (streamForm.querySelector('[name="force_trigger"]').checked) {
+        body.set('force_trigger', '1');
+      }
+      if (streamForm.querySelector('[name="check_readback"]').checked) {
+        body.set('check_readback', '1');
+      }
       const result = await fetchJson('/api/stream', { method: 'POST', body });
       streamResult.textContent = result.message || 'Sequence completed';
       setGlobal(result.message || 'stream completed');
@@ -660,6 +665,7 @@ public:
     verbosity(verbosity_),
     poll_ms(poll_ms_),
     streamers(input, fpga),
+    play_streamer(input, fpga),
     readback_path(input, fpga),
     counters(input, fpga),
     pio_aux(fpga.dev_lw, PIO_AUX_BASE),
@@ -717,7 +723,7 @@ public:
   }
 
   StreamResult stream_text_sequence(const std::string &sequence_text,
-                                    const bool force_trigger_request,
+                                    const std::optional<bool> force_trigger_override,
                                     const bool check_readback) {
     if (sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
@@ -729,8 +735,8 @@ public:
     }
 
     std::stringstream sequence_stream(sequence_text);
-    auto [sequence, ignored_force_trigger] = parse_sequence_from_stream(sequence_stream);
-    (void)ignored_force_trigger;
+    auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
+    const bool force_trigger_request = force_trigger_override.value_or(parsed_force_trigger);
 
     InputParser request_input(std::vector<std::string>{});
     if (check_readback) {
@@ -738,8 +744,8 @@ public:
     }
 
     std::lock_guard<std::mutex> hw_lock(hw_mutex);
-    const int rc = send_and_trig(streamers.s1.fifo,
-                                 streamers.s1.sc,
+    const int rc = send_and_trig(play_streamer.fifo,
+                                 play_streamer.sc,
                                  readback_path,
                                  counters,
                                  sequence,
@@ -773,6 +779,7 @@ private:
   std::atomic<bool> stop_flag {false};
   std::thread sampler_thread;
   multistreamer streamers;
+  streamer play_streamer;
   readback readback_path;
   counter counters;
   pio_in pio_aux;
@@ -911,8 +918,11 @@ int main(int argc, char *argv[]) {
     }));
 
     server.Post("/api/stream", wrap([&](const httplib::Request &req, httplib::Response &res) {
+      const std::optional<bool> force_trigger_override = req.has_param("force_trigger")
+        ? std::optional<bool>(parse_bool_param(req, "force_trigger"))
+        : std::nullopt;
       const auto result = controller.stream_text_sequence(require_param(req, "sequence_text"),
-                                                          parse_bool_param(req, "force_trigger"),
+                                                          force_trigger_override,
                                                           parse_bool_param(req, "check_readback"));
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
