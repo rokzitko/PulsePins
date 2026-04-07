@@ -44,6 +44,7 @@ nav:
     - pptrig - trigger debugging tool: pptrig.md
     - ppvcd - VCD compatibility alias: ppvcd.md
     - ppscpi - network server: ppscpi.md
+    - ppwebgui - web GUI server: ppwebgui.md
   - Testing:
     - Test infrastructure: testing.md
     - Readback: readback.md

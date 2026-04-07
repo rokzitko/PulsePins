@@ -61,9 +61,9 @@ ifeq ($(GCC_VERSION),8)
 endif
 endif
 
-# Main host-tools build. `pptool` and `ppscpi` are cross-compiled for the board, while
+# Main host-tools build. `pptool`, `ppscpi`, and `ppwebgui` are cross-compiled for the board, while
 # `unit_tests` is intentionally built with the host compiler for fast syntax/API checking.
-build: pptool ppscpi unit_tests
+build: pptool ppscpi ppwebgui unit_tests
 
 # Whitespace policy check for project-owned C++ sources.
 lint-whitespace:
@@ -92,7 +92,7 @@ $(LUA_DIR)/%.o: $(LUA_DIR)/%.c
 	$(CC) $(CROSSCFLAGS) $(CFLAGS) -c $< -o $@
 
 # Targets that run on DE10 board
-TARGETS = pptool ppscpi
+TARGETS = pptool ppscpi ppwebgui
 
 # Multi-call command entry points created as symlinks to `pptool` on the target.
 SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
@@ -111,6 +111,9 @@ $(ASIO_DIR):
 ppscpi: ppscpi.o $(ASIO_DIR)
 	$(CXX) $(LDFLAGS)   $< -o $@ $(FSLIB)
 
+ppwebgui: ppwebgui.o
+	$(CXX) $(LDFLAGS)   $< -o $@ $(FSLIB)
+
 HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h)
 
 unit_tests: unit_tests.cc $(HEADERS)
@@ -126,6 +129,9 @@ pptool_measurement.o : pptool_measurement.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
+	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+
+ppwebgui.o : ppwebgui.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 .PHONY: clean copy lint-whitespace

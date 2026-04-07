@@ -3,7 +3,7 @@
 ``pptool`` is a single executable for performing a range of tasks. Several symbolic links point to the same
 executable. The exact functionality depends on the executable called.
 
-The network server is provided by the separate ``ppscpi`` executable, not by a ``pptool`` symlink.
+The network-facing services are provided by separate standalone executables, not by ``pptool`` symlinks. Today those are ``ppscpi`` and ``ppwebgui``.
 
 ## Dispatch model
 
@@ -35,7 +35,7 @@ Broadly, the commands fall into these groups:
 * trigger/output debugging - `pptrig`, `ppqout`, `ppaux`, `ppreset`
 * measurement/readback - `ppread`, `ppcounter`, `ppts`, `ppfreq`, `pptemp`, `ppgpsdo`
 * onboarding/smoke test - `pphelloworld`
-* remote-control server - `ppscpi`
+* remote-control servers - `ppscpi`, `ppwebgui`
 
 Many streaming-oriented commands share the same lower-level execution path in `ppworkflow.hh`, which handles sequence transmission, trigger control, optional readback verification, completion checks, FIFO accounting, and CRC comparison.
 
@@ -73,6 +73,7 @@ This keeps the high-level user interface stable while letting the internal imple
 Related non-symlink tool:
 
 * [ppscpi](ppscpi.md)
+* [ppwebgui](ppwebgui.md)
 
 See also:
 
