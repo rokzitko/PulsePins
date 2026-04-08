@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstdint>
 #include <exception>
+#include <ifaddrs.h>
 #include <iostream>
 #include <mutex>
 #include <optional>
@@ -16,8 +17,13 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netinet/in.h>
 
 #include "basic_multi_dma.hh"
 #include "combiner.hh"
@@ -273,6 +279,69 @@ std::string operation_json(const std::string &message, const StatusSnapshot &sta
   out << "\"status\":" << status_to_json(status);
   out << '}';
   return out.str();
+}
+
+std::string socket_address_to_string(const sockaddr *addr) {
+  std::array<char, INET6_ADDRSTRLEN> buf {};
+  if (addr->sa_family == AF_INET) {
+    const auto *in = reinterpret_cast<const sockaddr_in *>(addr);
+    if (!inet_ntop(AF_INET, &in->sin_addr, buf.data(), buf.size())) {
+      return {};
+    }
+    return buf.data();
+  }
+  if (addr->sa_family == AF_INET6) {
+    const auto *in6 = reinterpret_cast<const sockaddr_in6 *>(addr);
+    if (!inet_ntop(AF_INET6, &in6->sin6_addr, buf.data(), buf.size())) {
+      return {};
+    }
+    return buf.data();
+  }
+  return {};
+}
+
+std::vector<std::string> discover_interface_urls(const int port) {
+  ifaddrs *ifa = nullptr;
+  if (getifaddrs(&ifa) != 0) {
+    return {};
+  }
+
+  std::unordered_set<std::string> urls;
+  for (auto *current = ifa; current != nullptr; current = current->ifa_next) {
+    if (!current->ifa_addr || !(current->ifa_flags & IFF_UP) || (current->ifa_flags & IFF_LOOPBACK)) {
+      continue;
+    }
+    if (current->ifa_addr->sa_family != AF_INET) {
+      continue;
+    }
+    const auto address = socket_address_to_string(current->ifa_addr);
+    if (address.empty()) {
+      continue;
+    }
+    urls.insert("http://" + address + ':' + std::to_string(port));
+  }
+
+  freeifaddrs(ifa);
+  return std::vector<std::string>(urls.begin(), urls.end());
+}
+
+void print_startup_urls(const std::string &bind_ip, const int actual_port) {
+  std::cout << "ppwebgui running on http://" << bind_ip << ':' << actual_port << std::endl;
+  if (bind_ip != "0.0.0.0") {
+    return;
+  }
+
+  std::cout << "Listening on all interfaces." << std::endl;
+  const auto urls = discover_interface_urls(actual_port);
+  if (urls.empty()) {
+    std::cout << "Reach it using this board's current IPv4 address on port " << actual_port << '.' << std::endl;
+    return;
+  }
+
+  std::cout << "Reachable URLs:" << std::endl;
+  for (const auto &url : urls) {
+    std::cout << "  " << url << std::endl;
+  }
 }
 
 const char *index_html = R"HTML(<!doctype html>
@@ -996,10 +1065,7 @@ int main(int argc, char *argv[]) {
 
     controller.start_sampler();
 
-    std::cout << "ppwebgui running on http://" << bind_ip << ':' << actual_port << std::endl;
-    if (bind_ip == "0.0.0.0") {
-      std::cout << "Listening on all interfaces; connect from the board or another machine via its Ethernet IP." << std::endl;
-    }
+    print_startup_urls(bind_ip, actual_port);
 
     if (!server.listen_after_bind()) {
       throw std::runtime_error("ppwebgui listener terminated unexpectedly");
