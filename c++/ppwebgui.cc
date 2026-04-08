@@ -326,7 +326,7 @@ std::string operation_json(const std::string &message, const StatusSnapshot &sta
   return out.str();
 }
 
-std::string bool_text(const bool value) {
+const char *bool_text(const bool value) {
   return value ? "true" : "false";
 }
 
@@ -1054,7 +1054,13 @@ public:
   }
 
   void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
-    log_qout_request(q1, q2, q3, q4);
+    if (verbosity.veryverbose) {
+      std::cout << "ppwebgui action: apply qout" << std::endl;
+      std::cout << "  q1=" << q1 << std::endl;
+      std::cout << "  q2=" << q2 << std::endl;
+      std::cout << "  q3=" << q3 << std::endl;
+      std::cout << "  q4=" << q4 << std::endl;
+    }
     std::lock_guard<std::mutex> lock(hw_mutex);
     streamers.s1.sc.qout_set(q1);
     streamers.s2.sc.qout_set(q2);
@@ -1064,7 +1070,22 @@ public:
   }
 
   void apply_combiner_config(const CombinerRequest &request) {
-    log_combiner_request(request);
+    if (verbosity.veryverbose) {
+      std::cout << "ppwebgui action: apply combiner" << std::endl;
+      std::cout << "  mode=" << to_string(request.mode) << std::endl;
+      auto log_port = [](const char *label, const PortState &state) {
+        std::cout << "  " << label
+                  << " invert=" << state.invert
+                  << " mask=" << state.mask
+                  << " force_enabled=" << bool_text(state.force_enabled)
+                  << " force_value=" << state.force_value << std::endl;
+      };
+      log_port("output", request.output);
+      for (size_t i = 0; i < request.inputs.size(); ++i) {
+        const auto label = std::string("input") + std::to_string(i + 1);
+        log_port(label.c_str(), request.inputs[i]);
+      }
+    }
     std::lock_guard<std::mutex> lock(hw_mutex);
     comb.mode(request.mode);
     apply_port_locked(0, request.output);
@@ -1075,7 +1096,9 @@ public:
   }
 
   StreamResult request_stream_stop() {
-    log_gui_action("stop stream");
+    if (verbosity.veryverbose) {
+      std::cout << "ppwebgui action: stop stream" << std::endl;
+    }
     std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
     if (!g_stream_worker_active.load()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
@@ -1090,7 +1113,18 @@ public:
       throw BadRequest("Sequence text must not be empty");
     }
 
-    log_stream_request(request);
+    if (verbosity.veryverbose) {
+      std::cout << "ppwebgui action: start stream" << std::endl;
+      std::cout << "  force_trigger_override="
+                << (request.force_trigger_override ? bool_text(*request.force_trigger_override) : "(none)")
+                << std::endl;
+      std::cout << "  check_readback=" << bool_text(request.check_readback) << std::endl;
+      std::cout << "  sequence_text:" << std::endl;
+      std::cout << request.sequence_text;
+      if (request.sequence_text.empty() || request.sequence_text.back() != '\n') {
+        std::cout << std::endl;
+      }
+    }
 
     std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
     join_finished_stream_worker_locked(stream_lock);
@@ -1125,60 +1159,6 @@ public:
   }
 
 private:
-  void log_gui_action(const std::string &action) const {
-    if (!verbosity.veryverbose) {
-      return;
-    }
-    std::cout << "ppwebgui action: " << action << std::endl;
-  }
-
-  void log_qout_request(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) const {
-    if (!verbosity.veryverbose) {
-      return;
-    }
-    std::cout << "ppwebgui action: apply qout" << std::endl;
-    std::cout << "  q1=" << q1 << std::endl;
-    std::cout << "  q2=" << q2 << std::endl;
-    std::cout << "  q3=" << q3 << std::endl;
-    std::cout << "  q4=" << q4 << std::endl;
-  }
-
-  void log_combiner_request(const CombinerRequest &request) const {
-    if (!verbosity.veryverbose) {
-      return;
-    }
-    std::cout << "ppwebgui action: apply combiner" << std::endl;
-    std::cout << "  mode=" << to_string(request.mode) << std::endl;
-    auto log_port = [](const char *label, const PortState &state) {
-      std::cout << "  " << label
-                << " invert=" << state.invert
-                << " mask=" << state.mask
-                << " force_enabled=" << bool_text(state.force_enabled)
-                << " force_value=" << state.force_value << std::endl;
-    };
-    log_port("output", request.output);
-    for (size_t i = 0; i < request.inputs.size(); ++i) {
-      const auto label = std::string("input") + std::to_string(i + 1);
-      log_port(label.c_str(), request.inputs[i]);
-    }
-  }
-
-  void log_stream_request(const StreamLaunchRequest &request) const {
-    if (!verbosity.veryverbose) {
-      return;
-    }
-    std::cout << "ppwebgui action: start stream" << std::endl;
-    std::cout << "  force_trigger_override="
-              << (request.force_trigger_override ? bool_text(*request.force_trigger_override) : std::string("(none)"))
-              << std::endl;
-    std::cout << "  check_readback=" << bool_text(request.check_readback) << std::endl;
-    std::cout << "  sequence_text:" << std::endl;
-    std::cout << request.sequence_text;
-    if (request.sequence_text.empty() || request.sequence_text.back() != '\n') {
-      std::cout << std::endl;
-    }
-  }
-
   void run_stream_worker(StreamLaunchRequest request) {
     int rc = RC_OK;
     std::string message = "Sequence streamed successfully";
