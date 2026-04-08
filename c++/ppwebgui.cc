@@ -326,6 +326,11 @@ bool &stream_worker_active_flag() {
   return active;
 }
 
+std::atomic<bool> &stream_stop_requested_flag() {
+  static std::atomic<bool> stop_requested {false};
+  return stop_requested;
+}
+
 void fatal_signal_handler(int sig) {
   void *frames[64];
   const int count = backtrace(frames, 64);
@@ -1068,7 +1073,7 @@ public:
     if (!stream_worker_active_flag()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
     }
-    stop_requested.store(true);
+    stream_stop_requested_flag().store(true);
     update_stream_metadata_locked(true, RC_OK, "stop requested", "stop requested", "");
     return {true, RC_OK, httplib::StatusCode::OK_200, "Stop requested"};
   }
@@ -1089,7 +1094,7 @@ public:
 
     std::cerr << "ppwebgui: start_stream_text_sequence setting active state" << std::endl;
     stream_worker_active_flag() = true;
-    stop_requested.store(false);
+    stream_stop_requested_flag().store(false);
     std::cerr << "ppwebgui: launching background stream worker" << std::endl;
     update_stream_metadata_locked(true, RC_OK, "stream in progress", "streaming sequence", "");
     stream_worker_thread() = std::thread([this, request = std::move(request)]() mutable {
@@ -1143,7 +1148,7 @@ private:
                                 request_input,
                                 force_trigger_request,
                                 verbosity,
-                                stop_requested);
+                                stream_stop_requested_flag());
       std::cerr << "ppwebgui: stream worker finished send path rc=" << rc << std::endl;
       if (rc == RC_CANCELLED) {
         message = "Stream cancelled";
@@ -1204,7 +1209,6 @@ private:
   std::mutex status_mutex;
   std::mutex stream_mutex;
   std::atomic<bool> stop_flag {false};
-  std::atomic<bool> stop_requested {false};
   std::thread sampler_thread;
   multistreamer streamers;
   streamer play_streamer;
