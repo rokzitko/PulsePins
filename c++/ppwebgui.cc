@@ -845,9 +845,13 @@ public:
     input(input_),
     verbosity(verbosity_),
     poll_ms(poll_ms_),
+    streamers(input, fpga),
+    qout_ctrl(input, verbosity, fpga),
     play_streamer(input, fpga),
     readback_path(input, fpga),
-    counters(input, fpga)
+    counters(input, fpga),
+    pio_aux(fpga.dev_lw, PIO_AUX_BASE),
+    comb(qout_ctrl.cq)
   {
     snapshot.poll_ms = poll_ms;
   }
@@ -865,9 +869,6 @@ public:
   }
 
   void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
-    multistreamer streamers(input, fpga);
-    qout qout_ctrl(input, verbosity, fpga);
-    (void)qout_ctrl;
     streamers.s1.sc.qout_set(q1);
     streamers.s2.sc.qout_set(q2);
     streamers.s3.sc.qout_set(q3);
@@ -876,8 +877,6 @@ public:
   }
 
   void apply_combiner_config(const CombinerRequest &request) {
-    qout qout_ctrl(input, verbosity, fpga);
-    auto &comb = qout_ctrl.cq;
     comb.mode(request.mode);
     apply_port_locked(comb, 0, request.output);
     for (size_t i = 0; i < request.inputs.size(); ++i) {
@@ -952,9 +951,13 @@ private:
   const InputParser &input;
   const Verbosity &verbosity;
   const unsigned poll_ms;
+  multistreamer streamers;
+  qout qout_ctrl;
   streamer play_streamer;
   readback readback_path;
   counter counters;
+  pio_in pio_aux;
+  combiner_qout &comb;
   StatusSnapshot snapshot;
 
   PortState read_port_state(combiner_qout &comb, const int index, const uint32_t cfg) {
@@ -967,10 +970,6 @@ private:
   }
 
   StatusSnapshot read_status() {
-    multistreamer streamers(input, fpga);
-    qout qout_ctrl(input, verbosity, fpga);
-    auto &comb = qout_ctrl.cq;
-    pio_in pio_aux(fpga.dev_lw, PIO_AUX_BASE);
     StatusSnapshot status;
     status.poll_ms = poll_ms;
     status.aux_raw = static_cast<uint8_t>(pio_aux.read() & 0xffU);
