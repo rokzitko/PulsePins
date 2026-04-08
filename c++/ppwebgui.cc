@@ -49,6 +49,12 @@
 
 namespace {
 
+#if defined(__GNUC__) || defined(__clang__)
+#define PPWEBGUI_NOINLINE __attribute__((noinline))
+#else
+#define PPWEBGUI_NOINLINE
+#endif
+
 constexpr size_t MAX_FORM_BODY_BYTES = 64 * 1024;
 constexpr size_t MAX_SEQUENCE_TEXT_BYTES = 32 * 1024;
 constexpr int RC_CANCELLED = -2;
@@ -1053,7 +1059,7 @@ public:
     }
   }
 
-  void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
+  PPWEBGUI_NOINLINE void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
     if (verbosity.veryverbose) {
       std::cout << "ppwebgui action: apply qout" << std::endl;
       std::cout << "  q1=" << q1 << std::endl;
@@ -1382,11 +1388,21 @@ int main(int argc, char *argv[]) {
     };
 
     server.Post("/api/qout", wrap([&](const httplib::Request &req, httplib::Response &res) {
+      if (verbosity.veryverbose) {
+        std::cout << "ppwebgui: entered /api/qout" << std::endl;
+      }
       require_form_post(req);
-      controller.apply_qout_overrides(parse_u32_param(req, "q1"),
-                                      parse_u32_param(req, "q2"),
-                                      parse_u32_param(req, "q3"),
-                                      parse_u32_param(req, "q4"));
+      const auto q1 = parse_u32_param(req, "q1");
+      const auto q2 = parse_u32_param(req, "q2");
+      const auto q3 = parse_u32_param(req, "q3");
+      const auto q4 = parse_u32_param(req, "q4");
+      if (verbosity.veryverbose) {
+        std::cout << "ppwebgui: parsed /api/qout parameters" << std::endl;
+      }
+      controller.apply_qout_overrides(q1, q2, q3, q4);
+      if (verbosity.veryverbose) {
+        std::cout << "ppwebgui: applied /api/qout request" << std::endl;
+      }
       respond_json(res, operation_json("Applied qout overrides", controller.get_status_copy()));
     }));
 
