@@ -22,10 +22,14 @@
 #include <vector>
 
 #include <arpa/inet.h>
+#ifdef PPWEBGUI_ENABLE_BACKTRACE
 #include <execinfo.h>
+#endif
 #include <net/if.h>
 #include <netinet/in.h>
+#ifdef PPWEBGUI_ENABLE_BACKTRACE
 #include <signal.h>
+#endif
 
 #include "basic_multi_dma.hh"
 #include "combiner.hh"
@@ -331,6 +335,7 @@ std::atomic<bool> &stream_stop_requested_flag() {
   return stop_requested;
 }
 
+#ifdef PPWEBGUI_ENABLE_BACKTRACE
 void fatal_signal_handler(int sig) {
   void *frames[64];
   const int count = backtrace(frames, 64);
@@ -344,6 +349,9 @@ void install_fatal_signal_handlers() {
   signal(SIGABRT, fatal_signal_handler);
   signal(SIGBUS, fatal_signal_handler);
 }
+#else
+void install_fatal_signal_handlers() {}
+#endif
 
 int wait_to_complete_or_cancel(streamer_control &sc,
                                std::atomic<bool> &stop_requested,
@@ -1079,23 +1087,18 @@ public:
   }
 
   StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
-    std::cerr << "ppwebgui: start_stream_text_sequence entered" << std::endl;
     if (request.sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
     }
 
-    std::cerr << "ppwebgui: start_stream_text_sequence before stream lock" << std::endl;
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
-    std::cerr << "ppwebgui: start_stream_text_sequence acquired stream lock" << std::endl;
-    std::cerr << "ppwebgui: start_stream_text_sequence skipping prior worker join" << std::endl;
+    join_finished_stream_worker_locked(stream_lock);
     if (stream_worker_active_flag()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "Another stream request is already in flight"};
     }
 
-    std::cerr << "ppwebgui: start_stream_text_sequence setting active state" << std::endl;
     stream_worker_active_flag() = true;
     stream_stop_requested_flag().store(false);
-    std::cerr << "ppwebgui: launching background stream worker" << std::endl;
     update_stream_metadata_locked(true, RC_OK, "stream in progress", "streaming sequence", "");
     stream_worker_thread() = std::thread([this, request = std::move(request)]() mutable {
       run_stream_worker(std::move(request));
@@ -1105,6 +1108,7 @@ public:
 
   void wait_for_stream_worker() {
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
+    join_finished_stream_worker_locked(stream_lock);
     if (!stream_worker_thread().joinable()) {
       return;
     }
@@ -1127,10 +1131,8 @@ private:
     std::string last_error;
 
     try {
-      std::cerr << "ppwebgui: stream worker started" << std::endl;
       std::stringstream sequence_stream(request.sequence_text);
       auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
-      std::cerr << "ppwebgui: sequence parsed, size=" << sequence.size() << std::endl;
       const bool force_trigger_request = request.force_trigger_override.value_or(parsed_force_trigger);
 
       InputParser request_input(std::vector<std::string>{});
@@ -1139,7 +1141,6 @@ private:
       }
 
       std::lock_guard<std::mutex> hw_lock(hw_mutex);
-      std::cerr << "ppwebgui: acquired hw mutex, starting send_and_trig path" << std::endl;
       rc = webgui_send_and_trig(play_streamer.fifo,
                                 play_streamer.sc,
                                 readback_path,
@@ -1149,7 +1150,6 @@ private:
                                 force_trigger_request,
                                 verbosity,
                                 stream_stop_requested_flag());
-      std::cerr << "ppwebgui: stream worker finished send path rc=" << rc << std::endl;
       if (rc == RC_CANCELLED) {
         message = "Stream cancelled";
         last_action = "stream cancelled";
@@ -1163,18 +1163,15 @@ private:
       message = e.what();
       last_action = "stream failed";
       last_error = message;
-      std::cerr << "ppwebgui: stream worker caught exception: " << message << std::endl;
     } catch (...) {
       rc = -1;
       message = "Unhandled non-standard exception in stream worker";
       last_action = "stream failed";
       last_error = message;
-      std::cerr << "ppwebgui: stream worker caught non-standard exception" << std::endl;
     }
 
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     stream_worker_active_flag() = false;
-    std::cerr << "ppwebgui: publishing final stream state" << std::endl;
     update_stream_metadata_locked(false, rc, message, last_action, last_error);
   }
 
@@ -1365,20 +1362,15 @@ int main(int argc, char *argv[]) {
     }));
 
     server.Post("/api/stream", wrap([&](const httplib::Request &req, httplib::Response &res) {
-      std::cerr << "ppwebgui: entered /api/stream handler" << std::endl;
       require_form_post(req, MAX_FORM_BODY_BYTES);
-      std::cerr << "ppwebgui: /api/stream content-type validated, body bytes=" << req.body.size() << std::endl;
       const std::optional<bool> force_trigger_override = req.has_param("force_trigger")
         ? std::optional<bool>(parse_bool_param(req, "force_trigger"))
         : std::nullopt;
-      std::cerr << "ppwebgui: /api/stream parsed boolean flags" << std::endl;
       StreamLaunchRequest request;
       request.sequence_text = require_bounded_text_param(req, "sequence_text", MAX_SEQUENCE_TEXT_BYTES);
       request.force_trigger_override = force_trigger_override;
       request.check_readback = parse_bool_param(req, "check_readback");
-      std::cerr << "ppwebgui: /api/stream parsed request, sequence bytes=" << request.sequence_text.size() << std::endl;
       const auto result = controller.start_stream_text_sequence(std::move(request));
-      std::cerr << "ppwebgui: /api/stream start_stream_text_sequence returned" << std::endl;
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
            << ",\"rc\":" << result.rc
