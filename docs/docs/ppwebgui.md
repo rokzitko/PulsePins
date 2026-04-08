@@ -59,6 +59,24 @@ The page exposes four main sections:
 
 The backend keeps hardware access serialized and the UI polls `/api/status` at the configured interval.
 
+## API summary
+
+Version 1 keeps the API small:
+
+* `GET /api/status` returns JSON status for AUX, trigger state, streamer qout values, combiner state, and recent action/error text
+* `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `q1` through `q4`
+* `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
+* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`
+
+Successful mutating `POST` replies include:
+
+* `ok`
+* `rc`
+* `message`
+* `status`
+
+The embedded browser UI uses that returned `status` object immediately after a successful action, so the page does not have to wait for the next polling tick before reflecting the applied state.
+
 ## Default network exposure
 
 By default, `ppwebgui` binds to `0.0.0.0:4242`.

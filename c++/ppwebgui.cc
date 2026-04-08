@@ -156,6 +156,16 @@ void respond_error(httplib::Response &res, const int status, std::string_view er
   respond_json(res, body.str(), status);
 }
 
+void require_form_post(const httplib::Request &req) {
+  const auto content_type = req.get_header_value("Content-Type");
+  if (content_type.empty()) {
+    throw BadRequest("Missing Content-Type header");
+  }
+  if (content_type.find("application/x-www-form-urlencoded") == std::string::npos) {
+    throw BadRequest("Expected application/x-www-form-urlencoded request body");
+  }
+}
+
 std::string require_param(const httplib::Request &req, const char *name) {
   if (!req.has_param(name)) {
     throw BadRequest(std::string("Missing parameter: ") + name);
@@ -941,6 +951,7 @@ int main(int argc, char *argv[]) {
     };
 
     server.Post("/api/qout", wrap([&](const httplib::Request &req, httplib::Response &res) {
+      require_form_post(req);
       controller.apply_qout_overrides(parse_u32_param(req, "q1"),
                                       parse_u32_param(req, "q2"),
                                       parse_u32_param(req, "q3"),
@@ -949,11 +960,13 @@ int main(int argc, char *argv[]) {
     }));
 
     server.Post("/api/combiner", wrap([&](const httplib::Request &req, httplib::Response &res) {
+      require_form_post(req);
       controller.apply_combiner_config(parse_combiner_request(req));
       respond_json(res, operation_json("Applied combiner config", controller.get_status_copy()));
     }));
 
     server.Post("/api/stream", wrap([&](const httplib::Request &req, httplib::Response &res) {
+      require_form_post(req);
       const std::optional<bool> force_trigger_override = req.has_param("force_trigger")
         ? std::optional<bool>(parse_bool_param(req, "force_trigger"))
         : std::nullopt;
