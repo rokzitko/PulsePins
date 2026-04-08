@@ -49,12 +49,6 @@
 
 namespace {
 
-#if defined(__GNUC__) || defined(__clang__)
-#define PPWEBGUI_NOINLINE __attribute__((noinline))
-#else
-#define PPWEBGUI_NOINLINE
-#endif
-
 constexpr size_t MAX_FORM_BODY_BYTES = 64 * 1024;
 constexpr size_t MAX_SEQUENCE_TEXT_BYTES = 32 * 1024;
 constexpr int RC_CANCELLED = -2;
@@ -1059,14 +1053,7 @@ public:
     }
   }
 
-  PPWEBGUI_NOINLINE void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
-    if (verbosity.veryverbose) {
-      std::cout << "ppwebgui action: apply qout" << std::endl;
-      std::cout << "  q1=" << q1 << std::endl;
-      std::cout << "  q2=" << q2 << std::endl;
-      std::cout << "  q3=" << q3 << std::endl;
-      std::cout << "  q4=" << q4 << std::endl;
-    }
+  void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
     std::lock_guard<std::mutex> lock(hw_mutex);
     streamers.s1.sc.qout_set(q1);
     streamers.s2.sc.qout_set(q2);
@@ -1076,22 +1063,6 @@ public:
   }
 
   void apply_combiner_config(const CombinerRequest &request) {
-    if (verbosity.veryverbose) {
-      std::cout << "ppwebgui action: apply combiner" << std::endl;
-      std::cout << "  mode=" << to_string(request.mode) << std::endl;
-      auto log_port = [](const char *label, const PortState &state) {
-        std::cout << "  " << label
-                  << " invert=" << state.invert
-                  << " mask=" << state.mask
-                  << " force_enabled=" << bool_text(state.force_enabled)
-                  << " force_value=" << state.force_value << std::endl;
-      };
-      log_port("output", request.output);
-      for (size_t i = 0; i < request.inputs.size(); ++i) {
-        const auto label = std::string("input") + std::to_string(i + 1);
-        log_port(label.c_str(), request.inputs[i]);
-      }
-    }
     std::lock_guard<std::mutex> lock(hw_mutex);
     comb.mode(request.mode);
     apply_port_locked(0, request.output);
@@ -1102,9 +1073,6 @@ public:
   }
 
   StreamResult request_stream_stop() {
-    if (verbosity.veryverbose) {
-      std::cout << "ppwebgui action: stop stream" << std::endl;
-    }
     std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
     if (!g_stream_worker_active.load()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
@@ -1117,19 +1085,6 @@ public:
   StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
     if (request.sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
-    }
-
-    if (verbosity.veryverbose) {
-      std::cout << "ppwebgui action: start stream" << std::endl;
-      std::cout << "  force_trigger_override="
-                << (request.force_trigger_override ? bool_text(*request.force_trigger_override) : "(none)")
-                << std::endl;
-      std::cout << "  check_readback=" << bool_text(request.check_readback) << std::endl;
-      std::cout << "  sequence_text:" << std::endl;
-      std::cout << request.sequence_text;
-      if (request.sequence_text.empty() || request.sequence_text.back() != '\n') {
-        std::cout << std::endl;
-      }
     }
 
     std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
@@ -1398,6 +1353,11 @@ int main(int argc, char *argv[]) {
       const auto q4 = parse_u32_param(req, "q4");
       if (verbosity.veryverbose) {
         std::cout << "ppwebgui: parsed /api/qout parameters" << std::endl;
+        std::cout << "ppwebgui action: apply qout" << std::endl;
+        std::cout << "  q1=" << q1 << std::endl;
+        std::cout << "  q2=" << q2 << std::endl;
+        std::cout << "  q3=" << q3 << std::endl;
+        std::cout << "  q4=" << q4 << std::endl;
       }
       controller.apply_qout_overrides(q1, q2, q3, q4);
       if (verbosity.veryverbose) {
@@ -1408,7 +1368,24 @@ int main(int argc, char *argv[]) {
 
     server.Post("/api/combiner", wrap([&](const httplib::Request &req, httplib::Response &res) {
       require_form_post(req);
-      controller.apply_combiner_config(parse_combiner_request(req));
+      const auto request = parse_combiner_request(req);
+      if (verbosity.veryverbose) {
+        std::cout << "ppwebgui action: apply combiner" << std::endl;
+        std::cout << "  mode=" << to_string(request.mode) << std::endl;
+        auto log_port = [](const char *label, const PortState &state) {
+          std::cout << "  " << label
+                    << " invert=" << state.invert
+                    << " mask=" << state.mask
+                    << " force_enabled=" << bool_text(state.force_enabled)
+                    << " force_value=" << state.force_value << std::endl;
+        };
+        log_port("output", request.output);
+        for (size_t i = 0; i < request.inputs.size(); ++i) {
+          const auto label = std::string("input") + std::to_string(i + 1);
+          log_port(label.c_str(), request.inputs[i]);
+        }
+      }
+      controller.apply_combiner_config(request);
       respond_json(res, operation_json("Applied combiner config", controller.get_status_copy()));
     }));
 
@@ -1421,6 +1398,18 @@ int main(int argc, char *argv[]) {
       request.sequence_text = require_bounded_text_param(req, "sequence_text", MAX_SEQUENCE_TEXT_BYTES);
       request.force_trigger_override = force_trigger_override;
       request.check_readback = parse_bool_param(req, "check_readback");
+      if (verbosity.veryverbose) {
+        std::cout << "ppwebgui action: start stream" << std::endl;
+        std::cout << "  force_trigger_override="
+                  << (request.force_trigger_override ? bool_text(*request.force_trigger_override) : "(none)")
+                  << std::endl;
+        std::cout << "  check_readback=" << bool_text(request.check_readback) << std::endl;
+        std::cout << "  sequence_text:" << std::endl;
+        std::cout << request.sequence_text;
+        if (request.sequence_text.empty() || request.sequence_text.back() != '\n') {
+          std::cout << std::endl;
+        }
+      }
       const auto result = controller.start_stream_text_sequence(std::move(request));
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
@@ -1435,6 +1424,9 @@ int main(int argc, char *argv[]) {
 
     server.Post("/api/stop", wrap([&](const httplib::Request &req, httplib::Response &res) {
       require_form_post(req);
+      if (verbosity.veryverbose) {
+        std::cout << "ppwebgui action: stop stream" << std::endl;
+      }
       const auto result = controller.request_stream_stop();
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
