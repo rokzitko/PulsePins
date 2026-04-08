@@ -48,6 +48,7 @@ struct StatusSnapshot {
   unsigned poll_ms = 100;
   uint8_t aux_raw = 0;
   uint32_t trig_raw = 0;
+  std::array<uint32_t, 4> qout_values {};
   std::string combiner_mode = "SEL1";
   PortState output;
   std::array<PortState, 4> inputs {};
@@ -218,6 +219,15 @@ std::string status_to_json(const StatusSnapshot &status) {
   out << "\"enable\":" << (trig_enable(status.trig_raw) ? "true" : "false") << ',';
   out << "\"force\":" << (trig_force(status.trig_raw) ? "true" : "false") << ',';
   out << "\"reset\":" << (trig_reset(status.trig_raw) ? "true" : "false") << "},";
+  out << "\"streamers\":[";
+  for (size_t i = 0; i < status.qout_values.size(); ++i) {
+    if (i) out << ',';
+    out << '{';
+    out << "\"index\":" << (i + 1) << ',';
+    out << "\"qout\":" << status.qout_values[i];
+    out << '}';
+  }
+  out << "],";
   out << "\"combiner\":{";
   out << "\"mode\":\"" << status.combiner_mode << "\",";
   out << "\"output\":{";
@@ -531,7 +541,6 @@ const char *app_js = R"JS((() => {
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
-  let formsHydrated = false;
   let pollMs = 100;
 
   function setGlobal(message, isError = false) {
@@ -545,12 +554,19 @@ const char *app_js = R"JS((() => {
     }
   }
 
-  function boolValue(form, name) {
-    return form.querySelector(`[name="${name}"]`).checked ? '1' : '0';
+  function formOwnsFocus(form) {
+    return form.contains(document.activeElement);
+  }
+
+  function populateQout(status) {
+    if (formOwnsFocus(qoutForm)) return;
+    status.streamers.forEach((streamer) => {
+      qoutForm.querySelector(`[name="q${streamer.index}"]`).value = streamer.qout;
+    });
   }
 
   function populateCombiner(status) {
-    if (formsHydrated) return;
+    if (formOwnsFocus(combinerForm)) return;
     combinerForm.querySelector('[name="mode"]').value = status.combiner.mode;
     const output = status.combiner.output;
     combinerForm.querySelector('[name="output_invert"]').value = output.invert;
@@ -564,7 +580,6 @@ const char *app_js = R"JS((() => {
       combinerForm.querySelector(`[name="${base}_force_enabled"]`).value = input.force_enabled ? '1' : '0';
       combinerForm.querySelector(`[name="${base}_force_value"]`).value = input.force_value;
     });
-    formsHydrated = true;
   }
 
   function renderStatus(status) {
@@ -576,6 +591,7 @@ const char *app_js = R"JS((() => {
     document.getElementById('combiner-mode').textContent = status.combiner.mode;
     document.getElementById('last-action').textContent = status.last_action;
     document.getElementById('last-error').textContent = status.last_error || '(none)';
+    populateQout(status);
     populateCombiner(status);
     pollMs = status.poll_ms || 100;
   }
@@ -800,6 +816,12 @@ private:
     status.poll_ms = poll_ms;
     status.aux_raw = static_cast<uint8_t>(pio_aux.read() & 0xffU);
     status.trig_raw = fpga.trig_ext.read();
+    status.qout_values = {
+      streamers.s1.sc.get_qout(),
+      streamers.s2.sc.get_qout(),
+      streamers.s3.sc.get_qout(),
+      streamers.s4.sc.get_qout(),
+    };
     const auto cfg = comb.get_cfg();
     comb.cfg(cfg); // keep the software shadow aligned before force/value readback helpers mutate RB bits.
     status.combiner_mode = to_string(comb.get_mode());
