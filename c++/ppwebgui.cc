@@ -44,15 +44,14 @@
 
 namespace {
 
-#if defined(__GNUC__) || defined(__clang__)
-#define PPWEBGUI_NOINLINE __attribute__((noinline))
-#else
-#define PPWEBGUI_NOINLINE
-#endif
-
 constexpr size_t MAX_FORM_BODY_BYTES = 64 * 1024;
 constexpr size_t MAX_SEQUENCE_TEXT_BYTES = 32 * 1024;
 constexpr int RC_CANCELLED = -2;
+
+std::mutex g_stream_state_mutex;
+std::thread g_stream_worker_thread;
+std::atomic<bool> g_stream_worker_active {false};
+std::atomic<bool> g_stream_stop_requested {false};
 
 struct BadRequest : public std::runtime_error {
   using std::runtime_error::runtime_error;
@@ -319,26 +318,6 @@ std::string operation_json(const std::string &message, const StatusSnapshot &sta
   out << "\"status\":" << status_to_json(status);
   out << '}';
   return out.str();
-}
-
-std::mutex &stream_state_mutex() {
-  static std::mutex mutex;
-  return mutex;
-}
-
-std::thread &stream_worker_thread() {
-  static std::thread worker;
-  return worker;
-}
-
-bool &stream_worker_active_flag() {
-  static bool active = false;
-  return active;
-}
-
-std::atomic<bool> &stream_stop_requested_flag() {
-  static std::atomic<bool> stop_requested {false};
-  return stop_requested;
 }
 
 #ifdef PPWEBGUI_ENABLE_BACKTRACE
@@ -1082,43 +1061,43 @@ public:
     publish_locked(capture_status_locked(), "applied combiner config", "");
   }
 
-  PPWEBGUI_NOINLINE StreamResult request_stream_stop() {
-    std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
-    if (!stream_worker_active_flag()) {
+  StreamResult request_stream_stop() {
+    std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
+    if (!g_stream_worker_active.load()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
     }
-    stream_stop_requested_flag().store(true);
+    g_stream_stop_requested.store(true);
     update_stream_metadata_locked(true, RC_OK, "stop requested", "stop requested", "");
     return {true, RC_OK, httplib::StatusCode::OK_200, "Stop requested"};
   }
 
-  PPWEBGUI_NOINLINE StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
+  StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
     if (request.sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
     }
 
-    std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
+    std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
     join_finished_stream_worker_locked(stream_lock);
-    if (stream_worker_active_flag()) {
+    if (g_stream_worker_active.load()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "Another stream request is already in flight"};
     }
 
-    stream_worker_active_flag() = true;
-    stream_stop_requested_flag().store(false);
+    g_stream_worker_active.store(true);
+    g_stream_stop_requested.store(false);
     update_stream_metadata_locked(true, RC_OK, "stream in progress", "streaming sequence", "");
-    stream_worker_thread() = std::thread([this, request = std::move(request)]() mutable {
+    g_stream_worker_thread = std::thread([this, request = std::move(request)]() mutable {
       run_stream_worker(std::move(request));
     });
     return {true, RC_OK, httplib::StatusCode::OK_200, "Sequence accepted and started"};
   }
 
-  PPWEBGUI_NOINLINE void wait_for_stream_worker() {
-    std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
+  void wait_for_stream_worker() {
+    std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
     join_finished_stream_worker_locked(stream_lock);
-    if (!stream_worker_thread().joinable()) {
+    if (!g_stream_worker_thread.joinable()) {
       return;
     }
-    auto worker = std::move(stream_worker_thread());
+    auto worker = std::move(g_stream_worker_thread);
     stream_lock.unlock();
     worker.join();
   }
@@ -1130,7 +1109,7 @@ public:
   }
 
 private:
-  PPWEBGUI_NOINLINE void run_stream_worker(StreamLaunchRequest request) {
+  void run_stream_worker(StreamLaunchRequest request) {
     int rc = RC_OK;
     std::string message = "Sequence streamed successfully";
     std::string last_action = "streamed sequence";
@@ -1155,7 +1134,7 @@ private:
                                 request_input,
                                 force_trigger_request,
                                 verbosity,
-                                stream_stop_requested_flag());
+                                g_stream_stop_requested);
       if (rc == RC_CANCELLED) {
         message = "Stream cancelled";
         last_action = "stream cancelled";
@@ -1176,26 +1155,26 @@ private:
       last_error = message;
     }
 
-    std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
-    stream_worker_active_flag() = false;
+    std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
+    g_stream_worker_active.store(false);
     update_stream_metadata_locked(false, rc, message, last_action, last_error);
   }
 
-  PPWEBGUI_NOINLINE void join_finished_stream_worker_locked(std::unique_lock<std::mutex> &stream_lock) {
-    if (stream_worker_active_flag() || !stream_worker_thread().joinable()) {
+  void join_finished_stream_worker_locked(std::unique_lock<std::mutex> &stream_lock) {
+    if (g_stream_worker_active.load() || !g_stream_worker_thread.joinable()) {
       return;
     }
-    auto worker = std::move(stream_worker_thread());
+    auto worker = std::move(g_stream_worker_thread);
     stream_lock.unlock();
     worker.join();
     stream_lock.lock();
   }
 
-  PPWEBGUI_NOINLINE void update_stream_metadata_locked(const bool active,
-                                                       const int rc,
-                                                       const std::string &stream_message,
-                                                       const std::string &last_action,
-                                                       const std::string &last_error) {
+  void update_stream_metadata_locked(const bool active,
+                                     const int rc,
+                                     const std::string &stream_message,
+                                     const std::string &last_action,
+                                     const std::string &last_error) {
     std::lock_guard<std::mutex> lock(status_mutex);
     snapshot.seqno += 1;
     snapshot.stream_active = active;
