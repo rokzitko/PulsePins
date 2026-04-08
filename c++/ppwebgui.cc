@@ -314,6 +314,16 @@ std::mutex &stream_state_mutex() {
   return mutex;
 }
 
+std::thread &stream_worker_thread() {
+  static std::thread worker;
+  return worker;
+}
+
+bool &stream_worker_active_flag() {
+  static bool active = false;
+  return active;
+}
+
 int wait_to_complete_or_cancel(streamer_control &sc,
                                std::atomic<bool> &stop_requested,
                                const Verbosity &v,
@@ -1039,7 +1049,7 @@ public:
 
   StreamResult request_stream_stop() {
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
-    if (!stream_worker_active) {
+    if (!stream_worker_active_flag()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
     }
     stop_requested.store(true);
@@ -1057,16 +1067,16 @@ public:
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     std::cerr << "ppwebgui: start_stream_text_sequence acquired stream lock" << std::endl;
     std::cerr << "ppwebgui: start_stream_text_sequence skipping prior worker join" << std::endl;
-    if (stream_worker_active) {
+    if (stream_worker_active_flag()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "Another stream request is already in flight"};
     }
 
     std::cerr << "ppwebgui: start_stream_text_sequence setting active state" << std::endl;
-    stream_worker_active = true;
+    stream_worker_active_flag() = true;
     stop_requested.store(false);
     std::cerr << "ppwebgui: launching background stream worker" << std::endl;
     update_stream_metadata_locked(true, RC_OK, "stream in progress", "streaming sequence", "");
-    stream_worker = std::thread([this, request = std::move(request)]() mutable {
+    stream_worker_thread() = std::thread([this, request = std::move(request)]() mutable {
       run_stream_worker(std::move(request));
     });
     return {true, RC_OK, httplib::StatusCode::OK_200, "Sequence accepted and started"};
@@ -1074,10 +1084,10 @@ public:
 
   void wait_for_stream_worker() {
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
-    if (!stream_worker.joinable()) {
+    if (!stream_worker_thread().joinable()) {
       return;
     }
-    auto worker = std::move(stream_worker);
+    auto worker = std::move(stream_worker_thread());
     stream_lock.unlock();
     worker.join();
   }
@@ -1142,16 +1152,16 @@ private:
     }
 
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
-    stream_worker_active = false;
+    stream_worker_active_flag() = false;
     std::cerr << "ppwebgui: publishing final stream state" << std::endl;
     update_stream_metadata_locked(false, rc, message, last_action, last_error);
   }
 
   void join_finished_stream_worker_locked(std::unique_lock<std::mutex> &stream_lock) {
-    if (stream_worker_active || !stream_worker.joinable()) {
+    if (stream_worker_active_flag() || !stream_worker_thread().joinable()) {
       return;
     }
-    auto worker = std::move(stream_worker);
+    auto worker = std::move(stream_worker_thread());
     stream_lock.unlock();
     worker.join();
     stream_lock.lock();
@@ -1180,8 +1190,6 @@ private:
   std::atomic<bool> stop_flag {false};
   std::atomic<bool> stop_requested {false};
   std::thread sampler_thread;
-  std::thread stream_worker;
-  bool stream_worker_active = false;
   multistreamer streamers;
   streamer play_streamer;
   readback readback_path;
