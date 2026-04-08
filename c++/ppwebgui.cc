@@ -41,6 +41,7 @@
 #include "pio.hh"
 #include "ppversion.hh"
 #include "ppworkflow.hh"
+#include "qout.hh"
 #include "readback.hh"
 
 namespace {
@@ -845,11 +846,12 @@ public:
     verbosity(verbosity_),
     poll_ms(poll_ms_),
     streamers(input, fpga),
+    qout_ctrl(input, verbosity, fpga),
     play_streamer(input, fpga),
     readback_path(input, fpga),
     counters(input, fpga),
     pio_aux(fpga.dev_lw, PIO_AUX_BASE),
-    comb(fpga.dev_h2f, COMBINER_QOUT_BASE)
+    comb(qout_ctrl.cq)
   {
     snapshot.poll_ms = poll_ms;
   }
@@ -950,11 +952,12 @@ private:
   const Verbosity &verbosity;
   const unsigned poll_ms;
   multistreamer streamers;
+  qout qout_ctrl;
   streamer play_streamer;
   readback readback_path;
   counter counters;
   pio_in pio_aux;
-  combiner comb;
+  combiner_qout &comb;
   StatusSnapshot snapshot;
 
   PortState read_port_state_locked(const int index, const uint32_t cfg) {
