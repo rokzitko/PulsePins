@@ -845,13 +845,9 @@ public:
     input(input_),
     verbosity(verbosity_),
     poll_ms(poll_ms_),
-    streamers(input, fpga),
-    qout_ctrl(input, verbosity, fpga),
     play_streamer(input, fpga),
     readback_path(input, fpga),
-    counters(input, fpga),
-    pio_aux(fpga.dev_lw, PIO_AUX_BASE),
-    comb(qout_ctrl.cq)
+    counters(input, fpga)
   {
     snapshot.poll_ms = poll_ms;
   }
@@ -869,6 +865,9 @@ public:
   }
 
   void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
+    multistreamer streamers(input, fpga);
+    qout qout_ctrl(input, verbosity, fpga);
+    (void)qout_ctrl;
     streamers.s1.sc.qout_set(q1);
     streamers.s2.sc.qout_set(q2);
     streamers.s3.sc.qout_set(q3);
@@ -877,10 +876,12 @@ public:
   }
 
   void apply_combiner_config(const CombinerRequest &request) {
+    qout qout_ctrl(input, verbosity, fpga);
+    auto &comb = qout_ctrl.cq;
     comb.mode(request.mode);
-    apply_port_locked(0, request.output);
+    apply_port_locked(comb, 0, request.output);
     for (size_t i = 0; i < request.inputs.size(); ++i) {
-      apply_port_locked(static_cast<int>(i + 1), request.inputs[i]);
+      apply_port_locked(comb, static_cast<int>(i + 1), request.inputs[i]);
     }
     publish_status(read_status(), "applied combiner config", "");
   }
@@ -951,16 +952,12 @@ private:
   const InputParser &input;
   const Verbosity &verbosity;
   const unsigned poll_ms;
-  multistreamer streamers;
-  qout qout_ctrl;
   streamer play_streamer;
   readback readback_path;
   counter counters;
-  pio_in pio_aux;
-  combiner_qout &comb;
   StatusSnapshot snapshot;
 
-  PortState read_port_state_locked(const int index, const uint32_t cfg) {
+  PortState read_port_state(combiner_qout &comb, const int index, const uint32_t cfg) {
     PortState state;
     state.invert = comb.get_invert(index);
     state.mask = comb.get_mask(index);
@@ -970,6 +967,10 @@ private:
   }
 
   StatusSnapshot read_status() {
+    multistreamer streamers(input, fpga);
+    qout qout_ctrl(input, verbosity, fpga);
+    auto &comb = qout_ctrl.cq;
+    pio_in pio_aux(fpga.dev_lw, PIO_AUX_BASE);
     StatusSnapshot status;
     status.poll_ms = poll_ms;
     status.aux_raw = static_cast<uint8_t>(pio_aux.read() & 0xffU);
@@ -983,14 +984,14 @@ private:
     const auto cfg = comb.get_cfg();
     comb.cfg(cfg); // keep the software shadow aligned before force/value readback helpers mutate RB bits.
     status.combiner_mode = to_string(comb.get_mode());
-    status.output = read_port_state_locked(0, cfg);
+    status.output = read_port_state(comb, 0, cfg);
     for (size_t i = 0; i < status.inputs.size(); ++i) {
-      status.inputs[i] = read_port_state_locked(static_cast<int>(i + 1), cfg);
+      status.inputs[i] = read_port_state(comb, static_cast<int>(i + 1), cfg);
     }
     return status;
   }
 
-  void apply_port_locked(const int port, const PortState &state) {
+  void apply_port_locked(combiner_qout &comb, const int port, const PortState &state) {
     comb.invert(port, state.invert);
     comb.mask(port, state.mask);
     if (state.force_enabled) {
