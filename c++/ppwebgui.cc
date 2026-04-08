@@ -1056,6 +1056,7 @@ public:
 
     stream_worker_active = true;
     stop_requested.store(false);
+    std::cerr << "ppwebgui: launching background stream worker" << std::endl;
     update_stream_metadata_locked(true, RC_OK, "stream in progress", "streaming sequence", "");
     stream_worker = std::thread([this, request = std::move(request)]() mutable {
       run_stream_worker(std::move(request));
@@ -1088,8 +1089,10 @@ private:
     std::string last_error;
 
     try {
+      std::cerr << "ppwebgui: stream worker started" << std::endl;
       std::stringstream sequence_stream(request.sequence_text);
       auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
+      std::cerr << "ppwebgui: sequence parsed, size=" << sequence.size() << std::endl;
       const bool force_trigger_request = request.force_trigger_override.value_or(parsed_force_trigger);
 
       InputParser request_input(std::vector<std::string>{});
@@ -1098,6 +1101,7 @@ private:
       }
 
       std::lock_guard<std::mutex> hw_lock(hw_mutex);
+      std::cerr << "ppwebgui: acquired hw mutex, starting send_and_trig path" << std::endl;
       rc = webgui_send_and_trig(play_streamer.fifo,
                                 play_streamer.sc,
                                 readback_path,
@@ -1107,6 +1111,7 @@ private:
                                 force_trigger_request,
                                 verbosity,
                                 stop_requested);
+      std::cerr << "ppwebgui: stream worker finished send path rc=" << rc << std::endl;
       if (rc == RC_CANCELLED) {
         message = "Stream cancelled";
         last_action = "stream cancelled";
@@ -1120,10 +1125,18 @@ private:
       message = e.what();
       last_action = "stream failed";
       last_error = message;
+      std::cerr << "ppwebgui: stream worker caught exception: " << message << std::endl;
+    } catch (...) {
+      rc = -1;
+      message = "Unhandled non-standard exception in stream worker";
+      last_action = "stream failed";
+      last_error = message;
+      std::cerr << "ppwebgui: stream worker caught non-standard exception" << std::endl;
     }
 
     std::unique_lock<std::mutex> stream_lock(stream_mutex);
     stream_worker_active = false;
+    std::cerr << "ppwebgui: publishing final stream state" << std::endl;
     update_stream_metadata_locked(false, rc, message, last_action, last_error);
   }
 
@@ -1291,6 +1304,9 @@ int main(int argc, char *argv[]) {
         } catch (const std::exception &e) {
           controller.set_last_error(e.what());
           respond_error(res, httplib::StatusCode::InternalServerError_500, e.what());
+        } catch (...) {
+          controller.set_last_error("Unhandled non-standard exception");
+          respond_error(res, httplib::StatusCode::InternalServerError_500, "Unhandled non-standard exception");
         }
       };
     };
