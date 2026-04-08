@@ -1044,16 +1044,21 @@ public:
   }
 
   StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
+    std::cerr << "ppwebgui: start_stream_text_sequence entered" << std::endl;
     if (request.sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
     }
 
+    std::cerr << "ppwebgui: start_stream_text_sequence before stream lock" << std::endl;
     std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    std::cerr << "ppwebgui: start_stream_text_sequence acquired stream lock" << std::endl;
     join_finished_stream_worker_locked(stream_lock);
+    std::cerr << "ppwebgui: start_stream_text_sequence checked prior worker" << std::endl;
     if (stream_worker_active) {
       return {false, 0, httplib::StatusCode::Conflict_409, "Another stream request is already in flight"};
     }
 
+    std::cerr << "ppwebgui: start_stream_text_sequence setting active state" << std::endl;
     stream_worker_active = true;
     stop_requested.store(false);
     std::cerr << "ppwebgui: launching background stream worker" << std::endl;
