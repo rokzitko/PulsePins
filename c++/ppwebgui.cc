@@ -309,6 +309,11 @@ std::string operation_json(const std::string &message, const StatusSnapshot &sta
   return out.str();
 }
 
+std::mutex &stream_state_mutex() {
+  static std::mutex mutex;
+  return mutex;
+}
+
 int wait_to_complete_or_cancel(streamer_control &sc,
                                std::atomic<bool> &stop_requested,
                                const Verbosity &v,
@@ -1033,7 +1038,7 @@ public:
   }
 
   StreamResult request_stream_stop() {
-    std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     join_finished_stream_worker_locked(stream_lock);
     if (!stream_worker_active) {
       return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
@@ -1050,7 +1055,7 @@ public:
     }
 
     std::cerr << "ppwebgui: start_stream_text_sequence before stream lock" << std::endl;
-    std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     std::cerr << "ppwebgui: start_stream_text_sequence acquired stream lock" << std::endl;
     join_finished_stream_worker_locked(stream_lock);
     std::cerr << "ppwebgui: start_stream_text_sequence checked prior worker" << std::endl;
@@ -1070,7 +1075,7 @@ public:
   }
 
   void wait_for_stream_worker() {
-    std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     join_finished_stream_worker_locked(stream_lock);
     if (!stream_worker.joinable()) {
       return;
@@ -1139,7 +1144,7 @@ private:
       std::cerr << "ppwebgui: stream worker caught non-standard exception" << std::endl;
     }
 
-    std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     stream_worker_active = false;
     std::cerr << "ppwebgui: publishing final stream state" << std::endl;
     update_stream_metadata_locked(false, rc, message, last_action, last_error);
