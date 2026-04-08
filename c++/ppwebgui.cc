@@ -58,6 +58,9 @@ struct StatusSnapshot {
   uint8_t aux_raw = 0;
   uint32_t trig_raw = 0;
   std::array<uint32_t, 4> qout_values {};
+  bool stream_active = false;
+  int last_stream_rc = RC_OK;
+  std::string stream_message = "idle";
   std::string combiner_mode = "SEL1";
   PortState output;
   std::array<PortState, 4> inputs {};
@@ -76,6 +79,12 @@ struct StreamResult {
   int rc = 0;
   int http_status = httplib::StatusCode::OK_200;
   std::string message;
+};
+
+struct StreamLaunchRequest {
+  std::string sequence_text;
+  std::optional<bool> force_trigger_override;
+  bool check_readback = false;
 };
 
 std::string bits8(const uint8_t value) {
@@ -249,6 +258,10 @@ std::string status_to_json(const StatusSnapshot &status) {
   out << "\"enable\":" << (trig_enable(status.trig_raw) ? "true" : "false") << ',';
   out << "\"force\":" << (trig_force(status.trig_raw) ? "true" : "false") << ',';
   out << "\"reset\":" << (trig_reset(status.trig_raw) ? "true" : "false") << "},";
+  out << "\"stream\":{";
+  out << "\"active\":" << (status.stream_active ? "true" : "false") << ',';
+  out << "\"last_rc\":" << status.last_stream_rc << ',';
+  out << "\"message\":\"" << json_escape(status.stream_message) << "\"},";
   out << "\"streamers\":[";
   for (size_t i = 0; i < status.qout_values.size(); ++i) {
     if (i) out << ',';
@@ -493,6 +506,7 @@ d 1 0x0
         <label class="checkbox"><input type="checkbox" name="check_readback"> Check readback</label>
         <button type="submit">Start streaming</button>
       </form>
+      <div id="stream-state" class="meta"></div>
       <pre id="stream-result" class="result-box"></pre>
     </section>
   </main>
@@ -646,6 +660,7 @@ const char *app_js = R"JS((() => {
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
   let pollMs = 100;
+  let streamActive = false;
 
   function setGlobal(message, isError = false) {
     globalStatus.textContent = message;
@@ -695,6 +710,10 @@ const char *app_js = R"JS((() => {
     document.getElementById('combiner-mode').textContent = status.combiner.mode;
     document.getElementById('last-action').textContent = status.last_action;
     document.getElementById('last-error').textContent = status.last_error || '(none)';
+    streamActive = status.stream.active;
+    document.getElementById('stream-state').textContent = `active=${status.stream.active} rc=${status.stream.last_rc} message=${status.stream.message}`;
+    streamForm.querySelector('button[type="submit"]').disabled = status.stream.active;
+    streamResult.textContent = status.stream.message;
     populateQout(status);
     populateCombiner(status);
     pollMs = status.poll_ms || 100;
@@ -773,6 +792,9 @@ const char *app_js = R"JS((() => {
       setGlobal(error.message, true);
     } finally {
       setBusy(streamForm, false);
+      if (streamActive) {
+        streamForm.querySelector('button[type="submit"]').disabled = true;
+      }
     }
   });
 
@@ -799,6 +821,7 @@ public:
 
   ~WebGuiController() {
     stop_sampler();
+    wait_for_stream_worker();
   }
 
   StatusSnapshot get_status_copy() {
@@ -845,44 +868,34 @@ public:
     publish_locked(capture_status_locked(), "applied combiner config", "");
   }
 
-  StreamResult stream_text_sequence(const std::string &sequence_text,
-                                    const std::optional<bool> force_trigger_override,
-                                    const bool check_readback) {
-    if (sequence_text.empty()) {
+  StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
+    if (request.sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
     }
 
-    std::unique_lock<std::mutex> stream_lock(stream_mutex, std::try_to_lock);
-    if (!stream_lock.owns_lock()) {
+    std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    join_finished_stream_worker_locked(stream_lock);
+    if (stream_worker_active) {
       return {false, 0, httplib::StatusCode::Conflict_409, "Another stream request is already in flight"};
     }
 
-    std::stringstream sequence_stream(sequence_text);
-    auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
-    const bool force_trigger_request = force_trigger_override.value_or(parsed_force_trigger);
+    stream_worker_active = true;
+    update_stream_metadata_locked(true, RC_OK, "stream in progress", "streaming sequence", "");
+    stream_worker = std::thread([this, request = std::move(request)]() mutable {
+      run_stream_worker(std::move(request));
+    });
+    return {true, RC_OK, httplib::StatusCode::OK_200, "Sequence accepted and started"};
+  }
 
-    InputParser request_input(std::vector<std::string>{});
-    if (check_readback) {
-      request_input.add("-check");
+  void wait_for_stream_worker() {
+    std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    join_finished_stream_worker_locked(stream_lock);
+    if (!stream_worker.joinable()) {
+      return;
     }
-
-    std::lock_guard<std::mutex> hw_lock(hw_mutex);
-    const int rc = send_and_trig(play_streamer.fifo,
-                                 play_streamer.sc,
-                                 readback_path,
-                                 counters,
-                                 sequence,
-                                 request_input,
-                                 force_trigger_request,
-                                 verbosity);
-    if (rc == RC_OK) {
-      publish_locked(capture_status_locked(), "streamed sequence", "");
-      return {true, rc, httplib::StatusCode::OK_200, "Sequence streamed successfully"};
-    }
-
-    const auto error = std::string("Streaming failed with rc=") + std::to_string(rc);
-    publish_locked(capture_status_locked(), "stream failed", error);
-    return {false, rc, httplib::StatusCode::InternalServerError_500, error};
+    auto worker = std::move(stream_worker);
+    stream_lock.unlock();
+    worker.join();
   }
 
   void set_last_error(const std::string &message) {
@@ -892,6 +905,69 @@ public:
   }
 
 private:
+  void run_stream_worker(StreamLaunchRequest request) {
+    int rc = RC_OK;
+    std::string message = "Sequence streamed successfully";
+    std::string last_action = "streamed sequence";
+    std::string last_error;
+
+    try {
+      std::stringstream sequence_stream(request.sequence_text);
+      auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
+      const bool force_trigger_request = request.force_trigger_override.value_or(parsed_force_trigger);
+
+      InputParser request_input(std::vector<std::string>{});
+      if (request.check_readback) {
+        request_input.add("-check");
+      }
+
+      std::lock_guard<std::mutex> hw_lock(hw_mutex);
+      rc = send_and_trig(play_streamer.fifo,
+                         play_streamer.sc,
+                         readback_path,
+                         counters,
+                         sequence,
+                         request_input,
+                         force_trigger_request,
+                         verbosity);
+      if (rc != RC_OK) {
+        message = std::string("Streaming failed with rc=") + std::to_string(rc);
+        last_action = "stream failed";
+        last_error = message;
+      }
+    } catch (const std::exception &e) {
+      rc = -1;
+      message = e.what();
+      last_action = "stream failed";
+      last_error = message;
+    }
+
+    std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    stream_worker_active = false;
+    update_stream_metadata_locked(false, rc, message, last_action, last_error);
+  }
+
+  void join_finished_stream_worker_locked(std::unique_lock<std::mutex> &stream_lock) {
+    if (stream_worker_active || !stream_worker.joinable()) {
+      return;
+    }
+    auto worker = std::move(stream_worker);
+    stream_lock.unlock();
+    worker.join();
+    stream_lock.lock();
+  }
+
+  void update_stream_metadata_locked(const bool active,
+                                     const int rc,
+                                     const std::string &stream_message,
+                                     const std::string &last_action,
+                                     const std::string &last_error) {
+    auto status = get_status_copy();
+    status.stream_active = active;
+    status.last_stream_rc = rc;
+    status.stream_message = stream_message;
+    publish_locked(std::move(status), last_action, last_error);
+  }
   FPGA &fpga;
   const InputParser &input;
   const Verbosity &verbosity;
@@ -901,6 +977,8 @@ private:
   std::mutex stream_mutex;
   std::atomic<bool> stop_flag {false};
   std::thread sampler_thread;
+  std::thread stream_worker;
+  bool stream_worker_active = false;
   multistreamer streamers;
   streamer play_streamer;
   readback readback_path;
@@ -965,6 +1043,9 @@ private:
     status.seqno = snapshot.seqno + 1;
     status.last_action = snapshot.last_action;
     status.last_error = snapshot.last_error;
+    status.stream_active = snapshot.stream_active;
+    status.last_stream_rc = snapshot.last_stream_rc;
+    status.stream_message = snapshot.stream_message;
     snapshot = std::move(status);
   }
 };
@@ -1053,9 +1134,11 @@ int main(int argc, char *argv[]) {
       const std::optional<bool> force_trigger_override = req.has_param("force_trigger")
         ? std::optional<bool>(parse_bool_param(req, "force_trigger"))
         : std::nullopt;
-      const auto result = controller.stream_text_sequence(require_bounded_text_param(req, "sequence_text", MAX_SEQUENCE_TEXT_BYTES),
-                                                          force_trigger_override,
-                                                          parse_bool_param(req, "check_readback"));
+      StreamLaunchRequest request;
+      request.sequence_text = require_bounded_text_param(req, "sequence_text", MAX_SEQUENCE_TEXT_BYTES);
+      request.force_trigger_override = force_trigger_override;
+      request.check_readback = parse_bool_param(req, "check_readback");
+      const auto result = controller.start_stream_text_sequence(std::move(request));
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
            << ",\"rc\":" << result.rc
