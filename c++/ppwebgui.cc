@@ -22,8 +22,10 @@
 #include <vector>
 
 #include <arpa/inet.h>
+#include <execinfo.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <signal.h>
 
 #include "basic_multi_dma.hh"
 #include "combiner.hh"
@@ -322,6 +324,20 @@ std::thread &stream_worker_thread() {
 bool &stream_worker_active_flag() {
   static bool active = false;
   return active;
+}
+
+void fatal_signal_handler(int sig) {
+  void *frames[64];
+  const int count = backtrace(frames, 64);
+  std::cerr << "ppwebgui: fatal signal " << sig << std::endl;
+  backtrace_symbols_fd(frames, count, STDERR_FILENO);
+  _Exit(128 + sig);
+}
+
+void install_fatal_signal_handlers() {
+  signal(SIGSEGV, fatal_signal_handler);
+  signal(SIGABRT, fatal_signal_handler);
+  signal(SIGBUS, fatal_signal_handler);
 }
 
 int wait_to_complete_or_cancel(streamer_control &sc,
@@ -1284,6 +1300,7 @@ CombinerRequest parse_combiner_request(const httplib::Request &req) {
 } // namespace
 
 int main(int argc, char *argv[]) {
+  install_fatal_signal_handlers();
   HostRuntime runtime(argc, argv, version);
   auto &input = runtime.input;
   auto &fpga = runtime.get_fpga();
