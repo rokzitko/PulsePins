@@ -1039,7 +1039,6 @@ public:
 
   StreamResult request_stream_stop() {
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
-    join_finished_stream_worker_locked(stream_lock);
     if (!stream_worker_active) {
       return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
     }
@@ -1057,8 +1056,7 @@ public:
     std::cerr << "ppwebgui: start_stream_text_sequence before stream lock" << std::endl;
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     std::cerr << "ppwebgui: start_stream_text_sequence acquired stream lock" << std::endl;
-    join_finished_stream_worker_locked(stream_lock);
-    std::cerr << "ppwebgui: start_stream_text_sequence checked prior worker" << std::endl;
+    std::cerr << "ppwebgui: start_stream_text_sequence skipping prior worker join" << std::endl;
     if (stream_worker_active) {
       return {false, 0, httplib::StatusCode::Conflict_409, "Another stream request is already in flight"};
     }
@@ -1076,7 +1074,6 @@ public:
 
   void wait_for_stream_worker() {
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
-    join_finished_stream_worker_locked(stream_lock);
     if (!stream_worker.joinable()) {
       return;
     }
