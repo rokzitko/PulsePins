@@ -9,19 +9,15 @@
 // miscompile/UB is understood better.
 
 #include <array>
-#include <atomic>
 #include <bitset>
-#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <ifaddrs.h>
 #include <iostream>
-#include <mutex>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -51,12 +47,6 @@ namespace {
 
 constexpr size_t MAX_FORM_BODY_BYTES = 64 * 1024;
 constexpr size_t MAX_SEQUENCE_TEXT_BYTES = 32 * 1024;
-constexpr int RC_CANCELLED = -2;
-
-std::mutex g_stream_state_mutex;
-std::thread g_stream_worker_thread;
-std::atomic<bool> g_stream_worker_active {false};
-std::atomic<bool> g_stream_stop_requested {false};
 
 struct BadRequest : public std::runtime_error {
   using std::runtime_error::runtime_error;
@@ -75,7 +65,6 @@ struct StatusSnapshot {
   uint8_t aux_raw = 0;
   uint32_t trig_raw = 0;
   std::array<uint32_t, 4> qout_values {};
-  bool stream_active = false;
   int last_stream_rc = RC_OK;
   std::string stream_message = "idle";
   std::string combiner_mode = "SEL1";
@@ -277,7 +266,6 @@ std::string status_to_json(const StatusSnapshot &status) {
   out << "\"force\":" << (trig_force(status.trig_raw) ? "true" : "false") << ',';
   out << "\"reset\":" << (trig_reset(status.trig_raw) ? "true" : "false") << "},";
   out << "\"stream\":{";
-  out << "\"active\":" << (status.stream_active ? "true" : "false") << ',';
   out << "\"last_rc\":" << status.last_stream_rc << ',';
   out << "\"message\":\"" << json_escape(status.stream_message) << "\"},";
   out << "\"streamers\":[";
@@ -347,142 +335,6 @@ void install_fatal_signal_handlers() {
 #else
 void install_fatal_signal_handlers() {}
 #endif
-
-int wait_to_complete_or_cancel(streamer_control &sc,
-                               std::atomic<bool> &stop_requested,
-                               const Verbosity &v,
-                               const uint64_t max_cnt = 10000) {
-  int rc = RC_OK;
-  if (v.veryverbose) {
-    std::cout << "Waiting for streamer to complete" << std::endl;
-  }
-  uint64_t cnt = 0;
-  while (!(sc.done() || sc.buffer_error()) && cnt < max_cnt) {
-    if (stop_requested.load()) {
-      sc.stop(true);
-      sc.reset();
-      return RC_CANCELLED;
-    }
-    sleep_1ms();
-    cnt++;
-  }
-  if (cnt == max_cnt && v.verbose) {
-    std::cout << "wait_to_complete(): timeout exceeded while waiting for completion." << std::endl;
-    rc = RC_TIMEOUT;
-  }
-  if (v.veryverbose) {
-    sc.status_report();
-  }
-  return rc;
-}
-
-int run_post_execution_checks_or_cancel(streamer_control &sc,
-                                        readback &rb,
-                                        counter &ctr,
-                                        const value_t final,
-                                        const bool rb_failure,
-                                        const InputParser &input,
-                                        const Verbosity &v,
-                                        int rc,
-                                        std::atomic<bool> &stop_requested) {
-  const int wait_rc = wait_to_complete_or_cancel(sc, stop_requested, v);
-  if (wait_rc == RC_CANCELLED) {
-    return RC_CANCELLED;
-  }
-  rc |= wait_rc;
-  sleep_1ms();
-  value_t final_qout = sc.get_qout();
-  const bool match = final_qout == final;
-  std::cout << "send_and_trig(): Final qout=" << hex8(final_qout) << " [" << dec13(final_qout) << "]";
-  if (match) {
-    std::cout << " OK" << std::endl;
-  } else {
-    if (!(envVarExists("PP_IGNORE_QOUT_FINAL") || input.exists("-pp_ignore_qout_final"))) {
-      std::cout << red << " Mismatch: expecting " << hex8(final) << rst << std::endl;
-      rc |= RC_ERROR_QOUT_FINAL;
-    }
-  }
-  sc.statistics();
-  if (sc.get_input_fifo1_ctr_in() != sc.get_input_fifo1_ctr_out()) {
-    std::cout << red << "Mismatch in the streamer input FIFO1 detected." << rst << std::endl;
-    rc |= RC_ERROR_FIFO_CTR;
-  }
-  if (sc.get_input_fifo2_ctr_in() != sc.get_input_fifo2_ctr_out()) {
-    std::cout << red << "Mismatch in the streamer input FIFO2 detected." << rst << std::endl;
-    rc |= RC_ERROR_FIFO_CTR;
-  }
-  if (sc.get_output_fifo_ctr_in() != sc.get_output_fifo_ctr_out()) {
-    std::cout << red << "Mismatch in the streamer output FIFO detected." << rst << std::endl;
-    rc |= RC_ERROR_FIFO_CTR;
-  }
-  if (sc.get_overflow()) {
-    std::cout << red << "Input FIFO overflow detected." << rst << std::endl;
-    rc |= RC_ERROR_OVERFLOW_FIFO;
-  }
-  if (rb.overflow()) {
-    std::cout << red << "Readback overflow detected." << rst << std::endl;
-    rc |= RC_ERROR_OVERFLOW_RB;
-  }
-  ctr.latch_all();
-  ctr.short_report();
-  if (sc.buffer_error()) {
-    std::cout << red << "Buffer error detected." << rst << std::endl;
-    rc |= RC_ERROR_BUFFER_ERROR;
-  }
-  const auto crc32sc = sc.get_crc32();
-  const auto crc32rb = rb.get_crc32();
-  std::cout << "send_and_trig(): CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32sc;
-  const bool crc_ok = crc32sc == crc32rb;
-  if (crc_ok) {
-    std::cout << green << " OK" << rst << std::endl;
-  } else {
-    std::cout << red << " Mismatch in readback CRC. Got=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32rb << rst << std::endl;
-    rc |= RC_ERROR_CRC_MISMATCH;
-  }
-  if (crc_ok && rb_failure) {
-    if (input.exists("-ignore_rb_error_if_crc_ok") || envVarExists("PP_IGNORE_RB_ERROR_IF_CRC_OK")) {
-      rc &= ~RC_ERROR_CHECK;
-    }
-  }
-  return rc;
-}
-
-template<typename Transport>
-int webgui_send_and_trig(Transport &tr,
-                         streamer_control &sc,
-                         readback &rb,
-                         counter &ctr,
-                         Sequence &elements,
-                         const InputParser &input,
-                         const bool force_trigger,
-                         const Verbosity &v,
-                         std::atomic<bool> &stop_requested) {
-  int rc = RC_OK;
-  const value_t final = append_final_output(elements, input);
-  dump_sequence(elements, v);
-  transmit_sequence(tr, sc, elements, v);
-  if (stop_requested.load()) {
-    sc.stop(true);
-    sc.reset();
-    return RC_CANCELLED;
-  }
-  activate_trigger(sc, input, force_trigger, v);
-  if (stop_requested.load()) {
-    sc.stop(true);
-    sc.reset();
-    return RC_CANCELLED;
-  }
-
-  const double timeout = readback_timeout(input);
-  bool rb_failure = run_readback_check_phase(rb, elements, input, v, identity, timeout, rc);
-  run_readback_dump_phase(rb, input, v, timeout);
-
-  if (input.exists("-dont_wait")) {
-    return rc;
-  }
-
-  return run_post_execution_checks_or_cancel(sc, rb, ctr, final, rb_failure, input, v, rc, stop_requested);
-}
 
 std::string socket_address_to_string(const sockaddr *addr) {
   std::array<char, INET6_ADDRSTRLEN> buf {};
@@ -681,10 +533,7 @@ d 1 0x0
         </label>
         <label class="checkbox"><input type="checkbox" name="force_trigger"> Force trigger</label>
         <label class="checkbox"><input type="checkbox" name="check_readback"> Check readback</label>
-        <div class="sequence-actions">
-          <button type="submit">Start streaming</button>
-          <button type="button" id="stop-stream">Stop</button>
-        </div>
+        <button type="submit">Start streaming</button>
       </form>
       <div id="stream-state" class="meta"></div>
       <pre id="stream-result" class="result-box"></pre>
@@ -740,15 +589,6 @@ body {
 .form-grid {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   align-items: end;
-}
-
-.sequence-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.sequence-actions button {
-  flex: 1 1 auto;
 }
 
 .ports-grid {
@@ -845,12 +685,11 @@ button:disabled {
 const char *app_js = R"JS((() => {
   const globalStatus = document.getElementById('global-status');
   const streamResult = document.getElementById('stream-result');
-  const stopStreamButton = document.getElementById('stop-stream');
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
   let pollMs = 100;
-  let streamActive = false;
+  let hardwareBusy = false;
 
   function setGlobal(message, isError = false) {
     globalStatus.textContent = message;
@@ -861,6 +700,13 @@ const char *app_js = R"JS((() => {
     for (const element of form.elements) {
       element.disabled = busy;
     }
+  }
+
+  function setHardwareBusy(busy) {
+    hardwareBusy = busy;
+    setBusy(qoutForm, busy);
+    setBusy(combinerForm, busy);
+    setBusy(streamForm, busy);
   }
 
   function formOwnsFocus(form) {
@@ -900,10 +746,7 @@ const char *app_js = R"JS((() => {
     document.getElementById('combiner-mode').textContent = status.combiner.mode;
     document.getElementById('last-action').textContent = status.last_action;
     document.getElementById('last-error').textContent = status.last_error || '(none)';
-    streamActive = status.stream.active;
-    document.getElementById('stream-state').textContent = `active=${status.stream.active} rc=${status.stream.last_rc} message=${status.stream.message}`;
-    streamForm.querySelector('button[type="submit"]').disabled = status.stream.active;
-    stopStreamButton.disabled = !status.stream.active;
+    document.getElementById('stream-state').textContent = `rc=${status.stream.last_rc} message=${status.stream.message}`;
     streamResult.textContent = status.stream.message;
     populateQout(status);
     populateCombiner(status);
@@ -920,6 +763,10 @@ const char *app_js = R"JS((() => {
   }
 
   async function pollStatus() {
+    if (hardwareBusy) {
+      window.setTimeout(pollStatus, pollMs);
+      return;
+    }
     try {
       const status = await fetchJson('/api/status');
       renderStatus(status);
@@ -934,7 +781,7 @@ const char *app_js = R"JS((() => {
   qoutForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const body = new URLSearchParams(new FormData(qoutForm));
-    setBusy(qoutForm, true);
+    setHardwareBusy(true);
     try {
       const result = await fetchJson('/api/qout', { method: 'POST', body });
       if (result.status) renderStatus(result.status);
@@ -942,14 +789,14 @@ const char *app_js = R"JS((() => {
     } catch (error) {
       setGlobal(error.message, true);
     } finally {
-      setBusy(qoutForm, false);
+      setHardwareBusy(false);
     }
   });
 
   combinerForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const body = new URLSearchParams(new FormData(combinerForm));
-    setBusy(combinerForm, true);
+    setHardwareBusy(true);
     try {
       const result = await fetchJson('/api/combiner', { method: 'POST', body });
       if (result.status) renderStatus(result.status);
@@ -957,7 +804,7 @@ const char *app_js = R"JS((() => {
     } catch (error) {
       setGlobal(error.message, true);
     } finally {
-      setBusy(combinerForm, false);
+      setHardwareBusy(false);
     }
   });
 
@@ -971,7 +818,7 @@ const char *app_js = R"JS((() => {
     if (streamForm.querySelector('[name="check_readback"]').checked) {
       body.set('check_readback', '1');
     }
-    setBusy(streamForm, true);
+    setHardwareBusy(true);
     streamResult.textContent = 'Streaming…';
     try {
       const result = await fetchJson('/api/stream', { method: 'POST', body });
@@ -982,23 +829,7 @@ const char *app_js = R"JS((() => {
       streamResult.textContent = error.message;
       setGlobal(error.message, true);
     } finally {
-      setBusy(streamForm, false);
-      if (streamActive) {
-        streamForm.querySelector('button[type="submit"]').disabled = true;
-      }
-    }
-  });
-
-  stopStreamButton.addEventListener('click', async () => {
-    stopStreamButton.disabled = true;
-    try {
-      const body = new URLSearchParams();
-      const result = await fetchJson('/api/stop', { method: 'POST', body });
-      if (result.status) renderStatus(result.status);
-      streamResult.textContent = result.message || 'Stop requested';
-      setGlobal(result.message || 'stop requested');
-    } catch (error) {
-      setGlobal(error.message, true);
+      setHardwareBusy(false);
     }
   });
 
@@ -1020,112 +851,42 @@ public:
     pio_aux(fpga.dev_lw, PIO_AUX_BASE),
     comb(fpga.dev_h2f, COMBINER_QOUT_BASE)
   {
-    sample_status_once();
+    snapshot.poll_ms = poll_ms;
   }
 
-  ~WebGuiController() {
-    stop_sampler();
-    wait_for_stream_worker();
-  }
+  ~WebGuiController() = default;
 
   StatusSnapshot get_status_copy() {
-    std::lock_guard<std::mutex> lock(status_mutex);
-    return snapshot;
-  }
-
-  void start_sampler() {
-    stop_flag.store(false);
-    sampler_thread = std::thread([this]() {
-      while (!stop_flag.load()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(poll_ms));
-        if (stop_flag.load()) {
-          break;
-        }
-        sample_status_once();
-      }
-    });
-  }
-
-  void stop_sampler() {
-    stop_flag.store(true);
-    if (sampler_thread.joinable()) {
-      sampler_thread.join();
-    }
+    auto status = read_status();
+    status.seqno = snapshot.seqno;
+    status.last_action = snapshot.last_action;
+    status.last_error = snapshot.last_error;
+    status.last_stream_rc = snapshot.last_stream_rc;
+    status.stream_message = snapshot.stream_message;
+    return status;
   }
 
   void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
-    std::lock_guard<std::mutex> lock(hw_mutex);
     streamers.s1.sc.qout_set(q1);
     streamers.s2.sc.qout_set(q2);
     streamers.s3.sc.qout_set(q3);
     streamers.s4.sc.qout_set(q4);
-    publish_locked(capture_status_locked(), "applied qout overrides", "");
+    publish_status(read_status(), "applied qout overrides", "");
   }
 
   void apply_combiner_config(const CombinerRequest &request) {
-    std::lock_guard<std::mutex> lock(hw_mutex);
     comb.mode(request.mode);
     apply_port_locked(0, request.output);
     for (size_t i = 0; i < request.inputs.size(); ++i) {
       apply_port_locked(static_cast<int>(i + 1), request.inputs[i]);
     }
-    publish_locked(capture_status_locked(), "applied combiner config", "");
+    publish_status(read_status(), "applied combiner config", "");
   }
 
-  StreamResult request_stream_stop() {
-    std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
-    if (!g_stream_worker_active.load()) {
-      return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
-    }
-    g_stream_stop_requested.store(true);
-    update_stream_metadata_locked(true, RC_OK, "stop requested", "stop requested", "");
-    return {true, RC_OK, httplib::StatusCode::OK_200, "Stop requested"};
-  }
-
-  StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
+  StreamResult stream_text_sequence(StreamLaunchRequest request) {
     if (request.sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
     }
-
-    std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
-    join_finished_stream_worker_locked(stream_lock);
-    if (g_stream_worker_active.load()) {
-      return {false, 0, httplib::StatusCode::Conflict_409, "Another stream request is already in flight"};
-    }
-
-    g_stream_worker_active.store(true);
-    g_stream_stop_requested.store(false);
-    update_stream_metadata_locked(true, RC_OK, "stream in progress", "streaming sequence", "");
-    g_stream_worker_thread = std::thread([this, request = std::move(request)]() mutable {
-      run_stream_worker(std::move(request));
-    });
-    return {true, RC_OK, httplib::StatusCode::OK_200, "Sequence accepted and started"};
-  }
-
-  void wait_for_stream_worker() {
-    std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
-    join_finished_stream_worker_locked(stream_lock);
-    if (!g_stream_worker_thread.joinable()) {
-      return;
-    }
-    auto worker = std::move(g_stream_worker_thread);
-    stream_lock.unlock();
-    worker.join();
-  }
-
-  void set_last_error(const std::string &message) {
-    std::lock_guard<std::mutex> lock(status_mutex);
-    snapshot.last_error = message;
-    snapshot.seqno++;
-  }
-
-private:
-  void run_stream_worker(StreamLaunchRequest request) {
-    int rc = RC_OK;
-    std::string message = "Sequence streamed successfully";
-    std::string last_action = "streamed sequence";
-    std::string last_error;
-
     try {
       std::stringstream sequence_stream(request.sequence_text);
       auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
@@ -1136,73 +897,58 @@ private:
         request_input.add("-check");
       }
 
-      std::lock_guard<std::mutex> hw_lock(hw_mutex);
-      rc = webgui_send_and_trig(play_streamer.fifo,
-                                play_streamer.sc,
-                                readback_path,
-                                counters,
-                                sequence,
-                                request_input,
-                                force_trigger_request,
-                                verbosity,
-                                g_stream_stop_requested);
-      if (rc == RC_CANCELLED) {
-        message = "Stream cancelled";
-        last_action = "stream cancelled";
-      } else if (rc != RC_OK) {
-        message = std::string("Streaming failed with rc=") + std::to_string(rc);
-        last_action = "stream failed";
-        last_error = message;
+      const int rc = send_and_trig(play_streamer.fifo,
+                                   play_streamer.sc,
+                                   readback_path,
+                                   counters,
+                                   sequence,
+                                   request_input,
+                                   force_trigger_request,
+                                   verbosity);
+      if (rc == RC_OK) {
+        publish_status(read_status(), "streamed sequence", "", rc, "Sequence streamed successfully");
+        return {true, rc, httplib::StatusCode::OK_200, "Sequence streamed successfully"};
       }
+
+      const auto error = std::string("Streaming failed with rc=") + std::to_string(rc);
+      publish_status(read_status(), "stream failed", error, rc, error);
+      return {false, rc, httplib::StatusCode::InternalServerError_500, error};
     } catch (const std::exception &e) {
-      rc = -1;
-      message = e.what();
-      last_action = "stream failed";
-      last_error = message;
+      publish_status(read_status(), "stream failed", e.what(), -1, e.what());
+      throw;
     } catch (...) {
-      rc = -1;
-      message = "Unhandled non-standard exception in stream worker";
-      last_action = "stream failed";
-      last_error = message;
+      publish_status(read_status(), "stream failed", "Unhandled non-standard exception in stream worker", -1,
+                     "Unhandled non-standard exception in stream worker");
+      throw;
     }
-
-    std::unique_lock<std::mutex> stream_lock(g_stream_state_mutex);
-    g_stream_worker_active.store(false);
-    update_stream_metadata_locked(false, rc, message, last_action, last_error);
   }
 
-  void join_finished_stream_worker_locked(std::unique_lock<std::mutex> &stream_lock) {
-    if (g_stream_worker_active.load() || !g_stream_worker_thread.joinable()) {
-      return;
-    }
-    auto worker = std::move(g_stream_worker_thread);
-    stream_lock.unlock();
-    worker.join();
-    stream_lock.lock();
+  void set_last_error(const std::string &message) {
+    snapshot.last_error = message;
+    snapshot.seqno++;
   }
 
-  void update_stream_metadata_locked(const bool active,
-                                     const int rc,
-                                     const std::string &stream_message,
-                                     const std::string &last_action,
-                                     const std::string &last_error) {
-    std::lock_guard<std::mutex> lock(status_mutex);
+private:
+  void publish_status(StatusSnapshot status,
+                      const std::string &last_action,
+                      const std::string &last_error,
+                      const int last_stream_rc = RC_OK,
+                      const std::string &stream_message = "idle") {
     snapshot.seqno += 1;
-    snapshot.stream_active = active;
-    snapshot.last_stream_rc = rc;
+    status.seqno = snapshot.seqno;
+    status.last_action = last_action;
+    status.last_error = last_error;
+    snapshot.last_stream_rc = last_stream_rc;
     snapshot.stream_message = stream_message;
     snapshot.last_action = last_action;
     snapshot.last_error = last_error;
+    snapshot = std::move(status);
   }
+
   FPGA &fpga;
   const InputParser &input;
   const Verbosity &verbosity;
   const unsigned poll_ms;
-  std::mutex hw_mutex;
-  std::mutex status_mutex;
-  std::mutex stream_mutex;
-  std::atomic<bool> stop_flag {false};
-  std::thread sampler_thread;
   multistreamer streamers;
   streamer play_streamer;
   readback readback_path;
@@ -1220,7 +966,7 @@ private:
     return state;
   }
 
-  StatusSnapshot capture_status_locked() {
+  StatusSnapshot read_status() {
     StatusSnapshot status;
     status.poll_ms = poll_ms;
     status.aux_raw = static_cast<uint8_t>(pio_aux.read() & 0xffU);
@@ -1241,14 +987,6 @@ private:
     return status;
   }
 
-  void publish_locked(StatusSnapshot status, const std::string &last_action, const std::string &last_error) {
-    std::lock_guard<std::mutex> lock(status_mutex);
-    status.seqno = snapshot.seqno + 1;
-    status.last_action = last_action;
-    status.last_error = last_error;
-    snapshot = std::move(status);
-  }
-
   void apply_port_locked(const int port, const PortState &state) {
     comb.invert(port, state.invert);
     comb.mask(port, state.mask);
@@ -1260,18 +998,6 @@ private:
     }
   }
 
-  void sample_status_once() {
-    std::lock_guard<std::mutex> hw_lock(hw_mutex);
-    auto status = capture_status_locked();
-    std::lock_guard<std::mutex> status_lock(status_mutex);
-    status.seqno = snapshot.seqno + 1;
-    status.last_action = snapshot.last_action;
-    status.last_error = snapshot.last_error;
-    status.stream_active = snapshot.stream_active;
-    status.last_stream_rc = snapshot.last_stream_rc;
-    status.stream_message = snapshot.stream_message;
-    snapshot = std::move(status);
-  }
 };
 
 CombinerRequest parse_combiner_request(const httplib::Request &req) {
@@ -1410,24 +1136,7 @@ int main(int argc, char *argv[]) {
           std::cout << std::endl;
         }
       }
-      const auto result = controller.start_stream_text_sequence(std::move(request));
-      std::ostringstream body;
-      body << "{\"ok\":" << (result.ok ? "true" : "false")
-           << ",\"rc\":" << result.rc
-           << ",\"message\":\"" << json_escape(result.message) << "\"";
-      if (result.ok) {
-        body << ",\"status\":" << status_to_json(controller.get_status_copy());
-      }
-      body << '}';
-      respond_json(res, body.str(), result.http_status);
-    }));
-
-    server.Post("/api/stop", wrap([&](const httplib::Request &req, httplib::Response &res) {
-      require_form_post(req);
-      if (verbosity.veryverbose) {
-        std::cout << "ppwebgui action: stop stream" << std::endl;
-      }
-      const auto result = controller.request_stream_stop();
+      const auto result = controller.stream_text_sequence(std::move(request));
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
            << ",\"rc\":" << result.rc
@@ -1448,8 +1157,6 @@ int main(int argc, char *argv[]) {
     } else if (!server.bind_to_port(bind_ip, bind_port)) {
       throw std::runtime_error("Failed to bind ppwebgui to requested address/port");
     }
-
-    controller.start_sampler();
 
     print_startup_urls(bind_ip, actual_port);
 
