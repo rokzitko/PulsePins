@@ -1155,11 +1155,13 @@ private:
                                      const std::string &stream_message,
                                      const std::string &last_action,
                                      const std::string &last_error) {
-    auto status = get_status_copy();
-    status.stream_active = active;
-    status.last_stream_rc = rc;
-    status.stream_message = stream_message;
-    publish_locked(std::move(status), last_action, last_error);
+    std::lock_guard<std::mutex> lock(status_mutex);
+    snapshot.seqno += 1;
+    snapshot.stream_active = active;
+    snapshot.last_stream_rc = rc;
+    snapshot.stream_message = stream_message;
+    snapshot.last_action = last_action;
+    snapshot.last_error = last_error;
   }
   FPGA &fpga;
   const InputParser &input;
