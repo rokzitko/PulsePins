@@ -32,8 +32,19 @@ CROSSCFLAGS =
 CROSSCPPFLAGS =
 endif
 
-CFLAGS   = -O2 -Wall -Wextra -fPIC
-CPPFLAGS = -O3 -Wall -DTIDBITNR=${NR} \
+BUILD ?= RELEASE
+
+ifeq ($(BUILD),DEBUG)
+OPTIMFLAGS = -g -O3 -Wall -Wextra -fno-omit-frame-pointer -fno-inline \
+ -DPPWEBGUI_ENABLE_BACKTRACE
+LINKFLAGS = -g -rdynamic
+else ifeq ($(BUILD),RELEASE)
+OPTIMFLAGS = -O3 -Wall
+LINKFLAGS =
+endif
+
+CFLAGS   = $(OPTIMFLAGS) -fPIC
+CPPFLAGS = $(OPTIMFLAGS) -DTIDBITNR=${NR} \
   -D$(ALT_DEVICE_FAMILY) \
   -DGIT_HASH=$(GIT_HASH) \
   -I$(TIDBIT_DIR) -I$(LUA_DIR) \
@@ -42,7 +53,8 @@ CPPFLAGS = -O3 -Wall -DTIDBITNR=${NR} \
   -I./third_party/asio/include -I./third_party \
   -I.. \
   -Wformat=0 -std=c++17 -Wno-psabi -Wno-cpp $(HW_DEBUG)
-LDFLAGS = -Wall -pthread
+LDFLAGS = $(LINKFLAGS) -Wall -pthread
+
 # `ppwebgui` currently hits an optimization-sensitive crash on the board with this
 # older ARM toolchain unless function inlining is disabled. Keep the workaround
 # local to this target so other host tools still use the normal optimization mode.
