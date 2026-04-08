@@ -69,6 +69,7 @@ Version 1 keeps the API small:
 * `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `q1` through `q4`
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
 * `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`
+* `POST /api/stop` expects an `application/x-www-form-urlencoded` body and requests cancellation of the active background stream
 
 The current implementation rejects oversized form submissions and limits `sequence_text` to 32 KiB per request.
 
@@ -80,6 +81,16 @@ Successful mutating `POST` replies include:
 * `status`
 
 The embedded browser UI uses that returned `status` object immediately after a successful action, so the page does not have to wait for the next polling tick before reflecting the applied state.
+
+The `status` payload now also includes a `stream` object with:
+
+* `active`
+* `last_rc`
+* `message`
+
+`POST /api/stream` starts a background stream job and returns immediately after launch. The browser tracks progress and completion through the polled `stream` status.
+
+`POST /api/stop` is implemented as a best-effort cancellation request for that background stream job.
 
 ## Default network exposure
 
