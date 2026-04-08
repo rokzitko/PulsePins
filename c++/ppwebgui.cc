@@ -38,6 +38,9 @@
 
 namespace {
 
+constexpr size_t MAX_FORM_BODY_BYTES = 64 * 1024;
+constexpr size_t MAX_SEQUENCE_TEXT_BYTES = 32 * 1024;
+
 struct BadRequest : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
@@ -162,13 +165,16 @@ void respond_error(httplib::Response &res, const int status, std::string_view er
   respond_json(res, body.str(), status);
 }
 
-void require_form_post(const httplib::Request &req) {
+void require_form_post(const httplib::Request &req, const size_t max_body_bytes = MAX_FORM_BODY_BYTES) {
   const auto content_type = req.get_header_value("Content-Type");
   if (content_type.empty()) {
     throw BadRequest("Missing Content-Type header");
   }
   if (content_type.find("application/x-www-form-urlencoded") == std::string::npos) {
     throw BadRequest("Expected application/x-www-form-urlencoded request body");
+  }
+  if (req.body.size() > max_body_bytes) {
+    throw BadRequest("Request body is too large");
   }
 }
 
@@ -181,6 +187,14 @@ std::string require_param(const httplib::Request &req, const char *name) {
 
 std::string optional_param(const httplib::Request &req, const char *name, const std::string &def = "") {
   return req.has_param(name) ? req.get_param_value(name) : def;
+}
+
+std::string require_bounded_text_param(const httplib::Request &req, const char *name, const size_t max_bytes) {
+  const auto value = require_param(req, name);
+  if (value.size() > max_bytes) {
+    throw BadRequest(std::string(name) + " exceeds the maximum supported size");
+  }
+  return value;
 }
 
 uint32_t parse_u32_param(const httplib::Request &req, const char *name, const std::string &def = "") {
@@ -1035,11 +1049,11 @@ int main(int argc, char *argv[]) {
     }));
 
     server.Post("/api/stream", wrap([&](const httplib::Request &req, httplib::Response &res) {
-      require_form_post(req);
+      require_form_post(req, MAX_FORM_BODY_BYTES);
       const std::optional<bool> force_trigger_override = req.has_param("force_trigger")
         ? std::optional<bool>(parse_bool_param(req, "force_trigger"))
         : std::nullopt;
-      const auto result = controller.stream_text_sequence(require_param(req, "sequence_text"),
+      const auto result = controller.stream_text_sequence(require_bounded_text_param(req, "sequence_text", MAX_SEQUENCE_TEXT_BYTES),
                                                           force_trigger_override,
                                                           parse_bool_param(req, "check_readback"));
       std::ostringstream body;

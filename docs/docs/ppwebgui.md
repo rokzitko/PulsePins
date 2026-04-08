@@ -70,6 +70,8 @@ Version 1 keeps the API small:
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
 * `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`
 
+The current implementation rejects oversized form submissions and limits `sequence_text` to 32 KiB per request.
+
 Successful mutating `POST` replies include:
 
 * `ok`
