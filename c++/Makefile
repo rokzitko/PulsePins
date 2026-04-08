@@ -43,6 +43,10 @@ CPPFLAGS = -O3 -Wall -DTIDBITNR=${NR} \
   -I.. \
   -Wformat=0 -std=c++17 -Wno-psabi -Wno-cpp $(HW_DEBUG)
 LDFLAGS = -Wall -pthread
+# `ppwebgui` currently hits an optimization-sensitive crash on the board with this
+# older ARM toolchain unless function inlining is disabled. Keep the workaround
+# local to this target so other host tools still use the normal optimization mode.
+PPWEBGUI_CPPFLAGS = $(CPPFLAGS) -fno-inline
 
 CXX = $(CROSS_COMPILE)g++$(GCC_SUFFIX)
 CC = $(CROSS_COMPILE)gcc$(GCC_SUFFIX)
@@ -132,7 +136,7 @@ ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 ppwebgui.o : ppwebgui.cc ../hps_0.h $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCPPFLAGS)  $(PPWEBGUI_CPPFLAGS) -c $< -o $@
 
 .PHONY: clean copy lint-whitespace
 clean:

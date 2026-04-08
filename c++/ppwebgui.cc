@@ -2,6 +2,11 @@
 // Copyright (c) 2026 Rok Zitko
 //
 // Embedded host-side web GUI server for PulsePins.
+//
+// Note: this file is currently built with `-fno-inline` via the Makefile due to
+// an optimization-sensitive crash observed on the board with the current ARM
+// toolchain. Keep the workaround local to `ppwebgui` until the underlying
+// miscompile/UB is understood better.
 
 #include <array>
 #include <atomic>
