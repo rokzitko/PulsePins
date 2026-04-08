@@ -254,6 +254,17 @@ std::string status_to_json(const StatusSnapshot &status) {
   return out.str();
 }
 
+std::string operation_json(const std::string &message, const StatusSnapshot &status, const int rc = RC_OK) {
+  std::ostringstream out;
+  out << '{';
+  out << "\"ok\":true,";
+  out << "\"rc\":" << rc << ',';
+  out << "\"message\":\"" << json_escape(message) << "\",";
+  out << "\"status\":" << status_to_json(status);
+  out << '}';
+  return out.str();
+}
+
 const char *index_html = R"HTML(<!doctype html>
 <html lang="en">
 <head>
@@ -623,6 +634,7 @@ const char *app_js = R"JS((() => {
     try {
       const body = new URLSearchParams(new FormData(qoutForm));
       const result = await fetchJson('/api/qout', { method: 'POST', body });
+      if (result.status) renderStatus(result.status);
       setGlobal(result.message || 'qout updated');
     } catch (error) {
       setGlobal(error.message, true);
@@ -637,6 +649,7 @@ const char *app_js = R"JS((() => {
     try {
       const body = new URLSearchParams(new FormData(combinerForm));
       const result = await fetchJson('/api/combiner', { method: 'POST', body });
+      if (result.status) renderStatus(result.status);
       setGlobal(result.message || 'combiner updated');
     } catch (error) {
       setGlobal(error.message, true);
@@ -659,6 +672,7 @@ const char *app_js = R"JS((() => {
         body.set('check_readback', '1');
       }
       const result = await fetchJson('/api/stream', { method: 'POST', body });
+      if (result.status) renderStatus(result.status);
       streamResult.textContent = result.message || 'Sequence completed';
       setGlobal(result.message || 'stream completed');
     } catch (error) {
@@ -931,12 +945,12 @@ int main(int argc, char *argv[]) {
                                       parse_u32_param(req, "q2"),
                                       parse_u32_param(req, "q3"),
                                       parse_u32_param(req, "q4"));
-      respond_json(res, "{\"ok\":true,\"message\":\"Applied qout overrides\"}");
+      respond_json(res, operation_json("Applied qout overrides", controller.get_status_copy()));
     }));
 
     server.Post("/api/combiner", wrap([&](const httplib::Request &req, httplib::Response &res) {
       controller.apply_combiner_config(parse_combiner_request(req));
-      respond_json(res, "{\"ok\":true,\"message\":\"Applied combiner config\"}");
+      respond_json(res, operation_json("Applied combiner config", controller.get_status_copy()));
     }));
 
     server.Post("/api/stream", wrap([&](const httplib::Request &req, httplib::Response &res) {
@@ -949,7 +963,11 @@ int main(int argc, char *argv[]) {
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
            << ",\"rc\":" << result.rc
-           << ",\"message\":\"" << json_escape(result.message) << "\"}";
+           << ",\"message\":\"" << json_escape(result.message) << "\"";
+      if (result.ok) {
+        body << ",\"status\":" << status_to_json(controller.get_status_copy());
+      }
+      body << '}';
       respond_json(res, body.str(), result.http_status);
     }));
 
