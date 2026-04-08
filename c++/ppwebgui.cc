@@ -44,6 +44,12 @@
 
 namespace {
 
+#if defined(__GNUC__) || defined(__clang__)
+#define PPWEBGUI_NOINLINE __attribute__((noinline))
+#else
+#define PPWEBGUI_NOINLINE
+#endif
+
 constexpr size_t MAX_FORM_BODY_BYTES = 64 * 1024;
 constexpr size_t MAX_SEQUENCE_TEXT_BYTES = 32 * 1024;
 constexpr int RC_CANCELLED = -2;
@@ -1076,7 +1082,7 @@ public:
     publish_locked(capture_status_locked(), "applied combiner config", "");
   }
 
-  StreamResult request_stream_stop() {
+  PPWEBGUI_NOINLINE StreamResult request_stream_stop() {
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     if (!stream_worker_active_flag()) {
       return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
@@ -1086,7 +1092,7 @@ public:
     return {true, RC_OK, httplib::StatusCode::OK_200, "Stop requested"};
   }
 
-  StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
+  PPWEBGUI_NOINLINE StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
     if (request.sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
     }
@@ -1106,7 +1112,7 @@ public:
     return {true, RC_OK, httplib::StatusCode::OK_200, "Sequence accepted and started"};
   }
 
-  void wait_for_stream_worker() {
+  PPWEBGUI_NOINLINE void wait_for_stream_worker() {
     std::unique_lock<std::mutex> stream_lock(stream_state_mutex());
     join_finished_stream_worker_locked(stream_lock);
     if (!stream_worker_thread().joinable()) {
@@ -1124,7 +1130,7 @@ public:
   }
 
 private:
-  void run_stream_worker(StreamLaunchRequest request) {
+  PPWEBGUI_NOINLINE void run_stream_worker(StreamLaunchRequest request) {
     int rc = RC_OK;
     std::string message = "Sequence streamed successfully";
     std::string last_action = "streamed sequence";
@@ -1175,7 +1181,7 @@ private:
     update_stream_metadata_locked(false, rc, message, last_action, last_error);
   }
 
-  void join_finished_stream_worker_locked(std::unique_lock<std::mutex> &stream_lock) {
+  PPWEBGUI_NOINLINE void join_finished_stream_worker_locked(std::unique_lock<std::mutex> &stream_lock) {
     if (stream_worker_active_flag() || !stream_worker_thread().joinable()) {
       return;
     }
@@ -1185,11 +1191,11 @@ private:
     stream_lock.lock();
   }
 
-  void update_stream_metadata_locked(const bool active,
-                                     const int rc,
-                                     const std::string &stream_message,
-                                     const std::string &last_action,
-                                     const std::string &last_error) {
+  PPWEBGUI_NOINLINE void update_stream_metadata_locked(const bool active,
+                                                       const int rc,
+                                                       const std::string &stream_message,
+                                                       const std::string &last_action,
+                                                       const std::string &last_error) {
     std::lock_guard<std::mutex> lock(status_mutex);
     snapshot.seqno += 1;
     snapshot.stream_active = active;
