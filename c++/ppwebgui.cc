@@ -40,6 +40,7 @@ namespace {
 
 constexpr size_t MAX_FORM_BODY_BYTES = 64 * 1024;
 constexpr size_t MAX_SEQUENCE_TEXT_BYTES = 32 * 1024;
+constexpr int RC_CANCELLED = -2;
 
 struct BadRequest : public std::runtime_error {
   using std::runtime_error::runtime_error;
@@ -308,6 +309,142 @@ std::string operation_json(const std::string &message, const StatusSnapshot &sta
   return out.str();
 }
 
+int wait_to_complete_or_cancel(streamer_control &sc,
+                               std::atomic<bool> &stop_requested,
+                               const Verbosity &v,
+                               const uint64_t max_cnt = 10000) {
+  int rc = RC_OK;
+  if (v.veryverbose) {
+    std::cout << "Waiting for streamer to complete" << std::endl;
+  }
+  uint64_t cnt = 0;
+  while (!(sc.done() || sc.buffer_error()) && cnt < max_cnt) {
+    if (stop_requested.load()) {
+      sc.stop(true);
+      sc.reset();
+      return RC_CANCELLED;
+    }
+    sleep_1ms();
+    cnt++;
+  }
+  if (cnt == max_cnt && v.verbose) {
+    std::cout << "wait_to_complete(): timeout exceeded while waiting for completion." << std::endl;
+    rc = RC_TIMEOUT;
+  }
+  if (v.veryverbose) {
+    sc.status_report();
+  }
+  return rc;
+}
+
+int run_post_execution_checks_or_cancel(streamer_control &sc,
+                                        readback &rb,
+                                        counter &ctr,
+                                        const value_t final,
+                                        const bool rb_failure,
+                                        const InputParser &input,
+                                        const Verbosity &v,
+                                        int rc,
+                                        std::atomic<bool> &stop_requested) {
+  const int wait_rc = wait_to_complete_or_cancel(sc, stop_requested, v);
+  if (wait_rc == RC_CANCELLED) {
+    return RC_CANCELLED;
+  }
+  rc |= wait_rc;
+  sleep_1ms();
+  value_t final_qout = sc.get_qout();
+  const bool match = final_qout == final;
+  std::cout << "send_and_trig(): Final qout=" << hex8(final_qout) << " [" << dec13(final_qout) << "]";
+  if (match) {
+    std::cout << " OK" << std::endl;
+  } else {
+    if (!(envVarExists("PP_IGNORE_QOUT_FINAL") || input.exists("-pp_ignore_qout_final"))) {
+      std::cout << red << " Mismatch: expecting " << hex8(final) << rst << std::endl;
+      rc |= RC_ERROR_QOUT_FINAL;
+    }
+  }
+  sc.statistics();
+  if (sc.get_input_fifo1_ctr_in() != sc.get_input_fifo1_ctr_out()) {
+    std::cout << red << "Mismatch in the streamer input FIFO1 detected." << rst << std::endl;
+    rc |= RC_ERROR_FIFO_CTR;
+  }
+  if (sc.get_input_fifo2_ctr_in() != sc.get_input_fifo2_ctr_out()) {
+    std::cout << red << "Mismatch in the streamer input FIFO2 detected." << rst << std::endl;
+    rc |= RC_ERROR_FIFO_CTR;
+  }
+  if (sc.get_output_fifo_ctr_in() != sc.get_output_fifo_ctr_out()) {
+    std::cout << red << "Mismatch in the streamer output FIFO detected." << rst << std::endl;
+    rc |= RC_ERROR_FIFO_CTR;
+  }
+  if (sc.get_overflow()) {
+    std::cout << red << "Input FIFO overflow detected." << rst << std::endl;
+    rc |= RC_ERROR_OVERFLOW_FIFO;
+  }
+  if (rb.overflow()) {
+    std::cout << red << "Readback overflow detected." << rst << std::endl;
+    rc |= RC_ERROR_OVERFLOW_RB;
+  }
+  ctr.latch_all();
+  ctr.short_report();
+  if (sc.buffer_error()) {
+    std::cout << red << "Buffer error detected." << rst << std::endl;
+    rc |= RC_ERROR_BUFFER_ERROR;
+  }
+  const auto crc32sc = sc.get_crc32();
+  const auto crc32rb = rb.get_crc32();
+  std::cout << "send_and_trig(): CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32sc;
+  const bool crc_ok = crc32sc == crc32rb;
+  if (crc_ok) {
+    std::cout << green << " OK" << rst << std::endl;
+  } else {
+    std::cout << red << " Mismatch in readback CRC. Got=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32rb << rst << std::endl;
+    rc |= RC_ERROR_CRC_MISMATCH;
+  }
+  if (crc_ok && rb_failure) {
+    if (input.exists("-ignore_rb_error_if_crc_ok") || envVarExists("PP_IGNORE_RB_ERROR_IF_CRC_OK")) {
+      rc &= ~RC_ERROR_CHECK;
+    }
+  }
+  return rc;
+}
+
+template<typename Transport>
+int webgui_send_and_trig(Transport &tr,
+                         streamer_control &sc,
+                         readback &rb,
+                         counter &ctr,
+                         Sequence &elements,
+                         const InputParser &input,
+                         const bool force_trigger,
+                         const Verbosity &v,
+                         std::atomic<bool> &stop_requested) {
+  int rc = RC_OK;
+  const value_t final = append_final_output(elements, input);
+  dump_sequence(elements, v);
+  transmit_sequence(tr, sc, elements, v);
+  if (stop_requested.load()) {
+    sc.stop(true);
+    sc.reset();
+    return RC_CANCELLED;
+  }
+  activate_trigger(sc, input, force_trigger, v);
+  if (stop_requested.load()) {
+    sc.stop(true);
+    sc.reset();
+    return RC_CANCELLED;
+  }
+
+  const double timeout = readback_timeout(input);
+  bool rb_failure = run_readback_check_phase(rb, elements, input, v, identity, timeout, rc);
+  run_readback_dump_phase(rb, input, v, timeout);
+
+  if (input.exists("-dont_wait")) {
+    return rc;
+  }
+
+  return run_post_execution_checks_or_cancel(sc, rb, ctr, final, rb_failure, input, v, rc, stop_requested);
+}
+
 std::string socket_address_to_string(const sockaddr *addr) {
   std::array<char, INET6_ADDRSTRLEN> buf {};
   if (addr->sa_family == AF_INET) {
@@ -504,7 +641,10 @@ d 1 0x0
         </label>
         <label class="checkbox"><input type="checkbox" name="force_trigger"> Force trigger</label>
         <label class="checkbox"><input type="checkbox" name="check_readback"> Check readback</label>
-        <button type="submit">Start streaming</button>
+        <div class="sequence-actions">
+          <button type="submit">Start streaming</button>
+          <button type="button" id="stop-stream">Stop</button>
+        </div>
       </form>
       <div id="stream-state" class="meta"></div>
       <pre id="stream-result" class="result-box"></pre>
@@ -560,6 +700,15 @@ body {
 .form-grid {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   align-items: end;
+}
+
+.sequence-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.sequence-actions button {
+  flex: 1 1 auto;
 }
 
 .ports-grid {
@@ -656,6 +805,7 @@ button:disabled {
 const char *app_js = R"JS((() => {
   const globalStatus = document.getElementById('global-status');
   const streamResult = document.getElementById('stream-result');
+  const stopStreamButton = document.getElementById('stop-stream');
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
@@ -713,6 +863,7 @@ const char *app_js = R"JS((() => {
     streamActive = status.stream.active;
     document.getElementById('stream-state').textContent = `active=${status.stream.active} rc=${status.stream.last_rc} message=${status.stream.message}`;
     streamForm.querySelector('button[type="submit"]').disabled = status.stream.active;
+    stopStreamButton.disabled = !status.stream.active;
     streamResult.textContent = status.stream.message;
     populateQout(status);
     populateCombiner(status);
@@ -798,6 +949,19 @@ const char *app_js = R"JS((() => {
     }
   });
 
+  stopStreamButton.addEventListener('click', async () => {
+    stopStreamButton.disabled = true;
+    try {
+      const body = new URLSearchParams();
+      const result = await fetchJson('/api/stop', { method: 'POST', body });
+      if (result.status) renderStatus(result.status);
+      streamResult.textContent = result.message || 'Stop requested';
+      setGlobal(result.message || 'stop requested');
+    } catch (error) {
+      setGlobal(error.message, true);
+    }
+  });
+
   pollStatus();
 })();
 )JS";
@@ -868,6 +1032,17 @@ public:
     publish_locked(capture_status_locked(), "applied combiner config", "");
   }
 
+  StreamResult request_stream_stop() {
+    std::unique_lock<std::mutex> stream_lock(stream_mutex);
+    join_finished_stream_worker_locked(stream_lock);
+    if (!stream_worker_active) {
+      return {false, 0, httplib::StatusCode::Conflict_409, "No stream is currently active"};
+    }
+    stop_requested.store(true);
+    update_stream_metadata_locked(true, RC_OK, "stop requested", "stop requested", "");
+    return {true, RC_OK, httplib::StatusCode::OK_200, "Stop requested"};
+  }
+
   StreamResult start_stream_text_sequence(StreamLaunchRequest request) {
     if (request.sequence_text.empty()) {
       throw BadRequest("Sequence text must not be empty");
@@ -880,6 +1055,7 @@ public:
     }
 
     stream_worker_active = true;
+    stop_requested.store(false);
     update_stream_metadata_locked(true, RC_OK, "stream in progress", "streaming sequence", "");
     stream_worker = std::thread([this, request = std::move(request)]() mutable {
       run_stream_worker(std::move(request));
@@ -922,15 +1098,19 @@ private:
       }
 
       std::lock_guard<std::mutex> hw_lock(hw_mutex);
-      rc = send_and_trig(play_streamer.fifo,
-                         play_streamer.sc,
-                         readback_path,
-                         counters,
-                         sequence,
-                         request_input,
-                         force_trigger_request,
-                         verbosity);
-      if (rc != RC_OK) {
+      rc = webgui_send_and_trig(play_streamer.fifo,
+                                play_streamer.sc,
+                                readback_path,
+                                counters,
+                                sequence,
+                                request_input,
+                                force_trigger_request,
+                                verbosity,
+                                stop_requested);
+      if (rc == RC_CANCELLED) {
+        message = "Stream cancelled";
+        last_action = "stream cancelled";
+      } else if (rc != RC_OK) {
         message = std::string("Streaming failed with rc=") + std::to_string(rc);
         last_action = "stream failed";
         last_error = message;
@@ -976,6 +1156,7 @@ private:
   std::mutex status_mutex;
   std::mutex stream_mutex;
   std::atomic<bool> stop_flag {false};
+  std::atomic<bool> stop_requested {false};
   std::thread sampler_thread;
   std::thread stream_worker;
   bool stream_worker_active = false;
@@ -1139,6 +1320,20 @@ int main(int argc, char *argv[]) {
       request.force_trigger_override = force_trigger_override;
       request.check_readback = parse_bool_param(req, "check_readback");
       const auto result = controller.start_stream_text_sequence(std::move(request));
+      std::ostringstream body;
+      body << "{\"ok\":" << (result.ok ? "true" : "false")
+           << ",\"rc\":" << result.rc
+           << ",\"message\":\"" << json_escape(result.message) << "\"";
+      if (result.ok) {
+        body << ",\"status\":" << status_to_json(controller.get_status_copy());
+      }
+      body << '}';
+      respond_json(res, body.str(), result.http_status);
+    }));
+
+    server.Post("/api/stop", wrap([&](const httplib::Request &req, httplib::Response &res) {
+      require_form_post(req);
+      const auto result = controller.request_stream_stop();
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
            << ",\"rc\":" << result.rc
