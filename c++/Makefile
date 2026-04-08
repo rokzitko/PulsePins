@@ -32,8 +32,19 @@ CROSSCFLAGS =
 CROSSCPPFLAGS =
 endif
 
-CFLAGS   = -O2 -Wall -Wextra -fPIC
-CPPFLAGS = -O3 -Wall -DTIDBITNR=${NR} \
+BUILD ?= RELEASE
+
+ifeq ($(BUILD),DEBUG)
+OPTIMFLAGS = -g -O3 -Wall -Wextra -fno-omit-frame-pointer -fno-inline \
+ -DPPWEBGUI_ENABLE_BACKTRACE
+LINKFLAGS = -g -rdynamic
+else ifeq ($(BUILD),RELEASE)
+OPTIMFLAGS = -O3 -Wall
+LINKFLAGS =
+endif
+
+CFLAGS   = $(OPTIMFLAGS) -fPIC
+CPPFLAGS = $(OPTIMFLAGS) -DTIDBITNR=${NR} \
   -D$(ALT_DEVICE_FAMILY) \
   -DGIT_HASH=$(GIT_HASH) \
   -I$(TIDBIT_DIR) -I$(LUA_DIR) \
@@ -42,7 +53,7 @@ CPPFLAGS = -O3 -Wall -DTIDBITNR=${NR} \
   -I./third_party/asio/include -I./third_party \
   -I.. \
   -Wformat=0 -std=c++17 -Wno-psabi -Wno-cpp $(HW_DEBUG)
-LDFLAGS = -Wall -pthread
+LDFLAGS = $(LINKFLAGS) -Wall -pthread
 
 CXX = $(CROSS_COMPILE)g++$(GCC_SUFFIX)
 CC = $(CROSS_COMPILE)gcc$(GCC_SUFFIX)
