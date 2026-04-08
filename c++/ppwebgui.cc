@@ -1327,15 +1327,20 @@ int main(int argc, char *argv[]) {
     }));
 
     server.Post("/api/stream", wrap([&](const httplib::Request &req, httplib::Response &res) {
+      std::cerr << "ppwebgui: entered /api/stream handler" << std::endl;
       require_form_post(req, MAX_FORM_BODY_BYTES);
+      std::cerr << "ppwebgui: /api/stream content-type validated, body bytes=" << req.body.size() << std::endl;
       const std::optional<bool> force_trigger_override = req.has_param("force_trigger")
         ? std::optional<bool>(parse_bool_param(req, "force_trigger"))
         : std::nullopt;
+      std::cerr << "ppwebgui: /api/stream parsed boolean flags" << std::endl;
       StreamLaunchRequest request;
       request.sequence_text = require_bounded_text_param(req, "sequence_text", MAX_SEQUENCE_TEXT_BYTES);
       request.force_trigger_override = force_trigger_override;
       request.check_readback = parse_bool_param(req, "check_readback");
+      std::cerr << "ppwebgui: /api/stream parsed request, sequence bytes=" << request.sequence_text.size() << std::endl;
       const auto result = controller.start_stream_text_sequence(std::move(request));
+      std::cerr << "ppwebgui: /api/stream start_stream_text_sequence returned" << std::endl;
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
            << ",\"rc\":" << result.rc
