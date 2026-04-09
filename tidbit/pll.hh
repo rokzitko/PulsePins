@@ -26,19 +26,19 @@ class pll {
    std::ostream &F = std::cout;
    int X = 32;
  public:
-   pll(const mm &dev, const std::uintptr_t base) :
-     mode(dev.get_loc(base,   0b000000*4)), // rw: 0 = waitrequest, 1 = polling mode
-     status(dev.get_loc(base, 0b000001*4)), // read-only, 0 = busy, 1 = ready
-     start(dev.get_loc(base,  0b000010*4)), // write-only, write 0 or 1 to start reconfiguration
-     N(dev.get_loc(base,      0b000011*4)), // bypass-enable & odd/even division bits are read-only
-     M(dev.get_loc(base,      0b000100*4)),
-     C(dev.get_loc(base,      0b000101*4)),
-     C0(dev.get_loc(base,     0b001010*4)), // counters
-     C1(dev.get_loc(base,     0b001011*4)),
+   pll(const mm &dev, const std::uintptr_t base, std::string name = "pll"s) :
+     mode(dev.get_loc(base,   0b000000*4), name + "/mode"), // rw: 0 = waitrequest, 1 = polling mode
+     status(dev.get_loc(base, 0b000001*4), name + "/status"), // read-only, 0 = busy, 1 = ready
+     start(dev.get_loc(base,  0b000010*4), name + "/start"), // write-only, write 0 or 1 to start reconfiguration
+     N(dev.get_loc(base,      0b000011*4), name + "/N"), // bypass-enable & odd/even division bits are read-only
+     M(dev.get_loc(base,      0b000100*4), name + "/M"),
+     C(dev.get_loc(base,      0b000101*4), name + "/C"),
+     C0(dev.get_loc(base,     0b001010*4), name + "/C0"), // counters
+     C1(dev.get_loc(base,     0b001011*4), name + "/C1"),
      // dynamic_phase_shift
-     K(dev.get_loc(base,      0b000111*4)), // write-only
-     BW(dev.get_loc(base,     0b001000*4)),
-     CP(dev.get_loc(base,     0b001001*4))
+     K(dev.get_loc(base,      0b000111*4), name + "/K"), // write-only
+     BW(dev.get_loc(base,     0b001000*4), name + "/BW"),
+     CP(dev.get_loc(base,     0b001001*4), name + "/CP")
    {}
    // Waitrequest: further writes on hold while PLL busy.
    void setmode(const pll_mode m = pll_mode::polling) {

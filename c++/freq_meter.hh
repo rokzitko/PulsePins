@@ -38,9 +38,9 @@ private:
 
 public:
   freq_meter(const mm &dev, const std::uintptr_t base, const bool _verbose = true) :
-    lctl(dev.get_loc(base, 0)),
-    lgate_len(dev.get_loc(base, 4)),
-    ln_ch(dev.get_loc(base, 8)),
+    lctl(dev.get_loc(base, 0), "fm/ctl"),
+    lgate_len(dev.get_loc(base, 4), "fm/gate_len"),
+    ln_ch(dev.get_loc(base, 8), "fm/n_ch"),
     verbose(_verbose)
   {
     n_ch = ln_ch.read();

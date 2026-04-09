@@ -70,9 +70,9 @@ private:
 
 public:
   MGR(mm &dev_fpgamgr, const Verbosity &_v) :
-    stat(dev_fpgamgr.get_loc(ALT_FPGAMGR_BASE, ALT_FPGAMGR_STAT_OFST)),
-    gpin(dev_fpgamgr.get_loc(ALT_FPGAMGR_BASE, ALT_FPGAMGR_GPI_OFST)),
-    gpout(dev_fpgamgr.get_loc(ALT_FPGAMGR_BASE, ALT_FPGAMGR_GPO_OFST)),
+    stat(dev_fpgamgr.get_loc(ALT_FPGAMGR_BASE, ALT_FPGAMGR_STAT_OFST), "stat"),
+    gpin(dev_fpgamgr.get_loc(ALT_FPGAMGR_BASE, ALT_FPGAMGR_GPI_OFST), "gpin"),
+    gpout(dev_fpgamgr.get_loc(ALT_FPGAMGR_BASE, ALT_FPGAMGR_GPO_OFST), "gpout"),
     v(_v)
     {}
 
@@ -123,8 +123,8 @@ private:
   pio_in p;
 
 public:
-  Elapsed(mm &dev, const std::uintptr_t base) :
-    p(dev, base) {}
+  Elapsed(mm &dev, const std::uintptr_t base, std::string name = "elapsed"s) :
+    p(dev, base, name) {}
 
   uint32_t seconds() {
     return p.read();
@@ -157,13 +157,13 @@ public:
     dev_fpgamgr(ALT_FPGAMGR_BASE, ALT_FPGAMGR_RANGE, "fpgamgr"),
     led(dev_hps),
     mgr(dev_fpgamgr, _v),
-    pio_cfg(dev_lw, PIO_CFG_BASE),
-    elapsed(dev_lw, PIO_ELAPSED_BASE),
+    pio_cfg(dev_lw, PIO_CFG_BASE, "pio_cfg"),
+    elapsed(dev_lw, PIO_ELAPSED_BASE, "elapsed"),
     v(_v),
-    trig_int(dev_lw, PIO_TRIG_INT_BASE),
-    trig_ext(dev_lw, PIO_TRIG_MONITOR_BASE),
-    pll_core(dev_lw),
-    pll_int(dev_lw)
+    trig_int(dev_lw, PIO_TRIG_INT_BASE, "trig_int"),
+    trig_ext(dev_lw, PIO_TRIG_MONITOR_BASE, "trig_ext"),
+    pll_core(dev_lw, "pll_core"),
+    pll_int(dev_lw, "pll_int")
     {
       // The host software assumes one coherent owner of the memory maps and top-level
       // control bits, so creating multiple `FPGA` instances is treated as a logic error.

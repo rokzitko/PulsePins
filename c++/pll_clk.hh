@@ -24,8 +24,8 @@ class pll_core_clk {
 public:
   pll core_clk;
 
-  pll_core_clk(mm &dev_lw) :
-    core_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
+  pll_core_clk(mm &dev_lw, std::string name = "pll_core"s) :
+    core_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE, name) {}
 
   // Program the core clock PLL using the resolved preset/raw string plus optional fine-tuning.
   void set_core_clk(const PllOptions &opts, const Verbosity &v) {
@@ -46,8 +46,8 @@ class pll_int_clk {
 public:
   pll int_clk;
 
-  pll_int_clk(mm &dev_lw) :
-    int_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE) {}
+  pll_int_clk(mm &dev_lw, std::string name = "pll_int"s) :
+    int_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE, name) {}
 
   // Program the internal candidate streamer clock PLL.
   void set_int_clk(const PllOptions &opts, const Verbosity &v) {

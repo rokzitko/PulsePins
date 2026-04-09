@@ -78,8 +78,8 @@ private:
   }
 
 public:
-  streamer_fifo(const mm &dev, const std::uintptr_t base, const std::uintptr_t in_csr_base) :
-    fifo(dev, base, in_csr_base) {}
+  streamer_fifo(const mm &dev, const std::uintptr_t base, const std::uintptr_t in_csr_base, std::string name = "streamer_fifo") :
+    fifo(dev, base, in_csr_base, name) {}
 
   // Send one host-side element object.
   void out(const el &e, const bool dump = false) const noexcept {

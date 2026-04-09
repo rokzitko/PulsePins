@@ -37,10 +37,11 @@ public:
                   FPGA &_fpga,
                   const std::uintptr_t fifo_base,
                   const std::uintptr_t fifo_csr_base,
-                  const std::uintptr_t st_if_base) :
+                  const std::uintptr_t st_if_base,
+                  std::string name = "streamer") :
     fpga(_fpga),
-    fifo(fpga.dev_h2f, fifo_base, fifo_csr_base),
-    sc(fpga.dev_h2f, st_if_base) {
+    fifo(fpga.dev_h2f, fifo_base, fifo_csr_base, name),
+    sc(fpga.dev_h2f, st_if_base, name) {
       if (opts.stop_on_buffer_error) {
         sc.stop_on_buffer_error(true);
         if (fpga.v.veryverbose)
@@ -55,8 +56,9 @@ public:
                   FPGA &_fpga,
                   const std::uintptr_t fifo_base = FIFO_1_IN_BASE,
                   const std::uintptr_t fifo_csr_base = FIFO_1_IN_CSR_BASE,
-                  const std::uintptr_t st_if_base = ST_INTERFACE_1_BASE) :
-    basic_streamer(resolve_streamer_options(input), _fpga, fifo_base, fifo_csr_base, st_if_base) {}
+                  const std::uintptr_t st_if_base = ST_INTERFACE_1_BASE,
+                  std::string name = "streamer"s) :
+    basic_streamer(resolve_streamer_options(input), _fpga, fifo_base, fifo_csr_base, st_if_base, name) {}
 
   // Initial value must be programmed before the streamer is reset if the caller expects the
   // post-reset idle output state to match that configured value.

@@ -29,9 +29,9 @@ class sysid
  public:
    sysid(mm &dev,
          const std::uintptr_t base,
-         std::string name = "") :
-     lid(dev.get_loc(base), name + " id"),
-     lts(dev.get_loc(base, 4), name + " ts")
+         std::string name = "sysid"s) :
+     lid(dev.get_loc(base), name + "/id"),
+     lts(dev.get_loc(base, 4), name + "/ts")
    {
      id = lid.read();
      ts = lts.read();
@@ -47,7 +47,7 @@ class sysid
          const std::uintptr_t base,
          const uint32_t ref,
          const bool verbose,
-         std::string name = "",
+         std::string name = "sysid"s,
          std::ostream &f = std::cout) :
      sysid(dev, base, name) {
        if (verbose) {

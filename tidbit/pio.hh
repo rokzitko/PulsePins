@@ -15,7 +15,8 @@ class pio
  protected:
    loc data;
  public:
-   pio(mm &dev, std::uintptr_t base) : data(dev.get_loc(base)) {}
+   pio(mm &dev, std::uintptr_t base, std::string name = "pio"s) :
+     data(dev.get_loc(base), name + "/data") {}
 };
 
 class pio_out: public pio {
@@ -35,10 +36,10 @@ class pio_out_bits: public pio {
  protected:
    loc bset, bclear;
  public:
-   pio_out_bits(mm &dev, std::uintptr_t base) :
+   pio_out_bits(mm &dev, std::uintptr_t base, std::string name = "pio"s) :
      pio(dev, base),
-     bset(dev.get_loc(base, 0x04*4)),
-     bclear(dev.get_loc(base, 0x04*5)) {}
+     bset(dev.get_loc(base, 0x04*4), name + "/bset"),
+     bclear(dev.get_loc(base, 0x04*5), name + "/bclear") {}
    void write(const uint32_t q) {
      data.write(q);
    }
@@ -76,10 +77,10 @@ class pio_in: public pio {
   loc interruptmask;
   loc edge;
  public:
-   pio_in(mm &dev, std::uintptr_t base) :
+   pio_in(mm &dev, std::uintptr_t base, std::string name = "pio"s) :
      pio(dev, base),
-     interruptmask(dev.get_loc(base, interruptmask_offset)),
-     edge(dev.get_loc(base, edgecapture_offset))
+     interruptmask(dev.get_loc(base, interruptmask_offset), name + "/int"),
+     edge(dev.get_loc(base, edgecapture_offset), name + "/edge")
    {}
    uint32_t read() {
      return data.read();

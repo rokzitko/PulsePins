@@ -17,7 +17,8 @@
 
 class trigger_ext : public pio_in {
 public:
-  trigger_ext(mm &dev, uintptr_t base) : pio_in(dev, base) {}
+  trigger_ext(mm &dev, uintptr_t base, std::string name = "trigger_ext") :
+    pio_in(dev, base, name) {}
 
   // Print a decoded view of the current trigger input word and control flags.
   void status() {

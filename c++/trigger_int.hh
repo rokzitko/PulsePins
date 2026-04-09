@@ -24,10 +24,14 @@ constexpr uint32_t set_masked(uint32_t x, uint32_t mask, uint32_t value) noexcep
 
 class trigger_int : public pio_out {
 public:
-  trigger_int(mm &dev, uintptr_t base = PIO_TRIG_INT_BASE, bool clear_at_startup = true) : pio_out(dev, base) {
-    if (clear_at_startup)
-      write(0);
-  }
+  trigger_int(mm &dev,
+              uintptr_t base = PIO_TRIG_INT_BASE,
+              bool clear_at_startup = true,
+              std::string name = "trigger_int"s) :
+     pio_out(dev, base, name) {
+       if (clear_at_startup)
+         write(0);
+     }
 
   // Update only the trigger-pattern bits while preserving the enable/force/reset flags.
   void trig(const trigger_t p) {
