@@ -76,8 +76,6 @@ class loc
          << " base=0x" << std::hex << base << std::endl;
 #endif
      }
-   loc(const loc  &_l, [[maybe_unused]] std::string _name = "") :
-     loc(_l.base, _name) {}
    inline void write(const uint32_t val, const uint32_t offset = 0) const noexcept {
      if (debug)
        try {

@@ -38,9 +38,9 @@ private:
 
 public:
   freq_meter(const mm &dev, const std::uintptr_t base, const bool _verbose = true) :
-    lctl(dev.get_loc(base, 0), "fm/ctl"),
-    lgate_len(dev.get_loc(base, 4), "fm/gate_len"),
-    ln_ch(dev.get_loc(base, 8), "fm/n_ch"),
+    lctl(dev.get_addr(base, 0), "fm/ctl"),
+    lgate_len(dev.get_addr(base, 4), "fm/gate_len"),
+    ln_ch(dev.get_addr(base, 8), "fm/n_ch"),
     verbose(_verbose)
   {
     n_ch = ln_ch.read();
@@ -50,7 +50,7 @@ public:
     set_gate_len(default_gate_len);
     lresult.reserve(n_ch);
     for (int i = 0; i < n_ch; i++)
-      lresult.push_back(loc(dev.get_loc(base, 0x10 + 4*i), "fm/result_" + std::to_string(i)));
+      lresult.emplace_back(loc(dev.get_addr(base, 0x10 + 4*i), "fm/result_" + std::to_string(i)));
   }
 
   // Reprogram the measurement window and restart accumulation.

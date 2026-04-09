@@ -65,28 +65,28 @@ public:
   streamer_control(const mm &dev,
                     const std::uintptr_t base,
                     std::string name = "streamer_control"s) :
-    sc(dev.get_loc(base, IF_CTRL*4), name + "/ctrl"),                           // control (w), status (r)
-    qout(dev.get_loc(base, QOUT*4), name + "/qout"),                            // (r)
-    qout_streamer(dev.get_loc(base, QOUT_STREAMER*4), name + "/qout_streamer"), // (r)
-    ext_trig_in(dev.get_loc(base, EXT_TRIG_IN*4), name + "/ext_trig_in"),       // (r)
-    ext_trig_ctrl(dev.get_loc(base, EXT_TRIG_CTRL*4), name + "/ext_trig_ctrl"), // (r)
-    qout_override(dev.get_loc(base, QOUT_OVERRIDE*4), name + "/qout_override"), // (w)
-    initial_value(dev.get_loc(base, INIT_VAL*4), name + "/init_val"),           // (w)
-    lgating(dev.get_loc(base, GATING_W*4), name + "/gating"),                   // (r&w)
-    overflow(dev.get_loc(base, FIFO_OVERFLOW*4), name + "/overflow"),           // (r)
-    crc32(dev.get_loc(base, CRC32*4), name + "/crc32"),                         // (r)
-    input_fifo1_ctr_in_l  (dev.get_loc(base, INPUT_FIFO1_CTR_IN_L*4),  name + "/in_fifo1_ctr_in_l"),
-    input_fifo1_ctr_in_h  (dev.get_loc(base, INPUT_FIFO1_CTR_IN_H*4),  name + "/in_fifo1_ctr_in_h"),
-    input_fifo1_ctr_out_l (dev.get_loc(base, INPUT_FIFO1_CTR_OUT_L*4), name + "/in_fifo1_ctr_out_l"),
-    input_fifo1_ctr_out_h (dev.get_loc(base, INPUT_FIFO1_CTR_OUT_H*4), name + "/in_fifo1_ctr_out_h"),
-    input_fifo2_ctr_in_l  (dev.get_loc(base, INPUT_FIFO2_CTR_IN_L*4),  name + "/in_fifo2_ctr_in_l"),
-    input_fifo2_ctr_in_h  (dev.get_loc(base, INPUT_FIFO2_CTR_IN_H*4),  name + "/in_fifo2_ctr_in_h"),
-    input_fifo2_ctr_out_l (dev.get_loc(base, INPUT_FIFO2_CTR_OUT_L*4), name + "/in_fifo2_ctr_out_l"),
-    input_fifo2_ctr_out_h (dev.get_loc(base, INPUT_FIFO2_CTR_OUT_H*4), name + "/in_fifo2_ctr_out_h"),
-    output_fifo_ctr_in_l  (dev.get_loc(base, OUTPUT_FIFO_CTR_IN_L*4),  name + "/out_fifo_ctr_in_l"),
-    output_fifo_ctr_in_h  (dev.get_loc(base, OUTPUT_FIFO_CTR_IN_H*4),  name + "/out_fifo_ctr_in_h"),
-    output_fifo_ctr_out_l (dev.get_loc(base, OUTPUT_FIFO_CTR_OUT_L*4), name + "/out_fifo_ctr_out_l"),
-    output_fifo_ctr_out_h (dev.get_loc(base, OUTPUT_FIFO_CTR_OUT_H*4), name + "/out_fifo_ctr_out_h")
+    sc(dev.get_addr(base, IF_CTRL*4), name + "/ctrl"),                           // control (w), status (r)
+    qout(dev.get_addr(base, QOUT*4), name + "/qout"),                            // (r)
+    qout_streamer(dev.get_addr(base, QOUT_STREAMER*4), name + "/qout_streamer"), // (r)
+    ext_trig_in(dev.get_addr(base, EXT_TRIG_IN*4), name + "/ext_trig_in"),       // (r)
+    ext_trig_ctrl(dev.get_addr(base, EXT_TRIG_CTRL*4), name + "/ext_trig_ctrl"), // (r)
+    qout_override(dev.get_addr(base, QOUT_OVERRIDE*4), name + "/qout_override"), // (w)
+    initial_value(dev.get_addr(base, INIT_VAL*4), name + "/init_val"),           // (w)
+    lgating(dev.get_addr(base, GATING_W*4), name + "/gating"),                   // (r&w)
+    overflow(dev.get_addr(base, FIFO_OVERFLOW*4), name + "/overflow"),           // (r)
+    crc32(dev.get_addr(base, CRC32*4), name + "/crc32"),                         // (r)
+    input_fifo1_ctr_in_l  (dev.get_addr(base, INPUT_FIFO1_CTR_IN_L*4),  name + "/in_fifo1_ctr_in_l"),
+    input_fifo1_ctr_in_h  (dev.get_addr(base, INPUT_FIFO1_CTR_IN_H*4),  name + "/in_fifo1_ctr_in_h"),
+    input_fifo1_ctr_out_l (dev.get_addr(base, INPUT_FIFO1_CTR_OUT_L*4), name + "/in_fifo1_ctr_out_l"),
+    input_fifo1_ctr_out_h (dev.get_addr(base, INPUT_FIFO1_CTR_OUT_H*4), name + "/in_fifo1_ctr_out_h"),
+    input_fifo2_ctr_in_l  (dev.get_addr(base, INPUT_FIFO2_CTR_IN_L*4),  name + "/in_fifo2_ctr_in_l"),
+    input_fifo2_ctr_in_h  (dev.get_addr(base, INPUT_FIFO2_CTR_IN_H*4),  name + "/in_fifo2_ctr_in_h"),
+    input_fifo2_ctr_out_l (dev.get_addr(base, INPUT_FIFO2_CTR_OUT_L*4), name + "/in_fifo2_ctr_out_l"),
+    input_fifo2_ctr_out_h (dev.get_addr(base, INPUT_FIFO2_CTR_OUT_H*4), name + "/in_fifo2_ctr_out_h"),
+    output_fifo_ctr_in_l  (dev.get_addr(base, OUTPUT_FIFO_CTR_IN_L*4),  name + "/out_fifo_ctr_in_l"),
+    output_fifo_ctr_in_h  (dev.get_addr(base, OUTPUT_FIFO_CTR_IN_H*4),  name + "/out_fifo_ctr_in_h"),
+    output_fifo_ctr_out_l (dev.get_addr(base, OUTPUT_FIFO_CTR_OUT_L*4), name + "/out_fifo_ctr_out_l"),
+    output_fifo_ctr_out_h (dev.get_addr(base, OUTPUT_FIFO_CTR_OUT_H*4), name + "/out_fifo_ctr_out_h")
     {};
 
   // Read the combined status/control register as exposed by `st_interface.sv`.

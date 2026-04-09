@@ -119,22 +119,22 @@ private:
 
 public:
   combiner(const mm &dev, const std::uintptr_t base, std::string name = "combiner"s) :
-    lcfg(dev.get_loc(base,    C_CFG*4),    name + "/cfg"),
-    inverto(dev.get_loc(base, C_INVo*4),   name + "/invert_out"),
-    invert1(dev.get_loc(base, C_INV1*4),   name + "/invert_in1"),
-    invert2(dev.get_loc(base, C_INV2*4),   name + "/invert_in2"),
-    invert3(dev.get_loc(base, C_INV3*4),   name + "/invert_in3"),
-    invert4(dev.get_loc(base, C_INV4*4),   name + "/invert_in4"),
-    masko(dev.get_loc(base,   C_MASKo*4),  name + "/mask_out"),
-    mask1(dev.get_loc(base,   C_MASK1*4),  name + "/mask_in1"),
-    mask2(dev.get_loc(base,   C_MASK2*4),  name + "/mask_in2"),
-    mask3(dev.get_loc(base,   C_MASK3*4),  name + "/mask_in3"),
-    mask4(dev.get_loc(base,   C_MASK4*4),  name + "/mask_in4"),
-    valueo(dev.get_loc(base,  C_VALUEo*4), name + "/value_out"),
-    value1(dev.get_loc(base,  C_VALUE1*4), name + "/value_in1"),
-    value2(dev.get_loc(base,  C_VALUE2*4), name + "/value_in2"),
-    value3(dev.get_loc(base,  C_VALUE3*4), name + "/value_in3"),
-    value4(dev.get_loc(base,  C_VALUE4*4), name + "/value_in4")
+    lcfg(dev.get_addr(base,    C_CFG*4),    name + "/cfg"),
+    inverto(dev.get_addr(base, C_INVo*4),   name + "/invert_out"),
+    invert1(dev.get_addr(base, C_INV1*4),   name + "/invert_in1"),
+    invert2(dev.get_addr(base, C_INV2*4),   name + "/invert_in2"),
+    invert3(dev.get_addr(base, C_INV3*4),   name + "/invert_in3"),
+    invert4(dev.get_addr(base, C_INV4*4),   name + "/invert_in4"),
+    masko(dev.get_addr(base,   C_MASKo*4),  name + "/mask_out"),
+    mask1(dev.get_addr(base,   C_MASK1*4),  name + "/mask_in1"),
+    mask2(dev.get_addr(base,   C_MASK2*4),  name + "/mask_in2"),
+    mask3(dev.get_addr(base,   C_MASK3*4),  name + "/mask_in3"),
+    mask4(dev.get_addr(base,   C_MASK4*4),  name + "/mask_in4"),
+    valueo(dev.get_addr(base,  C_VALUEo*4), name + "/value_out"),
+    value1(dev.get_addr(base,  C_VALUE1*4), name + "/value_in1"),
+    value2(dev.get_addr(base,  C_VALUE2*4), name + "/value_in2"),
+    value3(dev.get_addr(base,  C_VALUE3*4), name + "/value_in3"),
+    value4(dev.get_addr(base,  C_VALUE4*4), name + "/value_in4")
     {
       // Do not call mode() or cfg() in the constructor.
       c = 0;

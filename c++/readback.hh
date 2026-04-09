@@ -53,11 +53,11 @@ public:
             std::string name = "readback"s) :
     fpga(_fpga),
     f(dev, base, csr_base, name),
-    lcontrol(dev.get_loc(control_base),    name + "/control"),    // w
-    lmode(dev.get_loc(control_base, 4),    name + "/mode"),    // w
-    lstatus(dev.get_loc(control_base),     name + "/status"),     // r
-    lcounter(dev.get_loc(control_base, 4), name + "/counter"), // r
-    lcrc32(dev.get_loc(control_base, 8),   name + "/crc32"),   // r
+    lcontrol(dev.get_addr(control_base),    name + "/control"),    // w
+    lmode(dev.get_addr(control_base, 4),    name + "/mode"),    // w
+    lstatus(dev.get_addr(control_base),     name + "/status"),     // r
+    lcounter(dev.get_addr(control_base, 4), name + "/counter"), // r
+    lcrc32(dev.get_addr(control_base, 8),   name + "/crc32"),   // r
     v(fpga.v)
     {
       reset();
