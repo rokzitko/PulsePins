@@ -65,7 +65,7 @@ inline bool compare(const uint32_t val, const uint32_t expected, std::ostream &f
   return val != expected;
 };
 
-inline bool compare(const uint32_t val, const char expected[4], std::ostream &f = std::cout)
+inline bool compare(const uint32_t val, const char expected[4])
 {
   return compare(val, chars_to_uint32(expected));
 };

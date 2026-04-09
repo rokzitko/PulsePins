@@ -315,7 +315,9 @@ public:
   autocorrelation ac;
   crosscorrelation cc;
 
-  counter(const InputParser &input, FPGA &_fpga, const std::uintptr_t base = COUNTER_Q_BASE) :
+  counter([[maybe_unused]] const InputParser &input,
+          FPGA &_fpga,
+          const std::uintptr_t base = COUNTER_Q_BASE) :
     fpga(_fpga),
     dev(fpga.dev_h2f),
     linstr(dev.get_loc(base, 1*4)),

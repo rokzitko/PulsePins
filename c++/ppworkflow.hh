@@ -33,7 +33,7 @@
 #include "counter.hh"
 #include "definitions.hh"
 
-inline void identity(Sequence &e) {
+inline void identity([[maybe_unused]] Sequence &e) {
 }
 
 template <std::size_t nr>

@@ -45,7 +45,7 @@ inline void about(std::string progname, std::string author = "Rok Zitko, rok.zit
 }
 
 // Returns the name of the executable called (symlink)
-inline auto get_program_name(int argc, char *argv[])
+inline auto get_program_name([[maybe_unused]] int argc, char *argv[])
 {
   return std::filesystem::path(argv[0]).filename().string();
 }

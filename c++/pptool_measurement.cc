@@ -143,7 +143,7 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
   uint64_t previous = 0;
   FormatDispatch d;
   d['l'] = [label](std::string_view t) { return setw_l(label, t); };
-  d['t'] = [](std::string_view t) { return timestamp_iso8601_utc_ms(); };
+  d['t'] = [](std::string_view) { return timestamp_iso8601_utc_ms(); };
   d['c'] = [&ctr](std::string_view t) { return setw_l(with_underscores(ctr), t); };
   d['s'] = [&current](std::string_view t) { return setw_l(with_underscores(current), t); };
   d['d'] = [&ctr, &current, &previous](std::string_view t) { return setw_l(ctr ? with_underscores(current-previous) : "", t); };
@@ -327,7 +327,7 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-int pptemp(FPGA &fpga, const InputParser &input, const Verbosity &v)
+int pptemp(FPGA &, const InputParser &, const Verbosity &)
 {
   // Temperature polling loop for the MCP9808 sensor. The formatting and retry policy live
   // in the sensor wrapper so this command can stay focused on the read/print cadence.
@@ -369,7 +369,7 @@ int pphelloworld(FPGA &fpga, const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
+int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &) {
   pp_freq_meter fm(input, fpga, false);
   if (input.exists("-gate_time")) {
     auto gate_time = parse_time(input, "-gate_time", "1s");
@@ -380,7 +380,7 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
   }
   long long ctr;
   FormatDispatch d;
-  d['t'] = [](std::string_view t) { return timestamp_iso8601_utc_ms(); };
+  d['t'] = [](std::string_view) { return timestamp_iso8601_utc_ms(); };
   d['c'] = [&ctr](std::string_view t) { return setw_l(with_underscores(ctr), t); };
   d['e'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(0), t); };
   d['i'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(1), t); };

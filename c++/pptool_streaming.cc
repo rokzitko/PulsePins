@@ -25,7 +25,9 @@ auto get_test_number(const InputParser &input)
   return input.first_arg_int().value_or(1);
 }
 
-int pptool(FPGA &fpga, const InputParser &input, const Verbosity &v)
+int pptool([[maybe_unused]] FPGA &fpga,
+           [[maybe_unused]] const InputParser &input,
+           [[maybe_unused]] const Verbosity &v)
 {
   std::cout << "Done." << std::endl;
   return RC_OK;
@@ -214,7 +216,9 @@ int ppdelay(FPGA &fpga, const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-int ppreset(FPGA &fpga, const InputParser &input, const Verbosity &v)
+int ppreset(FPGA &fpga,
+            const InputParser &input,
+            [[maybe_unused]] const Verbosity &v)
 {
   streamer s(input, fpga);
   return RC_OK;
@@ -359,7 +363,9 @@ int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
   return RC_OK;
 }
 
-int ppaux(FPGA &fpga, const InputParser &input, const Verbosity &v)
+int ppaux(FPGA &fpga,
+          const InputParser &input,
+          [[maybe_unused]] const Verbosity &v)
 {
   pio_in pio_aux(fpga.dev_lw, PIO_AUX_BASE);
   const auto nr = parse_uint64(input, "-nr", "0");

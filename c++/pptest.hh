@@ -216,7 +216,7 @@ public:
 
     auto c = parse_count(input, "-c", "1");
     auto vmax = parse_value(input, "-v", "3");
-    assert(vmax >= 0 && vmax <= POSITIONS); // nr. positions in the fast memory (0 is allowed)
+    assert(vmax <= POSITIONS); // nr. positions in the fast memory (0 is allowed)
     for (value_t v = 0; v < vmax; v++)
       elements.push_back(el(c, v).store(v)); // store at position v, ranging from 0 to vmax-1
 

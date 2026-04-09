@@ -92,7 +92,7 @@ public:
     ss << "value=" << hex8(value()) << " [" << dec13(value()) << "]";
     return ss.str();
   }
-  virtual value_t result(const value_t v_prev) const { return v; }
+  virtual value_t result([[maybe_unused]] const value_t v_prev) const { return v; }
   virtual control_t mode_bits() const { return 0; }
   virtual std::string desc() const { return ""; }
   virtual std::shared_ptr<Value> clone() const { return std::make_shared<Value>(*this); } // deep-copy semantics, because copy is cheap
@@ -103,7 +103,7 @@ class BitLoad : public Value
 {
 public:
   BitLoad(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return v; }
+  value_t result([[maybe_unused]] const value_t v_prev) const override { return v; }
   control_t mode_bits() const override { return BITLOAD; }
   std::string desc() const override { return bitloadstring; }
   std::shared_ptr<Value> clone() const override { return std::make_shared<BitLoad>(*this); }
