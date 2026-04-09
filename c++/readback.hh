@@ -49,14 +49,15 @@ public:
             const mm &dev,
             const std::uintptr_t base,
             const std::uintptr_t csr_base,
-            const std::uintptr_t control_base) :
+            const std::uintptr_t control_base,
+            std::string name = "readback"s) :
     fpga(_fpga),
-    f(dev, base, csr_base),
-    lcontrol(dev.get_loc(control_base)),    // w
-    lmode(dev.get_loc(control_base, 4)),    // w
-    lstatus(dev.get_loc(control_base)),     // r
-    lcounter(dev.get_loc(control_base, 4)), // r
-    lcrc32(dev.get_loc(control_base, 8)),   // r
+    f(dev, base, csr_base, name),
+    lcontrol(dev.get_loc(control_base),    name + "/control"),    // w
+    lmode(dev.get_loc(control_base, 4),    name + "/mode"),    // w
+    lstatus(dev.get_loc(control_base),     name + "/status"),     // r
+    lcounter(dev.get_loc(control_base, 4), name + "/counter"), // r
+    lcrc32(dev.get_loc(control_base, 8),   name + "/crc32"),   // r
     v(fpga.v)
     {
       reset();

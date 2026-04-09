@@ -38,8 +38,9 @@ class sysid
    }
    sysid(mm &dev,
          const std::uintptr_t base,
-         const uint32_t ref) :
-     sysid(dev, base)
+         const uint32_t ref,
+         std::string name = "sysid"s) :
+     sysid(dev, base, name)
      {
        if (id != ref) throw std::runtime_error("sysid does not match");
      }

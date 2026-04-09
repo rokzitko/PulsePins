@@ -23,12 +23,12 @@ private:
   const Verbosity &v;
 
 public:
-  st_mux(const mm &dev, const Verbosity &_v, const std::uintptr_t base) :
-    lchannel(dev.get_loc(base, 0)),
-    ctr1_l(dev.get_loc(base, 0)),
-    ctr1_h(dev.get_loc(base, 4)),
-    ctr2_l(dev.get_loc(base, 8)),
-    ctr2_h(dev.get_loc(base, 12)),
+   st_mux(const mm &dev, const Verbosity &_v, const std::uintptr_t base, std::string name = "st_mux"s) :
+    lchannel(dev.get_loc(base, 0), name + "/channel"),
+    ctr1_l(dev.get_loc(base, 0),   name + "/ctr1_l"),
+    ctr1_h(dev.get_loc(base, 4),   name + "/ctr1_h"),
+    ctr2_l(dev.get_loc(base, 8),   name + "/ctr2_l"),
+    ctr2_h(dev.get_loc(base, 12),  name + "/ctr2_h"),
     v(_v) {}
 
   // Switch between the two upstream Avalon-ST sources.

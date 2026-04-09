@@ -50,7 +50,7 @@ public:
     set_gate_len(default_gate_len);
     lresult.reserve(n_ch);
     for (int i = 0; i < n_ch; i++)
-      lresult.push_back(dev.get_loc(base, 0x10 + 4*i));
+      lresult.push_back(loc(dev.get_loc(base, 0x10 + 4*i), "fm/result_" + std::to_string(i)));
   }
 
   // Reprogram the measurement window and restart accumulation.
@@ -136,9 +136,13 @@ public:
 
   // Standard four-channel PulsePins report used by the CLI tools.
   void report() {
-    std::cout << "ext_clk      " << meter.read_freq_str(METER_EXT_CLK) << std::endl;
-    std::cout << "int_clk      " << meter.read_freq_str(METER_INT_CLK) << std::endl;
-    std::cout << "streamer_clk " << meter.read_freq_str(METER_STREAMER_CLK) << std::endl;
-    std::cout << "core_clk     " << meter.read_freq_str(METER_CORE_CLK) << std::endl;
+    const auto res_ext = meter.read_freq_str(METER_EXT_CLK);
+    const auto res_int = meter.read_freq_str(METER_INT_CLK);
+    const auto res_streamer = meter.read_freq_str(METER_STREAMER_CLK);
+    const auto res_core = meter.read_freq_str(METER_CORE_CLK);
+    std::cout << "ext_clk      " << res_ext << std::endl;
+    std::cout << "int_clk      " << res_int << std::endl;
+    std::cout << "streamer_clk " << res_streamer << std::endl;
+    std::cout << "core_clk     " << res_core << std::endl;
   }
 };

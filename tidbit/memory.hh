@@ -72,16 +72,14 @@ class loc
      name(_name)
      {
 #ifdef DEBUG_CONSTR
-       if (name != "") {
-         std::cout << "loc " << name
-           << " base=0x" << std::hex << base << std::endl;
-       }
+       std::cout << "loc " << name
+         << " base=0x" << std::hex << base << std::endl;
 #endif
-   }
+     }
    loc(const loc  &_l, [[maybe_unused]] std::string _name = "") :
      loc(_l.base, _name) {}
    inline void write(const uint32_t val, const uint32_t offset = 0) const noexcept {
-     if (true || debug)
+     if (debug)
        try {
          std::cout << "write " << name
            << " base=0x" << std::hex << base << " offset=0x"
@@ -94,7 +92,8 @@ class loc
      const auto val = *(volatile uint32_t *)(base + offset); // volatile prevents the compiler from optimizing away the call
      if (debug)
        try {
-         std::cout << "read base=0x" << std::hex << base << " offset=0x" << std::hex << offset << " (" << std::dec << offset << ")"
+         std::cout << "read " << name
+           << " base=0x" << std::hex << base << " offset=0x" << std::hex << offset << " (" << std::dec << offset << ")"
          << " val=0x" << std::hex << val << " (" << std::dec << val << ")" << std::endl; // cast required
        } catch (...) { } // swallow errors
      return val;
@@ -142,12 +141,10 @@ class mm
      }
      virtual_base = (std::uintptr_t)res;
 #ifdef DEBUG_CONSTR
-     if (name != "") {
-       std::cout << "mm " << name
-         << " base=0x" << std::hex << base
-         << " span=0x" << std::hex << span
-         << " virtual_base=0x" << std::hex << virtual_base << std::endl;
-     }
+     std::cout << "mm " << name
+       << " base=0x" << std::hex << base
+       << " span=0x" << std::hex << span
+       << " virtual_base=0x" << std::hex << virtual_base << std::endl;
 #endif
    }
    auto get_base() const noexcept {
