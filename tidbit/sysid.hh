@@ -27,18 +27,30 @@ class sysid
        lts; // timestamp
    uint32_t id, ts;
  public:
-   sysid(mm &dev, const std::uintptr_t base) :
-     lid(dev.get_loc(base)),
-     lts(dev.get_loc(base, 4))
+   sysid(mm &dev,
+         const std::uintptr_t base,
+         std::string name = "") :
+     lid(dev.get_loc(base), name + " id"),
+     lts(dev.get_loc(base, 4), name + " ts")
    {
      id = lid.read();
      ts = lts.read();
    }
-   sysid(mm &dev, const std::uintptr_t base, const uint32_t ref) : sysid(dev, base) {
-     if (id != ref) throw std::runtime_error("sysid does not match");
-   }
-   sysid(mm &dev, const std::uintptr_t base, const uint32_t ref, const bool verbose, std::ostream &f = std::cout) : sysid(dev, base) {
-     if (verbose) {
+   sysid(mm &dev,
+         const std::uintptr_t base,
+         const uint32_t ref) :
+     sysid(dev, base)
+     {
+       if (id != ref) throw std::runtime_error("sysid does not match");
+     }
+   sysid(mm &dev,
+         const std::uintptr_t base,
+         const uint32_t ref,
+         const bool verbose,
+         std::string name = "",
+         std::ostream &f = std::cout) :
+     sysid(dev, base, name) {
+       if (verbose) {
        f << "sysid=0x" << std::hex <<  id << " " << std::dec << "(" <<  id << ")" << std::endl;
        if (id != ref) // report reference value only if there is no match, to avoid cluttering output
          f << "  ref=0x" << std::hex << ref << " " << std::dec << "(" << ref << ")" << std::endl;
@@ -46,6 +58,12 @@ class sysid
      }
      if (id != ref) throw std::runtime_error("sysid does not match");
    }
+   sysid(mm &dev,
+         const std::uintptr_t base,
+         const uint32_t ref,
+         const bool verbose,
+         std::ostream &f = std::cout) :
+     sysid(dev, base, ref, verbose, "sysid", f) {}
    auto get_id() {
      return id;
    }

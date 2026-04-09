@@ -65,18 +65,26 @@ class loc
  private:
    std::uintptr_t base;
    bool debug = default_loc_debug;
+   std::string name;
  public:
-   loc(std::uintptr_t _base, [[maybe_unused]] std::string name = "") :
-     base(_base) {
+   loc(std::uintptr_t _base, [[maybe_unused]] std::string _name = "") :
+     base(_base),
+     name(_name)
+     {
 #ifdef DEBUG_CONSTR
-       std::cout << "loc " << name
-         << " base=0x" << std::hex << base << std::endl;
+       if (name != "") {
+         std::cout << "loc " << name
+           << " base=0x" << std::hex << base << std::endl;
+       }
 #endif
    }
+   loc(const loc  &_l, [[maybe_unused]] std::string _name = "") :
+     loc(_l.base, _name) {}
    inline void write(const uint32_t val, const uint32_t offset = 0) const noexcept {
-     if (debug)
+     if (true || debug)
        try {
-         std::cout << "write base=0x" << std::hex << base << " offset=0x"
+         std::cout << "write " << name
+           << " base=0x" << std::hex << base << " offset=0x"
            << std::hex << offset << " (" << std::dec << offset << ")"
            << " val=0x" << std::hex << val << " (" << std::dec << val << ")" << std::endl; // cast required
        } catch (...) { } // swallow errors

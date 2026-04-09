@@ -55,12 +55,12 @@ inline void check_version(const int version, const bool verbose = false)
   assert(SYSID_QSYS_0_ID == tidbit);  // expected FPGA design?
   assert(SYSID_QSYS_1_ID == version); // expected version of the design?
 
-  mm dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE);
-  mm dev_h2f(HPSFPGA_OFST, H2F_RANGE);
-  sysid id(dev_lw,   SYSID_BASE,        SYSID_ID,        verbose);
-  sysid id0(dev_lw,  SYSID_QSYS_0_BASE, SYSID_QSYS_0_ID, verbose);
-  sysid id1(dev_lw,  SYSID_QSYS_1_BASE, SYSID_QSYS_1_ID, verbose);
-  sysid id2(dev_h2f, SYSID_H2F_BASE,    SYSID_H2F_ID,    verbose);
+  mm dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE, "lw");
+  mm dev_h2f(HPSFPGA_OFST, H2F_RANGE, "h2f");
+  sysid id(dev_lw,   SYSID_BASE,        SYSID_ID,        verbose, "id");
+  sysid id0(dev_lw,  SYSID_QSYS_0_BASE, SYSID_QSYS_0_ID, verbose, "id0");
+  sysid id1(dev_lw,  SYSID_QSYS_1_BASE, SYSID_QSYS_1_ID, verbose, "id1");
+  sysid id2(dev_h2f, SYSID_H2F_BASE,    SYSID_H2F_ID,    verbose, "id2");
   // These tests also ensure that we can communicate on both lw and h2f buses.
 
   std::cout << "Bitstream timestamp: " << id.get_timestamp_string() << std::endl;

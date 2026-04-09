@@ -90,8 +90,11 @@ class hpsled
    const static uintptr_t HPS_GPIO1_BASE = 0xFF709000;
  public:
    hpsled(mm &dev, std::uintptr_t base = HPS_GPIO1_BASE) :
-     data(dev.get_loc(base, 0)),
-     dir (dev.get_loc(base, 4)) { dir.write(dir.read() | LED_MASK); }
+     data(dev.get_loc(base, 0), "hpsled_data"),
+     dir (dev.get_loc(base, 4), "hpsled_dir")
+     {
+       dir.write(dir.read() | LED_MASK);
+     }
 
    void on() {
      data.write(data.read() | LED_MASK);
@@ -113,8 +116,8 @@ protected:
 
 public:
    rstmgr(const std::uintptr_t rstmgr_h2f_base = ALT_RSTMGR_OFST) : // 0xFFD05000
-     dev_mgr(PHYS_RSTMGR_BASE, MAP_SPAN_BYTES),
-     rstmgr_miscmodrst(dev_mgr.get_loc(rstmgr_h2f_base, 0x20)) {}
+     dev_mgr(PHYS_RSTMGR_BASE, MAP_SPAN_BYTES, "rstmgr"),
+     rstmgr_miscmodrst(dev_mgr.get_loc(rstmgr_h2f_base, 0x20), "miscmodrst") {}
 
    void s2f_reset(const bool verbose = true) {
      if (verbose) std::cout << "Performing FPGA reset." << std::endl;

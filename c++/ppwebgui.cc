@@ -869,6 +869,7 @@ public:
   }
 
   void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
+    qout_ctrl.cq.report();
     streamers.s1.sc.qout_set(q1);
     streamers.s2.sc.qout_set(q2);
     streamers.s3.sc.qout_set(q3);
@@ -1026,7 +1027,7 @@ CombinerRequest parse_combiner_request(const httplib::Request &req) {
 } // namespace
 
 int main(int argc, char *argv[]) {
-  install_fatal_signal_handlers();
+//  install_fatal_signal_handlers();
   HostRuntime runtime(argc, argv, version);
   auto &input = runtime.input;
   auto &fpga = runtime.get_fpga();
@@ -1083,10 +1084,10 @@ int main(int argc, char *argv[]) {
       if (verbosity.veryverbose) {
         std::cout << "ppwebgui: parsed /api/qout parameters" << std::endl;
         std::cout << "ppwebgui action: apply qout" << std::endl;
-        std::cout << "  q1=" << q1 << std::endl;
-        std::cout << "  q2=" << q2 << std::endl;
-        std::cout << "  q3=" << q3 << std::endl;
-        std::cout << "  q4=" << q4 << std::endl;
+        std::cout << "  q1=" << std::dec << q1 << std::endl;
+        std::cout << "  q2=" << std::dec << q2 << std::endl;
+        std::cout << "  q3=" << std::dec << q3 << std::endl;
+        std::cout << "  q4=" << std::dec << q4 << std::endl;
       }
       controller.apply_qout_overrides(q1, q2, q3, q4);
       if (verbosity.veryverbose) {
