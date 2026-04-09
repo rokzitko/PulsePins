@@ -66,9 +66,12 @@ class loc
    std::uintptr_t base;
    bool debug = default_loc_debug;
  public:
-   loc(std::uintptr_t _base) : base(_base) {
-     if (debug)
-       std::cout << "loc: base=0x" << std::hex << base << std::endl;
+   loc(std::uintptr_t _base, [[maybe_unused]] std::string name = "") :
+     base(_base) {
+#ifdef DEBUG_CONSTR
+       std::cout << "loc " << name
+         << " base=0x" << std::hex << base << std::endl;
+#endif
    }
    inline void write(const uint32_t val, const uint32_t offset = 0) const noexcept {
      if (debug)
@@ -113,7 +116,13 @@ class mm
    int fd;
    std::uintptr_t virtual_base;
  public:
-   mm(std::uintptr_t _base, std::uintptr_t _span) : base(_base), span(_span), mask(_span-1)
+   mm(std::uintptr_t _base,
+      std::uintptr_t _span,
+      [[maybe_unused]] std::string name = ""s
+     ) :
+     base(_base),
+     span(_span),
+     mask(_span-1)
    {
      assert(_span >= 1);
      if ((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
@@ -124,6 +133,14 @@ class mm
        throw std::system_error(errno, std::generic_category(), "mmap failed");
      }
      virtual_base = (std::uintptr_t)res;
+#ifdef DEBUG_CONSTR
+     if (name != "") {
+       std::cout << "mm " << name
+         << " base=0x" << std::hex << base
+         << " span=0x" << std::hex << span
+         << " virtual_base=0x" << std::hex << virtual_base << std::endl;
+     }
+#endif
    }
    auto get_base() const noexcept {
      return base;

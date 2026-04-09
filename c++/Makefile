@@ -5,9 +5,6 @@ TIDBIT_DIR ?= ../tidbit
 # Embed the current short git hash into host-side binaries for version/status reporting.
 GIT_HASH := $(shell git rev-parse --short HEAD)
 
-# For low-level troubleshooting, uncomment the following line for tracing out all memory-mapped I/O to FPGA.
-#HW_DEBUG = -DDEBUG_FPGA_IO
-
 # Lua source directory
 LUA_DIR := third_party/lua
 
@@ -32,12 +29,17 @@ CROSSCFLAGS =
 CROSSCPPFLAGS =
 endif
 
-BUILD ?= RELEASE
+BUILD ?= DEBUG
 
 ifeq ($(BUILD),DEBUG)
 OPTIMFLAGS = -g -O3 -Wall -Wextra -fno-omit-frame-pointer -fno-inline \
  -DPPWEBGUI_ENABLE_BACKTRACE
 LINKFLAGS = -g -rdynamic
+# For low-level troubleshooting:
+# DEBUG_FPGA_IO enables tracing out of all memory-mapped I/O to FPGA.
+# DEBUG_CONSTR enables traceing out class constructors.
+#HW_DEBUG += -DDEBUG_FPGA_IO
+HW_DEBUG += -DDEBUG_CONSTR
 else ifeq ($(BUILD),RELEASE)
 OPTIMFLAGS = -O3 -Wall
 LINKFLAGS =

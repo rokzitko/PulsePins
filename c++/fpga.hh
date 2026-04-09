@@ -150,11 +150,11 @@ public:
   pll_int_clk pll_int;
 
   FPGA(const Verbosity &_v) :
-    dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE),
-    dev_h2f(HPSFPGA_OFST, H2F_RANGE),
-    dev_hps(HPS_REGS_OFST, HPS_REGS_RANGE),
-    dev_sysmgr(ALT_SYSMGR_BASE, ALT_SYSMGR_RANGE),
-    dev_fpgamgr(ALT_FPGAMGR_BASE, ALT_FPGAMGR_RANGE),
+    dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE, "lw"),
+    dev_h2f(HPSFPGA_OFST, H2F_RANGE, "h2f"),
+    dev_hps(HPS_REGS_OFST, HPS_REGS_RANGE, "hps"),
+    dev_sysmgr(ALT_SYSMGR_BASE, ALT_SYSMGR_RANGE, "sysmgr"),
+    dev_fpgamgr(ALT_FPGAMGR_BASE, ALT_FPGAMGR_RANGE, "fpgamgr"),
     led(dev_hps),
     mgr(dev_fpgamgr, _v),
     pio_cfg(dev_lw, PIO_CFG_BASE),
