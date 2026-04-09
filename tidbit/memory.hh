@@ -156,14 +156,14 @@ class mm
    auto get_mask() const noexcept {
      return mask;
    }
-   auto get_address(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const noexcept {
+   auto get_addr(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const noexcept {
      return virtual_base + ((ptr_base + shift) & mask);
    }
    auto get_ptr(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const noexcept {
-     return (void*)get_address(ptr_base, shift);
+     return (void*)get_addr(ptr_base, shift);
    }
    auto get_loc(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const noexcept {
-     return loc(get_address(ptr_base, shift));
+     return loc(get_addr(ptr_base, shift));
    }
    ~mm() {
      munmap((void*)virtual_base, span); // ignore return value

@@ -23,14 +23,15 @@ public:
    c_dma(const mm &dev,
          const std::uintptr_t csr_base,
          const std::uintptr_t descriptor_base,
-         const bool _verbose = true) :
-     dma_csr_status(dev.get_loc(csr_base)),
-     dma_csr_control(dev.get_loc(csr_base, 0x04)),
-     dma_csr_fill_level(dev.get_loc(csr_base, 0x08)),
-     d_src_addr(dev.get_loc(descriptor_base, 0x00)),
-     d_dest_addr(dev.get_loc(descriptor_base, 0x04)),
-     d_length(dev.get_loc(descriptor_base, 0x08)),
-     d_control(dev.get_loc(descriptor_base, 0x0C)),
+         const bool _verbose = true,
+         std::string name = "dma"s) :
+     dma_csr_status(dev.get_addr(csr_base),           name + "/csr_status"),
+     dma_csr_control(dev.get_addr(csr_base, 0x04),    name + "/csr_control"),
+     dma_csr_fill_level(dev.get_addr(csr_base, 0x08), name + "/csr_fill_level"),
+     d_src_addr(dev.get_addr(descriptor_base, 0x00),  name + "/src_addr"),
+     d_dest_addr(dev.get_addr(descriptor_base, 0x04), name + "/dest_addr"),
+     d_length(dev.get_addr(descriptor_base, 0x08),    name + "/length"),
+     d_control(dev.get_addr(descriptor_base, 0x0C),   name + "/control"),
      verbose(_verbose) {}
 
    std::string status_string() {

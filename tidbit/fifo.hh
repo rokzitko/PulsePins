@@ -29,10 +29,10 @@ class fifo {
         const std::uintptr_t base,
         const std::uintptr_t csr_base,
         std::string name = "fifo"s) :
-     f(dev.get_loc(base), name),
-     lfill(dev.get_loc(csr_base), name + "/fill"),
-     lstatus(dev.get_loc(csr_base, fifo_i_status_shift), name + "/csr_abse"),
-     levent(dev.get_loc(csr_base, fifo_event_shift), name + "/event")
+     f(dev.get_addr(base),                                name),
+     lfill(dev.get_addr(csr_base),                        name + "/fill"),
+     lstatus(dev.get_addr(csr_base, fifo_i_status_shift), name + "/csr_abse"),
+     levent(dev.get_addr(csr_base, fifo_event_shift),     name + "/event")
      {}
    uint32_t read() {
      return f.read();

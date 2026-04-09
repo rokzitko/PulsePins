@@ -30,8 +30,8 @@ class sysid
    sysid(mm &dev,
          const std::uintptr_t base,
          std::string name = "sysid"s) :
-     lid(dev.get_loc(base), name + "/id"),
-     lts(dev.get_loc(base, 4), name + "/ts")
+     lid(dev.get_addr(base),    name + "/id"),
+     lts(dev.get_addr(base, 4), name + "/ts")
    {
      id = lid.read();
      ts = lts.read();

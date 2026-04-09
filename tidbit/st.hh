@@ -16,9 +16,10 @@ class st_read
 
    st_read(const mm &dev,
            const std::uintptr_t base,
-           const bool _reset = false) :
-     lcontrol(dev.get_loc(base)),
-     lstatus(dev.get_loc(base))
+           const bool _reset = false,
+           std::string name = "st_read"s) :
+     lcontrol(dev.get_addr(base), name + "/control"),
+     lstatus(dev.get_addr(base),  name + "/status")
      {
        if (_reset) reset();
      }
@@ -61,9 +62,10 @@ class st_write
    loc lstatus;
  public:
    st_write(const mm &dev,
-            const std::uintptr_t base) :
-     lcontrol(dev.get_loc(base)),
-     lstatus(dev.get_loc(base)) {}
+            const std::uintptr_t base,
+            std::string name = "st_write"s) :
+     lcontrol(dev.get_addr(base), name + "/control"),
+     lstatus(dev.get_addr(base),  name + "/status") {}
 
    void reset_fifo() {
      lcontrol.write(1); // assert reset_fifo
