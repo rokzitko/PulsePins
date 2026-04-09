@@ -17,8 +17,8 @@
 
 class combiner_qout : public combiner {
 public:
-  combiner_qout(const mm &dev, const std::uintptr_t base) :
-    combiner::combiner(dev, base) {}
+  combiner_qout(const mm &dev, const std::uintptr_t base, std::string name = "combiner_qout"s) :
+    combiner::combiner(dev, base, name) {}
 };
 
 // High-level control of the output routing stage.

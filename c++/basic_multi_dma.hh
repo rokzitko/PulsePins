@@ -139,10 +139,10 @@ public:
                 const StreamerOptions &s4_opts,
                 FPGA &_fpga) :
     fpga(_fpga),
-    s1(s1_opts, fpga, FIFO_1_IN_BASE, FIFO_1_IN_CSR_BASE, ST_INTERFACE_1_BASE),
-    s2(s2_opts, fpga, FIFO_2_IN_BASE, FIFO_2_IN_CSR_BASE, ST_INTERFACE_2_BASE),
-    s3(s3_opts, fpga, FIFO_3_IN_BASE, FIFO_3_IN_CSR_BASE, ST_INTERFACE_3_BASE),
-    s4(s4_opts, fpga, FIFO_4_IN_BASE, FIFO_4_IN_CSR_BASE, ST_INTERFACE_4_BASE)
+    s1(s1_opts, fpga, FIFO_1_IN_BASE, FIFO_1_IN_CSR_BASE, ST_INTERFACE_1_BASE, "streamer1"),
+    s2(s2_opts, fpga, FIFO_2_IN_BASE, FIFO_2_IN_CSR_BASE, ST_INTERFACE_2_BASE, "streamer2"),
+    s3(s3_opts, fpga, FIFO_3_IN_BASE, FIFO_3_IN_CSR_BASE, ST_INTERFACE_3_BASE, "streamer3"),
+    s4(s4_opts, fpga, FIFO_4_IN_BASE, FIFO_4_IN_CSR_BASE, ST_INTERFACE_4_BASE, "streamer4")
     {
       // Each core is configured independently, but outputs are enabled once globally.
       // Initial values are set before each per-core reset for the same reason as in the

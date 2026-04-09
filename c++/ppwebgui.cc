@@ -1027,7 +1027,7 @@ CombinerRequest parse_combiner_request(const httplib::Request &req) {
 } // namespace
 
 int main(int argc, char *argv[]) {
-//  install_fatal_signal_handlers();
+  install_fatal_signal_handlers();
   HostRuntime runtime(argc, argv, version);
   auto &input = runtime.input;
   auto &fpga = runtime.get_fpga();
