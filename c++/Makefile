@@ -38,7 +38,7 @@ LINKFLAGS = -g -rdynamic
 # For low-level troubleshooting:
 # DEBUG_FPGA_IO enables tracing out of all memory-mapped I/O to FPGA.
 # DEBUG_CONSTR enables traceing out class constructors.
-#HW_DEBUG += -DDEBUG_FPGA_IO
+HW_DEBUG += -DDEBUG_FPGA_IO
 HW_DEBUG += -DDEBUG_CONSTR
 else ifeq ($(BUILD),RELEASE)
 OPTIMFLAGS = -O3 -Wall
