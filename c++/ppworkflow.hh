@@ -119,6 +119,23 @@ inline void activate_trigger(streamer_control &sc,
   }
 }
 
+inline void deactivate_trigger(streamer_control &sc,
+                               const bool force_trigger,
+                               const Verbosity &v)
+{
+  if (force_trigger) {
+    if (v.verbose)
+      std::cout << cyan << " ---> Clearing trigger." << rst << std::endl;
+    sc.trigger_clear();
+    sc.status_report();
+  } else {
+    if (v.verbose)
+      std::cout << cyan << " --->  Disarming trigger." << rst << std::endl;
+    sc.trigger_disable();
+    sc.status_report();
+  }
+}
+
 template<typename Convert>
 inline bool run_readback_check_phase(readback &rb,
                                     Sequence &elements,
@@ -165,6 +182,7 @@ inline int run_post_execution_checks(streamer_control &sc,
                                     counter &ctr,
                                     const value_t final,
                                     const bool rb_failure,
+                                    const bool force_trigger,
                                     const InputParser &input,
                                     const Verbosity &v,
                                     int rc)
@@ -223,6 +241,7 @@ inline int run_post_execution_checks(streamer_control &sc,
   if (crcOK && rb_failure)
     if (input.exists("-ignore_rb_error_if_crc_ok") || envVarExists("PP_IGNORE_RB_ERROR_IF_CRC_OK"))
       rc &= ~RC_ERROR_CHECK;
+  deactivate_trigger(sc, force_trigger, v);
   return rc;
 }
 
@@ -256,7 +275,7 @@ inline int send_and_trig(Transport &tr,
   if (input.exists("-dont_wait"))
     return rc;
 
-  return run_post_execution_checks(sc, rb, ctr, final, rb_failure, input, v, rc);
+  return run_post_execution_checks(sc, rb, ctr, final, rb_failure, force_trigger, input, v, rc);
 }
 
 template<typename Transport>

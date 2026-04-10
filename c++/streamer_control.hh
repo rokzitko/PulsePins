@@ -289,9 +289,19 @@ public:
     sc.write(control);
   }
 
+  void trigger_disable() {
+    BITMASK_CLEAR(control, TRIGGER_ENABLE_INT);
+    sc.write(control);
+  }
+
   // Force the internal trigger path active immediately.
   void trigger_force() {
     BITMASK_SET(control, TRIGGER_FORCE_INT);
+    sc.write(control);
+  }
+
+  void trigger_clear() {
+    BITMASK_CLEAR(control, TRIGGER_FORCE_INT);
     sc.write(control);
   }
 
