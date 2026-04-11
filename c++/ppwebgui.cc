@@ -641,7 +641,7 @@ const char *index_html = R"HTML(<!doctype html>
         </div>
         <div class="legend-item">
           <span class="state-tag local-tag">local edit</span>
-          <div class="meta">Browser-only form changes until you click Apply.</div>
+          <div class="meta">Browser-only form changes until you click Apply or Revert.</div>
         </div>
       </div>
       <div class="meta warning-text">If another tool changes trigger, combiner, or qout state after ppwebgui starts, tracked fields here can drift from live hardware.</div>
@@ -732,11 +732,12 @@ const char *index_html = R"HTML(<!doctype html>
           <span id="qout-local-tag" class="state-tag local-tag hidden">local edit</span>
         </div>
       </div>
-      <div id="qout-form-state" class="form-state">Tracked output-override values are shown below. Local edits stay in the browser until you click Apply.</div>
+      <div id="qout-form-state" class="form-state">Tracked output-override values are shown below. Local edits stay in the browser until you click Apply or Revert.</div>
       <form id="qout-form" class="form-grid">
         <label>Enabled<select name="override_enabled"><option value="0">false</option><option value="1">true</option></select></label>
         <label>Override value<input name="override_value" value="0x0" placeholder="0x0"></label>
         <button type="submit">Apply override</button>
+        <button id="qout-revert-button" type="button" class="secondary-button">Revert local edits</button>
       </form>
       <div class="meta">Manual final-output override, implemented through the combiner output-force path.</div>
       <div class="meta">Accepted integer formats: decimal (`42`), hex (`0xff`), binary (`0b1010`), octal (`077`), and Verilog-style literals like `8'hFF` or `'b1010`.</div>
@@ -750,7 +751,7 @@ const char *index_html = R"HTML(<!doctype html>
           <span id="combiner-local-tag" class="state-tag local-tag hidden">local edit</span>
         </div>
       </div>
-      <div id="combiner-form-state" class="form-state">Tracked combiner values are shown below. Local edits stay in the browser until you click Apply.</div>
+      <div id="combiner-form-state" class="form-state">Tracked combiner values are shown below. Local edits stay in the browser until you click Apply or Revert.</div>
       <form id="combiner-form" class="combiner-form">
         <label>Mode
           <select name="mode" id="combiner-mode-select">
@@ -821,6 +822,7 @@ const char *index_html = R"HTML(<!doctype html>
         </div>
 
         <button type="submit">Apply combiner</button>
+        <button id="combiner-revert-button" type="button" class="secondary-button">Revert local edits</button>
       </form>
     </section>
 
@@ -1129,14 +1131,19 @@ const char *app_js = R"JS((() => {
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
+  const qoutRevertButton = document.getElementById('qout-revert-button');
+  const combinerRevertButton = document.getElementById('combiner-revert-button');
   const qoutFormState = document.getElementById('qout-form-state');
   const combinerFormState = document.getElementById('combiner-form-state');
   const qoutLocalTag = document.getElementById('qout-local-tag');
   const combinerLocalTag = document.getElementById('combiner-local-tag');
-  const qoutCleanText = 'Tracked output-override values are shown below. Local edits stay in the browser until you click Apply.';
-  const combinerCleanText = 'Tracked combiner values are shown below. Local edits stay in the browser until you click Apply.';
+  const qoutCleanText = 'Tracked output-override values are shown below. Local edits stay in the browser until you click Apply or Revert.';
+  const combinerCleanText = 'Tracked combiner values are shown below. Local edits stay in the browser until you click Apply or Revert.';
   let pollMs = 100;
   let hardwareBusy = false;
+  let qoutDirty = false;
+  let combinerDirty = false;
+  let lastStatus = null;
 
   function formatHex(value, width = 8) {
     const normalized = Number(value) >>> 0;
@@ -1166,10 +1173,6 @@ const char *app_js = R"JS((() => {
     setBusy(streamForm, busy);
   }
 
-  function formOwnsFocus(form) {
-    return form.contains(document.activeElement);
-  }
-
   function setFormDirty(form, dirty, stateElement, tagElement, cleanText, dirtyText) {
     form.classList.toggle('form-dirty', dirty);
     stateElement.classList.toggle('local-edit', dirty);
@@ -1178,6 +1181,7 @@ const char *app_js = R"JS((() => {
   }
 
   function setQoutDirty(dirty) {
+    qoutDirty = dirty;
     setFormDirty(
       qoutForm,
       dirty,
@@ -1188,6 +1192,7 @@ const char *app_js = R"JS((() => {
   }
 
   function setCombinerDirty(dirty) {
+    combinerDirty = dirty;
     setFormDirty(
       combinerForm,
       dirty,
@@ -1198,14 +1203,14 @@ const char *app_js = R"JS((() => {
   }
 
   function populateQout(status, force = false) {
-    if (!force && formOwnsFocus(qoutForm)) return;
+    if (!force && qoutDirty) return;
     qoutForm.querySelector('[name="override_enabled"]').value = status.streamer.override.enabled ? '1' : '0';
     qoutForm.querySelector('[name="override_value"]').value = formatHex(status.streamer.override.value);
     setQoutDirty(false);
   }
 
   function populateCombiner(status, force = false) {
-    if (!force && formOwnsFocus(combinerForm)) return;
+    if (!force && combinerDirty) return;
     combinerForm.querySelector('[name="mode"]').value = status.combiner.mode;
     const output = status.combiner.output;
     combinerForm.querySelector('[name="output_invert"]').value = formatHex(output.invert);
@@ -1236,6 +1241,7 @@ const char *app_js = R"JS((() => {
   }
 
   function renderStatus(status, options = {}) {
+    lastStatus = status;
     const runtimeFlags = [];
     if (status.stream.runtime.buffer_error) runtimeFlags.push('buffer_error');
     if (status.stream.runtime.done) runtimeFlags.push('done');
@@ -1278,6 +1284,16 @@ const char *app_js = R"JS((() => {
   setCombinerDirty(false);
   attachDirtyHandlers(qoutForm, setQoutDirty);
   attachDirtyHandlers(combinerForm, setCombinerDirty);
+
+  qoutRevertButton.addEventListener('click', () => {
+    if (!lastStatus) return;
+    populateQout(lastStatus, true);
+  });
+
+  combinerRevertButton.addEventListener('click', () => {
+    if (!lastStatus) return;
+    populateCombiner(lastStatus, true);
+  });
 
   async function fetchJson(url, options = {}) {
     const response = await fetch(url, { cache: 'no-store', ...options });
