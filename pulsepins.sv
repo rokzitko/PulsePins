@@ -716,14 +716,46 @@ assign LED[7] = heartbeat;
 // qout[2] - D6 (blue)
 // qout[3] - D7 (violet)
 
+// If USE_IOBUF is define, the outputs from the streamer are routed to the output pins via bidirection I/O
+// buffers (ALT_IOBUF). The signals will appear on outputs only if output enabled (oe) signal is set. In the
+// opposite case, the pins behave as inputs and can their values can be analyzed using readback and counter
+// modules. It is recommended to keep USE_IOBUF defined.
 `define USE_IOBUF
+
+// USE_DDR is an experimental feature. It enables DDR on output pin 0. This allows to double the data rate
+// (5ns period). It should be noted that most pins exposed on the GPIO connectors are actually DDR capable, thus
+// this functionality could be extended to other signals, too.
+// Since this is only a proof-of-principle experiment, it is recommened to keep USE_DDR undefined.
+//`define USE_DDR
+
 `ifdef USE_IOBUF
    logic [`WIDTH_DATA-1:0] q_in;
    logic q_in_valid;
    logic q_in_strobe;
+   `ifdef USE_DDR
+     // Use dual data rate on pin 0. On transitions to h, it streams out qout[0],
+     // on transitions tol, it streams out qout[1].
+     altddio_out #(
+       .width(1),
+       .power_up_high("OFF"),
+       .oe_reg("UNREGISTERED"),
+       .extend_oe_disable("OFF"),
+       .intended_device_family("Cyclone V"),
+       .lpm_type("altddio_out")
+     ) u_altddio_out (
+       .outclock(streamer_clk),
+       .datain_h(streamer_qout[0]),
+       .datain_l(streamer_qout[1]),
+       .oe(oe),
+       .dataout(GPI1Q[0])
+     );
+     `define J_START 1
+   `else
+     `define J_START 0
+   `endif
    genvar j;
    generate
-     for (j = 0; j < `WIDTH_DATA; j = j + 1) begin : gen_iobuf
+     for (j = `J_START; j < `WIDTH_DATA; j = j + 1) begin : gen_iobuf
        ALT_IOBUF iobuf_inst (
          .i(streamer_qout[j]),
          .oe(oe),
