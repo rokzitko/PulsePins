@@ -123,6 +123,14 @@ public:
     static_assert(std::is_same<value_t, uint32_t>::value, "Only uint32_t value_t is currently supported");
   }
 
+  trigger_t get_ext_trig_in() {
+    return static_cast<trigger_t>(ext_trig_in.read() & TRIGGER_MASK);
+  }
+
+  port_t get_ext_trig_ctrl() {
+    return ext_trig_ctrl.read();
+  }
+
   uint64_t get_input_fifo1_ctr_in() {
     return (uint64_t(input_fifo1_ctr_in_h.read()) << 32) + uint64_t(input_fifo1_ctr_in_l.read());
   }

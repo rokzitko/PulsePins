@@ -2,7 +2,7 @@
 
 `ppwebgui` is a standalone host-side web server for PulsePins.
 
-It starts an embedded HTTP server, serves a small browser UI from the same binary, shows live AUX and trigger status, lets the user change qout overrides and output-combiner settings, and can stream PulsePins text sequences from the browser.
+It starts an embedded HTTP server, serves a small browser UI from the same binary, shows live AUX and trigger status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream PulsePins text sequences from the browser.
 
 ## v1 scope
 
@@ -52,22 +52,28 @@ ppwebgui -port 0
 
 ## Browser UI
 
-The page exposes four main sections:
+The page exposes these main sections:
 
-* Live Status: AUX bits, trigger bits, and trigger enable/force/reset flags
-* Streamer Overrides: `q1` through `q4` override values with one apply action
+* Live Status: AUX bits, trigger bits, trigger enable/force/reset flags, active streamer qout state, current combiner mode, and recent action/error text
+* Trigger Settings: current trigger combiner mode plus invert and mask settings for the result, INT, EXT, MISC, and AUX paths
+* Streamer Override: one manual qout override control for the active streamer used by browser-triggered sequence playback
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
 
+The header also includes a **Reset hardware** button. That action reruns the same FPGA-side bring-up sequence used by `ppwebgui` startup, including the FPGA reset-manager pulse, startup clock/PLL policy, and the startup frequency-meter report. After that it reapplies the current web-managed combiner and streamer-override settings so the browser state is preserved across the reset.
+
 The backend keeps hardware access serialized and the UI polls `/api/status` at the configured interval.
+
+Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
 
 ## API summary
 
 Version 1 keeps the API small:
 
-* `GET /api/status` returns JSON status for AUX, trigger state, streamer qout values, combiner state, and recent action/error text
-* `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `q1` through `q4`
+* `GET /api/status` returns JSON status for AUX, trigger state, trigger-combiner settings, active streamer qout state, combiner state, and recent action/error text
+* `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `override_enabled` and `override_value`
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
+* `POST /api/reset` reruns the `ppwebgui` FPGA bring-up path and reapplies the current web-managed settings
 * `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`
 
 The current implementation rejects oversized form submissions and limits `sequence_text` to 32 KiB per request.
@@ -85,6 +91,26 @@ The `status` payload also includes a `stream` object with:
 
 * `last_rc`
 * `message`
+
+and a `streamer` object with:
+
+* `qout`
+* `qout_streamer`
+* `override.enabled`
+* `override.value`
+
+and a `trigger_settings` object with:
+
+* `mode`
+* `invert_result`
+* `invert_int`
+* `invert_ext`
+* `invert_misc`
+* `invert_aux`
+* `mask_int`
+* `mask_ext`
+* `mask_misc`
+* `mask_aux`
 
 `POST /api/stream` runs synchronously. While a hardware action is in flight, the browser disables the control forms until the request finishes.
 

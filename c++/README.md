@@ -5,6 +5,7 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 ## What lives here
 
 - `pptool.cc` - main executable entry point and symlink-based command dispatcher
+- `ppwebgui.cc` - standalone embedded web GUI server for single-stream playback, trigger/combiner reporting, and browser-driven control
 - `pptool_commands.hh` - catalog of supported `pp...` command handlers
 - `pptool_streaming.cc` - commands that primarily drive the streamer datapath
 - `pptool_measurement.cc` - commands for readback, counters, timestamps, temperature, and frequency measurement

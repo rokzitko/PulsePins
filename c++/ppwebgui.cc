@@ -10,10 +10,13 @@
 
 #include <array>
 #include <bitset>
+#include <cerrno>
 #include <cstdint>
 #include <exception>
+#include <iomanip>
 #include <ifaddrs.h>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -35,6 +38,7 @@
 #include "basic_multi_dma.hh"
 #include "combiner.hh"
 #include "counter.hh"
+#include "freq_meter.hh"
 #include "host_runtime.hh"
 #include "httplib.h"
 #include "misc.hh"
@@ -43,6 +47,8 @@
 #include "ppworkflow.hh"
 #include "qout.hh"
 #include "readback.hh"
+#include "startup.hh"
+#include "trigger.hh"
 
 namespace {
 
@@ -60,14 +66,39 @@ struct PortState {
   uint32_t force_value = 0;
 };
 
+struct StreamerOverrideState {
+  bool enabled = false;
+  uint32_t value = 0;
+};
+
+struct StreamerState {
+  uint32_t qout = 0;
+  uint32_t qout_streamer = 0;
+  StreamerOverrideState override_state;
+};
+
+struct TriggerConfigState {
+  uint32_t mode = 0;
+  uint32_t invert_result = 0;
+  uint32_t invert_int = 0;
+  uint32_t invert_ext = 0;
+  uint32_t invert_misc = 0;
+  uint32_t invert_aux = 0;
+  uint32_t mask_int = 0;
+  uint32_t mask_ext = 0;
+  uint32_t mask_misc = 0;
+  uint32_t mask_aux = 0;
+};
+
 struct StatusSnapshot {
   uint64_t seqno = 0;
   unsigned poll_ms = 100;
   uint8_t aux_raw = 0;
   uint32_t trig_raw = 0;
-  std::array<uint32_t, 4> qout_values {};
+  StreamerState streamer;
   int last_stream_rc = RC_OK;
   std::string stream_message = "idle";
+  TriggerConfigState trigger_settings;
   std::string combiner_mode = "SEL1";
   PortState output;
   std::array<PortState, 4> inputs {};
@@ -94,6 +125,11 @@ struct StreamLaunchRequest {
   bool check_readback = false;
 };
 
+struct ResetResult {
+  bool ok = true;
+  std::string message;
+};
+
 std::string bits8(const uint8_t value) {
   return std::bitset<8>(value).to_string();
 }
@@ -112,6 +148,81 @@ bool trig_force(const uint32_t value) {
 
 bool trig_reset(const uint32_t value) {
   return value & (1U << PIO1_RESET);
+}
+
+TriggerConfigState trigger_config_from_input(const InputParser &input) {
+  TriggerConfigState state;
+  state.mode = 0;
+
+  const auto opts = resolve_trigger_options(input);
+  if (opts.mode) {
+    switch (*opts.mode) {
+    case TriggerModeOption::internal:
+      state.mode = static_cast<uint32_t>(trig_mode::INT);
+      break;
+    case TriggerModeOption::external:
+      state.mode = static_cast<uint32_t>(trig_mode::EXT);
+      break;
+    case TriggerModeOption::misc:
+      state.mode = static_cast<uint32_t>(trig_mode::MISC);
+      break;
+    case TriggerModeOption::any:
+      state.mode = static_cast<uint32_t>(trig_mode::OR);
+      break;
+    case TriggerModeOption::all:
+      state.mode = static_cast<uint32_t>(trig_mode::AND);
+      break;
+    case TriggerModeOption::standard:
+      state.mode = static_cast<uint32_t>(trig_mode::OR);
+      state.invert_ext = ~uint32_t {0};
+      break;
+    }
+  }
+
+  if (opts.invert_result) state.invert_result = *opts.invert_result;
+  if (opts.invert_int) state.invert_int = *opts.invert_int;
+  if (opts.invert_ext) state.invert_ext = *opts.invert_ext;
+  if (opts.invert_misc) state.invert_misc = *opts.invert_misc;
+  if (opts.mask_int) state.mask_int = *opts.mask_int;
+  if (opts.mask_ext) state.mask_ext = *opts.mask_ext;
+  if (opts.mask_misc) state.mask_misc = *opts.mask_misc;
+  return state;
+}
+
+CombinerRequest combiner_request_from_input(const InputParser &input) {
+  CombinerRequest request;
+  request.mode = comb_mode::SEL1;
+
+  if (input.exists("-out_sel1")) request.mode = comb_mode::SEL1;
+  else if (input.exists("-out_sel2")) request.mode = comb_mode::SEL2;
+  else if (input.exists("-out_sel3")) request.mode = comb_mode::SEL3;
+  else if (input.exists("-out_sel4")) request.mode = comb_mode::SEL4;
+  else if (input.exists("-out_and")) request.mode = comb_mode::AND;
+  else if (input.exists("-out_or")) request.mode = comb_mode::OR;
+  else if (input.exists("-out_xor")) request.mode = comb_mode::XOR;
+  else if (input.exists("-out_xnor")) request.mode = comb_mode::XNOR;
+  else if (input.exists("-out_maj")) request.mode = comb_mode::MAJ;
+  else if (input.exists("-out_block8")) request.mode = comb_mode::BLOCK8;
+  else if (input.exists("-out_block16")) request.mode = comb_mode::BLOCK16;
+  else if (input.exists("-out_sum12")) request.mode = comb_mode::SUM12;
+  else if (input.exists("-out_sum1234")) request.mode = comb_mode::SUM1234;
+  else if (input.exists("-out_diff12")) request.mode = comb_mode::DIFF12;
+
+  auto parse_port = [&](const char *invert_name, const char *mask_name, const char *force_name) {
+    PortState state;
+    state.invert = input.exists(invert_name) ? parse_value(input, invert_name, "0") : 0;
+    state.mask = input.exists(mask_name) ? parse_value(input, mask_name, "0xffffffff") : 0xffffffffU;
+    state.force_enabled = input.exists(force_name);
+    state.force_value = state.force_enabled ? parse_value(input, force_name, "0") : 0;
+    return state;
+  };
+
+  request.output = parse_port("-invert_out", "-mask_out", "-force_out");
+  request.inputs[0] = parse_port("-invert1", "-mask1", "-force1");
+  request.inputs[1] = parse_port("-invert2", "-mask2", "-force2");
+  request.inputs[2] = parse_port("-invert3", "-mask3", "-force3");
+  request.inputs[3] = parse_port("-invert4", "-mask4", "-force4");
+  return request;
 }
 
 bool force_enabled(const uint32_t cfg, const int port) {
@@ -146,6 +257,53 @@ comb_mode comb_mode_from_string(std::string mode) {
   throw BadRequest("Invalid combiner mode: " + mode);
 }
 
+std::string trigger_mode_to_string(const uint32_t mode) {
+  switch (mode & MODE_MASK) {
+  case 0: return "INT";
+  case 1: return "EXT";
+  case 2: return "MISC";
+  case 3: return "AUX";
+  case 4: return "AND";
+  case 5: return "OR";
+  case 6: return "XOR";
+  default:
+    return "UNKNOWN(" + std::to_string(mode & MODE_MASK) + ')';
+  }
+}
+
+uint32_t parse_u32_literal(std::string value) {
+  value = trim(stripUnderscores(value));
+  if (value.empty()) {
+    throw std::invalid_argument("Empty integer string");
+  }
+
+  if (containsChar(value, '\'')) {
+    const auto parsed = parseVerilogInt(value);
+    if (parsed > std::numeric_limits<uint32_t>::max()) {
+      throw std::out_of_range("Integer exceeds uint32_t range");
+    }
+    return static_cast<uint32_t>(parsed);
+  }
+
+  if (value.size() > 2 && value[0] == '0' && (value[1] == 'b' || value[1] == 'B')) {
+    errno = 0;
+    char *end = nullptr;
+    const auto parsed = std::strtoul(value.c_str() + 2, &end, 2);
+    if (end == value.c_str() + 2 || *end != '\0' || errno == ERANGE || parsed > std::numeric_limits<uint32_t>::max()) {
+      throw std::invalid_argument("Invalid binary integer");
+    }
+    return static_cast<uint32_t>(parsed);
+  }
+
+  errno = 0;
+  char *end = nullptr;
+  const auto parsed = std::strtoul(value.c_str(), &end, 0);
+  if (end == value.c_str() || *end != '\0' || errno == ERANGE || parsed > std::numeric_limits<uint32_t>::max()) {
+    throw std::invalid_argument("Invalid integer");
+  }
+  return static_cast<uint32_t>(parsed);
+}
+
 std::string json_escape(std::string_view input) {
   std::ostringstream out;
   for (const auto ch : input) {
@@ -159,8 +317,10 @@ std::string json_escape(std::string_view input) {
     case '\t': out << "\\t"; break;
     default:
       if (static_cast<unsigned char>(ch) < 0x20) {
-        out << "\\u" << std::hex << std::uppercase << int(static_cast<unsigned char>(ch) >> 4)
-            << int(static_cast<unsigned char>(ch) & 0xF) << std::dec << std::nouppercase;
+        out << "\\u"
+            << std::hex << std::uppercase << std::setw(4) << std::setfill('0')
+            << static_cast<unsigned>(static_cast<unsigned char>(ch))
+            << std::dec << std::nouppercase << std::setfill(' ');
       } else {
         out << ch;
       }
@@ -217,7 +377,7 @@ std::string require_bounded_text_param(const httplib::Request &req, const char *
 uint32_t parse_u32_param(const httplib::Request &req, const char *name, const std::string &def = "") {
   const auto value = def.empty() ? require_param(req, name) : optional_param(req, name, def);
   try {
-    return parse_uint32_t(value);
+    return parse_u32_literal(value);
   } catch (const std::exception &) {
     throw BadRequest(std::string("Invalid integer for ") + name + ": " + value);
   }
@@ -266,18 +426,26 @@ std::string status_to_json(const StatusSnapshot &status) {
   out << "\"enable\":" << (trig_enable(status.trig_raw) ? "true" : "false") << ',';
   out << "\"force\":" << (trig_force(status.trig_raw) ? "true" : "false") << ',';
   out << "\"reset\":" << (trig_reset(status.trig_raw) ? "true" : "false") << "},";
+  out << "\"trigger_settings\":{";
+  out << "\"mode\":\"" << trigger_mode_to_string(status.trigger_settings.mode) << "\",";
+  out << "\"invert_result\":" << status.trigger_settings.invert_result << ',';
+  out << "\"invert_int\":" << status.trigger_settings.invert_int << ',';
+  out << "\"invert_ext\":" << status.trigger_settings.invert_ext << ',';
+  out << "\"invert_misc\":" << status.trigger_settings.invert_misc << ',';
+  out << "\"invert_aux\":" << status.trigger_settings.invert_aux << ',';
+  out << "\"mask_int\":" << status.trigger_settings.mask_int << ',';
+  out << "\"mask_ext\":" << status.trigger_settings.mask_ext << ',';
+  out << "\"mask_misc\":" << status.trigger_settings.mask_misc << ',';
+  out << "\"mask_aux\":" << status.trigger_settings.mask_aux << "},";
   out << "\"stream\":{";
   out << "\"last_rc\":" << status.last_stream_rc << ',';
   out << "\"message\":\"" << json_escape(status.stream_message) << "\"},";
-  out << "\"streamers\":[";
-  for (size_t i = 0; i < status.qout_values.size(); ++i) {
-    if (i) out << ',';
-    out << '{';
-    out << "\"index\":" << (i + 1) << ',';
-    out << "\"qout\":" << status.qout_values[i];
-    out << '}';
-  }
-  out << "],";
+  out << "\"streamer\":{";
+  out << "\"qout\":" << status.streamer.qout << ',';
+  out << "\"qout_streamer\":" << status.streamer.qout_streamer << ',';
+  out << "\"override\":{";
+  out << "\"enabled\":" << (status.streamer.override_state.enabled ? "true" : "false") << ',';
+  out << "\"value\":" << status.streamer.override_state.value << "}},";
   out << "\"combiner\":{";
   out << "\"mode\":\"" << status.combiner_mode << "\",";
   out << "\"output\":{";
@@ -411,8 +579,14 @@ const char *index_html = R"HTML(<!doctype html>
 <body>
   <main class="app-shell">
     <header class="app-header">
-      <h1>PulsePins Web GUI</h1>
-      <div id="global-status" class="notice">Connecting…</div>
+      <div>
+        <h1>PulsePins Web GUI</h1>
+        <div class="meta">Single-stream control, trigger monitoring, combiner setup, and sequence playback.</div>
+      </div>
+      <div class="header-actions">
+        <button id="reset-button" type="button" class="secondary-button">Reset hardware</button>
+        <div id="global-status" class="notice">Connecting…</div>
+      </div>
     </header>
 
     <section class="panel">
@@ -429,22 +603,43 @@ const char *index_html = R"HTML(<!doctype html>
           <div id="trig-raw" class="meta"></div>
           <div id="trig-flags" class="meta"></div>
         </div>
+        <div>
+          <div class="label">Streamer</div>
+          <div id="streamer-qout" class="meta mono"></div>
+          <div id="streamer-qout-raw" class="meta mono"></div>
+          <div id="streamer-override" class="meta mono"></div>
+        </div>
       </div>
       <div class="meta-row">
         <span><strong>Combiner:</strong> <span id="combiner-mode"></span></span>
+        <span><strong>Trigger mode:</strong> <span id="trigger-mode-summary"></span></span>
         <span><strong>Last action:</strong> <span id="last-action"></span></span>
         <span><strong>Last error:</strong> <span id="last-error"></span></span>
       </div>
     </section>
 
     <section class="panel">
-      <h2>Streamer Overrides</h2>
+      <h2>Trigger Settings</h2>
+      <div class="settings-grid">
+        <div class="setting"><div class="label">Mode</div><div id="trigger-mode" class="mono"></div></div>
+        <div class="setting"><div class="label">Result invert</div><div id="trigger-invert-result" class="mono"></div></div>
+        <div class="setting"><div class="label">INT invert</div><div id="trigger-invert-int" class="mono"></div></div>
+        <div class="setting"><div class="label">EXT invert</div><div id="trigger-invert-ext" class="mono"></div></div>
+        <div class="setting"><div class="label">MISC invert</div><div id="trigger-invert-misc" class="mono"></div></div>
+        <div class="setting"><div class="label">AUX invert</div><div id="trigger-invert-aux" class="mono"></div></div>
+        <div class="setting"><div class="label">INT mask</div><div id="trigger-mask-int" class="mono"></div></div>
+        <div class="setting"><div class="label">EXT mask</div><div id="trigger-mask-ext" class="mono"></div></div>
+        <div class="setting"><div class="label">MISC mask</div><div id="trigger-mask-misc" class="mono"></div></div>
+        <div class="setting"><div class="label">AUX mask</div><div id="trigger-mask-aux" class="mono"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Streamer Override</h2>
       <form id="qout-form" class="form-grid">
-        <label>q1<input name="q1" value="0" placeholder="0, 0xff, 0b1010"></label>
-        <label>q2<input name="q2" value="0" placeholder="0, 0xff, 0b1010"></label>
-        <label>q3<input name="q3" value="0" placeholder="0, 0xff, 0b1010"></label>
-        <label>q4<input name="q4" value="0" placeholder="0, 0xff, 0b1010"></label>
-        <button type="submit">Apply qout</button>
+        <label>Enabled<select name="override_enabled"><option value="0">false</option><option value="1">true</option></select></label>
+        <label>Override value<input name="override_value" value="0x0" placeholder="0x0"></label>
+        <button type="submit">Apply override</button>
       </form>
       <div class="meta">Accepted integer formats: decimal (`42`), hex (`0xff`), binary (`0b1010`), octal (`077`), and Verilog-style literals like `8'hFF` or `'b1010`.</div>
     </section>
@@ -474,10 +669,10 @@ const char *index_html = R"HTML(<!doctype html>
         <div class="subpanel">
           <h3>Output</h3>
           <div class="port-grid">
-            <label>Invert<input name="output_invert" value="0"></label>
+            <label>Invert<input name="output_invert" value="0x0"></label>
             <label>Mask<input name="output_mask" value="0xffffffff"></label>
             <label>Force enabled<select name="output_force_enabled"><option value="0">false</option><option value="1">true</option></select></label>
-            <label>Force value<input name="output_force_value" value="0"></label>
+            <label>Force value<input name="output_force_value" value="0x0"></label>
           </div>
         </div>
 
@@ -485,37 +680,37 @@ const char *index_html = R"HTML(<!doctype html>
           <div class="subpanel">
             <h3>Input 1</h3>
             <div class="port-grid">
-              <label>Invert<input name="in1_invert" value="0"></label>
+              <label>Invert<input name="in1_invert" value="0x0"></label>
               <label>Mask<input name="in1_mask" value="0xffffffff"></label>
               <label>Force enabled<select name="in1_force_enabled"><option value="0">false</option><option value="1">true</option></select></label>
-              <label>Force value<input name="in1_force_value" value="0"></label>
+              <label>Force value<input name="in1_force_value" value="0x0"></label>
             </div>
           </div>
           <div class="subpanel">
             <h3>Input 2</h3>
             <div class="port-grid">
-              <label>Invert<input name="in2_invert" value="0"></label>
+              <label>Invert<input name="in2_invert" value="0x0"></label>
               <label>Mask<input name="in2_mask" value="0xffffffff"></label>
               <label>Force enabled<select name="in2_force_enabled"><option value="0">false</option><option value="1">true</option></select></label>
-              <label>Force value<input name="in2_force_value" value="0"></label>
+              <label>Force value<input name="in2_force_value" value="0x0"></label>
             </div>
           </div>
           <div class="subpanel">
             <h3>Input 3</h3>
             <div class="port-grid">
-              <label>Invert<input name="in3_invert" value="0"></label>
+              <label>Invert<input name="in3_invert" value="0x0"></label>
               <label>Mask<input name="in3_mask" value="0xffffffff"></label>
               <label>Force enabled<select name="in3_force_enabled"><option value="0">false</option><option value="1">true</option></select></label>
-              <label>Force value<input name="in3_force_value" value="0"></label>
+              <label>Force value<input name="in3_force_value" value="0x0"></label>
             </div>
           </div>
           <div class="subpanel">
             <h3>Input 4</h3>
             <div class="port-grid">
-              <label>Invert<input name="in4_invert" value="0"></label>
+              <label>Invert<input name="in4_invert" value="0x0"></label>
               <label>Mask<input name="in4_mask" value="0xffffffff"></label>
               <label>Force enabled<select name="in4_force_enabled"><option value="0">false</option><option value="1">true</option></select></label>
-              <label>Force value<input name="in4_force_value" value="0"></label>
+              <label>Force value<input name="in4_force_value" value="0x0"></label>
             </div>
           </div>
         </div>
@@ -570,6 +765,12 @@ body {
   margin-bottom: 1rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .panel, .subpanel {
   background: #111827;
   border: 1px solid #334155;
@@ -578,7 +779,7 @@ body {
   margin-bottom: 1rem;
 }
 
-.status-grid, .ports-grid, .form-grid, .port-grid {
+.status-grid, .ports-grid, .form-grid, .port-grid, .settings-grid {
   display: grid;
   gap: 0.75rem;
 }
@@ -594,6 +795,10 @@ body {
 
 .ports-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.settings-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .port-grid {
@@ -622,6 +827,11 @@ button {
   font-weight: 600;
 }
 
+.secondary-button {
+  width: auto;
+  background: #475569;
+}
+
 button:disabled {
   opacity: 0.6;
   cursor: wait;
@@ -644,8 +854,19 @@ button:disabled {
   margin: 0.4rem 0;
 }
 
+.mono {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
 .meta, .meta-row, .notice, .result-box {
   color: #cbd5e1;
+}
+
+.setting {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.75rem;
 }
 
 .meta-row {
@@ -686,11 +907,21 @@ button:disabled {
 const char *app_js = R"JS((() => {
   const globalStatus = document.getElementById('global-status');
   const streamResult = document.getElementById('stream-result');
+  const resetButton = document.getElementById('reset-button');
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
   let pollMs = 100;
   let hardwareBusy = false;
+
+  function formatHex(value, width = 8) {
+    const normalized = Number(value) >>> 0;
+    return `0x${normalized.toString(16).padStart(width, '0')}`;
+  }
+
+  function setText(id, value) {
+    document.getElementById(id).textContent = value;
+  }
 
   function setGlobal(message, isError = false) {
     globalStatus.textContent = message;
@@ -705,6 +936,7 @@ const char *app_js = R"JS((() => {
 
   function setHardwareBusy(busy) {
     hardwareBusy = busy;
+    resetButton.disabled = busy;
     setBusy(qoutForm, busy);
     setBusy(combinerForm, busy);
     setBusy(streamForm, busy);
@@ -716,39 +948,56 @@ const char *app_js = R"JS((() => {
 
   function populateQout(status) {
     if (formOwnsFocus(qoutForm)) return;
-    status.streamers.forEach((streamer) => {
-      qoutForm.querySelector(`[name="q${streamer.index}"]`).value = streamer.qout;
-    });
+    qoutForm.querySelector('[name="override_enabled"]').value = status.streamer.override.enabled ? '1' : '0';
+    qoutForm.querySelector('[name="override_value"]').value = formatHex(status.streamer.override.value);
   }
 
   function populateCombiner(status) {
     if (formOwnsFocus(combinerForm)) return;
     combinerForm.querySelector('[name="mode"]').value = status.combiner.mode;
     const output = status.combiner.output;
-    combinerForm.querySelector('[name="output_invert"]').value = output.invert;
-    combinerForm.querySelector('[name="output_mask"]').value = output.mask;
+    combinerForm.querySelector('[name="output_invert"]').value = formatHex(output.invert);
+    combinerForm.querySelector('[name="output_mask"]').value = formatHex(output.mask);
     combinerForm.querySelector('[name="output_force_enabled"]').value = output.force_enabled ? '1' : '0';
-    combinerForm.querySelector('[name="output_force_value"]').value = output.force_value;
+    combinerForm.querySelector('[name="output_force_value"]').value = formatHex(output.force_value);
     status.combiner.inputs.forEach((input) => {
       const base = `in${input.index}`;
-      combinerForm.querySelector(`[name="${base}_invert"]`).value = input.invert;
-      combinerForm.querySelector(`[name="${base}_mask"]`).value = input.mask;
+      combinerForm.querySelector(`[name="${base}_invert"]`).value = formatHex(input.invert);
+      combinerForm.querySelector(`[name="${base}_mask"]`).value = formatHex(input.mask);
       combinerForm.querySelector(`[name="${base}_force_enabled"]`).value = input.force_enabled ? '1' : '0';
-      combinerForm.querySelector(`[name="${base}_force_value"]`).value = input.force_value;
+      combinerForm.querySelector(`[name="${base}_force_value"]`).value = formatHex(input.force_value);
     });
   }
 
+  function renderTriggerSettings(settings) {
+    setText('trigger-mode', settings.mode);
+    setText('trigger-invert-result', formatHex(settings.invert_result));
+    setText('trigger-invert-int', formatHex(settings.invert_int));
+    setText('trigger-invert-ext', formatHex(settings.invert_ext));
+    setText('trigger-invert-misc', formatHex(settings.invert_misc));
+    setText('trigger-invert-aux', formatHex(settings.invert_aux));
+    setText('trigger-mask-int', formatHex(settings.mask_int));
+    setText('trigger-mask-ext', formatHex(settings.mask_ext));
+    setText('trigger-mask-misc', formatHex(settings.mask_misc));
+    setText('trigger-mask-aux', formatHex(settings.mask_aux));
+  }
+
   function renderStatus(status) {
-    document.getElementById('aux-bits').textContent = status.aux.bits;
-    document.getElementById('aux-raw').textContent = `raw=${status.aux.raw}`;
-    document.getElementById('trig-bits').textContent = status.trig.bits;
-    document.getElementById('trig-raw').textContent = `raw=${status.trig.raw}`;
-    document.getElementById('trig-flags').textContent = `enable=${status.trig.enable} force=${status.trig.force} reset=${status.trig.reset}`;
-    document.getElementById('combiner-mode').textContent = status.combiner.mode;
-    document.getElementById('last-action').textContent = status.last_action;
-    document.getElementById('last-error').textContent = status.last_error || '(none)';
-    document.getElementById('stream-state').textContent = `rc=${status.stream.last_rc} message=${status.stream.message}`;
+    setText('aux-bits', status.aux.bits);
+    setText('aux-raw', `raw=${formatHex(status.aux.raw, 2)}`);
+    setText('trig-bits', status.trig.bits);
+    setText('trig-raw', `raw=${formatHex(status.trig.raw)}`);
+    setText('trig-flags', `enable=${status.trig.enable} force=${status.trig.force} reset=${status.trig.reset}`);
+    setText('streamer-qout', `qout=${formatHex(status.streamer.qout)}`);
+    setText('streamer-qout-raw', `streamer=${formatHex(status.streamer.qout_streamer)}`);
+    setText('streamer-override', `override=${status.streamer.override.enabled} value=${formatHex(status.streamer.override.value)}`);
+    setText('combiner-mode', status.combiner.mode);
+    setText('trigger-mode-summary', status.trigger_settings.mode);
+    setText('last-action', status.last_action);
+    setText('last-error', status.last_error || '(none)');
+    setText('stream-state', `rc=${status.stream.last_rc} message=${status.stream.message}`);
     streamResult.textContent = status.stream.message;
+    renderTriggerSettings(status.trigger_settings);
     populateQout(status);
     populateCombiner(status);
     pollMs = status.poll_ms || 100;
@@ -786,7 +1035,7 @@ const char *app_js = R"JS((() => {
     try {
       const result = await fetchJson('/api/qout', { method: 'POST', body });
       if (result.status) renderStatus(result.status);
-      setGlobal(result.message || 'qout updated');
+      setGlobal(result.message || 'override updated');
     } catch (error) {
       setGlobal(error.message, true);
     } finally {
@@ -834,6 +1083,22 @@ const char *app_js = R"JS((() => {
     }
   });
 
+  resetButton.addEventListener('click', async () => {
+    const body = new URLSearchParams();
+    setHardwareBusy(true);
+    try {
+      const result = await fetchJson('/api/reset', { method: 'POST', body });
+      if (result.status) renderStatus(result.status);
+      streamResult.textContent = result.message || 'Hardware reset completed';
+      setGlobal(result.message || 'hardware reset completed');
+    } catch (error) {
+      streamResult.textContent = error.message;
+      setGlobal(error.message, true);
+    } finally {
+      setHardwareBusy(false);
+    }
+  });
+
   pollStatus();
 })();
 )JS";
@@ -845,45 +1110,69 @@ public:
     input(input_),
     verbosity(verbosity_),
     poll_ms(poll_ms_),
-    streamers(input, fpga),
     qout_ctrl(input, verbosity, fpga),
     play_streamer(input, fpga),
+    trigger_ctrl(input, fpga),
     readback_path(input, fpga),
     counters(input, fpga),
     pio_aux(fpga.dev_lw, PIO_AUX_BASE),
-    comb(qout_ctrl.cq)
+    comb(qout_ctrl.cq),
+    trig_comb(trigger_ctrl.ct)
   {
     snapshot.poll_ms = poll_ms;
+    snapshot.trigger_settings = trigger_config_from_input(input);
+    combiner_base_config = combiner_request_from_input(input);
+    snapshot.combiner_mode = to_string(combiner_base_config.mode);
+    snapshot.output = combiner_base_config.output;
+    snapshot.inputs = combiner_base_config.inputs;
+    streamer_override.enabled = (play_streamer.sc.get_control() & QOUT_SELECT) == QOUT_SELECT;
+    snapshot.streamer.override_state = streamer_override;
+    snapshot.streamer.qout = streamer_override.value;
+    snapshot.streamer.qout_streamer = 0;
   }
 
   ~WebGuiController() = default;
 
   StatusSnapshot get_status_copy() {
-    auto status = read_status();
-    status.seqno = snapshot.seqno;
-    status.last_action = snapshot.last_action;
-    status.last_error = snapshot.last_error;
-    status.last_stream_rc = snapshot.last_stream_rc;
-    status.stream_message = snapshot.stream_message;
-    return status;
+    auto lock = fpga.acquire_lock();
+    return read_status_locked();
   }
 
-  void apply_qout_overrides(const uint32_t q1, const uint32_t q2, const uint32_t q3, const uint32_t q4) {
-    qout_ctrl.cq.report();
-    streamers.s1.sc.qout_set(q1);
-    streamers.s2.sc.qout_set(q2);
-    streamers.s3.sc.qout_set(q3);
-    streamers.s4.sc.qout_set(q4);
-    publish_status(read_status(), "applied qout overrides", "");
+  void apply_streamer_override(const StreamerOverrideState &state) {
+    auto lock = fpga.acquire_lock();
+    apply_streamer_override_locked(state);
+    publish_action_locked("applied streamer override", "");
   }
 
   void apply_combiner_config(const CombinerRequest &request) {
-    comb.mode(request.mode);
-    apply_port_locked(comb, 0, request.output);
-    for (size_t i = 0; i < request.inputs.size(); ++i) {
-      apply_port_locked(comb, static_cast<int>(i + 1), request.inputs[i]);
-    }
-    publish_status(read_status(), "applied combiner config", "");
+    auto lock = fpga.acquire_lock();
+    apply_combiner_config_locked(request);
+    publish_action_locked("applied combiner config", "");
+  }
+
+  ResetResult reset_hardware() {
+    auto lock = fpga.acquire_lock();
+    const auto preserved_combiner = read_combiner_config_locked();
+    const auto preserved_trigger = read_trigger_config_locked();
+    const auto preserved_override = snapshot.streamer.override_state;
+
+    rstmgr rm;
+    rm.s2f_reset(verbosity.verbose);
+    apply_fpga_startup_policy(fpga, input);
+    pp_freq_meter(input, fpga).report();
+
+    play_streamer.set_initial_value(input);
+    fpga.output_enable(true);
+    play_streamer.sc.reset();
+    readback_path.reset();
+    counters.reset_all();
+
+    apply_trigger_config_locked(preserved_trigger);
+    apply_combiner_config_locked(preserved_combiner);
+    apply_streamer_override_locked(preserved_override);
+
+    publish_action_locked("reset hardware", "");
+    return {true, "Hardware reset completed and web settings restored"};
   }
 
   StreamResult stream_text_sequence(StreamLaunchRequest request) {
@@ -900,109 +1189,182 @@ public:
         request_input.add("-check");
       }
 
-      const int rc = send_and_trig(play_streamer.fifo,
-                                   play_streamer.sc,
-                                   readback_path,
-                                   counters,
-                                   sequence,
-                                   request_input,
-                                   force_trigger_request,
-                                   verbosity);
+      auto lock = fpga.acquire_lock();
+      readback_path.reset();
+      counters.reset_all();
+      const int rc = send_and_trig(
+        play_streamer.fifo,
+        play_streamer.sc,
+        readback_path,
+        counters,
+        sequence,
+        request_input,
+        force_trigger_request,
+        verbosity);
       if (rc == RC_OK) {
-        publish_status(read_status(), "streamed sequence", "", rc, "Sequence streamed successfully");
+        publish_stream_result_locked("streamed sequence", "", rc, "Sequence streamed successfully");
         return {true, rc, httplib::StatusCode::OK_200, "Sequence streamed successfully"};
       }
 
       const auto error = std::string("Streaming failed with rc=") + std::to_string(rc);
-      publish_status(read_status(), "stream failed", error, rc, error);
+      publish_stream_result_locked("stream failed", error, rc, error);
       return {false, rc, httplib::StatusCode::InternalServerError_500, error};
     } catch (const std::exception &e) {
-      publish_status(read_status(), "stream failed", e.what(), -1, e.what());
+      auto lock = fpga.acquire_lock();
+      publish_stream_result_locked("stream failed", e.what(), RC_EXCEPTION, e.what());
       throw;
     } catch (...) {
-      publish_status(read_status(), "stream failed", "Unhandled non-standard exception in stream worker", -1,
-                     "Unhandled non-standard exception in stream worker");
+      auto lock = fpga.acquire_lock();
+      publish_stream_result_locked(
+        "stream failed",
+        "Unhandled non-standard exception in stream worker",
+        RC_EXCEPTION,
+        "Unhandled non-standard exception in stream worker");
       throw;
     }
   }
 
   void set_last_error(const std::string &message) {
+    auto lock = fpga.acquire_lock();
     snapshot.last_error = message;
     snapshot.seqno++;
   }
 
 private:
-  void publish_status(StatusSnapshot status,
-                      const std::string &last_action,
-                      const std::string &last_error,
-                      const int last_stream_rc = RC_OK,
-                      const std::string &stream_message = "idle") {
+  void publish_action_locked(
+    const std::string &last_action,
+    const std::string &last_error) {
     snapshot.seqno += 1;
-    status.seqno = snapshot.seqno;
-    status.last_action = last_action;
-    status.last_error = last_error;
-    snapshot.last_stream_rc = last_stream_rc;
-    snapshot.stream_message = stream_message;
     snapshot.last_action = last_action;
     snapshot.last_error = last_error;
-    snapshot = std::move(status);
+  }
+
+  void publish_stream_result_locked(const std::string &last_action,
+                                    const std::string &last_error,
+                                    const int last_stream_rc,
+                                    const std::string &stream_message) {
+    publish_action_locked(last_action, last_error);
+    snapshot.last_stream_rc = last_stream_rc;
+    snapshot.stream_message = stream_message;
   }
 
   FPGA &fpga;
   const InputParser &input;
   const Verbosity &verbosity;
   const unsigned poll_ms;
-  multistreamer streamers;
   qout qout_ctrl;
   streamer play_streamer;
+  trigger trigger_ctrl;
   readback readback_path;
   counter counters;
   pio_in pio_aux;
   combiner_qout &comb;
+  combiner_trig &trig_comb;
+  CombinerRequest combiner_base_config;
+  StreamerOverrideState streamer_override;
   StatusSnapshot snapshot;
 
-  PortState read_port_state(combiner_qout &comb, const int index, const uint32_t cfg) {
+  PortState read_port_state_locked(combiner_qout &combiner, const int index, const uint32_t cfg) {
     PortState state;
-    state.invert = comb.get_invert(index);
-    state.mask = comb.get_mask(index);
+    state.invert = combiner.get_invert(index);
+    state.mask = combiner.get_mask(index);
     state.force_enabled = force_enabled(cfg, index);
-    state.force_value = comb.get_force(index);
+    state.force_value = combiner.get_force(index);
     return state;
   }
 
-  StatusSnapshot read_status() {
-    StatusSnapshot status;
-    status.poll_ms = poll_ms;
-    status.aux_raw = static_cast<uint8_t>(pio_aux.read() & 0xffU);
-    status.trig_raw = fpga.trig_ext.read();
-    status.qout_values = {
-      streamers.s1.sc.get_qout(),
-      streamers.s2.sc.get_qout(),
-      streamers.s3.sc.get_qout(),
-      streamers.s4.sc.get_qout(),
-    };
+  void sync_qout_combiner_shadow_locked() {
     const auto cfg = comb.get_cfg();
-    comb.cfg(cfg); // keep the software shadow aligned before force/value readback helpers mutate RB bits.
-    status.combiner_mode = to_string(comb.get_mode());
-    status.output = read_port_state(comb, 0, cfg);
-    for (size_t i = 0; i < status.inputs.size(); ++i) {
-      status.inputs[i] = read_port_state(comb, static_cast<int>(i + 1), cfg);
-    }
+    comb.cfg(cfg);
+  }
+
+  void sync_trigger_combiner_shadow_locked() {
+    const auto cfg = trig_comb.get_cfg();
+    trig_comb.cfg(cfg);
+  }
+
+  CombinerRequest read_combiner_config_locked() {
+    return combiner_base_config;
+  }
+
+  TriggerConfigState read_trigger_config_locked() {
+    return snapshot.trigger_settings;
+  }
+
+  StatusSnapshot read_status_locked() {
+    StatusSnapshot status = snapshot;
+    status.poll_ms = poll_ms;
     return status;
   }
 
-  void apply_port_locked(combiner_qout &comb, const int port, const PortState &state) {
-    comb.invert(port, state.invert);
-    comb.mask(port, state.mask);
+  void apply_port_locked(combiner_qout &combiner, const int port, const PortState &state) {
+    combiner.invert(port, state.invert);
+    combiner.mask(port, state.mask);
     if (state.force_enabled) {
-      comb.force(port, state.force_value);
+      combiner.force(port, state.force_value);
     } else {
-      comb.value(port, state.force_value);
-      comb.release_force(port);
+      combiner.value(port, state.force_value);
+      combiner.release_force(port);
     }
   }
 
+  void apply_streamer_override_locked(const StreamerOverrideState &state) {
+    // The dedicated qout-override register faults on the deployed bitstream, so implement the
+    // web override with the output combiner's final-output force path instead.
+    play_streamer.sc.qout_select(false);
+    streamer_override = state;
+    snapshot.streamer.override_state = state;
+    if (state.enabled) {
+      snapshot.streamer.qout = state.value;
+    } else {
+      snapshot.streamer.qout = snapshot.streamer.qout_streamer;
+    }
+    apply_combiner_config_locked(combiner_base_config);
+  }
+
+  void apply_combiner_config_locked(const CombinerRequest &request) {
+    sync_qout_combiner_shadow_locked();
+    combiner_base_config = request;
+
+    CombinerRequest effective = request;
+    if (streamer_override.enabled) {
+      effective.output.force_enabled = true;
+      effective.output.force_value = streamer_override.value;
+    }
+
+    comb.mode(effective.mode);
+    apply_port_locked(comb, 0, effective.output);
+    for (size_t i = 0; i < effective.inputs.size(); ++i) {
+      apply_port_locked(comb, static_cast<int>(i + 1), effective.inputs[i]);
+    }
+    snapshot.combiner_mode = to_string(request.mode);
+    snapshot.output = request.output;
+    snapshot.inputs = request.inputs;
+  }
+
+  void apply_trigger_config_locked(const TriggerConfigState &state) {
+    sync_trigger_combiner_shadow_locked();
+    trig_comb.mode(static_cast<trig_mode>(state.mode & MODE_MASK));
+    trig_comb.invert_result(state.invert_result);
+    trig_comb.invert_int(state.invert_int);
+    trig_comb.invert_ext(state.invert_ext);
+    trig_comb.invert_misc(state.invert_misc);
+    trig_comb.invert(4, state.invert_aux);
+    trig_comb.mask_int(state.mask_int);
+    trig_comb.mask_ext(state.mask_ext);
+    trig_comb.mask_misc(state.mask_misc);
+    trig_comb.mask(4, state.mask_aux);
+    snapshot.trigger_settings = state;
+  }
+
 };
+
+StreamerOverrideState parse_streamer_override_request(const httplib::Request &req) {
+  StreamerOverrideState state;
+  state.enabled = parse_bool_param(req, "override_enabled");
+  state.value = parse_u32_param(req, "override_value", "0x0");
+  return state;
+}
 
 CombinerRequest parse_combiner_request(const httplib::Request &req) {
   CombinerRequest request;
@@ -1077,23 +1439,18 @@ int main(int argc, char *argv[]) {
         std::cout << "ppwebgui: entered /api/qout" << std::endl;
       }
       require_form_post(req);
-      const auto q1 = parse_u32_param(req, "q1");
-      const auto q2 = parse_u32_param(req, "q2");
-      const auto q3 = parse_u32_param(req, "q3");
-      const auto q4 = parse_u32_param(req, "q4");
+      const auto state = parse_streamer_override_request(req);
       if (verbosity.veryverbose) {
         std::cout << "ppwebgui: parsed /api/qout parameters" << std::endl;
-        std::cout << "ppwebgui action: apply qout" << std::endl;
-        std::cout << "  q1=" << std::dec << q1 << std::endl;
-        std::cout << "  q2=" << std::dec << q2 << std::endl;
-        std::cout << "  q3=" << std::dec << q3 << std::endl;
-        std::cout << "  q4=" << std::dec << q4 << std::endl;
+        std::cout << "ppwebgui action: apply streamer override" << std::endl;
+        std::cout << "  enabled=" << bool_text(state.enabled) << std::endl;
+        std::cout << "  value=0x" << std::hex << state.value << std::dec << std::endl;
       }
-      controller.apply_qout_overrides(q1, q2, q3, q4);
+      controller.apply_streamer_override(state);
       if (verbosity.veryverbose) {
         std::cout << "ppwebgui: applied /api/qout request" << std::endl;
       }
-      respond_json(res, operation_json("Applied qout overrides", controller.get_status_copy()));
+      respond_json(res, operation_json("Applied streamer override", controller.get_status_copy()));
     }));
 
     server.Post("/api/combiner", wrap([&](const httplib::Request &req, httplib::Response &res) {
@@ -1117,6 +1474,15 @@ int main(int argc, char *argv[]) {
       }
       controller.apply_combiner_config(request);
       respond_json(res, operation_json("Applied combiner config", controller.get_status_copy()));
+    }));
+
+    server.Post("/api/reset", wrap([&](const httplib::Request &req, httplib::Response &res) {
+      require_form_post(req);
+      if (verbosity.veryverbose) {
+        std::cout << "ppwebgui action: reset hardware" << std::endl;
+      }
+      const auto result = controller.reset_hardware();
+      respond_json(res, operation_json(result.message, controller.get_status_copy()));
     }));
 
     server.Post("/api/stream", wrap([&](const httplib::Request &req, httplib::Response &res) {
@@ -1143,8 +1509,8 @@ int main(int argc, char *argv[]) {
       const auto result = controller.stream_text_sequence(std::move(request));
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
-           << ",\"rc\":" << result.rc
-           << ",\"message\":\"" << json_escape(result.message) << "\"";
+        << ",\"rc\":" << result.rc
+        << ",\"message\":\"" << json_escape(result.message) << "\"";
       if (result.ok) {
         body << ",\"status\":" << status_to_json(controller.get_status_copy());
       }
