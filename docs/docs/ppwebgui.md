@@ -60,7 +60,7 @@ The page exposes these main sections:
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
 
-Browser-triggered streams append the currently tracked idle raw qout value as the final output element. That keeps the post-run output state deterministic instead of ending on a random final value.
+Browser-triggered streams first run the same hardware reset/bring-up sequence exposed by the **Reset hardware** button, then append the currently tracked idle raw qout value as the final output element. That keeps each run deterministic and starts the streamer from a clean reset state.
 
 The header also includes a **Reset hardware** button. That action reruns the same FPGA-side bring-up sequence used by `ppwebgui` startup, including the FPGA reset-manager pulse, startup clock/PLL policy, and the startup frequency-meter report. After that it reapplies the current web-managed combiner and streamer-override settings so the browser state is preserved across the reset.
 
@@ -76,7 +76,7 @@ Version 1 keeps the API small:
 * `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `override_enabled` and `override_value`
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
 * `POST /api/reset` reruns the `ppwebgui` FPGA bring-up path and reapplies the current web-managed settings
-* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`; the backend appends the current tracked idle raw qout as the final output value
+* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`; before streaming, the backend reruns the `ppwebgui` hardware reset/bring-up path and then appends the current tracked idle raw qout as the final output value
 
 The current implementation rejects oversized form submissions and limits `sequence_text` to 32 KiB per request.
 

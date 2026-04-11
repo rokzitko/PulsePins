@@ -1156,25 +1156,7 @@ public:
 
   ResetResult reset_hardware() {
     auto lock = fpga.acquire_lock();
-    const auto preserved_combiner = read_combiner_config_locked();
-    const auto preserved_trigger = read_trigger_config_locked();
-    const auto preserved_override = snapshot.streamer.override_state;
-
-    rstmgr rm;
-    rm.s2f_reset(verbosity.verbose);
-    apply_fpga_startup_policy(fpga, input);
-    pp_freq_meter(input, fpga).report();
-
-    play_streamer.set_initial_value(input);
-    fpga.output_enable(true);
-    play_streamer.sc.reset();
-    readback_path.reset();
-    counters.reset_all();
-    snapshot.streamer.qout_streamer = streamer_initial_value_from_input(input);
-
-    apply_trigger_config_locked(preserved_trigger);
-    apply_combiner_config_locked(preserved_combiner);
-    apply_streamer_override_locked(preserved_override);
+    reset_hardware_locked();
 
     publish_action_locked("reset hardware", "");
     return {true, "Hardware reset completed and web settings restored"};
@@ -1193,12 +1175,11 @@ public:
       if (request.check_readback) {
         request_input.add("-check");
       }
-      const value_t final_value = snapshot.streamer.qout_streamer;
-      request_input.add_with_arg("-t", hex8(final_value));
 
       auto lock = fpga.acquire_lock();
-      readback_path.reset();
-      counters.reset_all();
+      reset_hardware_locked();
+      const value_t final_value = snapshot.streamer.qout_streamer;
+      request_input.add_with_arg("-t", hex8(final_value));
       const int rc = send_and_trig(
         play_streamer.fifo,
         play_streamer.sc,
@@ -1258,6 +1239,28 @@ private:
     publish_action_locked(last_action, last_error);
     snapshot.last_stream_rc = last_stream_rc;
     snapshot.stream_message = stream_message;
+  }
+
+  void reset_hardware_locked() {
+    const auto preserved_combiner = read_combiner_config_locked();
+    const auto preserved_trigger = read_trigger_config_locked();
+    const auto preserved_override = snapshot.streamer.override_state;
+
+    rstmgr rm;
+    rm.s2f_reset(verbosity.verbose);
+    apply_fpga_startup_policy(fpga, input);
+    pp_freq_meter(input, fpga).report();
+
+    play_streamer.set_initial_value(input);
+    fpga.output_enable(true);
+    play_streamer.sc.reset();
+    readback_path.reset();
+    counters.reset_all();
+    snapshot.streamer.qout_streamer = streamer_initial_value_from_input(input);
+
+    apply_trigger_config_locked(preserved_trigger);
+    apply_combiner_config_locked(preserved_combiner);
+    apply_streamer_override_locked(preserved_override);
   }
 
   FPGA &fpga;
