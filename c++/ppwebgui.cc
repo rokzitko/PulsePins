@@ -130,6 +130,10 @@ struct ResetResult {
   std::string message;
 };
 
+value_t streamer_initial_value_from_input(const InputParser &input) {
+  return resolve_streamer_options(input).initial_value;
+}
+
 std::string bits8(const uint8_t value) {
   return std::bitset<8>(value).to_string();
 }
@@ -1125,10 +1129,10 @@ public:
     snapshot.combiner_mode = to_string(combiner_base_config.mode);
     snapshot.output = combiner_base_config.output;
     snapshot.inputs = combiner_base_config.inputs;
+    snapshot.streamer.qout_streamer = streamer_initial_value_from_input(input);
     streamer_override.enabled = (play_streamer.sc.get_control() & QOUT_SELECT) == QOUT_SELECT;
     snapshot.streamer.override_state = streamer_override;
-    snapshot.streamer.qout = streamer_override.value;
-    snapshot.streamer.qout_streamer = 0;
+    snapshot.streamer.qout = streamer_override.enabled ? streamer_override.value : snapshot.streamer.qout_streamer;
   }
 
   ~WebGuiController() = default;
@@ -1166,6 +1170,7 @@ public:
     play_streamer.sc.reset();
     readback_path.reset();
     counters.reset_all();
+    snapshot.streamer.qout_streamer = streamer_initial_value_from_input(input);
 
     apply_trigger_config_locked(preserved_trigger);
     apply_combiner_config_locked(preserved_combiner);
@@ -1188,6 +1193,8 @@ public:
       if (request.check_readback) {
         request_input.add("-check");
       }
+      const value_t final_value = snapshot.streamer.qout_streamer;
+      request_input.add_with_arg("-t", hex8(final_value));
 
       auto lock = fpga.acquire_lock();
       readback_path.reset();
@@ -1202,8 +1209,13 @@ public:
         force_trigger_request,
         verbosity);
       if (rc == RC_OK) {
-        publish_stream_result_locked("streamed sequence", "", rc, "Sequence streamed successfully");
-        return {true, rc, httplib::StatusCode::OK_200, "Sequence streamed successfully"};
+        snapshot.streamer.qout_streamer = final_value;
+        if (!snapshot.streamer.override_state.enabled) {
+          snapshot.streamer.qout = final_value;
+        }
+        const auto message = std::string("Sequence streamed successfully; final qout ") + hex8(final_value);
+        publish_stream_result_locked("streamed sequence", "", rc, message);
+        return {true, rc, httplib::StatusCode::OK_200, message};
       }
 
       const auto error = std::string("Streaming failed with rc=") + std::to_string(rc);
