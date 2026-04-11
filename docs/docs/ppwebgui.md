@@ -66,6 +66,8 @@ The header also includes a **Reset hardware** button. That action reruns the sam
 
 The backend keeps hardware access serialized and the UI polls `/api/status` at the configured interval.
 
+The current implementation restores live polling only for register paths that have been stable on the deployed hardware: AUX input state and the streamer runtime status word. Trigger-combiner settings, combiner routing, and the displayed qout values remain controller-managed snapshots so the web GUI does not re-enter the crashy register read paths.
+
 Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
 
 ## API summary
@@ -93,6 +95,11 @@ The `status` payload also includes a `stream` object with:
 
 * `last_rc`
 * `message`
+* `runtime.raw`
+* `runtime.buffer_error`
+* `runtime.done`
+* `runtime.triggered`
+* `runtime.armed`
 
 and a `streamer` object with:
 

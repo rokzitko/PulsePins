@@ -72,6 +72,7 @@ struct StreamerOverrideState {
 };
 
 struct StreamerState {
+  uint32_t status_raw = 0;
   uint32_t qout = 0;
   uint32_t qout_streamer = 0;
   StreamerOverrideState override_state;
@@ -152,6 +153,30 @@ bool trig_force(const uint32_t value) {
 
 bool trig_reset(const uint32_t value) {
   return value & (1U << PIO1_RESET);
+}
+
+bool streamer_buffer_error(const uint32_t value) {
+  return value & BUFFER_ERROR;
+}
+
+bool streamer_done(const uint32_t value) {
+  return value & DONE;
+}
+
+bool streamer_triggered(const uint32_t value) {
+  return value & TRIGGERED;
+}
+
+bool streamer_armed(const uint32_t value) {
+  return value & ARMED;
+}
+
+uint32_t pack_live_trigger_status(const trigger_t trigger_in, const port_t trigger_ctrl) {
+  uint32_t value = trigger_in & TRIGGER_MASK;
+  if (trigger_ctrl & EXT_TRIG_CTRL_ENABLE) value |= (1U << PIO1_ENABLE);
+  if (trigger_ctrl & EXT_TRIG_CTRL_FORCE) value |= (1U << PIO1_FORCE);
+  if (trigger_ctrl & EXT_TRIG_CTRL_RESET) value |= (1U << PIO1_RESET);
+  return value;
 }
 
 TriggerConfigState trigger_config_from_input(const InputParser &input) {
@@ -443,8 +468,15 @@ std::string status_to_json(const StatusSnapshot &status) {
   out << "\"mask_aux\":" << status.trigger_settings.mask_aux << "},";
   out << "\"stream\":{";
   out << "\"last_rc\":" << status.last_stream_rc << ',';
-  out << "\"message\":\"" << json_escape(status.stream_message) << "\"},";
+  out << "\"message\":\"" << json_escape(status.stream_message) << "\",";
+  out << "\"runtime\":{";
+  out << "\"raw\":" << status.streamer.status_raw << ',';
+  out << "\"buffer_error\":" << (streamer_buffer_error(status.streamer.status_raw) ? "true" : "false") << ',';
+  out << "\"done\":" << (streamer_done(status.streamer.status_raw) ? "true" : "false") << ',';
+  out << "\"triggered\":" << (streamer_triggered(status.streamer.status_raw) ? "true" : "false") << ',';
+  out << "\"armed\":" << (streamer_armed(status.streamer.status_raw) ? "true" : "false") << "}},";
   out << "\"streamer\":{";
+  out << "\"status_raw\":" << status.streamer.status_raw << ',';
   out << "\"qout\":" << status.streamer.qout << ',';
   out << "\"qout_streamer\":" << status.streamer.qout_streamer << ',';
   out << "\"override\":{";
@@ -987,6 +1019,13 @@ const char *app_js = R"JS((() => {
   }
 
   function renderStatus(status) {
+    const runtimeFlags = [];
+    if (status.stream.runtime.buffer_error) runtimeFlags.push('buffer_error');
+    if (status.stream.runtime.done) runtimeFlags.push('done');
+    if (status.stream.runtime.triggered) runtimeFlags.push('triggered');
+    if (status.stream.runtime.armed) runtimeFlags.push('armed');
+    const runtimeSummary = runtimeFlags.length ? runtimeFlags.join(' ') : 'idle';
+
     setText('aux-bits', status.aux.bits);
     setText('aux-raw', `raw=${formatHex(status.aux.raw, 2)}`);
     setText('trig-bits', status.trig.bits);
@@ -999,7 +1038,7 @@ const char *app_js = R"JS((() => {
     setText('trigger-mode-summary', status.trigger_settings.mode);
     setText('last-action', status.last_action);
     setText('last-error', status.last_error || '(none)');
-    setText('stream-state', `rc=${status.stream.last_rc} message=${status.stream.message}`);
+    setText('stream-state', `rc=${status.stream.last_rc} message=${status.stream.message} runtime=${runtimeSummary} raw=${formatHex(status.stream.runtime.raw, 2)}`);
     streamResult.textContent = status.stream.message;
     renderTriggerSettings(status.trigger_settings);
     populateQout(status);
@@ -1007,8 +1046,8 @@ const char *app_js = R"JS((() => {
     pollMs = status.poll_ms || 100;
   }
 
-  async function fetchJson(url, options) {
-    const response = await fetch(url, options);
+  async function fetchJson(url, options = {}) {
+    const response = await fetch(url, { cache: 'no-store', ...options });
     const data = await response.json();
     if (!response.ok || data.ok === false) {
       throw new Error(data.error || data.message || `HTTP ${response.status}`);
@@ -1022,7 +1061,7 @@ const char *app_js = R"JS((() => {
       return;
     }
     try {
-      const status = await fetchJson('/api/status');
+      const status = await fetchJson(`/api/status?ts=${Date.now()}`);
       renderStatus(status);
       setGlobal('Connected');
     } catch (error) {
@@ -1309,6 +1348,11 @@ private:
   StatusSnapshot read_status_locked() {
     StatusSnapshot status = snapshot;
     status.poll_ms = poll_ms;
+    status.aux_raw = static_cast<uint8_t>(pio_aux.read() & 0xffU);
+    status.streamer.status_raw = play_streamer.sc.status();
+    status.trig_raw = pack_live_trigger_status(
+      play_streamer.sc.get_ext_trig_in(),
+      play_streamer.sc.get_ext_trig_ctrl());
     return status;
   }
 
@@ -1429,6 +1473,9 @@ int main(int argc, char *argv[]) {
     });
 
     server.Get("/api/status", [&](const httplib::Request &, httplib::Response &res) {
+      res.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+      res.set_header("Pragma", "no-cache");
+      res.set_header("Expires", "0");
       respond_json(res, status_to_json(controller.get_status_copy()));
     });
 
