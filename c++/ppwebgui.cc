@@ -620,29 +620,76 @@ const char *index_html = R"HTML(<!doctype html>
         <div class="meta">Single-stream control, trigger monitoring, combiner setup, and sequence playback.</div>
       </div>
       <div class="header-actions">
-        <button id="reset-button" type="button" class="secondary-button">Reset hardware</button>
-        <div id="global-status" class="notice">Connecting…</div>
+        <div class="header-action-group">
+          <button id="reset-button" type="button" class="secondary-button">Reset hardware</button>
+          <div class="meta action-note">Resets FPGA-side state, then restores current ppwebgui-managed settings.</div>
+        </div>
+        <div id="global-status" class="notice">Connecting...</div>
       </div>
     </header>
 
     <section class="panel">
-      <h2>Live Status</h2>
+      <h2>Status Provenance</h2>
+      <div class="legend-grid">
+        <div class="legend-item">
+          <span class="state-tag live-tag">live hardware</span>
+          <div class="meta">Polled from stable hardware register paths.</div>
+        </div>
+        <div class="legend-item">
+          <span class="state-tag tracked-tag">tracked by ppwebgui</span>
+          <div class="meta">Controller-managed state restored after reset. Not reread live.</div>
+        </div>
+        <div class="legend-item">
+          <span class="state-tag local-tag">local edit</span>
+          <div class="meta">Browser-only form changes until you click Apply.</div>
+        </div>
+      </div>
+      <div class="meta warning-text">If another tool changes trigger, combiner, or qout state after ppwebgui starts, tracked fields here can drift from live hardware.</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <h2>Live Hardware</h2>
+        <span class="state-tag live-tag">live</span>
+      </div>
+      <div class="panel-note">Only stable hardware readbacks are polled live.</div>
       <div class="status-grid">
-        <div>
+        <div class="status-card">
           <div class="label">AUX</div>
           <div id="aux-bits" class="bits"></div>
-          <div id="aux-raw" class="meta"></div>
+          <div id="aux-raw" class="meta mono"></div>
         </div>
-        <div>
+        <div class="status-card">
           <div class="label">TRIG</div>
           <div id="trig-bits" class="bits"></div>
-          <div id="trig-raw" class="meta"></div>
-          <div id="trig-flags" class="meta"></div>
+          <div id="trig-raw" class="meta mono"></div>
+          <div id="trig-flags" class="meta mono"></div>
         </div>
-        <div>
-          <div class="label">Streamer</div>
+        <div class="status-card">
+          <div class="label">Streamer runtime</div>
+          <div id="stream-runtime-flags" class="meta mono"></div>
+          <div id="stream-runtime-raw" class="meta mono"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <h2>Tracked by ppwebgui</h2>
+        <span class="state-tag tracked-tag">tracked</span>
+      </div>
+      <div class="panel-note">These values come from ppwebgui's controller snapshot and are restored after reset.</div>
+      <div class="status-grid">
+        <div class="status-card">
+          <div class="label">Displayed qout</div>
           <div id="streamer-qout" class="meta mono"></div>
+        </div>
+        <div class="status-card">
+          <div class="label">Tracked idle streamer qout</div>
           <div id="streamer-qout-raw" class="meta mono"></div>
+        </div>
+        <div class="status-card">
+          <div class="label">Output override</div>
           <div id="streamer-override" class="meta mono"></div>
         </div>
       </div>
@@ -655,7 +702,14 @@ const char *index_html = R"HTML(<!doctype html>
     </section>
 
     <section class="panel">
-      <h2>Trigger Settings</h2>
+      <div class="panel-heading">
+        <h2>Trigger Settings</h2>
+        <div class="heading-tags">
+          <span class="state-tag tracked-tag">tracked</span>
+          <span class="state-tag neutral-tag">read-only</span>
+        </div>
+      </div>
+      <div class="panel-note">Restored by ppwebgui on reset. These settings are not polled live.</div>
       <div class="settings-grid">
         <div class="setting"><div class="label">Mode</div><div id="trigger-mode" class="mono"></div></div>
         <div class="setting"><div class="label">Result invert</div><div id="trigger-invert-result" class="mono"></div></div>
@@ -671,17 +725,32 @@ const char *index_html = R"HTML(<!doctype html>
     </section>
 
     <section class="panel">
-      <h2>Streamer Override</h2>
+      <div class="panel-heading">
+        <h2>Output Override</h2>
+        <div class="heading-tags">
+          <span class="state-tag tracked-tag">tracked</span>
+          <span id="qout-local-tag" class="state-tag local-tag hidden">local edit</span>
+        </div>
+      </div>
+      <div id="qout-form-state" class="form-state">Tracked output-override values are shown below. Local edits stay in the browser until you click Apply.</div>
       <form id="qout-form" class="form-grid">
         <label>Enabled<select name="override_enabled"><option value="0">false</option><option value="1">true</option></select></label>
         <label>Override value<input name="override_value" value="0x0" placeholder="0x0"></label>
         <button type="submit">Apply override</button>
       </form>
+      <div class="meta">Manual final-output override, implemented through the combiner output-force path.</div>
       <div class="meta">Accepted integer formats: decimal (`42`), hex (`0xff`), binary (`0b1010`), octal (`077`), and Verilog-style literals like `8'hFF` or `'b1010`.</div>
     </section>
 
     <section class="panel">
-      <h2>Output Combiner</h2>
+      <div class="panel-heading">
+        <h2>Output Combiner</h2>
+        <div class="heading-tags">
+          <span class="state-tag tracked-tag">tracked</span>
+          <span id="combiner-local-tag" class="state-tag local-tag hidden">local edit</span>
+        </div>
+      </div>
+      <div id="combiner-form-state" class="form-state">Tracked combiner values are shown below. Local edits stay in the browser until you click Apply.</div>
       <form id="combiner-form" class="combiner-form">
         <label>Mode
           <select name="mode" id="combiner-mode-select">
@@ -757,6 +826,7 @@ const char *index_html = R"HTML(<!doctype html>
 
     <section class="panel">
       <h2>Sequence</h2>
+      <div class="panel-note">Start streaming resets hardware first and appends the tracked idle qout as the final output.</div>
       <form id="stream-form" class="sequence-form">
         <label>Sequence text
           <textarea name="sequence_text" rows="8">d 1 0x1
@@ -793,6 +863,14 @@ body {
   padding: 1rem;
 }
 
+.app-shell h1 {
+  margin: 0 0 0.25rem 0;
+}
+
+.panel > h2 {
+  margin-top: 0;
+}
+
 .app-header {
   display: flex;
   align-items: center;
@@ -803,8 +881,20 @@ body {
 
 .header-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.header-action-group {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+}
+
+.action-note {
+  max-width: 24rem;
 }
 
 .panel, .subpanel {
@@ -815,7 +905,7 @@ body {
   margin-bottom: 1rem;
 }
 
-.status-grid, .ports-grid, .form-grid, .port-grid, .settings-grid {
+.status-grid, .ports-grid, .form-grid, .port-grid, .settings-grid, .legend-grid {
   display: grid;
   gap: 0.75rem;
 }
@@ -837,8 +927,37 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.legend-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 0.75rem;
+}
+
 .port-grid {
   grid-template-columns: 1fr 1fr;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.panel-heading h2 {
+  margin: 0;
+}
+
+.panel-note {
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+}
+
+.heading-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 label {
@@ -898,11 +1017,16 @@ button:disabled {
   color: #cbd5e1;
 }
 
-.setting {
+.legend-item, .status-card, .setting, .form-state {
   background: #0f172a;
   border: 1px solid #334155;
   border-radius: 8px;
   padding: 0.75rem;
+}
+
+.label {
+  font-weight: 600;
+  margin-bottom: 0.35rem;
 }
 
 .meta-row {
@@ -910,6 +1034,41 @@ button:disabled {
   gap: 1rem;
   flex-wrap: wrap;
   margin-top: 0.75rem;
+}
+
+.state-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+
+.live-tag {
+  background: #0f766e;
+  color: #ccfbf1;
+}
+
+.tracked-tag {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.local-tag {
+  background: #92400e;
+  color: #fef3c7;
+}
+
+.neutral-tag {
+  background: #3730a3;
+  color: #e0e7ff;
+}
+
+.warning-text {
+  color: #fbbf24;
 }
 
 .notice {
@@ -928,10 +1087,33 @@ button:disabled {
   word-break: break-word;
 }
 
+.form-state {
+  margin-bottom: 0.75rem;
+}
+
+.form-state.local-edit {
+  border-color: #f59e0b;
+  color: #fde68a;
+}
+
+.form-dirty {
+  outline: 1px solid #f59e0b;
+  outline-offset: 0.35rem;
+  border-radius: 10px;
+}
+
+.hidden {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .app-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
   }
 
   .port-grid {
@@ -947,6 +1129,12 @@ const char *app_js = R"JS((() => {
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
+  const qoutFormState = document.getElementById('qout-form-state');
+  const combinerFormState = document.getElementById('combiner-form-state');
+  const qoutLocalTag = document.getElementById('qout-local-tag');
+  const combinerLocalTag = document.getElementById('combiner-local-tag');
+  const qoutCleanText = 'Tracked output-override values are shown below. Local edits stay in the browser until you click Apply.';
+  const combinerCleanText = 'Tracked combiner values are shown below. Local edits stay in the browser until you click Apply.';
   let pollMs = 100;
   let hardwareBusy = false;
 
@@ -982,14 +1170,42 @@ const char *app_js = R"JS((() => {
     return form.contains(document.activeElement);
   }
 
-  function populateQout(status) {
-    if (formOwnsFocus(qoutForm)) return;
-    qoutForm.querySelector('[name="override_enabled"]').value = status.streamer.override.enabled ? '1' : '0';
-    qoutForm.querySelector('[name="override_value"]').value = formatHex(status.streamer.override.value);
+  function setFormDirty(form, dirty, stateElement, tagElement, cleanText, dirtyText) {
+    form.classList.toggle('form-dirty', dirty);
+    stateElement.classList.toggle('local-edit', dirty);
+    stateElement.textContent = dirty ? dirtyText : cleanText;
+    tagElement.classList.toggle('hidden', !dirty);
   }
 
-  function populateCombiner(status) {
-    if (formOwnsFocus(combinerForm)) return;
+  function setQoutDirty(dirty) {
+    setFormDirty(
+      qoutForm,
+      dirty,
+      qoutFormState,
+      qoutLocalTag,
+      qoutCleanText,
+      'Local edit only. This output-override form differs from the tracked ppwebgui state until you click Apply.');
+  }
+
+  function setCombinerDirty(dirty) {
+    setFormDirty(
+      combinerForm,
+      dirty,
+      combinerFormState,
+      combinerLocalTag,
+      combinerCleanText,
+      'Local edit only. This combiner form differs from the tracked ppwebgui state until you click Apply.');
+  }
+
+  function populateQout(status, force = false) {
+    if (!force && formOwnsFocus(qoutForm)) return;
+    qoutForm.querySelector('[name="override_enabled"]').value = status.streamer.override.enabled ? '1' : '0';
+    qoutForm.querySelector('[name="override_value"]').value = formatHex(status.streamer.override.value);
+    setQoutDirty(false);
+  }
+
+  function populateCombiner(status, force = false) {
+    if (!force && formOwnsFocus(combinerForm)) return;
     combinerForm.querySelector('[name="mode"]').value = status.combiner.mode;
     const output = status.combiner.output;
     combinerForm.querySelector('[name="output_invert"]').value = formatHex(output.invert);
@@ -1003,6 +1219,7 @@ const char *app_js = R"JS((() => {
       combinerForm.querySelector(`[name="${base}_force_enabled"]`).value = input.force_enabled ? '1' : '0';
       combinerForm.querySelector(`[name="${base}_force_value"]`).value = formatHex(input.force_value);
     });
+    setCombinerDirty(false);
   }
 
   function renderTriggerSettings(settings) {
@@ -1018,7 +1235,7 @@ const char *app_js = R"JS((() => {
     setText('trigger-mask-aux', formatHex(settings.mask_aux));
   }
 
-  function renderStatus(status) {
+  function renderStatus(status, options = {}) {
     const runtimeFlags = [];
     if (status.stream.runtime.buffer_error) runtimeFlags.push('buffer_error');
     if (status.stream.runtime.done) runtimeFlags.push('done');
@@ -1031,20 +1248,36 @@ const char *app_js = R"JS((() => {
     setText('trig-bits', status.trig.bits);
     setText('trig-raw', `raw=${formatHex(status.trig.raw)}`);
     setText('trig-flags', `enable=${status.trig.enable} force=${status.trig.force} reset=${status.trig.reset}`);
-    setText('streamer-qout', `qout=${formatHex(status.streamer.qout)}`);
-    setText('streamer-qout-raw', `streamer=${formatHex(status.streamer.qout_streamer)}`);
-    setText('streamer-override', `override=${status.streamer.override.enabled} value=${formatHex(status.streamer.override.value)}`);
+    setText('stream-runtime-flags', `flags=${runtimeSummary}`);
+    setText('stream-runtime-raw', `raw=${formatHex(status.stream.runtime.raw)}`);
+    setText('streamer-qout', formatHex(status.streamer.qout));
+    setText('streamer-qout-raw', formatHex(status.streamer.qout_streamer));
+    setText('streamer-override', `enabled=${status.streamer.override.enabled} value=${formatHex(status.streamer.override.value)}`);
     setText('combiner-mode', status.combiner.mode);
     setText('trigger-mode-summary', status.trigger_settings.mode);
     setText('last-action', status.last_action);
     setText('last-error', status.last_error || '(none)');
-    setText('stream-state', `rc=${status.stream.last_rc} message=${status.stream.message} runtime=${runtimeSummary} raw=${formatHex(status.stream.runtime.raw, 2)}`);
+    setText('stream-state', `last result rc=${status.stream.last_rc} message=${status.stream.message} live runtime=${runtimeSummary} raw=${formatHex(status.stream.runtime.raw)}`);
     streamResult.textContent = status.stream.message;
     renderTriggerSettings(status.trigger_settings);
-    populateQout(status);
-    populateCombiner(status);
+    populateQout(status, options.forceQout === true);
+    populateCombiner(status, options.forceCombiner === true);
     pollMs = status.poll_ms || 100;
   }
+
+  function attachDirtyHandlers(form, markDirty) {
+    const handler = (event) => {
+      if (!event.isTrusted) return;
+      markDirty(true);
+    };
+    form.addEventListener('input', handler);
+    form.addEventListener('change', handler);
+  }
+
+  setQoutDirty(false);
+  setCombinerDirty(false);
+  attachDirtyHandlers(qoutForm, setQoutDirty);
+  attachDirtyHandlers(combinerForm, setCombinerDirty);
 
   async function fetchJson(url, options = {}) {
     const response = await fetch(url, { cache: 'no-store', ...options });
@@ -1077,7 +1310,7 @@ const char *app_js = R"JS((() => {
     setHardwareBusy(true);
     try {
       const result = await fetchJson('/api/qout', { method: 'POST', body });
-      if (result.status) renderStatus(result.status);
+      if (result.status) renderStatus(result.status, { forceQout: true });
       setGlobal(result.message || 'override updated');
     } catch (error) {
       setGlobal(error.message, true);
@@ -1092,7 +1325,7 @@ const char *app_js = R"JS((() => {
     setHardwareBusy(true);
     try {
       const result = await fetchJson('/api/combiner', { method: 'POST', body });
-      if (result.status) renderStatus(result.status);
+      if (result.status) renderStatus(result.status, { forceCombiner: true });
       setGlobal(result.message || 'combiner updated');
     } catch (error) {
       setGlobal(error.message, true);
@@ -1112,7 +1345,7 @@ const char *app_js = R"JS((() => {
       body.set('check_readback', '1');
     }
     setHardwareBusy(true);
-    streamResult.textContent = 'Streaming…';
+    streamResult.textContent = 'Streaming...';
     try {
       const result = await fetchJson('/api/stream', { method: 'POST', body });
       if (result.status) renderStatus(result.status);

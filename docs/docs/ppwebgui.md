@@ -54,19 +54,23 @@ ppwebgui -port 0
 
 The page exposes these main sections:
 
-* Live Status: AUX bits, trigger bits, trigger enable/force/reset flags, active streamer qout state, current combiner mode, and recent action/error text
-* Trigger Settings: current trigger combiner mode plus invert and mask settings for the result, INT, EXT, MISC, and AUX paths
-* Streamer Override: one manual qout override control for the active streamer used by browser-triggered sequence playback
+* Status Provenance: a legend explaining which values are live hardware polls, which are tracked by `ppwebgui`, and which form edits are still local to the browser
+* Live Hardware: AUX bits, trigger bits, trigger enable/force/reset flags, and the live streamer runtime status word
+* Tracked by ppwebgui: displayed qout, tracked idle streamer qout, output-override state, combiner mode, trigger mode, and recent action/error text
+* Trigger Settings: tracked read-only trigger combiner mode plus invert and mask settings for the result, INT, EXT, MISC, and AUX paths
+* Output Override: one manual final-output override control for the active streamer path used by browser-triggered sequence playback
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
 
 Browser-triggered streams first run the same hardware reset/bring-up sequence exposed by the **Reset hardware** button, then append the currently tracked idle raw qout value as the final output element. That keeps each run deterministic and starts the streamer from a clean reset state.
 
-The header also includes a **Reset hardware** button. That action reruns the same FPGA-side bring-up sequence used by `ppwebgui` startup, including the FPGA reset-manager pulse, startup clock/PLL policy, and the startup frequency-meter report. After that it reapplies the current web-managed combiner and streamer-override settings so the browser state is preserved across the reset.
+The header also includes a **Reset hardware** button. That action reruns the same FPGA-side bring-up sequence used by `ppwebgui` startup, including the FPGA reset-manager pulse, startup clock/PLL policy, and the startup frequency-meter report. After that it reapplies the current web-managed combiner and output-override settings so the browser state is preserved across the reset.
 
 The backend keeps hardware access serialized and the UI polls `/api/status` at the configured interval.
 
 The current implementation restores live polling only for register paths that have been stable on the deployed hardware: AUX input state and the streamer runtime status word. Trigger-combiner settings, combiner routing, and the displayed qout values remain controller-managed snapshots so the web GUI does not re-enter the crashy register read paths.
+
+While the user is editing the **Output Override** or **Output Combiner** form, the browser marks that form as a local edit until **Apply** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
 
 Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
 
