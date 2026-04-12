@@ -16,6 +16,7 @@
 
 #include "httplib.h"
 #include "misc.hh"
+#include "ppwebgui_frontend.hh"
 #include "ppwebgui_json.hh"
 #include "ppwebgui_service_api.hh"
 #include "ppwebgui_types.hh"
@@ -180,8 +181,8 @@ CombinerRequest parse_combiner_request(const httplib::Request &req) {
 
 void register_ppwebgui_routes(httplib::Server &server,
                               WebGuiService &service,
-                              const WebGuiHttpOptions options,
-                              const WebGuiAssets assets) {
+                              const WebGuiHttpOptions &options,
+                              const WebGuiAssets &assets) {
   auto *service_ptr = &service;
 
   server.Get("/", [assets](const httplib::Request &, httplib::Response &res) {

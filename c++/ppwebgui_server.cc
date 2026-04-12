@@ -7,14 +7,14 @@
 
 #include "httplib.h"
 #include "ppwebgui_bootstrap.hh"
-#include "ppwebgui_config.hh"
+#include "ppwebgui_frontend.hh"
 #include "ppwebgui_http.hh"
 #include "ppwebgui_service_api.hh"
 
 void run_ppwebgui_server(WebGuiService &service,
-                         const WebGuiAssets assets,
+                         const WebGuiAssets &assets,
                          const WebGuiServerBinding &binding,
-                         const WebGuiHttpOptions http_options) {
+                         const WebGuiHttpOptions &http_options) {
   httplib::Server server;
   register_ppwebgui_routes(server, service, http_options, assets);
 

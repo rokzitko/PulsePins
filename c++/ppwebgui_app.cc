@@ -7,7 +7,7 @@
 
 #include "fpga.hh"
 #include "ppwebgui_assets.hh"
-#include "ppwebgui_http.hh"
+#include "ppwebgui_frontend.hh"
 #include "ppwebgui_server.hh"
 #include "ppwebgui_service.hh"
 #include "ppwebgui_service_api.hh"

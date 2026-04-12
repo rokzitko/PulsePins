@@ -4,8 +4,7 @@
 #pragma once
 
 class FPGA;
+struct WebGuiRuntimeConfig;
 struct Verbosity;
-
-#include "ppwebgui_config.hh"
 
 int run_ppwebgui(FPGA &fpga, const WebGuiRuntimeConfig &config, const Verbosity &verbosity);

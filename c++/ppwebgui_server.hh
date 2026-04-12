@@ -3,11 +3,12 @@
 
 #pragma once
 
-#include "ppwebgui_frontend.hh"
-
 class WebGuiService;
+struct WebGuiAssets;
+struct WebGuiHttpOptions;
+struct WebGuiServerBinding;
 
 void run_ppwebgui_server(WebGuiService &service,
-                         WebGuiAssets assets,
+                         const WebGuiAssets &assets,
                          const WebGuiServerBinding &binding,
-                         WebGuiHttpOptions http_options);
+                         const WebGuiHttpOptions &http_options);
