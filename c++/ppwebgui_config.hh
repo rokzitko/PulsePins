@@ -23,6 +23,12 @@ struct WebGuiRuntimeConfig {
   CombinerRequest combiner_request;
 };
 
+struct WebGuiServerBinding {
+  std::string bind_ip = "0.0.0.0";
+  int bind_port = 4242;
+};
+
 class InputParser;
 
 WebGuiRuntimeConfig resolve_webgui_runtime_config(const InputParser &input);
+WebGuiServerBinding webgui_server_binding(const WebGuiRuntimeConfig &config);

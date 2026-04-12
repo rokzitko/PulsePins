@@ -7,9 +7,9 @@
 
 class WebGuiService;
 struct Verbosity;
-struct WebGuiRuntimeConfig;
+struct WebGuiServerBinding;
 
 void run_ppwebgui_server(WebGuiService &service,
                          WebGuiAssets assets,
-                         const WebGuiRuntimeConfig &config,
+                         const WebGuiServerBinding &binding,
                          const Verbosity &verbosity);

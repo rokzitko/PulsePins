@@ -83,3 +83,7 @@ WebGuiRuntimeConfig resolve_webgui_runtime_config(const InputParser &input) {
   config.combiner_request.inputs[3] = parse_port_from_input(input, "-invert4", "-mask4", "-force4");
   return config;
 }
+
+WebGuiServerBinding webgui_server_binding(const WebGuiRuntimeConfig &config) {
+  return {config.bind_ip, config.bind_port};
+}
