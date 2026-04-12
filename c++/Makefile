@@ -125,7 +125,7 @@ $(ASIO_DIR):
 ppscpi: ppscpi.o $(ASIO_DIR)
 	$(CXX) $(LDFLAGS)   $< -o $@ $(FSLIB)
 
-PPWEBGUI_OBJS = ppwebgui.o ppwebgui_service.o ppwebgui_service_api.o ppwebgui_json.o ppwebgui_http.o ppwebgui_assets.o ppwebgui_config.o
+PPWEBGUI_OBJS = ppwebgui.o ppwebgui_service.o ppwebgui_service_api.o ppwebgui_json.o ppwebgui_http.o ppwebgui_assets.o ppwebgui_config.o ppwebgui_bootstrap.o
 
 ppwebgui: $(PPWEBGUI_OBJS)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB)
@@ -166,6 +166,9 @@ ppwebgui_assets.o : ppwebgui_assets.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 ppwebgui_config.o : ppwebgui_config.cc ../hps_0.h $(HEADERS)
+	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+
+ppwebgui_bootstrap.o : ppwebgui_bootstrap.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 .PHONY: clean copy lint-whitespace

@@ -8,142 +8,27 @@
 // toolchain. Keep the workaround local to `ppwebgui` until the underlying
 // miscompile/UB is understood better.
 
-#include <array>
-#include <bitset>
-#include <cerrno>
 #include <cstdint>
 #include <exception>
-#include <iomanip>
-#include <ifaddrs.h>
 #include <iostream>
-#include <limits>
-#include <optional>
-#include <sstream>
 #include <stdexcept>
-#include <string>
-#include <unordered_set>
-#include <utility>
-#include <vector>
 
-#include <arpa/inet.h>
-#ifdef PPWEBGUI_ENABLE_BACKTRACE
-#include <execinfo.h>
-#endif
-#include <net/if.h>
-#include <netinet/in.h>
-#ifdef PPWEBGUI_ENABLE_BACKTRACE
-#include <signal.h>
-#endif
-
-#include "basic_multi_dma.hh"
-#include "combiner.hh"
-#include "counter.hh"
-#include "freq_meter.hh"
 #include "host_runtime.hh"
 #include "httplib.h"
-#include "misc.hh"
-#include "pio.hh"
 #include "ppwebgui_assets.hh"
+#include "ppwebgui_bootstrap.hh"
 #include "ppwebgui_config.hh"
 #include "ppwebgui_http.hh"
-#include "ppwebgui_json.hh"
 #include "ppversion.hh"
 #include "ppwebgui_service.hh"
 #include "ppwebgui_service_api.hh"
-#include "ppwebgui_types.hh"
-#include "ppworkflow.hh"
-#include "qout.hh"
-#include "readback.hh"
-#include "startup.hh"
-#include "trigger.hh"
 
 namespace {
-
-#ifdef PPWEBGUI_ENABLE_BACKTRACE
-void fatal_signal_handler(int sig) {
-  void *frames[64];
-  const int count = backtrace(frames, 64);
-  std::cerr << "ppwebgui: fatal signal " << sig << std::endl;
-  backtrace_symbols_fd(frames, count, STDERR_FILENO);
-  _Exit(128 + sig);
-}
-
-void install_fatal_signal_handlers() {
-  signal(SIGSEGV, fatal_signal_handler);
-  signal(SIGABRT, fatal_signal_handler);
-  signal(SIGBUS, fatal_signal_handler);
-}
-#else
-void install_fatal_signal_handlers() {}
-#endif
-
-std::string socket_address_to_string(const sockaddr *addr) {
-  std::array<char, INET6_ADDRSTRLEN> buf {};
-  if (addr->sa_family == AF_INET) {
-    const auto *in = reinterpret_cast<const sockaddr_in *>(addr);
-    if (!inet_ntop(AF_INET, &in->sin_addr, buf.data(), buf.size())) {
-      return {};
-    }
-    return buf.data();
-  }
-  if (addr->sa_family == AF_INET6) {
-    const auto *in6 = reinterpret_cast<const sockaddr_in6 *>(addr);
-    if (!inet_ntop(AF_INET6, &in6->sin6_addr, buf.data(), buf.size())) {
-      return {};
-    }
-    return buf.data();
-  }
-  return {};
-}
-
-std::vector<std::string> discover_interface_urls(const int port) {
-  ifaddrs *ifa = nullptr;
-  if (getifaddrs(&ifa) != 0) {
-    return {};
-  }
-
-  std::unordered_set<std::string> urls;
-  for (auto *current = ifa; current != nullptr; current = current->ifa_next) {
-    if (!current->ifa_addr || !(current->ifa_flags & IFF_UP) || (current->ifa_flags & IFF_LOOPBACK)) {
-      continue;
-    }
-    if (current->ifa_addr->sa_family != AF_INET) {
-      continue;
-    }
-    const auto address = socket_address_to_string(current->ifa_addr);
-    if (address.empty()) {
-      continue;
-    }
-    urls.insert("http://" + address + ':' + std::to_string(port));
-  }
-
-  freeifaddrs(ifa);
-  return std::vector<std::string>(urls.begin(), urls.end());
-}
-
-void print_startup_urls(const std::string &bind_ip, const int actual_port) {
-  std::cout << "ppwebgui running on http://" << bind_ip << ':' << actual_port << std::endl;
-  if (bind_ip != "0.0.0.0") {
-    return;
-  }
-
-  std::cout << "Listening on all interfaces." << std::endl;
-  const auto urls = discover_interface_urls(actual_port);
-  if (urls.empty()) {
-    std::cout << "Reach it using this board's current IPv4 address on port " << actual_port << '.' << std::endl;
-    return;
-  }
-
-  std::cout << "Reachable URLs:" << std::endl;
-  for (const auto &url : urls) {
-    std::cout << "  " << url << std::endl;
-  }
-}
 
 } // namespace
 
 int main(int argc, char *argv[]) {
-  install_fatal_signal_handlers();
+  install_ppwebgui_fatal_signal_handlers();
   HostRuntime runtime(argc, argv, version);
   auto &input = runtime.input;
   auto &fpga = runtime.get_fpga();
@@ -174,7 +59,7 @@ int main(int argc, char *argv[]) {
       throw std::runtime_error("Failed to bind ppwebgui to requested address/port");
     }
 
-    print_startup_urls(config.bind_ip, actual_port);
+    print_ppwebgui_startup_urls(config.bind_ip, actual_port);
 
     if (!server.listen_after_bind()) {
       throw std::runtime_error("ppwebgui listener terminated unexpectedly");
