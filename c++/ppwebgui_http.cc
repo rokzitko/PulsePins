@@ -34,6 +34,31 @@ const char *bool_text(const bool value) {
   return value ? "true" : "false";
 }
 
+const char *trigger_mode_text(const TriggerModeSelection mode) {
+  switch (mode) {
+  case TriggerModeSelection::STANDARD: return "STANDARD";
+  case TriggerModeSelection::INT: return "INT";
+  case TriggerModeSelection::EXT: return "EXT";
+  case TriggerModeSelection::MISC: return "MISC";
+  case TriggerModeSelection::ANY: return "ANY";
+  case TriggerModeSelection::ALL: return "ALL";
+  }
+  return "UNKNOWN";
+}
+
+TriggerModeSelection trigger_mode_from_string(std::string mode) {
+  for (auto &c : mode) {
+    c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
+  }
+  if (mode == "STANDARD") return TriggerModeSelection::STANDARD;
+  if (mode == "INT") return TriggerModeSelection::INT;
+  if (mode == "EXT") return TriggerModeSelection::EXT;
+  if (mode == "MISC") return TriggerModeSelection::MISC;
+  if (mode == "ANY") return TriggerModeSelection::ANY;
+  if (mode == "ALL") return TriggerModeSelection::ALL;
+  throw BadRequest("Invalid trigger mode: " + mode);
+}
+
 comb_mode comb_mode_from_string(std::string mode) {
   for (auto &c : mode) {
     c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
@@ -157,6 +182,19 @@ StreamerOverrideState parse_streamer_override_request(const httplib::Request &re
   return state;
 }
 
+TriggerConfigRequest parse_trigger_config_request(const httplib::Request &req) {
+  TriggerConfigRequest request;
+  request.mode = trigger_mode_from_string(require_param(req, "mode"));
+  request.invert_result = parse_u32_param(req, "invert_result");
+  request.invert_int = parse_u32_param(req, "invert_int");
+  request.invert_ext = parse_u32_param(req, "invert_ext");
+  request.invert_misc = parse_u32_param(req, "invert_misc");
+  request.mask_int = parse_u32_param(req, "mask_int");
+  request.mask_ext = parse_u32_param(req, "mask_ext");
+  request.mask_misc = parse_u32_param(req, "mask_misc");
+  return request;
+}
+
 CombinerRequest parse_combiner_request(const httplib::Request &req) {
   CombinerRequest request;
   request.mode = comb_mode_from_string(require_param(req, "mode"));
@@ -236,6 +274,24 @@ void register_ppwebgui_routes(httplib::Server &server,
       std::cout << "ppwebgui: applied /api/qout request" << std::endl;
     }
     respond_json(res, operation_json("Applied streamer override", service_ptr->get_status_copy()));
+  }));
+
+  server.Post("/api/trigger", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {
+    require_form_post(req);
+    const auto request = parse_trigger_config_request(req);
+    if (options.veryverbose) {
+      std::cout << "ppwebgui action: apply trigger config" << std::endl;
+      std::cout << "  mode=" << trigger_mode_text(request.mode) << std::endl;
+      std::cout << "  invert_result=0x" << std::hex << request.invert_result << std::dec << std::endl;
+      std::cout << "  invert_int=0x" << std::hex << request.invert_int << std::dec << std::endl;
+      std::cout << "  invert_ext=0x" << std::hex << request.invert_ext << std::dec << std::endl;
+      std::cout << "  invert_misc=0x" << std::hex << request.invert_misc << std::dec << std::endl;
+      std::cout << "  mask_int=0x" << std::hex << request.mask_int << std::dec << std::endl;
+      std::cout << "  mask_ext=0x" << std::hex << request.mask_ext << std::dec << std::endl;
+      std::cout << "  mask_misc=0x" << std::hex << request.mask_misc << std::dec << std::endl;
+    }
+    service_ptr->apply_trigger_config(request);
+    respond_json(res, operation_json("Applied trigger config", service_ptr->get_status_copy()));
   }));
 
   server.Post("/api/combiner", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {

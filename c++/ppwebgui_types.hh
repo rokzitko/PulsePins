@@ -30,6 +30,26 @@ struct StreamerState {
   StreamerOverrideState override_state;
 };
 
+enum class TriggerModeSelection {
+  STANDARD,
+  INT,
+  EXT,
+  MISC,
+  ANY,
+  ALL,
+};
+
+struct TriggerConfigRequest {
+  TriggerModeSelection mode = TriggerModeSelection::STANDARD;
+  uint32_t invert_result = 0;
+  uint32_t invert_int = 0;
+  uint32_t invert_ext = 0;
+  uint32_t invert_misc = 0;
+  uint32_t mask_int = 0;
+  uint32_t mask_ext = 0;
+  uint32_t mask_misc = 0;
+};
+
 struct TriggerConfigState {
   uint32_t mode = 0;
   uint32_t invert_result = 0;

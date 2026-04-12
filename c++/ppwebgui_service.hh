@@ -36,6 +36,7 @@ public:
   StatusSnapshot get_status_copy();
   void apply_streamer_override(const StreamerOverrideState &state);
   void apply_combiner_config(const CombinerRequest &request);
+  void apply_trigger_config(const TriggerConfigRequest &request);
   ResetResult reset_hardware();
   StreamResult stream_text_sequence(StreamLaunchRequest request);
   void set_last_error(const std::string &message);

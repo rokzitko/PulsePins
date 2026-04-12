@@ -60,6 +60,47 @@ TriggerConfigState trigger_config_from_options(const TriggerOptions &opts) {
   return state;
 }
 
+TriggerConfigState trigger_config_from_request(const TriggerConfigRequest &request,
+                                               const TriggerConfigState &current) {
+  TriggerConfigState state = current;
+  switch (request.mode) {
+  case TriggerModeSelection::STANDARD:
+    state.mode = static_cast<uint32_t>(trig_mode::OR);
+    state.invert_ext = ~uint32_t {0};
+    break;
+  case TriggerModeSelection::INT:
+    state.mode = static_cast<uint32_t>(trig_mode::INT);
+    state.invert_ext = request.invert_ext;
+    break;
+  case TriggerModeSelection::EXT:
+    state.mode = static_cast<uint32_t>(trig_mode::EXT);
+    state.invert_ext = request.invert_ext;
+    break;
+  case TriggerModeSelection::MISC:
+    state.mode = static_cast<uint32_t>(trig_mode::MISC);
+    state.invert_ext = request.invert_ext;
+    break;
+  case TriggerModeSelection::ANY:
+    state.mode = static_cast<uint32_t>(trig_mode::OR);
+    state.invert_ext = request.invert_ext;
+    break;
+  case TriggerModeSelection::ALL:
+    state.mode = static_cast<uint32_t>(trig_mode::AND);
+    state.invert_ext = request.invert_ext;
+    break;
+  }
+  state.invert_result = request.invert_result;
+  state.invert_int = request.invert_int;
+  state.invert_misc = request.invert_misc;
+  state.mask_int = request.mask_int;
+  state.mask_ext = request.mask_ext;
+  state.mask_misc = request.mask_misc;
+  if (request.mode != TriggerModeSelection::STANDARD) {
+    state.invert_ext = request.invert_ext;
+  }
+  return state;
+}
+
 bool force_enabled(const uint32_t cfg, const int port) {
   switch (port) {
   case 0: return cfg & (1U << B_FORCEo);
@@ -115,6 +156,12 @@ void WebGuiController::apply_combiner_config(const CombinerRequest &request) {
   auto lock = fpga.acquire_lock();
   apply_combiner_config_locked(request);
   publish_action_locked("applied combiner config", "");
+}
+
+void WebGuiController::apply_trigger_config(const TriggerConfigRequest &request) {
+  auto lock = fpga.acquire_lock();
+  apply_trigger_config_locked(trigger_config_from_request(request, read_trigger_config_locked()));
+  publish_action_locked("applied trigger config", "");
 }
 
 ResetResult WebGuiController::reset_hardware() {

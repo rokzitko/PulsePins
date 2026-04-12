@@ -27,6 +27,10 @@ public:
     controller->apply_combiner_config(request);
   }
 
+  void apply_trigger_config(const TriggerConfigRequest &request) override {
+    controller->apply_trigger_config(request);
+  }
+
   ResetResult reset_hardware() override {
     return controller->reset_hardware();
   }
