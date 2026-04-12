@@ -4,12 +4,12 @@
 #pragma once
 
 #include "ppwebgui_assets.hh"
+#include "ppwebgui_http.hh"
 
 class WebGuiService;
-struct Verbosity;
 struct WebGuiServerBinding;
 
 void run_ppwebgui_server(WebGuiService &service,
                          WebGuiAssets assets,
                          const WebGuiServerBinding &binding,
-                         const Verbosity &verbosity);
+                         WebGuiHttpOptions http_options);

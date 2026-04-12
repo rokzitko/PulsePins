@@ -8,11 +8,14 @@ class Server;
 }
 
 class WebGuiService;
-struct Verbosity;
+
+struct WebGuiHttpOptions {
+  bool veryverbose = false;
+};
 
 void register_ppwebgui_routes(httplib::Server &server,
                               WebGuiService &service,
-                              const Verbosity &verbosity,
+                              WebGuiHttpOptions options,
                               const char *index_html,
                               const char *app_css,
                               const char *app_js);

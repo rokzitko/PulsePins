@@ -19,7 +19,6 @@
 #include "ppwebgui_json.hh"
 #include "ppwebgui_service_api.hh"
 #include "ppwebgui_types.hh"
-#include "verbosity.hh"
 
 namespace {
 
@@ -181,12 +180,11 @@ CombinerRequest parse_combiner_request(const httplib::Request &req) {
 
 void register_ppwebgui_routes(httplib::Server &server,
                               WebGuiService &service,
-                              const Verbosity &verbosity,
+                              const WebGuiHttpOptions options,
                               const char *index_html,
                               const char *app_css,
                               const char *app_js) {
   auto *service_ptr = &service;
-  auto *verbosity_ptr = &verbosity;
 
   server.Get("/", [index_html](const httplib::Request &, httplib::Response &res) {
     res.set_content(index_html, "text/html; charset=utf-8");
@@ -222,29 +220,29 @@ void register_ppwebgui_routes(httplib::Server &server,
     };
   };
 
-  server.Post("/api/qout", wrap([service_ptr, verbosity_ptr](const httplib::Request &req, httplib::Response &res) {
-    if (verbosity_ptr->veryverbose) {
+  server.Post("/api/qout", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {
+    if (options.veryverbose) {
       std::cout << "ppwebgui: entered /api/qout" << std::endl;
     }
     require_form_post(req);
     const auto state = parse_streamer_override_request(req);
-    if (verbosity_ptr->veryverbose) {
+    if (options.veryverbose) {
       std::cout << "ppwebgui: parsed /api/qout parameters" << std::endl;
       std::cout << "ppwebgui action: apply streamer override" << std::endl;
       std::cout << "  enabled=" << bool_text(state.enabled) << std::endl;
       std::cout << "  value=0x" << std::hex << state.value << std::dec << std::endl;
     }
     service_ptr->apply_streamer_override(state);
-    if (verbosity_ptr->veryverbose) {
+    if (options.veryverbose) {
       std::cout << "ppwebgui: applied /api/qout request" << std::endl;
     }
     respond_json(res, operation_json("Applied streamer override", service_ptr->get_status_copy()));
   }));
 
-  server.Post("/api/combiner", wrap([service_ptr, verbosity_ptr](const httplib::Request &req, httplib::Response &res) {
+  server.Post("/api/combiner", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {
     require_form_post(req);
     const auto request = parse_combiner_request(req);
-    if (verbosity_ptr->veryverbose) {
+    if (options.veryverbose) {
       std::cout << "ppwebgui action: apply combiner" << std::endl;
       std::cout << "  mode=" << to_string(request.mode) << std::endl;
       auto log_port = [](const char *label, const PortState &state) {
@@ -264,16 +262,16 @@ void register_ppwebgui_routes(httplib::Server &server,
     respond_json(res, operation_json("Applied combiner config", service_ptr->get_status_copy()));
   }));
 
-  server.Post("/api/reset", wrap([service_ptr, verbosity_ptr](const httplib::Request &req, httplib::Response &res) {
+  server.Post("/api/reset", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {
     require_form_post(req);
-    if (verbosity_ptr->veryverbose) {
+    if (options.veryverbose) {
       std::cout << "ppwebgui action: reset hardware" << std::endl;
     }
     const auto result = service_ptr->reset_hardware();
     respond_json(res, operation_json(result.message, service_ptr->get_status_copy()));
   }));
 
-  server.Post("/api/stream", wrap([service_ptr, verbosity_ptr](const httplib::Request &req, httplib::Response &res) {
+  server.Post("/api/stream", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {
     require_form_post(req, MAX_FORM_BODY_BYTES);
     const std::optional<bool> force_trigger_override = req.has_param("force_trigger")
       ? std::optional<bool>(parse_bool_param(req, "force_trigger"))
@@ -285,7 +283,7 @@ void register_ppwebgui_routes(httplib::Server &server,
     }
     request.force_trigger_override = force_trigger_override;
     request.check_readback = parse_bool_param(req, "check_readback");
-    if (verbosity_ptr->veryverbose) {
+    if (options.veryverbose) {
       std::cout << "ppwebgui action: start stream" << std::endl;
       std::cout << "  force_trigger_override="
                 << (request.force_trigger_override ? bool_text(*request.force_trigger_override) : "(none)")

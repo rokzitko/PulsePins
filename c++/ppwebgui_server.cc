@@ -10,14 +10,13 @@
 #include "ppwebgui_config.hh"
 #include "ppwebgui_http.hh"
 #include "ppwebgui_service_api.hh"
-#include "verbosity.hh"
 
 void run_ppwebgui_server(WebGuiService &service,
                          const WebGuiAssets assets,
                          const WebGuiServerBinding &binding,
-                         const Verbosity &verbosity) {
+                         const WebGuiHttpOptions http_options) {
   httplib::Server server;
-  register_ppwebgui_routes(server, service, verbosity, assets.index_html, assets.app_css, assets.app_js);
+  register_ppwebgui_routes(server, service, http_options, assets.index_html, assets.app_css, assets.app_js);
 
   int actual_port = binding.bind_port;
   if (binding.bind_port == 0) {
