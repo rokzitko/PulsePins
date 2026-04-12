@@ -80,10 +80,21 @@ The page exposes these main sections:
 * Status Provenance: a legend explaining which values are live hardware polls, which are tracked by `ppwebgui`, and which form edits are still local to the browser
 * Live Hardware: AUX bits, trigger bits, trigger enable/force/reset flags, and the live streamer runtime status word
 * Tracked by ppwebgui: displayed qout, tracked idle streamer qout, output-override state, combiner mode, trigger mode, and recent action/error text
-* Trigger Settings: tracked read-only trigger combiner mode plus invert and mask settings for the result, INT, EXT, MISC, and AUX paths
+* Trigger Settings: tracked trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask remain visible read-only
 * Output Override: one manual final-output override control for the active streamer path used by browser-triggered sequence playback
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
+
+The trigger form uses the same semantic mode names as the CLI trigger tool:
+
+* `STANDARD`
+* `INT`
+* `EXT`
+* `MISC`
+* `ANY`
+* `ALL`
+
+`STANDARD` matches the CLI meaning: it selects the OR combiner path and forces all EXT trigger lines inverted. In the browser UI, `EXT invert` becomes read-only while `STANDARD` is selected so the visible form state stays consistent with the applied semantics.
 
 Browser-triggered streams first run the same hardware reset/bring-up sequence exposed by the **Reset hardware** button, then append the currently tracked idle raw qout value as the final output element. That keeps each run deterministic and starts the streamer from a clean reset state.
 
@@ -119,7 +130,7 @@ The hardware-facing side should continue to expose only:
 
 Higher layers should never own or relocate the hardware wrapper graph directly.
 
-While the user is editing the **Output Override** or **Output Combiner** form, the browser keeps those local edits visible until **Apply** or **Revert local edits** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
+While the user is editing the **Trigger Settings**, **Output Override**, or **Output Combiner** form, the browser keeps those local edits visible until **Apply** or **Revert local edits** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
 
 Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
 
@@ -128,6 +139,7 @@ Values shown in the browser are rendered in hexadecimal by default. Input fields
 Version 1 keeps the API small:
 
 * `GET /api/status` returns JSON status for AUX, trigger state, trigger-combiner settings, active streamer qout state, combiner state, and recent action/error text
+* `POST /api/trigger` expects an `application/x-www-form-urlencoded` body with `mode`, `invert_result`, `invert_int`, `invert_ext`, `invert_misc`, `mask_int`, `mask_ext`, and `mask_misc`
 * `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `override_enabled` and `override_value`
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
 * `POST /api/reset` reruns the `ppwebgui` FPGA bring-up path and reapplies the current web-managed settings
