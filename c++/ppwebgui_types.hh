@@ -1,0 +1,84 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rok Zitko
+
+#pragma once
+
+#include <array>
+#include <cstdint>
+#include <optional>
+#include <string>
+
+#include "combiner.hh"
+#include "definitions.hh"
+
+struct PortState {
+  uint32_t invert = 0;
+  uint32_t mask = 0;
+  bool force_enabled = false;
+  uint32_t force_value = 0;
+};
+
+struct StreamerOverrideState {
+  bool enabled = false;
+  uint32_t value = 0;
+};
+
+struct StreamerState {
+  uint32_t status_raw = 0;
+  uint32_t qout = 0;
+  uint32_t qout_streamer = 0;
+  StreamerOverrideState override_state;
+};
+
+struct TriggerConfigState {
+  uint32_t mode = 0;
+  uint32_t invert_result = 0;
+  uint32_t invert_int = 0;
+  uint32_t invert_ext = 0;
+  uint32_t invert_misc = 0;
+  uint32_t invert_aux = 0;
+  uint32_t mask_int = 0;
+  uint32_t mask_ext = 0;
+  uint32_t mask_misc = 0;
+  uint32_t mask_aux = 0;
+};
+
+struct StatusSnapshot {
+  uint64_t seqno = 0;
+  unsigned poll_ms = 100;
+  uint8_t aux_raw = 0;
+  uint32_t trig_raw = 0;
+  StreamerState streamer;
+  int last_stream_rc = RC_OK;
+  std::string stream_message = "idle";
+  TriggerConfigState trigger_settings;
+  std::string combiner_mode = "SEL1";
+  PortState output;
+  std::array<PortState, 4> inputs {};
+  std::string last_action = "idle";
+  std::string last_error;
+};
+
+struct CombinerRequest {
+  comb_mode mode = comb_mode::SEL1;
+  PortState output;
+  std::array<PortState, 4> inputs {};
+};
+
+struct StreamResult {
+  bool ok = false;
+  int rc = RC_OK;
+  int http_status = 200;
+  std::string message;
+};
+
+struct StreamLaunchRequest {
+  std::string sequence_text;
+  std::optional<bool> force_trigger_override;
+  bool check_readback = false;
+};
+
+struct ResetResult {
+  bool ok = true;
+  std::string message;
+};
