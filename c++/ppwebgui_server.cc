@@ -16,7 +16,7 @@ void run_ppwebgui_server(WebGuiService &service,
                          const WebGuiServerBinding &binding,
                          const WebGuiHttpOptions http_options) {
   httplib::Server server;
-  register_ppwebgui_routes(server, service, http_options, assets.index_html, assets.app_css, assets.app_js);
+  register_ppwebgui_routes(server, service, http_options, assets);
 
   int actual_port = binding.bind_port;
   if (binding.bind_port == 0) {

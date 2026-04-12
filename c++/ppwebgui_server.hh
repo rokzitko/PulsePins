@@ -3,11 +3,9 @@
 
 #pragma once
 
-#include "ppwebgui_assets.hh"
-#include "ppwebgui_http.hh"
+#include "ppwebgui_frontend.hh"
 
 class WebGuiService;
-struct WebGuiServerBinding;
 
 void run_ppwebgui_server(WebGuiService &service,
                          WebGuiAssets assets,

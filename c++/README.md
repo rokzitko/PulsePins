@@ -12,6 +12,7 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 - `ppwebgui_http.cc` - request parsing, error handling, and route registration
 - `ppwebgui_json.cc` - JSON/status presentation helpers
 - `ppwebgui_assets.cc` - embedded HTML, CSS, and JavaScript assets
+- `ppwebgui_frontend.hh` - small pure-value boundary types shared by the non-hardware ppwebgui layers
 - `ppwebgui_config.cc` - pure runtime/config resolution from `InputParser`
 - `ppwebgui_bootstrap.cc` - fatal-signal installation and startup URL reporting
 - `pptool_commands.hh` - catalog of supported `pp...` command handlers
@@ -65,6 +66,7 @@ The current `ppwebgui` split is intentionally layered:
 - `ppwebgui_http.cc` converts HTTP requests into value requests and registers routes.
 - `ppwebgui_json.cc` renders status and operation responses.
 - `ppwebgui_assets.cc` contains browser assets.
+- `ppwebgui_frontend.hh` centralizes the remaining pure GUI/server boundary types such as assets, bind values, and HTTP logging options.
 - `ppwebgui_config.cc` converts raw CLI/input state into a pure runtime config object.
 - `ppwebgui_bootstrap.cc` handles signal/backtrace setup and startup URL reporting.
 

@@ -181,19 +181,17 @@ CombinerRequest parse_combiner_request(const httplib::Request &req) {
 void register_ppwebgui_routes(httplib::Server &server,
                               WebGuiService &service,
                               const WebGuiHttpOptions options,
-                              const char *index_html,
-                              const char *app_css,
-                              const char *app_js) {
+                              const WebGuiAssets assets) {
   auto *service_ptr = &service;
 
-  server.Get("/", [index_html](const httplib::Request &, httplib::Response &res) {
-    res.set_content(index_html, "text/html; charset=utf-8");
+  server.Get("/", [assets](const httplib::Request &, httplib::Response &res) {
+    res.set_content(assets.index_html, "text/html; charset=utf-8");
   });
-  server.Get("/app.css", [app_css](const httplib::Request &, httplib::Response &res) {
-    res.set_content(app_css, "text/css; charset=utf-8");
+  server.Get("/app.css", [assets](const httplib::Request &, httplib::Response &res) {
+    res.set_content(assets.app_css, "text/css; charset=utf-8");
   });
-  server.Get("/app.js", [app_js](const httplib::Request &, httplib::Response &res) {
-    res.set_content(app_js, "application/javascript; charset=utf-8");
+  server.Get("/app.js", [assets](const httplib::Request &, httplib::Response &res) {
+    res.set_content(assets.app_js, "application/javascript; charset=utf-8");
   });
 
   server.Get("/api/status", [service_ptr](const httplib::Request &, httplib::Response &res) {

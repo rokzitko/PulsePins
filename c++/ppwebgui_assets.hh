@@ -3,11 +3,7 @@
 
 #pragma once
 
-struct WebGuiAssets {
-  const char *index_html;
-  const char *app_css;
-  const char *app_js;
-};
+#include "ppwebgui_frontend.hh"
 
 extern const char *index_html;
 extern const char *app_css;

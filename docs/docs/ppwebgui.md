@@ -80,6 +80,14 @@ The current implementation restores live polling only for register paths that ha
 
 This rule is not only architectural hygiene. Refactors that changed the storage or ownership of the hardware controller, while leaving the logical operations the same, have caused board-only crashes in the output-override path. Preserve the anchored controller instance and add indirection around it instead of relocating it.
 
+On the GUI side, the current split also keeps the remaining non-hardware dependencies explicit through small value objects:
+
+- `WebGuiAssets` for the embedded browser payload
+- `WebGuiServerBinding` for bind/listen inputs
+- `WebGuiHttpOptions` for route-side logging policy
+
+Those types let the app, server, and HTTP layers depend on each other through pure values instead of reaching across modules for hidden globals or broader runtime objects.
+
 While the user is editing the **Output Override** or **Output Combiner** form, the browser keeps those local edits visible until **Apply** or **Revert local edits** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
 
 Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
