@@ -40,6 +40,8 @@ public:
   }
 
 private:
+  // Non-owning pointer by design: the controller instance is anchored in main and must keep
+  // the same lifetime/location that the hardware-facing code was tested with.
   WebGuiController *controller;
 };
 

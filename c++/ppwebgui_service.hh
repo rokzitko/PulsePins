@@ -13,10 +13,24 @@
 #include "readback.hh"
 #include "trigger.hh"
 
+// Owns the full ppwebgui hardware object graph.
+//
+// Important lifetime rule:
+// - keep this controller in one anchored instance for the whole server lifetime
+// - do not copy it, move it, or re-own it from wrapper/helper objects
+// - pass access around only via pointer/reference to that anchored instance
+//
+// We have seen board-only crashes when refactors changed the storage/ownership of the
+// hardware-owning object graph even though the functional logic was otherwise unchanged.
 class WebGuiController {
 public:
   WebGuiController(FPGA &fpga_, const InputParser &input_, const Verbosity &verbosity_, unsigned poll_ms_);
   ~WebGuiController();
+
+  WebGuiController(const WebGuiController &) = delete;
+  WebGuiController &operator=(const WebGuiController &) = delete;
+  WebGuiController(WebGuiController &&) = delete;
+  WebGuiController &operator=(WebGuiController &&) = delete;
 
   StatusSnapshot get_status_copy();
   void apply_streamer_override(const StreamerOverrideState &state);

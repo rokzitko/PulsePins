@@ -35,6 +35,17 @@ This split is intentional:
 - wrapper headers expose hardware blocks as typed C++ interfaces.
 - sequence classes model the programmable pulse stream in a way that can be reused by CLI tools, tests, and future bindings.
 
+## Hardware lifetime policy
+
+Some host-side wrapper graphs are sensitive not only to call ordering but also to object lifetime and storage layout on the deployed target.
+
+- Keep hardware-owning runtime objects in one anchored owner for the full process lifetime.
+- Do not copy, move, or re-own objects that directly hold FPGA-facing wrappers, MMIO helpers, or transport/control blocks.
+- If higher layers need access, pass a pointer or reference to the anchored owner instead of embedding or relocating it.
+- When refactoring, prefer adding thin adapter layers over changing where hardware-owning objects live.
+
+`ppwebgui` is the current concrete example of this rule: `WebGuiController` must remain a stable owner of the hardware-facing object graph, while the HTTP/UI layer talks to it through non-owning service adapters.
+
 ## Main extension points
 
 If you want to customize or extend the host software, the usual starting points are:

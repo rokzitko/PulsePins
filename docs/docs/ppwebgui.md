@@ -70,6 +70,16 @@ The backend keeps hardware access serialized and the UI polls `/api/status` at t
 
 The current implementation restores live polling only for register paths that have been stable on the deployed hardware: AUX input state and the streamer runtime status word. Trigger-combiner settings, combiner routing, and the displayed qout values remain controller-managed snapshots so the web GUI does not re-enter the crashy register read paths.
 
+## Maintainer note
+
+`ppwebgui` keeps a strict ownership boundary between the GUI/HTTP layer and the hardware-facing controller.
+
+- `WebGuiController` is the anchored owner of the hardware object graph.
+- Higher layers must not copy, move, or re-own that controller or the FPGA-facing wrappers beneath it.
+- Route/UI code should access the controller only through pointer/reference-based adapters that forward value requests and value snapshots.
+
+This rule is not only architectural hygiene. Refactors that changed the storage or ownership of the hardware controller, while leaving the logical operations the same, have caused board-only crashes in the output-override path. Preserve the anchored controller instance and add indirection around it instead of relocating it.
+
 While the user is editing the **Output Override** or **Output Combiner** form, the browser keeps those local edits visible until **Apply** or **Revert local edits** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
 
 Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.

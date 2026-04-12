@@ -1272,7 +1272,10 @@ int main(int argc, char *argv[]) {
     const auto bind_port = parse_bind_port(input);
     const auto poll_ms = parse_poll_ms(input);
 
+    // Keep the hardware-owning controller anchored here for the full server lifetime.
+    // Route/UI code may only talk to it indirectly through non-owning pointer/reference adapters.
     WebGuiController controller(fpga, input, verbosity, poll_ms);
+    // Keep the adapter declared after the controller so it is destroyed first.
     auto service_handle = make_webgui_service(controller);
     auto &service = *service_handle;
 
