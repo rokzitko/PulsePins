@@ -105,20 +105,39 @@ const char *index_html = R"HTML(<!doctype html>
         <h2>Trigger Settings</h2>
         <div class="heading-tags">
           <span class="state-tag tracked-tag">tracked</span>
-          <span class="state-tag neutral-tag">read-only</span>
+          <span id="trigger-local-tag" class="state-tag local-tag hidden">local edit</span>
         </div>
       </div>
-      <div class="panel-note">Restored by ppwebgui on reset. These settings are not polled live.</div>
+      <div id="trigger-form-state" class="form-state">Tracked trigger settings are shown below. Local edits stay in the browser until you click Apply or Revert.</div>
+      <div class="panel-note">Restored by ppwebgui on reset. These settings are tracked, not polled live. AUX fields remain visible but read-only.</div>
+      <form id="trigger-form">
+        <div class="settings-grid">
+          <label>Mode
+            <select name="mode" id="trigger-mode-select">
+              <option>STANDARD</option>
+              <option>INT</option>
+              <option>EXT</option>
+              <option>MISC</option>
+              <option>ANY</option>
+              <option>ALL</option>
+            </select>
+          </label>
+          <label>Result invert<input name="invert_result" value="0x0"></label>
+          <label>INT invert<input name="invert_int" value="0x0"></label>
+          <label>EXT invert<input id="trigger-ext-invert" name="invert_ext" value="0xffffffff"></label>
+          <label>MISC invert<input name="invert_misc" value="0x0"></label>
+          <label>INT mask<input name="mask_int" value="0x0"></label>
+          <label>EXT mask<input name="mask_ext" value="0x0"></label>
+          <label>MISC mask<input name="mask_misc" value="0x0"></label>
+        </div>
+        <div class="form-grid">
+          <button type="submit">Apply trigger settings</button>
+          <button id="trigger-revert-button" type="button" class="secondary-button">Revert local edits</button>
+        </div>
+      </form>
+      <div class="meta">STANDARD follows CLI semantics and forces EXT invert to `0xffffffff`.</div>
       <div class="settings-grid">
-        <div class="setting"><div class="label">Mode</div><div id="trigger-mode" class="mono"></div></div>
-        <div class="setting"><div class="label">Result invert</div><div id="trigger-invert-result" class="mono"></div></div>
-        <div class="setting"><div class="label">INT invert</div><div id="trigger-invert-int" class="mono"></div></div>
-        <div class="setting"><div class="label">EXT invert</div><div id="trigger-invert-ext" class="mono"></div></div>
-        <div class="setting"><div class="label">MISC invert</div><div id="trigger-invert-misc" class="mono"></div></div>
         <div class="setting"><div class="label">AUX invert</div><div id="trigger-invert-aux" class="mono"></div></div>
-        <div class="setting"><div class="label">INT mask</div><div id="trigger-mask-int" class="mono"></div></div>
-        <div class="setting"><div class="label">EXT mask</div><div id="trigger-mask-ext" class="mono"></div></div>
-        <div class="setting"><div class="label">MISC mask</div><div id="trigger-mask-misc" class="mono"></div></div>
         <div class="setting"><div class="label">AUX mask</div><div id="trigger-mask-aux" class="mono"></div></div>
       </div>
     </section>
@@ -530,19 +549,27 @@ const char *app_js = R"JS((() => {
   const globalStatus = document.getElementById('global-status');
   const streamResult = document.getElementById('stream-result');
   const resetButton = document.getElementById('reset-button');
+  const triggerForm = document.getElementById('trigger-form');
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
+  const triggerModeSelect = document.getElementById('trigger-mode-select');
+  const triggerExtInvertInput = document.getElementById('trigger-ext-invert');
+  const triggerRevertButton = document.getElementById('trigger-revert-button');
   const qoutRevertButton = document.getElementById('qout-revert-button');
   const combinerRevertButton = document.getElementById('combiner-revert-button');
+  const triggerFormState = document.getElementById('trigger-form-state');
   const qoutFormState = document.getElementById('qout-form-state');
   const combinerFormState = document.getElementById('combiner-form-state');
+  const triggerLocalTag = document.getElementById('trigger-local-tag');
   const qoutLocalTag = document.getElementById('qout-local-tag');
   const combinerLocalTag = document.getElementById('combiner-local-tag');
+  const triggerCleanText = 'Tracked trigger settings are shown below. Local edits stay in the browser until you click Apply or Revert.';
   const qoutCleanText = 'Tracked output-override values are shown below. Local edits stay in the browser until you click Apply or Revert.';
   const combinerCleanText = 'Tracked combiner values are shown below. Local edits stay in the browser until you click Apply or Revert.';
   let pollMs = 100;
   let hardwareBusy = false;
+  let triggerDirty = false;
   let qoutDirty = false;
   let combinerDirty = false;
   let lastStatus = null;
@@ -570,6 +597,7 @@ const char *app_js = R"JS((() => {
   function setHardwareBusy(busy) {
     hardwareBusy = busy;
     resetButton.disabled = busy;
+    setBusy(triggerForm, busy);
     setBusy(qoutForm, busy);
     setBusy(combinerForm, busy);
     setBusy(streamForm, busy);
@@ -580,6 +608,25 @@ const char *app_js = R"JS((() => {
     stateElement.classList.toggle('local-edit', dirty);
     stateElement.textContent = dirty ? dirtyText : cleanText;
     tagElement.classList.toggle('hidden', !dirty);
+  }
+
+  function syncTriggerModeUi() {
+    const standard = triggerModeSelect.value === 'STANDARD';
+    if (standard) {
+      triggerExtInvertInput.value = '0xffffffff';
+    }
+    triggerExtInvertInput.readOnly = standard;
+  }
+
+  function setTriggerDirty(dirty) {
+    triggerDirty = dirty;
+    setFormDirty(
+      triggerForm,
+      dirty,
+      triggerFormState,
+      triggerLocalTag,
+      triggerCleanText,
+      'Local edit only. This trigger form differs from the tracked ppwebgui state until you click Apply or Revert.');
   }
 
   function setQoutDirty(dirty) {
@@ -602,6 +649,23 @@ const char *app_js = R"JS((() => {
       combinerLocalTag,
       combinerCleanText,
       'Local edit only. This combiner form differs from the tracked ppwebgui state until you click Apply.');
+  }
+
+  function populateTrigger(status, force = false) {
+    if (!force && triggerDirty) return;
+    const settings = status.trigger_settings;
+    triggerModeSelect.value = settings.mode;
+    triggerForm.querySelector('[name="invert_result"]').value = formatHex(settings.invert_result);
+    triggerForm.querySelector('[name="invert_int"]').value = formatHex(settings.invert_int);
+    triggerForm.querySelector('[name="invert_ext"]').value = formatHex(settings.invert_ext);
+    triggerForm.querySelector('[name="invert_misc"]').value = formatHex(settings.invert_misc);
+    triggerForm.querySelector('[name="mask_int"]').value = formatHex(settings.mask_int);
+    triggerForm.querySelector('[name="mask_ext"]').value = formatHex(settings.mask_ext);
+    triggerForm.querySelector('[name="mask_misc"]').value = formatHex(settings.mask_misc);
+    setText('trigger-invert-aux', formatHex(settings.invert_aux));
+    setText('trigger-mask-aux', formatHex(settings.mask_aux));
+    syncTriggerModeUi();
+    setTriggerDirty(false);
   }
 
   function populateQout(status, force = false) {
@@ -629,19 +693,6 @@ const char *app_js = R"JS((() => {
     setCombinerDirty(false);
   }
 
-  function renderTriggerSettings(settings) {
-    setText('trigger-mode', settings.mode);
-    setText('trigger-invert-result', formatHex(settings.invert_result));
-    setText('trigger-invert-int', formatHex(settings.invert_int));
-    setText('trigger-invert-ext', formatHex(settings.invert_ext));
-    setText('trigger-invert-misc', formatHex(settings.invert_misc));
-    setText('trigger-invert-aux', formatHex(settings.invert_aux));
-    setText('trigger-mask-int', formatHex(settings.mask_int));
-    setText('trigger-mask-ext', formatHex(settings.mask_ext));
-    setText('trigger-mask-misc', formatHex(settings.mask_misc));
-    setText('trigger-mask-aux', formatHex(settings.mask_aux));
-  }
-
   function renderStatus(status, options = {}) {
     lastStatus = status;
     const runtimeFlags = [];
@@ -667,7 +718,7 @@ const char *app_js = R"JS((() => {
     setText('last-error', status.last_error || '(none)');
     setText('stream-state', `last result rc=${status.stream.last_rc} message=${status.stream.message} live runtime=${runtimeSummary} raw=${formatHex(status.stream.runtime.raw)}`);
     streamResult.textContent = status.stream.message;
-    renderTriggerSettings(status.trigger_settings);
+    populateTrigger(status, options.forceTrigger === true);
     populateQout(status, options.forceQout === true);
     populateCombiner(status, options.forceCombiner === true);
     pollMs = status.poll_ms || 100;
@@ -682,10 +733,22 @@ const char *app_js = R"JS((() => {
     form.addEventListener('change', handler);
   }
 
+  setTriggerDirty(false);
   setQoutDirty(false);
   setCombinerDirty(false);
+  syncTriggerModeUi();
+  attachDirtyHandlers(triggerForm, setTriggerDirty);
   attachDirtyHandlers(qoutForm, setQoutDirty);
   attachDirtyHandlers(combinerForm, setCombinerDirty);
+
+  triggerModeSelect.addEventListener('change', () => {
+    syncTriggerModeUi();
+  });
+
+  triggerRevertButton.addEventListener('click', () => {
+    if (!lastStatus) return;
+    populateTrigger(lastStatus, true);
+  });
 
   qoutRevertButton.addEventListener('click', () => {
     if (!lastStatus) return;
@@ -730,6 +793,21 @@ const char *app_js = R"JS((() => {
       const result = await fetchJson('/api/qout', { method: 'POST', body });
       if (result.status) renderStatus(result.status, { forceQout: true });
       setGlobal(result.message || 'override updated');
+    } catch (error) {
+      setGlobal(error.message, true);
+    } finally {
+      setHardwareBusy(false);
+    }
+  });
+
+  triggerForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const body = new URLSearchParams(new FormData(triggerForm));
+    setHardwareBusy(true);
+    try {
+      const result = await fetchJson('/api/trigger', { method: 'POST', body });
+      if (result.status) renderStatus(result.status, { forceTrigger: true });
+      setGlobal(result.message || 'trigger updated');
     } catch (error) {
       setGlobal(error.message, true);
     } finally {
