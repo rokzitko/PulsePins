@@ -7,6 +7,7 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 - `pptool.cc` - main executable entry point and symlink-based command dispatcher
 - `ppwebgui_main.cc` - standalone embedded web GUI process entry point
 - `ppwebgui_app.cc` - ppwebgui composition root that anchors the hardware controller and wires the service, HTTP, assets, and config layers together
+- `ppwebgui_server.cc` - ppwebgui server lifecycle, bind/listen flow, and route/asset server assembly
 - `ppwebgui_service.cc` - hardware-owning ppwebgui controller implementation
 - `ppwebgui_service_api.cc` - non-owning service adapter used by the GUI/HTTP side
 - `ppwebgui_http.cc` - request parsing, error handling, and route registration
@@ -61,6 +62,7 @@ The current `ppwebgui` split is intentionally layered:
 
 - `ppwebgui_main.cc` handles only process entry.
 - `ppwebgui_app.cc` is the composition root and the only place that anchors the `WebGuiController` instance.
+- `ppwebgui_server.cc` owns `httplib::Server`, bind/listen policy, and startup URL reporting for the web server process.
 - `ppwebgui_service.cc` owns hardware-facing wrappers and executes value-based requests.
 - `ppwebgui_service_api.cc` exposes a non-owning interface bridge for GUI/HTTP code.
 - `ppwebgui_http.cc` converts HTTP requests into value requests and registers routes.
@@ -71,6 +73,24 @@ The current `ppwebgui` split is intentionally layered:
 - `ppwebgui_bootstrap.cc` handles signal/backtrace setup and startup URL reporting.
 
 When extending `ppwebgui`, keep browser/UI work out of the service layer and keep hardware ownership out of HTTP/UI modules.
+
+The current `ppwebgui` control flow is:
+
+1. `ppwebgui_main.cc` builds `HostRuntime`, resolves `WebGuiRuntimeConfig`, and enters the app runner.
+2. `ppwebgui_app.cc` anchors the single `WebGuiController` instance and creates the non-owning `WebGuiService` adapter.
+3. `ppwebgui_server.cc` creates `httplib::Server`, wires routes/assets, binds, and starts listening.
+4. `ppwebgui_http.cc` parses requests into value requests and forwards them through `WebGuiService`.
+5. `ppwebgui_service.cc` executes those value requests against the hardware-owning wrapper graph and returns value snapshots/results.
+6. `ppwebgui_json.cc` renders returned snapshots/results into HTTP responses.
+
+The app/server/http side should continue to communicate through small value types such as:
+
+- `WebGuiRuntimeConfig`
+- `WebGuiServerBinding`
+- `WebGuiAssets`
+- `WebGuiHttpOptions`
+
+That keeps the non-hardware layers explicit and prevents them from reaching into broader runtime or hardware objects.
 
 ## Main extension points
 

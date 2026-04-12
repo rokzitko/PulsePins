@@ -50,6 +50,29 @@ Example with an auto-selected free port:
 ppwebgui -port 0
 ```
 
+## Architecture
+
+The current `ppwebgui` implementation is split into small layers with a strict hardware-ownership boundary:
+
+* `ppwebgui_main.cc`: process entry only
+* `ppwebgui_app.cc`: composition root; anchors the single `WebGuiController`
+* `ppwebgui_server.cc`: owns the embedded `httplib::Server` lifecycle, bind/listen flow, and startup URL reporting
+* `ppwebgui_http.cc`: request parsing, validation, error handling, and route registration
+* `ppwebgui_json.cc`: JSON/status rendering
+* `ppwebgui_assets.cc`: embedded browser HTML/CSS/JS
+* `ppwebgui_config.cc`: resolves CLI/input state into pure config values
+* `ppwebgui_service_api.cc`: non-owning service interface bridge used by the GUI/HTTP side
+* `ppwebgui_service.cc`: hardware-owning controller implementation
+
+The runtime flow is:
+
+1. `ppwebgui_main.cc` creates `HostRuntime` and resolves `WebGuiRuntimeConfig`
+2. `ppwebgui_app.cc` anchors `WebGuiController` and creates a non-owning `WebGuiService` adapter
+3. `ppwebgui_server.cc` builds `httplib::Server` and starts the listener
+4. `ppwebgui_http.cc` converts requests into value requests for the service layer
+5. `ppwebgui_service.cc` executes those requests against the hardware-owning wrapper graph
+6. `ppwebgui_json.cc` renders returned value snapshots/results into responses
+
 ## Browser UI
 
 The page exposes these main sections:
@@ -82,11 +105,19 @@ This rule is not only architectural hygiene. Refactors that changed the storage 
 
 On the GUI side, the current split also keeps the remaining non-hardware dependencies explicit through small value objects:
 
+- `WebGuiRuntimeConfig` for resolved startup/runtime policy
 - `WebGuiAssets` for the embedded browser payload
 - `WebGuiServerBinding` for bind/listen inputs
 - `WebGuiHttpOptions` for route-side logging policy
 
 Those types let the app, server, and HTTP layers depend on each other through pure values instead of reaching across modules for hidden globals or broader runtime objects.
+
+The hardware-facing side should continue to expose only:
+
+- value requests such as combiner changes, output override changes, reset requests, and stream launch requests
+- value snapshots/results such as `StatusSnapshot`, `ResetResult`, and `StreamResult`
+
+Higher layers should never own or relocate the hardware wrapper graph directly.
 
 While the user is editing the **Output Override** or **Output Combiner** form, the browser keeps those local edits visible until **Apply** or **Revert local edits** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
 
