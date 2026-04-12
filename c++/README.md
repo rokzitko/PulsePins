@@ -5,7 +5,15 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 ## What lives here
 
 - `pptool.cc` - main executable entry point and symlink-based command dispatcher
-- `ppwebgui.cc` - standalone embedded web GUI server for single-stream playback, trigger/combiner reporting, and browser-driven control
+- `ppwebgui_main.cc` - standalone embedded web GUI process entry point
+- `ppwebgui_app.cc` - ppwebgui composition root that anchors the hardware controller and wires the service, HTTP, assets, and config layers together
+- `ppwebgui_service.cc` - hardware-owning ppwebgui controller implementation
+- `ppwebgui_service_api.cc` - non-owning service adapter used by the GUI/HTTP side
+- `ppwebgui_http.cc` - request parsing, error handling, and route registration
+- `ppwebgui_json.cc` - JSON/status presentation helpers
+- `ppwebgui_assets.cc` - embedded HTML, CSS, and JavaScript assets
+- `ppwebgui_config.cc` - pure runtime/config resolution from `InputParser`
+- `ppwebgui_bootstrap.cc` - fatal-signal installation and startup URL reporting
 - `pptool_commands.hh` - catalog of supported `pp...` command handlers
 - `pptool_streaming.cc` - commands that primarily drive the streamer datapath
 - `pptool_measurement.cc` - commands for readback, counters, timestamps, temperature, and frequency measurement
@@ -45,6 +53,22 @@ Some host-side wrapper graphs are sensitive not only to call ordering but also t
 - When refactoring, prefer adding thin adapter layers over changing where hardware-owning objects live.
 
 `ppwebgui` is the current concrete example of this rule: `WebGuiController` must remain a stable owner of the hardware-facing object graph, while the HTTP/UI layer talks to it through non-owning service adapters.
+
+## ppwebgui module map
+
+The current `ppwebgui` split is intentionally layered:
+
+- `ppwebgui_main.cc` handles only process entry.
+- `ppwebgui_app.cc` is the composition root and the only place that anchors the `WebGuiController` instance.
+- `ppwebgui_service.cc` owns hardware-facing wrappers and executes value-based requests.
+- `ppwebgui_service_api.cc` exposes a non-owning interface bridge for GUI/HTTP code.
+- `ppwebgui_http.cc` converts HTTP requests into value requests and registers routes.
+- `ppwebgui_json.cc` renders status and operation responses.
+- `ppwebgui_assets.cc` contains browser assets.
+- `ppwebgui_config.cc` converts raw CLI/input state into a pure runtime config object.
+- `ppwebgui_bootstrap.cc` handles signal/backtrace setup and startup URL reporting.
+
+When extending `ppwebgui`, keep browser/UI work out of the service layer and keep hardware ownership out of HTTP/UI modules.
 
 ## Main extension points
 

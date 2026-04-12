@@ -125,7 +125,7 @@ $(ASIO_DIR):
 ppscpi: ppscpi.o $(ASIO_DIR)
 	$(CXX) $(LDFLAGS)   $< -o $@ $(FSLIB)
 
-PPWEBGUI_OBJS = ppwebgui.o ppwebgui_app.o ppwebgui_service.o ppwebgui_service_api.o ppwebgui_json.o ppwebgui_http.o ppwebgui_assets.o ppwebgui_config.o ppwebgui_bootstrap.o
+PPWEBGUI_OBJS = ppwebgui_main.o ppwebgui_app.o ppwebgui_service.o ppwebgui_service_api.o ppwebgui_json.o ppwebgui_http.o ppwebgui_assets.o ppwebgui_config.o ppwebgui_bootstrap.o
 
 ppwebgui: $(PPWEBGUI_OBJS)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB)
@@ -147,7 +147,7 @@ pptool_measurement.o : pptool_measurement.cc ../hps_0.h $(HEADERS)
 ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui.o : ppwebgui.cc ../hps_0.h $(HEADERS)
+ppwebgui_main.o : ppwebgui_main.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 ppwebgui_service.o : ppwebgui_service.cc ../hps_0.h $(HEADERS)
