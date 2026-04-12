@@ -796,3 +796,7 @@ const char *app_js = R"JS((() => {
   pollStatus();
 })();
 )JS";
+
+WebGuiAssets get_ppwebgui_assets() {
+  return {index_html, app_css, app_js};
+}

@@ -6,7 +6,6 @@
 #include <stdexcept>
 
 #include "httplib.h"
-#include "ppwebgui_assets.hh"
 #include "ppwebgui_bootstrap.hh"
 #include "ppwebgui_config.hh"
 #include "ppwebgui_http.hh"
@@ -14,10 +13,11 @@
 #include "verbosity.hh"
 
 void run_ppwebgui_server(WebGuiService &service,
+                         const WebGuiAssets assets,
                          const WebGuiRuntimeConfig &config,
                          const Verbosity &verbosity) {
   httplib::Server server;
-  register_ppwebgui_routes(server, service, verbosity, index_html, app_css, app_js);
+  register_ppwebgui_routes(server, service, verbosity, assets.index_html, assets.app_css, assets.app_js);
 
   int actual_port = config.bind_port;
   if (config.bind_port == 0) {
