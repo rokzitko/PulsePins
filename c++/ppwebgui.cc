@@ -45,6 +45,7 @@
 #include "pio.hh"
 #include "ppversion.hh"
 #include "ppwebgui_service.hh"
+#include "ppwebgui_service_api.hh"
 #include "ppwebgui_types.hh"
 #include "ppworkflow.hh"
 #include "qout.hh"
@@ -663,8 +664,11 @@ const char *index_html = R"HTML(<!doctype html>
       <div class="panel-note">Start streaming resets hardware first and appends the tracked idle qout as the final output.</div>
       <form id="stream-form" class="sequence-form">
         <label>Sequence text
-          <textarea name="sequence_text" rows="8">d 1 0x1
-d 1 0x0
+          <textarea name="sequence_text" rows="8">d 10000000 0xff
+d 10000000 0x00
+d 10000000 0xff
+d 10000000 0x00
+d 10000000 0xff
 </textarea>
         </label>
         <label class="checkbox"><input type="checkbox" name="force_trigger"> Force trigger</label>
@@ -1269,6 +1273,8 @@ int main(int argc, char *argv[]) {
     const auto poll_ms = parse_poll_ms(input);
 
     WebGuiController controller(fpga, input, verbosity, poll_ms);
+    auto service_handle = make_webgui_service(controller);
+    auto &service = *service_handle;
 
     httplib::Server server;
     server.Get("/", [](const httplib::Request &, httplib::Response &res) {
@@ -1285,7 +1291,7 @@ int main(int argc, char *argv[]) {
       res.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
       res.set_header("Pragma", "no-cache");
       res.set_header("Expires", "0");
-      respond_json(res, status_to_json(controller.get_status_copy()));
+      respond_json(res, status_to_json(service.get_status_copy()));
     });
 
     auto wrap = [&](auto handler) {
@@ -1293,13 +1299,13 @@ int main(int argc, char *argv[]) {
         try {
           handler(req, res);
         } catch (const BadRequest &e) {
-          controller.set_last_error(e.what());
+          service.set_last_error(e.what());
           respond_error(res, httplib::StatusCode::BadRequest_400, e.what());
         } catch (const std::exception &e) {
-          controller.set_last_error(e.what());
+          service.set_last_error(e.what());
           respond_error(res, httplib::StatusCode::InternalServerError_500, e.what());
         } catch (...) {
-          controller.set_last_error("Unhandled non-standard exception");
+          service.set_last_error("Unhandled non-standard exception");
           respond_error(res, httplib::StatusCode::InternalServerError_500, "Unhandled non-standard exception");
         }
       };
@@ -1317,11 +1323,11 @@ int main(int argc, char *argv[]) {
         std::cout << "  enabled=" << bool_text(state.enabled) << std::endl;
         std::cout << "  value=0x" << std::hex << state.value << std::dec << std::endl;
       }
-      controller.apply_streamer_override(state);
+      service.apply_streamer_override(state);
       if (verbosity.veryverbose) {
         std::cout << "ppwebgui: applied /api/qout request" << std::endl;
       }
-      respond_json(res, operation_json("Applied streamer override", controller.get_status_copy()));
+      respond_json(res, operation_json("Applied streamer override", service.get_status_copy()));
     }));
 
     server.Post("/api/combiner", wrap([&](const httplib::Request &req, httplib::Response &res) {
@@ -1343,8 +1349,8 @@ int main(int argc, char *argv[]) {
           log_port(label.c_str(), request.inputs[i]);
         }
       }
-      controller.apply_combiner_config(request);
-      respond_json(res, operation_json("Applied combiner config", controller.get_status_copy()));
+      service.apply_combiner_config(request);
+      respond_json(res, operation_json("Applied combiner config", service.get_status_copy()));
     }));
 
     server.Post("/api/reset", wrap([&](const httplib::Request &req, httplib::Response &res) {
@@ -1352,8 +1358,8 @@ int main(int argc, char *argv[]) {
       if (verbosity.veryverbose) {
         std::cout << "ppwebgui action: reset hardware" << std::endl;
       }
-      const auto result = controller.reset_hardware();
-      respond_json(res, operation_json(result.message, controller.get_status_copy()));
+      const auto result = service.reset_hardware();
+      respond_json(res, operation_json(result.message, service.get_status_copy()));
     }));
 
     server.Post("/api/stream", wrap([&](const httplib::Request &req, httplib::Response &res) {
@@ -1380,13 +1386,13 @@ int main(int argc, char *argv[]) {
           std::cout << std::endl;
         }
       }
-      const auto result = controller.stream_text_sequence(std::move(request));
+      const auto result = service.stream_text_sequence(std::move(request));
       std::ostringstream body;
       body << "{\"ok\":" << (result.ok ? "true" : "false")
         << ",\"rc\":" << result.rc
         << ",\"message\":\"" << json_escape(result.message) << "\"";
       if (result.ok) {
-        body << ",\"status\":" << status_to_json(controller.get_status_copy());
+        body << ",\"status\":" << status_to_json(service.get_status_copy());
       }
       body << '}';
       respond_json(res, body.str(), result.http_status);
