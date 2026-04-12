@@ -8,6 +8,7 @@
 #include "basic_multi_dma.hh"
 #include "counter.hh"
 #include "pio.hh"
+#include "ppwebgui_config.hh"
 #include "ppwebgui_types.hh"
 #include "qout.hh"
 #include "readback.hh"
@@ -24,7 +25,7 @@
 // hardware-owning object graph even though the functional logic was otherwise unchanged.
 class WebGuiController {
 public:
-  WebGuiController(FPGA &fpga_, const InputParser &input_, const Verbosity &verbosity_, unsigned poll_ms_);
+  WebGuiController(FPGA &fpga_, const WebGuiRuntimeConfig &config_, const Verbosity &verbosity_);
   ~WebGuiController();
 
   WebGuiController(const WebGuiController &) = delete;
@@ -58,9 +59,8 @@ private:
   void apply_trigger_config_locked(const TriggerConfigState &state);
 
   FPGA &fpga;
-  const InputParser &input;
+  const WebGuiRuntimeConfig &config;
   const Verbosity &verbosity;
-  const unsigned poll_ms;
   qout qout_ctrl;
   streamer play_streamer;
   trigger trigger_ctrl;

@@ -5,16 +5,14 @@
 
 #include <sstream>
 #include <utility>
+#include <vector>
 
 #include "freq_meter.hh"
+#include "parser.hh"
 #include "ppworkflow.hh"
 #include "startup.hh"
 
 namespace {
-
-value_t streamer_initial_value_from_input(const InputParser &input) {
-  return resolve_streamer_options(input).initial_value;
-}
 
 uint32_t pack_live_trigger_status(const trigger_t trigger_in, const port_t trigger_ctrl) {
   uint32_t value = trigger_in & TRIGGER_MASK;
@@ -24,11 +22,10 @@ uint32_t pack_live_trigger_status(const trigger_t trigger_in, const port_t trigg
   return value;
 }
 
-TriggerConfigState trigger_config_from_input(const InputParser &input) {
+TriggerConfigState trigger_config_from_options(const TriggerOptions &opts) {
   TriggerConfigState state;
   state.mode = 0;
 
-  const auto opts = resolve_trigger_options(input);
   if (opts.mode) {
     switch (*opts.mode) {
     case TriggerModeOption::internal:
@@ -63,42 +60,6 @@ TriggerConfigState trigger_config_from_input(const InputParser &input) {
   return state;
 }
 
-CombinerRequest combiner_request_from_input(const InputParser &input) {
-  CombinerRequest request;
-  request.mode = comb_mode::SEL1;
-
-  if (input.exists("-out_sel1")) request.mode = comb_mode::SEL1;
-  else if (input.exists("-out_sel2")) request.mode = comb_mode::SEL2;
-  else if (input.exists("-out_sel3")) request.mode = comb_mode::SEL3;
-  else if (input.exists("-out_sel4")) request.mode = comb_mode::SEL4;
-  else if (input.exists("-out_and")) request.mode = comb_mode::AND;
-  else if (input.exists("-out_or")) request.mode = comb_mode::OR;
-  else if (input.exists("-out_xor")) request.mode = comb_mode::XOR;
-  else if (input.exists("-out_xnor")) request.mode = comb_mode::XNOR;
-  else if (input.exists("-out_maj")) request.mode = comb_mode::MAJ;
-  else if (input.exists("-out_block8")) request.mode = comb_mode::BLOCK8;
-  else if (input.exists("-out_block16")) request.mode = comb_mode::BLOCK16;
-  else if (input.exists("-out_sum12")) request.mode = comb_mode::SUM12;
-  else if (input.exists("-out_sum1234")) request.mode = comb_mode::SUM1234;
-  else if (input.exists("-out_diff12")) request.mode = comb_mode::DIFF12;
-
-  auto parse_port = [&](const char *invert_name, const char *mask_name, const char *force_name) {
-    PortState state;
-    state.invert = input.exists(invert_name) ? parse_value(input, invert_name, "0") : 0;
-    state.mask = input.exists(mask_name) ? parse_value(input, mask_name, "0xffffffff") : 0xffffffffU;
-    state.force_enabled = input.exists(force_name);
-    state.force_value = state.force_enabled ? parse_value(input, force_name, "0") : 0;
-    return state;
-  };
-
-  request.output = parse_port("-invert_out", "-mask_out", "-force_out");
-  request.inputs[0] = parse_port("-invert1", "-mask1", "-force1");
-  request.inputs[1] = parse_port("-invert2", "-mask2", "-force2");
-  request.inputs[2] = parse_port("-invert3", "-mask3", "-force3");
-  request.inputs[3] = parse_port("-invert4", "-mask4", "-force4");
-  return request;
-}
-
 bool force_enabled(const uint32_t cfg, const int port) {
   switch (port) {
   case 0: return cfg & (1U << B_FORCEo);
@@ -112,29 +73,29 @@ bool force_enabled(const uint32_t cfg, const int port) {
 
 } // namespace
 
-WebGuiController::WebGuiController(FPGA &fpga_, const InputParser &input_, const Verbosity &verbosity_, const unsigned poll_ms_) :
+WebGuiController::WebGuiController(FPGA &fpga_, const WebGuiRuntimeConfig &config_, const Verbosity &verbosity_) :
   fpga(fpga_),
-  input(input_),
+  config(config_),
   verbosity(verbosity_),
-  poll_ms(poll_ms_),
-  qout_ctrl(input, verbosity, fpga),
-  play_streamer(input, fpga),
-  trigger_ctrl(input, fpga),
-  readback_path(input, fpga),
-  counters(input, fpga),
+  qout_ctrl(verbosity, fpga),
+  play_streamer(config.streamer_options, fpga),
+  trigger_ctrl(config.trigger_options, fpga),
+  readback_path(config.readback_options, fpga),
+  counters(fpga),
   pio_aux(fpga.dev_lw, PIO_AUX_BASE),
   comb(qout_ctrl.cq),
   trig_comb(trigger_ctrl.ct) {
-  snapshot.poll_ms = poll_ms;
-  snapshot.trigger_settings = trigger_config_from_input(input);
-  combiner_base_config = combiner_request_from_input(input);
+  snapshot.poll_ms = config.poll_ms;
+  snapshot.trigger_settings = trigger_config_from_options(config.trigger_options);
+  combiner_base_config = config.combiner_request;
   snapshot.combiner_mode = to_string(combiner_base_config.mode);
   snapshot.output = combiner_base_config.output;
   snapshot.inputs = combiner_base_config.inputs;
-  snapshot.streamer.qout_streamer = streamer_initial_value_from_input(input);
+  snapshot.streamer.qout_streamer = config.streamer_options.initial_value;
   streamer_override.enabled = (play_streamer.sc.get_control() & QOUT_SELECT) == QOUT_SELECT;
   snapshot.streamer.override_state = streamer_override;
   snapshot.streamer.qout = streamer_override.enabled ? streamer_override.value : snapshot.streamer.qout_streamer;
+  apply_combiner_config_locked(combiner_base_config);
 }
 
 WebGuiController::~WebGuiController() = default;
@@ -245,15 +206,15 @@ void WebGuiController::reset_hardware_locked() {
 
   rstmgr rm;
   rm.s2f_reset(verbosity.verbose);
-  apply_fpga_startup_policy(fpga, input);
-  pp_freq_meter(input, fpga).report();
+  apply_fpga_startup_policy(fpga, config.clock_selection, config.core_pll, config.int_pll);
+  pp_freq_meter(config.freq_meter_options, fpga).report();
 
-  play_streamer.set_initial_value(input);
+  play_streamer.set_initial_value_opts(config.streamer_options);
   fpga.output_enable(true);
   play_streamer.sc.reset();
   readback_path.reset();
   counters.reset_all();
-  snapshot.streamer.qout_streamer = streamer_initial_value_from_input(input);
+  snapshot.streamer.qout_streamer = config.streamer_options.initial_value;
 
   apply_trigger_config_locked(preserved_trigger);
   apply_combiner_config_locked(preserved_combiner);
@@ -289,7 +250,7 @@ TriggerConfigState WebGuiController::read_trigger_config_locked() {
 
 StatusSnapshot WebGuiController::read_status_locked() {
   StatusSnapshot status = snapshot;
-  status.poll_ms = poll_ms;
+  status.poll_ms = config.poll_ms;
   status.aux_raw = static_cast<uint8_t>(pio_aux.read() & 0xffU);
   status.streamer.status_raw = play_streamer.sc.status();
   status.trig_raw = pack_live_trigger_status(

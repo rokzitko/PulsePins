@@ -315,8 +315,7 @@ public:
   autocorrelation ac;
   crosscorrelation cc;
 
-  counter([[maybe_unused]] const InputParser &input,
-          FPGA &_fpga,
+  counter(FPGA &_fpga,
           const std::uintptr_t base = COUNTER_Q_BASE,
           std::string name = "counter"s) :
     fpga(_fpga),
@@ -343,6 +342,12 @@ public:
     sel1 = 0;
     sel2 = 1;
   }
+
+  counter([[maybe_unused]] const InputParser &input,
+          FPGA &_fpga,
+          const std::uintptr_t base = COUNTER_Q_BASE,
+          std::string name = "counter"s) :
+    counter(_fpga, base, std::move(name)) {}
 
   // Read one logical measurement word from the selector-based counter backplane.
   uint32_t read(uint32_t instr, uint32_t part, uint32_t addr) {

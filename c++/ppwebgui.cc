@@ -44,6 +44,7 @@
 #include "misc.hh"
 #include "pio.hh"
 #include "ppwebgui_assets.hh"
+#include "ppwebgui_config.hh"
 #include "ppwebgui_http.hh"
 #include "ppwebgui_json.hh"
 #include "ppversion.hh"
@@ -57,26 +58,6 @@
 #include "trigger.hh"
 
 namespace {
-
-std::string parse_bind_ip(const InputParser &input) {
-  return input.get_string("-ip", "0.0.0.0");
-}
-
-int parse_bind_port(const InputParser &input) {
-  const auto port = std::stoi(input.get_string("-port", "4242"));
-  if (port < 0 || port > 65535) {
-    throw std::runtime_error("-port must be in range 0..65535");
-  }
-  return port;
-}
-
-unsigned parse_poll_ms(const InputParser &input) {
-  const auto poll_ms = std::stoi(input.get_string("-poll_ms", "100"));
-  if (poll_ms <= 0) {
-    throw std::runtime_error("-poll_ms must be greater than zero");
-  }
-  return static_cast<unsigned>(poll_ms);
-}
 
 #ifdef PPWEBGUI_ENABLE_BACKTRACE
 void fatal_signal_handler(int sig) {
@@ -169,13 +150,13 @@ int main(int argc, char *argv[]) {
   auto &verbosity = runtime.verbosity;
 
   try {
-    const auto bind_ip = parse_bind_ip(input);
-    const auto bind_port = parse_bind_port(input);
-    const auto poll_ms = parse_poll_ms(input);
+    // Keep the resolved runtime config anchored in main because the controller stores a
+    // reference to it while owning the hardware-facing object graph.
+    const auto config = resolve_webgui_runtime_config(input);
 
     // Keep the hardware-owning controller anchored here for the full server lifetime.
     // Route/UI code may only talk to it indirectly through non-owning pointer/reference adapters.
-    WebGuiController controller(fpga, input, verbosity, poll_ms);
+    WebGuiController controller(fpga, config, verbosity);
     // Keep the adapter declared after the controller so it is destroyed first.
     auto service_handle = make_webgui_service(controller);
     auto &service = *service_handle;
@@ -183,17 +164,17 @@ int main(int argc, char *argv[]) {
     httplib::Server server;
     register_ppwebgui_routes(server, service, verbosity, index_html, app_css, app_js);
 
-    int actual_port = bind_port;
-    if (bind_port == 0) {
-      actual_port = server.bind_to_any_port(bind_ip);
+    int actual_port = config.bind_port;
+    if (config.bind_port == 0) {
+      actual_port = server.bind_to_any_port(config.bind_ip);
       if (actual_port <= 0) {
         throw std::runtime_error("Failed to bind ppwebgui to an auto-selected port");
       }
-    } else if (!server.bind_to_port(bind_ip, bind_port)) {
+    } else if (!server.bind_to_port(config.bind_ip, config.bind_port)) {
       throw std::runtime_error("Failed to bind ppwebgui to requested address/port");
     }
 
-    print_startup_urls(bind_ip, actual_port);
+    print_startup_urls(config.bind_ip, actual_port);
 
     if (!server.listen_after_bind()) {
       throw std::runtime_error("ppwebgui listener terminated unexpectedly");

@@ -30,10 +30,13 @@ private:
 public:
   combiner_qout cq;
 
-  qout(const InputParser &input, const Verbosity &_v, FPGA &_fpga) :
+  qout(const Verbosity &_v, FPGA &_fpga) :
     fpga(_fpga),
     verb(_v),
-    cq(fpga.dev_h2f, COMBINER_QOUT_BASE)
+    cq(fpga.dev_h2f, COMBINER_QOUT_BASE) {}
+
+  qout(const InputParser &input, const Verbosity &_v, FPGA &_fpga) :
+    qout(_v, _fpga)
     { set(input); }
 
   // Apply command-line-selected routing, masks, inversions, and forces.
