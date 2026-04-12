@@ -5,25 +5,17 @@
 
 #include <stdexcept>
 
-#include "host_runtime.hh"
+#include "fpga.hh"
 #include "httplib.h"
 #include "ppwebgui_assets.hh"
 #include "ppwebgui_bootstrap.hh"
-#include "ppwebgui_config.hh"
 #include "ppwebgui_http.hh"
 #include "ppwebgui_service.hh"
 #include "ppwebgui_service_api.hh"
+#include "verbosity.hh"
 
-int run_ppwebgui(HostRuntime &runtime) {
-  auto &input = runtime.input;
-  auto &fpga = runtime.get_fpga();
-  auto &verbosity = runtime.verbosity;
-
+int run_ppwebgui(FPGA &fpga, const WebGuiRuntimeConfig &config, const Verbosity &verbosity) {
   try {
-    // Keep the resolved runtime config anchored in the app runner because the controller stores
-    // a reference to it while owning the hardware-facing object graph.
-    const auto config = resolve_webgui_runtime_config(input);
-
     // Keep the hardware-owning controller anchored here for the full server lifetime.
     // Route/UI code may only talk to it indirectly through non-owning pointer/reference adapters.
     WebGuiController controller(fpga, config, verbosity);

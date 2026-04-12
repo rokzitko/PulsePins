@@ -11,10 +11,12 @@
 #include "host_runtime.hh"
 #include "ppwebgui_app.hh"
 #include "ppwebgui_bootstrap.hh"
+#include "ppwebgui_config.hh"
 #include "ppversion.hh"
 
 int main(int argc, char *argv[]) {
   install_ppwebgui_fatal_signal_handlers();
   HostRuntime runtime(argc, argv, version);
-  return run_ppwebgui(runtime);
+  const auto config = resolve_webgui_runtime_config(runtime.input);
+  return run_ppwebgui(runtime.get_fpga(), config, runtime.verbosity);
 }

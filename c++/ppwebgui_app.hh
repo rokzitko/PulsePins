@@ -3,6 +3,9 @@
 
 #pragma once
 
-class HostRuntime;
+class FPGA;
+struct Verbosity;
 
-int run_ppwebgui(HostRuntime &runtime);
+#include "ppwebgui_config.hh"
+
+int run_ppwebgui(FPGA &fpga, const WebGuiRuntimeConfig &config, const Verbosity &verbosity);
