@@ -62,6 +62,23 @@ std::string trigger_mode_to_string(const uint32_t mode) {
   }
 }
 
+std::string trigger_mode_to_semantic_string(const TriggerConfigState &state) {
+  switch (state.mode & MODE_MASK) {
+  case static_cast<uint32_t>(trig_mode::INT):
+    return "INT";
+  case static_cast<uint32_t>(trig_mode::EXT):
+    return "EXT";
+  case static_cast<uint32_t>(trig_mode::MISC):
+    return "MISC";
+  case static_cast<uint32_t>(trig_mode::AND):
+    return "ALL";
+  case static_cast<uint32_t>(trig_mode::OR):
+    return state.invert_ext == ~uint32_t {0} ? "STANDARD" : "ANY";
+  default:
+    return trigger_mode_to_string(state.mode);
+  }
+}
+
 } // namespace
 
 std::string json_escape(std::string_view input) {
@@ -105,7 +122,7 @@ std::string status_to_json(const StatusSnapshot &status) {
   out << "\"force\":" << (trig_force(status.trig_raw) ? "true" : "false") << ',';
   out << "\"reset\":" << (trig_reset(status.trig_raw) ? "true" : "false") << "},";
   out << "\"trigger_settings\":{";
-  out << "\"mode\":\"" << trigger_mode_to_string(status.trigger_settings.mode) << "\",";
+  out << "\"mode\":\"" << trigger_mode_to_semantic_string(status.trigger_settings) << "\",";
   out << "\"invert_result\":" << status.trigger_settings.invert_result << ',';
   out << "\"invert_int\":" << status.trigger_settings.invert_int << ',';
   out << "\"invert_ext\":" << status.trigger_settings.invert_ext << ',';
