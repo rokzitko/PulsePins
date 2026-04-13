@@ -144,6 +144,68 @@ const char *index_html = R"HTML(<!doctype html>
 
     <section class="panel">
       <div class="panel-heading">
+        <h2>Clocking</h2>
+        <div class="heading-tags">
+          <span class="state-tag tracked-tag">tracked</span>
+          <span id="clocking-local-tag" class="state-tag local-tag hidden">local edit</span>
+        </div>
+      </div>
+      <div id="clocking-form-state" class="form-state">Tracked clock settings are shown below. Local edits stay in the browser until you click Apply or Revert.</div>
+      <div class="panel-note">Applying clock settings reruns reset and bring-up, then remeasures clocks. Measured values below are the last captured snapshot, not live-polled frequencies.</div>
+      <form id="clocking-form">
+        <div class="settings-grid">
+          <label>Streamer clock source
+            <select name="source" id="clocking-source-select">
+              <option value="int_clk">int_clk</option>
+              <option value="ext_clk">ext_clk</option>
+            </select>
+          </label>
+          <label>core_clk profile
+            <input name="core_profile" list="pll-profile-suggestions" value="100M">
+          </label>
+          <label>int_clk profile
+            <input name="int_profile" list="pll-profile-suggestions" value="100M">
+          </label>
+        </div>
+        <div class="form-grid">
+          <button type="submit">Apply clock settings</button>
+          <button id="clocking-revert-button" type="button" class="secondary-button">Revert local edits</button>
+          <button id="clocking-measure-button" type="button" class="secondary-button">Remeasure clocks</button>
+        </div>
+      </form>
+      <datalist id="pll-profile-suggestions">
+        <option value="100M"></option>
+        <option value="80M"></option>
+        <option value="75M"></option>
+        <option value="60M"></option>
+        <option value="50M"></option>
+        <option value="40M"></option>
+        <option value="30M"></option>
+        <option value="25M"></option>
+        <option value="20M"></option>
+        <option value="10M"></option>
+        <option value="5M"></option>
+        <option value="1M"></option>
+        <option value="100k"></option>
+        <option value="10k"></option>
+        <option value="lj"></option>
+        <option value="ilj"></option>
+        <option value="ih"></option>
+        <option value="il"></option>
+        <option value="i2h"></option>
+        <option value="i2l"></option>
+      </datalist>
+      <div class="meta">Profiles accept both known preset names and raw PLL strings. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
+      <div class="settings-grid">
+        <div class="setting"><div class="label">ext_clk</div><div id="clocking-ext-hz" class="mono"></div></div>
+        <div class="setting"><div class="label">int_clk</div><div id="clocking-int-hz" class="mono"></div></div>
+        <div class="setting"><div class="label">streamer_clk</div><div id="clocking-streamer-hz" class="mono"></div></div>
+        <div class="setting"><div class="label">core_clk</div><div id="clocking-core-hz" class="mono"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
         <h2>Output Override</h2>
         <div class="heading-tags">
           <span class="state-tag tracked-tag">tracked</span>
@@ -549,26 +611,34 @@ const char *app_js = R"JS((() => {
   const globalStatus = document.getElementById('global-status');
   const streamResult = document.getElementById('stream-result');
   const resetButton = document.getElementById('reset-button');
+  const clockingForm = document.getElementById('clocking-form');
   const triggerForm = document.getElementById('trigger-form');
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
+  const clockingSourceSelect = document.getElementById('clocking-source-select');
+  const clockingRevertButton = document.getElementById('clocking-revert-button');
+  const clockingMeasureButton = document.getElementById('clocking-measure-button');
   const triggerModeSelect = document.getElementById('trigger-mode-select');
   const triggerExtInvertInput = document.getElementById('trigger-ext-invert');
   const triggerRevertButton = document.getElementById('trigger-revert-button');
   const qoutRevertButton = document.getElementById('qout-revert-button');
   const combinerRevertButton = document.getElementById('combiner-revert-button');
+  const clockingFormState = document.getElementById('clocking-form-state');
   const triggerFormState = document.getElementById('trigger-form-state');
   const qoutFormState = document.getElementById('qout-form-state');
   const combinerFormState = document.getElementById('combiner-form-state');
+  const clockingLocalTag = document.getElementById('clocking-local-tag');
   const triggerLocalTag = document.getElementById('trigger-local-tag');
   const qoutLocalTag = document.getElementById('qout-local-tag');
   const combinerLocalTag = document.getElementById('combiner-local-tag');
+  const clockingCleanText = 'Tracked clock settings are shown below. Local edits stay in the browser until you click Apply or Revert.';
   const triggerCleanText = 'Tracked trigger settings are shown below. Local edits stay in the browser until you click Apply or Revert.';
   const qoutCleanText = 'Tracked output-override values are shown below. Local edits stay in the browser until you click Apply or Revert.';
   const combinerCleanText = 'Tracked combiner values are shown below. Local edits stay in the browser until you click Apply or Revert.';
   let pollMs = 100;
   let hardwareBusy = false;
+  let clockingDirty = false;
   let triggerDirty = false;
   let qoutDirty = false;
   let combinerDirty = false;
@@ -577,6 +647,23 @@ const char *app_js = R"JS((() => {
   function formatHex(value, width = 8) {
     const normalized = Number(value) >>> 0;
     return `0x${normalized.toString(16).padStart(width, '0')}`;
+  }
+
+  function formatFrequencyHz(value) {
+    const hz = Number(value);
+    if (!Number.isFinite(hz) || hz <= 0) {
+      return '(unmeasured)';
+    }
+    const units = [
+      { scale: 1e9, suffix: 'GHz' },
+      { scale: 1e6, suffix: 'MHz' },
+      { scale: 1e3, suffix: 'kHz' },
+      { scale: 1, suffix: 'Hz' },
+    ];
+    const unit = units.find((candidate) => hz >= candidate.scale) || units[units.length - 1];
+    const valueInUnit = hz / unit.scale;
+    const decimals = valueInUnit >= 100 ? 0 : valueInUnit >= 10 ? 2 : 3;
+    return `${valueInUnit.toLocaleString(undefined, { maximumFractionDigits: decimals })} ${unit.suffix}`;
   }
 
   function setText(id, value) {
@@ -597,6 +684,7 @@ const char *app_js = R"JS((() => {
   function setHardwareBusy(busy) {
     hardwareBusy = busy;
     resetButton.disabled = busy;
+    setBusy(clockingForm, busy);
     setBusy(triggerForm, busy);
     setBusy(qoutForm, busy);
     setBusy(combinerForm, busy);
@@ -616,6 +704,17 @@ const char *app_js = R"JS((() => {
       triggerExtInvertInput.value = '0xffffffff';
     }
     triggerExtInvertInput.readOnly = standard;
+  }
+
+  function setClockingDirty(dirty) {
+    clockingDirty = dirty;
+    setFormDirty(
+      clockingForm,
+      dirty,
+      clockingFormState,
+      clockingLocalTag,
+      clockingCleanText,
+      'Local edit only. This clocking form differs from the tracked ppwebgui state until you click Apply or Revert.');
   }
 
   function setTriggerDirty(dirty) {
@@ -649,6 +748,19 @@ const char *app_js = R"JS((() => {
       combinerLocalTag,
       combinerCleanText,
       'Local edit only. This combiner form differs from the tracked ppwebgui state until you click Apply.');
+  }
+
+  function populateClocking(status, force = false) {
+    const clocking = status.clocking;
+    setText('clocking-ext-hz', formatFrequencyHz(clocking.measured.ext_clk_hz));
+    setText('clocking-int-hz', formatFrequencyHz(clocking.measured.int_clk_hz));
+    setText('clocking-streamer-hz', formatFrequencyHz(clocking.measured.streamer_clk_hz));
+    setText('clocking-core-hz', formatFrequencyHz(clocking.measured.core_clk_hz));
+    if (!force && clockingDirty) return;
+    clockingSourceSelect.value = clocking.tracked.source;
+    clockingForm.querySelector('[name="core_profile"]').value = clocking.tracked.core_profile;
+    clockingForm.querySelector('[name="int_profile"]').value = clocking.tracked.int_profile;
+    setClockingDirty(false);
   }
 
   function populateTrigger(status, force = false) {
@@ -718,6 +830,7 @@ const char *app_js = R"JS((() => {
     setText('last-error', status.last_error || '(none)');
     setText('stream-state', `last result rc=${status.stream.last_rc} message=${status.stream.message} live runtime=${runtimeSummary} raw=${formatHex(status.stream.runtime.raw)}`);
     streamResult.textContent = status.stream.message;
+    populateClocking(status, options.forceClocking === true);
     populateTrigger(status, options.forceTrigger === true);
     populateQout(status, options.forceQout === true);
     populateCombiner(status, options.forceCombiner === true);
@@ -733,13 +846,20 @@ const char *app_js = R"JS((() => {
     form.addEventListener('change', handler);
   }
 
+  setClockingDirty(false);
   setTriggerDirty(false);
   setQoutDirty(false);
   setCombinerDirty(false);
   syncTriggerModeUi();
+  attachDirtyHandlers(clockingForm, setClockingDirty);
   attachDirtyHandlers(triggerForm, setTriggerDirty);
   attachDirtyHandlers(qoutForm, setQoutDirty);
   attachDirtyHandlers(combinerForm, setCombinerDirty);
+
+  clockingRevertButton.addEventListener('click', () => {
+    if (!lastStatus) return;
+    populateClocking(lastStatus, true);
+  });
 
   triggerModeSelect.addEventListener('change', () => {
     syncTriggerModeUi();
@@ -793,6 +913,35 @@ const char *app_js = R"JS((() => {
       const result = await fetchJson('/api/qout', { method: 'POST', body });
       if (result.status) renderStatus(result.status, { forceQout: true });
       setGlobal(result.message || 'override updated');
+    } catch (error) {
+      setGlobal(error.message, true);
+    } finally {
+      setHardwareBusy(false);
+    }
+  });
+
+  clockingForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const body = new URLSearchParams(new FormData(clockingForm));
+    setHardwareBusy(true);
+    try {
+      const result = await fetchJson('/api/clocking', { method: 'POST', body });
+      if (result.status) renderStatus(result.status, { forceClocking: true });
+      setGlobal(result.message || 'clock settings updated');
+    } catch (error) {
+      setGlobal(error.message, true);
+    } finally {
+      setHardwareBusy(false);
+    }
+  });
+
+  clockingMeasureButton.addEventListener('click', async () => {
+    const body = new URLSearchParams();
+    setHardwareBusy(true);
+    try {
+      const result = await fetchJson('/api/clocking/measure', { method: 'POST', body });
+      if (result.status) renderStatus(result.status);
+      setGlobal(result.message || 'clock measurement updated');
     } catch (error) {
       setGlobal(error.message, true);
     } finally {
