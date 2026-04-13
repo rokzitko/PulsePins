@@ -176,6 +176,19 @@ StatusSnapshot WebGuiController::get_status_copy() {
   return read_status_locked();
 }
 
+void WebGuiController::apply_clock_config(const ClockConfigRequest &request) {
+  auto lock = fpga.acquire_lock();
+  snapshot.clocking.tracked = clock_config_from_request_locked(request);
+  reset_hardware_locked();
+  publish_action_locked("applied clock config", "");
+}
+
+void WebGuiController::measure_clocks() {
+  auto lock = fpga.acquire_lock();
+  measure_clocks_locked(true);
+  publish_action_locked("remeasured clocks", "");
+}
+
 void WebGuiController::apply_streamer_override(const StreamerOverrideState &state) {
   auto lock = fpga.acquire_lock();
   apply_streamer_override_locked(state);
@@ -330,6 +343,14 @@ void WebGuiController::sync_trigger_combiner_shadow_locked() {
 
 CombinerRequest WebGuiController::read_combiner_config_locked() {
   return combiner_base_config;
+}
+
+ClockConfigState WebGuiController::clock_config_from_request_locked(const ClockConfigRequest &request) {
+  ClockConfigState state = snapshot.clocking.tracked;
+  state.source = request.source;
+  state.core.profile = request.core_profile;
+  state.internal.profile = request.int_profile;
+  return state;
 }
 
 TriggerConfigState WebGuiController::read_trigger_config_locked() {

@@ -15,6 +15,8 @@ public:
   virtual ~WebGuiService() = default;
 
   virtual StatusSnapshot get_status_copy() = 0;
+  virtual void apply_clock_config(const ClockConfigRequest &request) = 0;
+  virtual void measure_clocks() = 0;
   virtual void apply_streamer_override(const StreamerOverrideState &state) = 0;
   virtual void apply_combiner_config(const CombinerRequest &request) = 0;
   virtual void apply_trigger_config(const TriggerConfigRequest &request) = 0;

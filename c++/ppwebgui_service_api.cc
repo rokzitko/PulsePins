@@ -19,6 +19,14 @@ public:
     return controller->get_status_copy();
   }
 
+  void apply_clock_config(const ClockConfigRequest &request) override {
+    controller->apply_clock_config(request);
+  }
+
+  void measure_clocks() override {
+    controller->measure_clocks();
+  }
+
   void apply_streamer_override(const StreamerOverrideState &state) override {
     controller->apply_streamer_override(state);
   }

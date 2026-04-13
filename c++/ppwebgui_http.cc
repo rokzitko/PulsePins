@@ -34,6 +34,23 @@ const char *bool_text(const bool value) {
   return value ? "true" : "false";
 }
 
+const char *clock_source_text(const ClockSourceSelection source) {
+  switch (source) {
+  case ClockSourceSelection::INT_CLK: return "int_clk";
+  case ClockSourceSelection::EXT_CLK: return "ext_clk";
+  }
+  return "unknown";
+}
+
+ClockSourceSelection clock_source_from_string(std::string source) {
+  for (auto &c : source) {
+    c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+  }
+  if (source == "int_clk") return ClockSourceSelection::INT_CLK;
+  if (source == "ext_clk") return ClockSourceSelection::EXT_CLK;
+  throw BadRequest("Invalid clock source: " + source);
+}
+
 const char *trigger_mode_text(const TriggerModeSelection mode) {
   switch (mode) {
   case TriggerModeSelection::STANDARD: return "STANDARD";
@@ -182,6 +199,20 @@ StreamerOverrideState parse_streamer_override_request(const httplib::Request &re
   return state;
 }
 
+ClockConfigRequest parse_clock_config_request(const httplib::Request &req) {
+  ClockConfigRequest request;
+  request.source = clock_source_from_string(require_param(req, "source"));
+  request.core_profile = require_param(req, "core_profile");
+  request.int_profile = require_param(req, "int_profile");
+  if (request.core_profile.empty()) {
+    throw BadRequest("core_profile must not be empty");
+  }
+  if (request.int_profile.empty()) {
+    throw BadRequest("int_profile must not be empty");
+  }
+  return request;
+}
+
 TriggerConfigRequest parse_trigger_config_request(const httplib::Request &req) {
   TriggerConfigRequest request;
   request.mode = trigger_mode_from_string(require_param(req, "mode"));
@@ -274,6 +305,28 @@ void register_ppwebgui_routes(httplib::Server &server,
       std::cout << "ppwebgui: applied /api/qout request" << std::endl;
     }
     respond_json(res, operation_json("Applied streamer override", service_ptr->get_status_copy()));
+  }));
+
+  server.Post("/api/clocking", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {
+    require_form_post(req);
+    const auto request = parse_clock_config_request(req);
+    if (options.veryverbose) {
+      std::cout << "ppwebgui action: apply clock config" << std::endl;
+      std::cout << "  source=" << clock_source_text(request.source) << std::endl;
+      std::cout << "  core_profile=" << request.core_profile << std::endl;
+      std::cout << "  int_profile=" << request.int_profile << std::endl;
+    }
+    service_ptr->apply_clock_config(request);
+    respond_json(res, operation_json("Applied clock config", service_ptr->get_status_copy()));
+  }));
+
+  server.Post("/api/clocking/measure", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {
+    require_form_post(req);
+    if (options.veryverbose) {
+      std::cout << "ppwebgui action: remeasure clocks" << std::endl;
+    }
+    service_ptr->measure_clocks();
+    respond_json(res, operation_json("Remeasured clocks", service_ptr->get_status_copy()));
   }));
 
   server.Post("/api/trigger", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {

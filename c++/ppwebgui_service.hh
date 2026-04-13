@@ -34,6 +34,8 @@ public:
   WebGuiController &operator=(WebGuiController &&) = delete;
 
   StatusSnapshot get_status_copy();
+  void apply_clock_config(const ClockConfigRequest &request);
+  void measure_clocks();
   void apply_streamer_override(const StreamerOverrideState &state);
   void apply_combiner_config(const CombinerRequest &request);
   void apply_trigger_config(const TriggerConfigRequest &request);
@@ -53,6 +55,7 @@ private:
   void sync_qout_combiner_shadow_locked();
   void sync_trigger_combiner_shadow_locked();
   CombinerRequest read_combiner_config_locked();
+  ClockConfigState clock_config_from_request_locked(const ClockConfigRequest &request);
   TriggerConfigState read_trigger_config_locked();
   ClockConfigState read_clock_config_locked();
   StatusSnapshot read_status_locked();
