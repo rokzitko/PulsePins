@@ -98,7 +98,7 @@ public:
     uint32_t mask = 0b1;
     BITMASK_SET(control, mask);
     lcontrol.write(control);
-    fpga.wait_for_N_streamer_clk_periods(5);
+    fpga.sleep_for_at_least_n_streamer_periods(5);
     BITMASK_CLEAR(control, mask);
     lcontrol.write(control);
     clear_fifo();

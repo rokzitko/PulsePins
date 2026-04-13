@@ -27,10 +27,14 @@
 #include <iostream>
 #include <iomanip>
 #include <bitset>
+#include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <unistd.h>
 #include <mutex>
 #include <atomic>
 #include <stdexcept>
+#include <thread>
 
 #include "socal/alt_fpgamgr.h"
 #include "hps_0.h"
@@ -296,9 +300,13 @@ public:
     return 1.0/streamer_freq();
   }
 
-  void wait_for_N_streamer_clk_periods(int N) const {
-    uint32_t delay = 1000000UL * streamer_period(); // in microseconds
-    for (int i = 0; i < N; i++)
-      usleep(delay);
+  // Userspace settling wait only; not cycle-accurate. Sleep long enough that the
+  // streamer clock domain is guaranteed to observe at least N full periods.
+  void sleep_for_at_least_n_streamer_periods(const int n) const {
+    if (n <= 0)
+      return;
+    const double total_seconds = static_cast<double>(n) / streamer_freq();
+    const auto total_ns = static_cast<long long>(std::ceil(total_seconds * 1e9));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(std::max<long long>(1, total_ns)));
   }
 };
