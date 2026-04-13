@@ -37,7 +37,7 @@ private:
   bool verbose;
 
 public:
-  freq_meter(const mm &dev, const std::uintptr_t base, const bool _verbose = true) :
+  freq_meter(const mm &dev, const std::uintptr_t base, const bool _verbose = false) :
     lctl(dev.get_addr(base, 0), "fm/ctl"),
     lgate_len(dev.get_addr(base, 4), "fm/gate_len"),
     ln_ch(dev.get_addr(base, 8), "fm/n_ch"),
@@ -132,10 +132,10 @@ public:
   }
 
   pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait = true) :
-    pp_freq_meter(opts, _fpga, wait, true) {}
+    pp_freq_meter(opts, _fpga, wait, false) {} // verbose=false
 
-  pp_freq_meter(const InputParser &input, FPGA &_fpga, const bool wait = true) :
-    pp_freq_meter(resolve_freq_meter_options(input), _fpga, wait) {}
+  pp_freq_meter(const InputParser &input, FPGA &_fpga, const bool wait = true, const bool verbose = false) :
+    pp_freq_meter(resolve_freq_meter_options(input), _fpga, wait, verbose) {}
 
   // Standard four-channel PulsePins report used by the CLI tools.
   void report() {
@@ -143,9 +143,10 @@ public:
     const auto res_int = meter.read_freq_str(METER_INT_CLK);
     const auto res_streamer = meter.read_freq_str(METER_STREAMER_CLK);
     const auto res_core = meter.read_freq_str(METER_CORE_CLK);
-    std::cout << "ext_clk      " << res_ext << std::endl;
-    std::cout << "int_clk      " << res_int << std::endl;
-    std::cout << "streamer_clk " << res_streamer << std::endl;
-    std::cout << "core_clk     " << res_core << std::endl;
+    const std::string prefix = "freq_meter: "s;
+    std::cout << prefix << "ext_clk      " << res_ext << std::endl;
+    std::cout << prefix << "int_clk      " << res_int << std::endl;
+    std::cout << prefix << "streamer_clk " << res_streamer << std::endl;
+    std::cout << prefix << "core_clk     " << res_core << std::endl;
   }
 };

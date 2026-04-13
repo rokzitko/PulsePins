@@ -312,7 +312,7 @@ void WebGuiController::reset_hardware_locked() {
 }
 
 void WebGuiController::measure_clocks_locked(const bool report) {
-  pp_freq_meter meter(config.freq_meter_options, fpga, true, report || verbosity.verbose);
+  pp_freq_meter meter(config.freq_meter_options, fpga, true, report || verbosity.veryverbose);
   snapshot.clocking.measured.ext_clk_hz = meter.meter.read_freq(METER_EXT_CLK);
   snapshot.clocking.measured.int_clk_hz = meter.meter.read_freq(METER_INT_CLK);
   snapshot.clocking.measured.streamer_clk_hz = meter.meter.read_freq(METER_STREAMER_CLK);

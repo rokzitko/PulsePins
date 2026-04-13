@@ -15,13 +15,13 @@
 // Clock mapping needs to be checked using pptool: e.g. pptool -clk 0 -int_pll 25M, pptool -clk 3 -int_pll 25M, etc.
 #define SELECT_CLK_CLEAN
 
-#ifdef SELECT_CLK
-  static const int ch_ext = 2;
-  static const int ch_int = 0;
-#endif
+//#ifdef SELECT_CLK
+//  static const int ch_ext = 2;
+//  static const int ch_int = 0;
+//#endif
 #ifdef SELECT_CLK_CLEAN
-  static const int ch_ext = 3;
-  static const int ch_int = 0;
+  static const int ch_ext = 2;
+  static const int ch_int = 3;
 #endif
 
 #include <iostream>

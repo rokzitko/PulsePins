@@ -369,8 +369,8 @@ int pphelloworld(FPGA &fpga, const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &) {
-  pp_freq_meter fm(input, fpga, false);
+int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
+  pp_freq_meter fm(input, fpga, false, v.veryverbose);
   if (input.exists("-gate_time")) {
     auto gate_time = parse_time(input, "-gate_time", "1s");
     fm.meter.set_gate_time(gate_time);
