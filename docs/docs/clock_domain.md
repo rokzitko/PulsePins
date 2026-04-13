@@ -74,11 +74,14 @@ Files:
 
 - `c++/pll_clk.hh`
 - `c++/fpga.hh`
+- `c++/ppwebgui_service.cc`
+- `c++/ppwebgui_http.cc`
 
 The intended split is:
 
 - `pll_clk.hh` owns PLL reconfiguration policy and reporting
 - `fpga.hh` owns the top-level clock-select GPIO path and reset sequencing around source changes
+- `ppwebgui_service.cc` owns the tracked web-GUI clock state and applies it through the same hardware wrappers
 
 ### Streamer clock source switching
 
@@ -100,6 +103,8 @@ PLL programming and clock-source selection are separate operations.
 
 `FPGA::set_clk()` only performs the reset-wrapped source-switch sequence when the caller explicitly requested a source change through `ClockSelectionOptions`.
 
+`ppwebgui` now exposes the same source-switch path through `POST /api/clocking`, but keeps the applied clock choice in tracked controller state so later reset and stream operations reuse the updated source/profile settings instead of falling back to startup-only config.
+
 ### Measured streamer clock
 
 `FPGA` stores a measured `streamer_clk` frequency in Hz.
@@ -107,6 +112,7 @@ PLL programming and clock-source selection are separate operations.
 Source:
 
 - `pp_freq_meter` in `c++/freq_meter.hh`
+- `ppwebgui` clocking routes via `c++/ppwebgui_service.cc` and `c++/ppwebgui_http.cc`
 
 Uses:
 

@@ -161,10 +161,52 @@ const char *index_html = R"HTML(<!doctype html>
             </select>
           </label>
           <label>core_clk profile
-            <input name="core_profile" list="pll-profile-suggestions" value="100M">
+            <select name="core_profile" id="clocking-core-profile-select">
+              <option>100M</option>
+              <option>80M</option>
+              <option>75M</option>
+              <option>60M</option>
+              <option>50M</option>
+              <option>40M</option>
+              <option>30M</option>
+              <option>25M</option>
+              <option>20M</option>
+              <option>10M</option>
+              <option>5M</option>
+              <option>1M</option>
+              <option>100k</option>
+              <option>10k</option>
+              <option>lj</option>
+              <option>ilj</option>
+              <option>ih</option>
+              <option>il</option>
+              <option>i2h</option>
+              <option>i2l</option>
+            </select>
           </label>
           <label>int_clk profile
-            <input name="int_profile" list="pll-profile-suggestions" value="100M">
+            <select name="int_profile" id="clocking-int-profile-select">
+              <option>100M</option>
+              <option>80M</option>
+              <option>75M</option>
+              <option>60M</option>
+              <option>50M</option>
+              <option>40M</option>
+              <option>30M</option>
+              <option>25M</option>
+              <option>20M</option>
+              <option>10M</option>
+              <option>5M</option>
+              <option>1M</option>
+              <option>100k</option>
+              <option>10k</option>
+              <option>lj</option>
+              <option>ilj</option>
+              <option>ih</option>
+              <option>il</option>
+              <option>i2h</option>
+              <option>i2l</option>
+            </select>
           </label>
         </div>
         <div class="form-grid">
@@ -173,29 +215,7 @@ const char *index_html = R"HTML(<!doctype html>
           <button id="clocking-measure-button" type="button" class="secondary-button">Remeasure clocks</button>
         </div>
       </form>
-      <datalist id="pll-profile-suggestions">
-        <option value="100M"></option>
-        <option value="80M"></option>
-        <option value="75M"></option>
-        <option value="60M"></option>
-        <option value="50M"></option>
-        <option value="40M"></option>
-        <option value="30M"></option>
-        <option value="25M"></option>
-        <option value="20M"></option>
-        <option value="10M"></option>
-        <option value="5M"></option>
-        <option value="1M"></option>
-        <option value="100k"></option>
-        <option value="10k"></option>
-        <option value="lj"></option>
-        <option value="ilj"></option>
-        <option value="ih"></option>
-        <option value="il"></option>
-        <option value="i2h"></option>
-        <option value="i2l"></option>
-      </datalist>
-      <div class="meta">Profiles accept both known preset names and raw PLL strings. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
+      <div class="meta">Profile menus expose the standard `pll_rules.hh` presets. If `ppwebgui` starts from a nonstandard current profile, that exact value is shown so the UI stays honest. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
       <div class="settings-grid">
         <div class="setting"><div class="label">ext_clk</div><div id="clocking-ext-hz" class="mono"></div></div>
         <div class="setting"><div class="label">int_clk</div><div id="clocking-int-hz" class="mono"></div></div>
@@ -617,6 +637,8 @@ const char *app_js = R"JS((() => {
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
   const clockingSourceSelect = document.getElementById('clocking-source-select');
+  const clockingCoreProfileSelect = document.getElementById('clocking-core-profile-select');
+  const clockingIntProfileSelect = document.getElementById('clocking-int-profile-select');
   const clockingRevertButton = document.getElementById('clocking-revert-button');
   const clockingMeasureButton = document.getElementById('clocking-measure-button');
   const triggerModeSelect = document.getElementById('trigger-mode-select');
@@ -698,6 +720,19 @@ const char *app_js = R"JS((() => {
     tagElement.classList.toggle('hidden', !dirty);
   }
 
+  function ensureSelectValue(select, value, fallback = '100M') {
+    const resolved = value || fallback;
+    const hasOption = Array.from(select.options).some((option) => option.value === resolved);
+    if (!hasOption) {
+      const dynamicOption = document.createElement('option');
+      dynamicOption.value = resolved;
+      dynamicOption.textContent = resolved;
+      dynamicOption.dataset.dynamic = 'true';
+      select.appendChild(dynamicOption);
+    }
+    select.value = resolved;
+  }
+
   function syncTriggerModeUi() {
     const standard = triggerModeSelect.value === 'STANDARD';
     if (standard) {
@@ -758,8 +793,8 @@ const char *app_js = R"JS((() => {
     setText('clocking-core-hz', formatFrequencyHz(clocking.measured.core_clk_hz));
     if (!force && clockingDirty) return;
     clockingSourceSelect.value = clocking.tracked.source;
-    clockingForm.querySelector('[name="core_profile"]').value = clocking.tracked.core_profile;
-    clockingForm.querySelector('[name="int_profile"]').value = clocking.tracked.int_profile;
+    ensureSelectValue(clockingCoreProfileSelect, clocking.tracked.core_profile);
+    ensureSelectValue(clockingIntProfileSelect, clocking.tracked.int_profile);
     setClockingDirty(false);
   }
 

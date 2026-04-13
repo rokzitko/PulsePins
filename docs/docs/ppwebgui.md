@@ -80,10 +80,15 @@ The page exposes these main sections:
 * Status Provenance: a legend explaining which values are live hardware polls, which are tracked by `ppwebgui`, and which form edits are still local to the browser
 * Live Hardware: AUX bits, trigger bits, trigger enable/force/reset flags, and the live streamer runtime status word
 * Tracked by ppwebgui: displayed qout, tracked idle streamer qout, output-override state, combiner mode, trigger mode, and recent action/error text
+* Clocking: tracked streamer clock-source selection plus tracked `core_clk` and `int_clk` PLL profiles, together with the last measured `ext_clk`, `int_clk`, `streamer_clk`, and `core_clk` frequencies
 * Trigger Settings: tracked trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask remain visible read-only
 * Output Override: one manual final-output override control for the active streamer path used by browser-triggered sequence playback
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
+
+The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard current PLL profile, the current value is still surfaced in the menu so the browser state remains accurate.
+
+Applying clock settings reruns the same hardware reset/bring-up path used by **Reset hardware**, then remeasures all four clocks and returns the updated snapshot. The displayed frequencies are therefore measurement snapshots, not live-polled readbacks.
 
 The trigger form uses the same semantic mode names as the CLI trigger tool:
 
@@ -132,6 +137,8 @@ Higher layers should never own or relocate the hardware wrapper graph directly.
 
 While the user is editing the **Trigger Settings**, **Output Override**, or **Output Combiner** form, the browser keeps those local edits visible until **Apply** or **Revert local edits** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
 
+The **Clocking** form behaves the same way. Local clock edits stay in the browser until **Apply clock settings** or **Revert local edits** is pressed, while the measured frequency fields continue to reflect the last captured snapshot.
+
 Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
 
 ## API summary
@@ -139,6 +146,8 @@ Values shown in the browser are rendered in hexadecimal by default. Input fields
 Version 1 keeps the API small:
 
 * `GET /api/status` returns JSON status for AUX, trigger state, trigger-combiner settings, active streamer qout state, combiner state, and recent action/error text
+* `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with `source`, `core_profile`, and `int_profile`; applying clock settings reruns reset/bring-up and then remeasures all clocks
+* `POST /api/clocking/measure` reruns the frequency-meter measurement path without changing tracked clock settings
 * `POST /api/trigger` expects an `application/x-www-form-urlencoded` body with `mode`, `invert_result`, `invert_int`, `invert_ext`, `invert_misc`, `mask_int`, `mask_ext`, and `mask_misc`
 * `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `override_enabled` and `override_value`
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
@@ -185,6 +194,16 @@ and a `trigger_settings` object with:
 * `mask_ext`
 * `mask_misc`
 * `mask_aux`
+
+and a `clocking` object with:
+
+* `tracked.source`
+* `tracked.core_profile`
+* `tracked.int_profile`
+* `measured.ext_clk_hz`
+* `measured.int_clk_hz`
+* `measured.streamer_clk_hz`
+* `measured.core_clk_hz`
 
 `POST /api/stream` runs synchronously. While a hardware action is in flight, the browser disables the control forms until the request finishes.
 
