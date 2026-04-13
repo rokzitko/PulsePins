@@ -14,6 +14,32 @@
 
 namespace {
 
+ClockSourceSelection clock_source_from_options(const ClockSelectionOptions &opts) {
+  if (opts.source == StreamerClockSource::external) {
+    return ClockSourceSelection::EXT_CLK;
+  }
+  if (opts.source == StreamerClockSource::raw_select && opts.raw_select && *opts.raw_select == ch_ext) {
+    return ClockSourceSelection::EXT_CLK;
+  }
+  return ClockSourceSelection::INT_CLK;
+}
+
+ClockPllState pll_state_from_options(const PllOptions &opts) {
+  return {opts.profile, opts.charge_pump, opts.bandwidth};
+}
+
+ClockSelectionOptions clock_selection_options_from_state(const ClockConfigState &state) {
+  ClockSelectionOptions opts;
+  opts.source = state.source == ClockSourceSelection::EXT_CLK
+    ? StreamerClockSource::external
+    : StreamerClockSource::internal;
+  return opts;
+}
+
+PllOptions pll_options_from_state(const ClockPllState &state) {
+  return {state.profile, state.charge_pump, state.bandwidth};
+}
+
 uint32_t pack_live_trigger_status(const trigger_t trigger_in, const port_t trigger_ctrl) {
   uint32_t value = trigger_in & TRIGGER_MASK;
   if (trigger_ctrl & EXT_TRIG_CTRL_ENABLE) value |= (1U << PIO1_ENABLE);
@@ -127,6 +153,9 @@ WebGuiController::WebGuiController(FPGA &fpga_, const WebGuiRuntimeConfig &confi
   comb(qout_ctrl.cq),
   trig_comb(trigger_ctrl.ct) {
   snapshot.poll_ms = config.poll_ms;
+  snapshot.clocking.tracked.source = clock_source_from_options(config.clock_selection);
+  snapshot.clocking.tracked.core = pll_state_from_options(config.core_pll);
+  snapshot.clocking.tracked.internal = pll_state_from_options(config.int_pll);
   snapshot.trigger_settings = trigger_config_from_options(config.trigger_options);
   combiner_base_config = config.combiner_request;
   snapshot.combiner_mode = to_string(combiner_base_config.mode);
@@ -137,6 +166,7 @@ WebGuiController::WebGuiController(FPGA &fpga_, const WebGuiRuntimeConfig &confi
   snapshot.streamer.override_state = streamer_override;
   snapshot.streamer.qout = streamer_override.enabled ? streamer_override.value : snapshot.streamer.qout_streamer;
   apply_combiner_config_locked(combiner_base_config);
+  measure_clocks_locked(false);
 }
 
 WebGuiController::~WebGuiController() = default;
@@ -248,13 +278,13 @@ void WebGuiController::publish_stream_result_locked(const std::string &last_acti
 
 void WebGuiController::reset_hardware_locked() {
   const auto preserved_combiner = read_combiner_config_locked();
+  const auto preserved_clocking = read_clock_config_locked();
   const auto preserved_trigger = read_trigger_config_locked();
   const auto preserved_override = snapshot.streamer.override_state;
 
   rstmgr rm;
   rm.s2f_reset(verbosity.verbose);
-  apply_fpga_startup_policy(fpga, config.clock_selection, config.core_pll, config.int_pll);
-  pp_freq_meter(config.freq_meter_options, fpga).report();
+  apply_clock_config_locked(preserved_clocking, true);
 
   play_streamer.set_initial_value_opts(config.streamer_options);
   fpga.output_enable(true);
@@ -266,6 +296,17 @@ void WebGuiController::reset_hardware_locked() {
   apply_trigger_config_locked(preserved_trigger);
   apply_combiner_config_locked(preserved_combiner);
   apply_streamer_override_locked(preserved_override);
+}
+
+void WebGuiController::measure_clocks_locked(const bool report) {
+  pp_freq_meter meter(config.freq_meter_options, fpga, true, report || verbosity.verbose);
+  snapshot.clocking.measured.ext_clk_hz = meter.meter.read_freq(METER_EXT_CLK);
+  snapshot.clocking.measured.int_clk_hz = meter.meter.read_freq(METER_INT_CLK);
+  snapshot.clocking.measured.streamer_clk_hz = meter.meter.read_freq(METER_STREAMER_CLK);
+  snapshot.clocking.measured.core_clk_hz = meter.meter.read_freq(METER_CORE_CLK);
+  if (report) {
+    meter.report();
+  }
 }
 
 PortState WebGuiController::read_port_state_locked(combiner_qout &combiner, const int index, const uint32_t cfg) {
@@ -295,6 +336,10 @@ TriggerConfigState WebGuiController::read_trigger_config_locked() {
   return snapshot.trigger_settings;
 }
 
+ClockConfigState WebGuiController::read_clock_config_locked() {
+  return snapshot.clocking.tracked;
+}
+
 StatusSnapshot WebGuiController::read_status_locked() {
   StatusSnapshot status = snapshot;
   status.poll_ms = config.poll_ms;
@@ -304,6 +349,14 @@ StatusSnapshot WebGuiController::read_status_locked() {
     play_streamer.sc.get_ext_trig_in(),
     play_streamer.sc.get_ext_trig_ctrl());
   return status;
+}
+
+void WebGuiController::apply_clock_config_locked(const ClockConfigState &state, const bool report_measurements) {
+  fpga.set_clk(clock_selection_options_from_state(state));
+  fpga.pll_core.set_core_clk(pll_options_from_state(state.core), verbosity);
+  fpga.pll_int.set_int_clk(pll_options_from_state(state.internal), verbosity);
+  snapshot.clocking.tracked = state;
+  measure_clocks_locked(report_measurements);
 }
 
 void WebGuiController::apply_port_locked(combiner_qout &combiner, const int port, const PortState &state) {

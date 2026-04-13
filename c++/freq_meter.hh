@@ -120,9 +120,9 @@ public:
   freq_meter meter;
 
   // If `wait` is true, block until the first post-configuration measurement is valid.
-  pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait = true) :
+  pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait, const bool verbose) :
     fpga(_fpga),
-    meter(fpga.dev_h2f, FREQ_METER_0_BASE) {
+    meter(fpga.dev_h2f, FREQ_METER_0_BASE, verbose) {
     if (opts.correction_factor)
       meter.set_correction_factor(*opts.correction_factor);
     assert(meter.get_n_ch() == 4);
@@ -130,6 +130,9 @@ public:
       meter.wait_one_gate_time();
     fpga.set_streamer_clk(meter.read_freq(METER_STREAMER_CLK));
   }
+
+  pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait = true) :
+    pp_freq_meter(opts, _fpga, wait, true) {}
 
   pp_freq_meter(const InputParser &input, FPGA &_fpga, const bool wait = true) :
     pp_freq_meter(resolve_freq_meter_options(input), _fpga, wait) {}

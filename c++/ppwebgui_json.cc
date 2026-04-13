@@ -79,6 +79,16 @@ std::string trigger_mode_to_semantic_string(const TriggerConfigState &state) {
   }
 }
 
+std::string clock_source_to_string(const ClockSourceSelection source) {
+  switch (source) {
+  case ClockSourceSelection::INT_CLK:
+    return "int_clk";
+  case ClockSourceSelection::EXT_CLK:
+    return "ext_clk";
+  }
+  return "unknown";
+}
+
 } // namespace
 
 std::string json_escape(std::string_view input) {
@@ -132,6 +142,16 @@ std::string status_to_json(const StatusSnapshot &status) {
   out << "\"mask_ext\":" << status.trigger_settings.mask_ext << ',';
   out << "\"mask_misc\":" << status.trigger_settings.mask_misc << ',';
   out << "\"mask_aux\":" << status.trigger_settings.mask_aux << "},";
+  out << "\"clocking\":{";
+  out << "\"tracked\":{";
+  out << "\"source\":\"" << clock_source_to_string(status.clocking.tracked.source) << "\",";
+  out << "\"core_profile\":\"" << json_escape(status.clocking.tracked.core.profile) << "\",";
+  out << "\"int_profile\":\"" << json_escape(status.clocking.tracked.internal.profile) << "\"},";
+  out << "\"measured\":{";
+  out << "\"ext_clk_hz\":" << status.clocking.measured.ext_clk_hz << ',';
+  out << "\"int_clk_hz\":" << status.clocking.measured.int_clk_hz << ',';
+  out << "\"streamer_clk_hz\":" << status.clocking.measured.streamer_clk_hz << ',';
+  out << "\"core_clk_hz\":" << status.clocking.measured.core_clk_hz << "}},";
   out << "\"stream\":{";
   out << "\"last_rc\":" << status.last_stream_rc << ',';
   out << "\"message\":\"" << json_escape(status.stream_message) << "\",";

@@ -30,6 +30,41 @@ struct StreamerState {
   StreamerOverrideState override_state;
 };
 
+enum class ClockSourceSelection {
+  INT_CLK,
+  EXT_CLK,
+};
+
+struct ClockPllState {
+  std::string profile;
+  std::optional<uint32_t> charge_pump;
+  std::optional<uint32_t> bandwidth;
+};
+
+struct ClockConfigState {
+  ClockSourceSelection source = ClockSourceSelection::INT_CLK;
+  ClockPllState core;
+  ClockPllState internal;
+};
+
+struct ClockConfigRequest {
+  ClockSourceSelection source = ClockSourceSelection::INT_CLK;
+  std::string core_profile;
+  std::string int_profile;
+};
+
+struct ClockMeasurementState {
+  double ext_clk_hz = 0.0;
+  double int_clk_hz = 0.0;
+  double streamer_clk_hz = 0.0;
+  double core_clk_hz = 0.0;
+};
+
+struct ClockingState {
+  ClockConfigState tracked;
+  ClockMeasurementState measured;
+};
+
 enum class TriggerModeSelection {
   STANDARD,
   INT,
@@ -68,6 +103,7 @@ struct StatusSnapshot {
   unsigned poll_ms = 100;
   uint8_t aux_raw = 0;
   uint32_t trig_raw = 0;
+  ClockingState clocking;
   StreamerState streamer;
   int last_stream_rc = RC_OK;
   std::string stream_message = "idle";

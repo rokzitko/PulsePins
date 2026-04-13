@@ -48,12 +48,15 @@ private:
                                     int last_stream_rc,
                                     const std::string &stream_message);
   void reset_hardware_locked();
+  void measure_clocks_locked(bool report);
   PortState read_port_state_locked(combiner_qout &combiner, int index, uint32_t cfg);
   void sync_qout_combiner_shadow_locked();
   void sync_trigger_combiner_shadow_locked();
   CombinerRequest read_combiner_config_locked();
   TriggerConfigState read_trigger_config_locked();
+  ClockConfigState read_clock_config_locked();
   StatusSnapshot read_status_locked();
+  void apply_clock_config_locked(const ClockConfigState &state, bool report_measurements);
   void apply_port_locked(combiner_qout &combiner, int port, const PortState &state);
   void apply_streamer_override_locked(const StreamerOverrideState &state);
   void apply_combiner_config_locked(const CombinerRequest &request);
