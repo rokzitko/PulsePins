@@ -307,6 +307,8 @@ public:
     loverflow_bc,
     loverflow_pc,
     ltcready;
+  // Cached software selector state. Hardware selectors are updated only through
+  // explicit write_sel*()/write_selectors() calls.
   int sel0, sel1, sel2;
   basic_counter bc;
   runs_counter rc;
@@ -340,7 +342,7 @@ public:
   {
     sel0 = 0;
     sel1 = 0;
-    sel2 = 1;
+    sel2 = 0;
   }
 
   counter([[maybe_unused]] const InputParser &input,
@@ -355,6 +357,33 @@ public:
     lpart.write(part);
     laddr.write(addr);
     return lresult.read();
+  }
+
+  void write_sel0(const uint32_t ch) {
+    if (ch >= 32)
+      throw std::runtime_error("sel0 out of range");
+    sel0 = static_cast<int>(ch);
+    lsel0.write(ch);
+  }
+
+  void write_sel1(const uint32_t ch) {
+    if (ch >= 32)
+      throw std::runtime_error("sel1 out of range");
+    sel1 = static_cast<int>(ch);
+    lsel1.write(ch);
+  }
+
+  void write_sel2(const uint32_t ch) {
+    if (ch >= 32)
+      throw std::runtime_error("sel2 out of range");
+    sel2 = static_cast<int>(ch);
+    lsel2.write(ch);
+  }
+
+  void write_selectors(const uint32_t ch0, const uint32_t ch1, const uint32_t ch2) {
+    write_sel0(ch0);
+    write_sel1(ch1);
+    write_sel2(ch2);
   }
 
   // Reset is synchronized into the sampled-data domain, so the pulse must be long

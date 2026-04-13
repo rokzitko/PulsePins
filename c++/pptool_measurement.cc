@@ -78,6 +78,8 @@ int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
   int rc = 0;
   streamer s(input, fpga);
   counter ctr(input, fpga);
+  if (input.exists("-test1"))
+    ctr.write_selectors(0, 0, 1);
   ctr.reset_all();
   Sequence seq;
   if (input.exists("-test1"))
