@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <deque>
+#include <exception>
 #include <functional>
 #include <sstream>
 #include <algorithm>
@@ -54,6 +55,26 @@ enum SesrBits : uint8_t {
 enum StbBits : uint8_t {
     EVENT_STATUS_BIT   = 1 << 5,
     MESSAGE_AVAILABLE  = 1 << 4
+};
+
+class ScpiCloseSession : public std::exception {
+public:
+    const char *what() const noexcept override {
+        return "SCPI session closed";
+    }
+};
+
+class ScpiStopServer : public std::exception {
+public:
+    const char *what() const noexcept override {
+        return "SCPI server stopped";
+    }
+};
+
+enum class SessionAction {
+    continue_reading,
+    close_session,
+    stop_server,
 };
 
 // --- Base session ---
@@ -118,8 +139,8 @@ protected:
     }
 
     // Parser & dispatcher
-    void handle_command(const std::string &line) {
-        if (line.empty()) return;
+    SessionAction handle_command(const std::string &line) {
+        if (line.empty()) return SessionAction::continue_reading;
         std::string cmd = line;
 
         // Split tokens by colon
@@ -161,25 +182,41 @@ protected:
             if (!matched) {
                 push_error("Command error: unknown token '" + t + "'", COMMAND_ERROR);
                 write("ERROR");
-                return;
+                return SessionAction::continue_reading;
             }
         }
 
         if (verbose) std::cout << "Executing [" << line << "]" << std::endl;
 
-        // Execute
         std::string resp;
-        if (is_query) {
-            if (node->query_handler) resp = node->query_handler();
-            else push_error("Query error: not queryable", QUERY_ERROR);
-        } else {
-            if (node->set_handler) resp = node->set_handler(arg);
-            else if (node->query_handler) push_error("Query form required", QUERY_ERROR);
-            else push_error("Command error: no action", COMMAND_ERROR);
+        try {
+            if (is_query) {
+                if (node->query_handler) resp = node->query_handler();
+                else push_error("Query error: not queryable", QUERY_ERROR);
+            } else {
+                if (node->set_handler) resp = node->set_handler(arg);
+                else if (node->query_handler) push_error("Query form required", QUERY_ERROR);
+                else push_error("Command error: no action", COMMAND_ERROR);
+            }
+        } catch (const ScpiCloseSession &) {
+            return SessionAction::close_session;
+        } catch (const ScpiStopServer &) {
+            return SessionAction::stop_server;
+        } catch (const std::exception &e) {
+            push_error(std::string("Execution error: ") + e.what(), EXECUTION_ERROR);
+            if (verbose) std::cout << "Handler exception [" << e.what() << "]" << std::endl;
+            write("ERROR");
+            return SessionAction::continue_reading;
+        } catch (...) {
+            push_error("Device error: unhandled exception", DEVICE_ERROR);
+            if (verbose) std::cout << "Handler exception [non-standard]" << std::endl;
+            write("ERROR");
+            return SessionAction::continue_reading;
         }
 
         if (verbose) std::cout << "Responding [" << resp << "]" << std::endl;
         if (!resp.empty()) write(resp);
+        return SessionAction::continue_reading;
     }
 
     void read() {
@@ -192,10 +229,28 @@ protected:
                     std::getline(is, line);
                     if (!line.empty() && line.back() == '\r') line.pop_back();
                     line = trim(line);
-                    handle_command(line);
-                    read();
+                    const auto action = handle_command(line);
+                    if (action == SessionAction::continue_reading) {
+                        read();
+                    } else if (action == SessionAction::close_session) {
+                        close_session();
+                    } else {
+                        close_session();
+                        stop_server();
+                    }
                 }
             });
+    }
+
+    void close_session() {
+        asio::error_code ec;
+        socket_.shutdown(tcp::socket::shutdown_both, ec);
+        socket_.close(ec);
+    }
+
+    void stop_server() {
+        auto &context = static_cast<asio::io_context &>(socket_.get_executor().context());
+        context.stop();
     }
 
     void write(const std::string &msg) {
@@ -229,7 +284,15 @@ protected:
     void accept() {
         acceptor_.async_accept(
             [this](asio::error_code ec, tcp::socket socket) {
-                if (!ec) make_session(std::move(socket))->start();
+                if (!ec) {
+                    try {
+                        make_session(std::move(socket))->start();
+                    } catch (const std::exception &e) {
+                        std::cerr << "SCPI session start error: " << e.what() << std::endl;
+                    } catch (...) {
+                        std::cerr << "SCPI session start error: unhandled non-standard exception" << std::endl;
+                    }
+                }
                 accept();
             });
     }

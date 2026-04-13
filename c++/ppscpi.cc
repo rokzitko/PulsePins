@@ -3,7 +3,6 @@
 //
 // SCPI server entry point for controlling PulsePins over Ethernet.
 
-#include <exception>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -17,17 +16,6 @@
 #include "ppworkflow.hh"
 #include "verbosity.hh"
 #include "basic_multi_dma.hh"
-
-class TerminateSession : public std::exception {
-  std::string message;
-public:
-  explicit TerminateSession(const std::string& msg = "Session terminated")
-    : message(msg) {}
-
-  const char* what() const noexcept override {
-    return message.c_str();
-  }
-};
 
 class PPSession : public ScpiSessionBase {
 public:
@@ -137,8 +125,10 @@ private:
               });
     // *WAI
     add_node({"*WAI"}, [this](const std::string&) { return ""; });
-    // Terminate `ppscpi`
-    add_node({"TERMINATE"}, [this](const std::string&) { throw TerminateSession(); return ""; });
+    // Close only the current SCPI session; the server process keeps running.
+    add_node({"DISCONNECT"}, [this](const std::string&) { throw ScpiCloseSession(); return ""; });
+    // Stop the whole ppscpi server process.
+    add_node({"TERMINATE"}, [this](const std::string&) { throw ScpiStopServer(); return ""; });
   }
 };
 

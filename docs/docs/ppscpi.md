@@ -48,7 +48,8 @@ PulsePins-specific commands:
 * `CHECK <bool>` - enable or disable readback checking during `STREAM`
 * `CHECK?` - query the current check setting
 * `STREAM` - send the currently loaded sequence and trigger execution
-* `TERMINATE` - terminate the session
+* `DISCONNECT` - close the current client session; the `ppscpi` server keeps running
+* `TERMINATE` - stop the `ppscpi` server process
 
 ### Typical flow
 
@@ -64,6 +65,9 @@ PulsePins-specific commands:
 * `STREAM` uses the same send/trigger path as the local tools, including optional readback verification.
 * `SEQ` stores the parsed sequence in memory; nothing is transmitted to the streamer until `STREAM` is issued.
 * The server is intended for remote orchestration, not for high-throughput binary bulk transfer.
+* Command-handler exceptions are converted into SCPI error/status state instead of tearing down the whole server process.
+* After `DISCONNECT`, clients can reconnect and start a fresh independent session.
+* `TERMINATE` is the explicit server-shutdown command; it closes the current session and stops the process.
 
 ### Related pages
 
