@@ -151,17 +151,20 @@ protected:
 constexpr int server_port = 5025;
 
 int main(int argc, char *argv[]) {
-  HostRuntime rt(argc, argv, version);
-  auto &input = rt.input;
-  auto &v = rt.verbosity;
-  auto &fpga = rt.get_fpga();
   try {
+    HostRuntime rt(argc, argv, version);
+    auto &input = rt.input;
+    auto &v = rt.verbosity;
+    auto &fpga = rt.get_fpga();
     asio::io_context io;
     PPServer server(io, server_port, input, fpga, v);
     std::cout << "ppscpi running on port " << server_port << std::endl;
     io.run();
-  } catch (std::exception& e) {
+  } catch (const std::exception& e) {
     std::cerr << "Fatal: " << e.what() << "\n";
+    return 1;
+  } catch (...) {
+    std::cerr << "Fatal: unknown exception\n";
     return 1;
   }
   return 0;

@@ -5,12 +5,13 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cctype>
 #include <iostream>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include <optional>
-#include <ctype.h> // isdigit
 
 // Simple command line parser
 // based on https://stackoverflow.com/questions/865668/parsing-command-line-arguments-in-c
@@ -31,16 +32,16 @@ class InputParser {
      return std::find(this->tokens.begin(), this->tokens.end(), option) != this->tokens.end();
    }
    std::string get_string(const std::string &option, const std::string def) const {
-     return exists(option) ? get(option) : def;
+     return exists(option) ? require_arg(option) : def;
    }
    double get_double(const std::string &option, const double def) const {
-     return exists(option) ? std::stod(get(option)) : def;
+     return exists(option) ? std::stod(require_arg(option)) : def;
    }
    uint32_t get_uint32(const std::string &option, const uint32_t def) const {
-     return exists(option) ? std::stoul(get(option)) : def;
+     return exists(option) ? std::stoul(require_arg(option)) : def;
    }
    uint64_t get_uint64(const std::string &option, const uint64_t def) const {
-     return exists(option) ? std::stoull(get(option)) : def;
+     return exists(option) ? std::stoull(require_arg(option)) : def;
    }
    void add(const std::string s) {
      tokens.push_back(s);
@@ -58,12 +59,24 @@ class InputParser {
    std::optional<int> first_arg_int() const {
      if (tokens.size() > 0) {
        auto s = tokens.front();
-       auto c = s.front();
-       if (isdigit(c))
+       if (s.empty())
+         return std::nullopt;
+       const auto c = static_cast<unsigned char>(s.front());
+       if (std::isdigit(c))
          return std::stoi(s);
      }
      return std::nullopt;
    }
  private:
+   std::string require_arg(const std::string &option) const {
+     auto itr = std::find(this->tokens.begin(), this->tokens.end(), option);
+     if (itr == this->tokens.end())
+       throw std::runtime_error("Missing option: " + option);
+     ++itr;
+     if (itr == this->tokens.end())
+       throw std::runtime_error("Option " + option + " requires an argument");
+     return *itr;
+   }
+
    std::vector<std::string> tokens;
 };

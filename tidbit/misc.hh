@@ -7,6 +7,7 @@
 
 #include <bitset>
 #include <chrono>
+#include <deque>
 #include <sstream>
 #include <iomanip>
 #include <string>
@@ -21,6 +22,7 @@
 #include <random>
 #include <cstdint>
 #include <cctype>
+#include <limits>
 #include <stdexcept>
 #include <cmath>
 #include <unordered_map>
@@ -118,19 +120,41 @@ inline bool containsChar(const std::string& s, char c) {
   return std::find(s.begin(), s.end(), c) != s.end();
 }
 
+template <typename T>
+inline T parse_unsigned_integral(std::string s, const char *type_name)
+{
+  static_assert(std::is_unsigned<T>::value, "Unsigned integral type required");
+
+  s = stripUnderscores(s);
+  if (s.empty())
+    throw std::runtime_error(std::string("Invalid ") + type_name + ": empty value");
+  if (s.front() == '-')
+    throw std::runtime_error(std::string("Invalid ") + type_name + ": negative value");
+
+  uint64_t value = 0;
+  if (containsChar(s, '\'')) {
+    value = parseVerilogInt(s);
+  } else {
+    const bool is_binary_prefix = s.size() > 2 && s[0] == '0' && (s[1] == 'b' || s[1] == 'B');
+    const auto digits = is_binary_prefix ? s.substr(2) : s;
+    if (digits.empty())
+      throw std::runtime_error(std::string("Invalid ") + type_name + ": missing digits");
+
+    char *end = nullptr;
+    errno = 0;
+    value = std::strtoull(digits.c_str(), &end, is_binary_prefix ? 2 : 0);
+    if (end == digits.c_str() || *end != '\0' || errno == ERANGE)
+      throw std::runtime_error(std::string("Invalid ") + type_name + ": " + s);
+  }
+
+  if (value > static_cast<uint64_t>(std::numeric_limits<T>::max()))
+    throw std::runtime_error(std::string("Invalid ") + type_name + ": out of range");
+  return static_cast<T>(value);
+}
+
 inline uint8_t parse_uint8_t(std::string s)
 {
-  s = stripUnderscores(s);
-  if (containsChar(s, '\'')) return parseVerilogInt(s);
-  if (s.substr(0, 2) == "0b"s) {
-    return strtoul(s.substr(2).c_str(), 0, 2);
-  } else {
-    std::stringstream ss(s);
-    ss >> std::setbase(0);
-    unsigned int i;
-    ss >> i;
-    return static_cast<uint8_t>(i);
-  }
+  return parse_unsigned_integral<uint8_t>(std::move(s), "uint8");
 }
 
 inline uint8_t parse_uint8(const InputParser &input, const std::string s, const std::string def) {
@@ -139,17 +163,7 @@ inline uint8_t parse_uint8(const InputParser &input, const std::string s, const 
 
 inline uint32_t parse_uint32_t(std::string s)
 {
-  s = stripUnderscores(s);
-  if (containsChar(s, '\'')) return parseVerilogInt(s);
-  if (s.substr(0, 2) == "0b"s) {
-    return strtoul(s.substr(2).c_str(), 0, 2);
-  } else {
-    std::stringstream ss(s);
-    ss >> std::setbase(0);
-    uint32_t i;
-    ss >> i;
-      return i;
-  }
+  return parse_unsigned_integral<uint32_t>(std::move(s), "uint32");
 }
 
 inline uint32_t parse_uint32(const InputParser &input, const std::string s, const std::string def) {
@@ -158,17 +172,7 @@ inline uint32_t parse_uint32(const InputParser &input, const std::string s, cons
 
 inline uint64_t parse_uint64_t(std::string s)
 {
-  s = stripUnderscores(s);
-  if (containsChar(s, '\'')) return parseVerilogInt(s);
-  if (s.substr(0, 2) == "0b"s) {
-    return strtoull(s.substr(2).c_str(), 0, 2);
-  } else {
-    std::stringstream ss(s);
-    ss >> std::setbase(0);
-    uint64_t i;
-      ss >> i;
-    return i;
-  }
+  return parse_unsigned_integral<uint64_t>(std::move(s), "uint64");
 }
 
 inline uint64_t parse_uint64(const InputParser &input, const std::string s, const std::string def) {

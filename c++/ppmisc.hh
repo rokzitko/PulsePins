@@ -52,8 +52,10 @@ inline auto get_program_name([[maybe_unused]] int argc, char *argv[])
 
 inline void check_version(const int version, const bool verbose = false)
 {
-  assert(SYSID_QSYS_0_ID == tidbit);  // expected FPGA design?
-  assert(SYSID_QSYS_1_ID == version); // expected version of the design?
+  if (SYSID_QSYS_0_ID != tidbit)
+    throw std::runtime_error("Host build expects a different FPGA design ID.");
+  if (SYSID_QSYS_1_ID != version)
+    throw std::runtime_error("Host build expects a different FPGA version ID.");
 
   mm dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE, "lw");
   mm dev_h2f(HPSFPGA_OFST, H2F_RANGE, "h2f");

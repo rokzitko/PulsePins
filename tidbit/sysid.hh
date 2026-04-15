@@ -5,6 +5,10 @@
 
 #pragma once
 
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+
 #include "memory.hh"
 
 inline std::string format_sysid_timestamp(uint32_t raw_ts) {
@@ -80,7 +84,8 @@ inline void check_ID(const int tidbit, bool verbose = true, std::ostream &s = st
 {
   mm dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE);
   mm dev_h2f(HPSFPGA_OFST, H2F_RANGE);
-  assert(SYSID_QSYS_0_ID == tidbit); // check for consistency
+  if (SYSID_QSYS_0_ID != tidbit)
+    throw std::runtime_error("Host build expects a different FPGA design ID.");
   sysid id(dev_lw, SYSID_BASE, SYSID_ID, verbose, s);                      // lw
   sysid id_tidbit(dev_lw, SYSID_QSYS_0_BASE, SYSID_QSYS_0_ID, verbose, s); // lw
   sysid id2(dev_h2f, SYSID_H2F_BASE, SYSID_H2F_ID, verbose, s);            // h2f

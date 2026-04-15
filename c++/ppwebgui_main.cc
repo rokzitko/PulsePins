@@ -14,9 +14,19 @@
 #include "ppwebgui_config.hh"
 #include "ppversion.hh"
 
+#include <iostream>
+
 int main(int argc, char *argv[]) {
-  install_ppwebgui_fatal_signal_handlers();
-  HostRuntime runtime(argc, argv, version);
-  const auto config = resolve_webgui_runtime_config(runtime.input);
-  return run_ppwebgui(runtime.get_fpga(), config, runtime.verbosity);
+  try {
+    install_ppwebgui_fatal_signal_handlers();
+    HostRuntime runtime(argc, argv, version);
+    const auto config = resolve_webgui_runtime_config(runtime.input);
+    return run_ppwebgui(runtime.get_fpga(), config, runtime.verbosity);
+  } catch (const std::exception &e) {
+    std::cerr << "Fatal: " << e.what() << "\n";
+    return 1;
+  } catch (...) {
+    std::cerr << "Fatal: unknown exception\n";
+    return 1;
+  }
 }

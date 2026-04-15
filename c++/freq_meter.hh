@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <cassert>
 #include <iostream>
 #include <string>
 #include <unistd.h>
@@ -44,7 +43,8 @@ public:
     verbose(_verbose)
   {
     n_ch = ln_ch.read();
-    assert(1 <= n_ch && n_ch <= 4);
+    if (n_ch < 1 || n_ch > 4)
+      throw std::runtime_error("freq_meter: unexpected channel count");
     if (verbose)
       std::cout << "freq_meter: n_ch=" << std::dec << n_ch << std::endl;
     set_gate_len(default_gate_len);
@@ -55,8 +55,8 @@ public:
 
   // Reprogram the measurement window and restart accumulation.
   void set_gate_len(Ticks new_gate_len) {
-    gate_len = new_gate_len;
-    lgate_len.write(gate_len);
+    gate_len = std::max<Ticks>(1, new_gate_len);
+    lgate_len.write(new_gate_len);
     lctl.write(2); // clear
     lctl.write(1); // enable
     if (verbose)
@@ -125,7 +125,8 @@ public:
     meter(fpga.dev_h2f, FREQ_METER_0_BASE, verbose) {
     if (opts.correction_factor)
       meter.set_correction_factor(*opts.correction_factor);
-    assert(meter.get_n_ch() == 4);
+    if (meter.get_n_ch() != 4)
+      throw std::runtime_error("PulsePins expects exactly 4 frequency-meter channels.");
     if (wait)
       meter.wait_one_gate_time();
     fpga.set_streamer_clk(meter.read_freq(METER_STREAMER_CLK));

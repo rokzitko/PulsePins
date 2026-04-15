@@ -48,6 +48,31 @@ TEST_CASE("counter class") {
   CHECK(contains(c1.count_str(), "[           10]"));
 }
 
+TEST_CASE("parse_uint helpers reject malformed input") {
+  CHECK(parse_uint8_t("255") == 255);
+  CHECK(parse_uint32_t("0x10") == 16);
+  CHECK(parse_uint64_t("0b10101") == 21);
+  CHECK_THROWS_AS(parse_uint32_t(""), std::runtime_error);
+  CHECK_THROWS_AS(parse_uint32_t("abc"), std::runtime_error);
+  CHECK_THROWS_AS(parse_uint8_t("256"), std::runtime_error);
+  CHECK_THROWS_AS(parse_uint64_t("-1"), std::runtime_error);
+}
+
+TEST_CASE("InputParser reports missing arguments and handles first_arg_int safely") {
+  const auto missing = make_input({"-port"});
+  CHECK_THROWS_AS(missing.get_string("-port", "4242"), std::runtime_error);
+
+  const auto numeric = make_input({"123"});
+  REQUIRE(numeric.first_arg_int().has_value());
+  CHECK(*numeric.first_arg_int() == 123);
+
+  const auto empty = make_input({""});
+  CHECK_FALSE(empty.first_arg_int().has_value());
+
+  const auto non_numeric = make_input({"abc"});
+  CHECK_FALSE(non_numeric.first_arg_int().has_value());
+}
+
 TEST_CASE("strobe class") {
   count_t c = 10;
   Strobe c1(c);

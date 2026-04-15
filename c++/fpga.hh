@@ -234,7 +234,7 @@ public:
     if (opts.source == StreamerClockSource::raw_select) {
       const auto val = int(opts.raw_select.value_or(0));
       if (val < 0 || val > 3)
-        std::cerr << "Invalid sel_clk value " << val << "." << std::endl;
+        throw std::runtime_error("Invalid sel_clk value " + std::to_string(val) + ".");
       rm.s2f_hold_reset();
       sel_clk(val);
       rm.s2f_release_reset();
