@@ -132,27 +132,33 @@ public:
   }
 
   uint64_t get_input_fifo1_ctr_in() {
-    return (uint64_t(input_fifo1_ctr_in_h.read()) << 32) + uint64_t(input_fifo1_ctr_in_l.read());
+    return read_stable_u64([this] { return input_fifo1_ctr_in_l.read(); },
+                           [this] { return input_fifo1_ctr_in_h.read(); });
   }
 
   uint64_t get_input_fifo1_ctr_out() {
-    return (uint64_t(input_fifo1_ctr_out_h.read()) << 32) + uint64_t(input_fifo1_ctr_out_l.read());
+    return read_stable_u64([this] { return input_fifo1_ctr_out_l.read(); },
+                           [this] { return input_fifo1_ctr_out_h.read(); });
   }
 
   uint64_t get_input_fifo2_ctr_in() {
-    return (uint64_t(input_fifo2_ctr_in_h.read()) << 32) + uint64_t(input_fifo2_ctr_in_l.read());
+    return read_stable_u64([this] { return input_fifo2_ctr_in_l.read(); },
+                           [this] { return input_fifo2_ctr_in_h.read(); });
   }
 
   uint64_t get_input_fifo2_ctr_out() {
-    return (uint64_t(input_fifo2_ctr_out_h.read()) << 32) + uint64_t(input_fifo2_ctr_out_l.read());
+    return read_stable_u64([this] { return input_fifo2_ctr_out_l.read(); },
+                           [this] { return input_fifo2_ctr_out_h.read(); });
   }
 
   uint64_t get_output_fifo_ctr_in() {
-    return (uint64_t(output_fifo_ctr_in_h.read()) << 32) + uint64_t(output_fifo_ctr_in_l.read());
+    return read_stable_u64([this] { return output_fifo_ctr_in_l.read(); },
+                           [this] { return output_fifo_ctr_in_h.read(); });
   }
 
   uint64_t get_output_fifo_ctr_out() {
-    return (uint64_t(output_fifo_ctr_out_h.read()) << 32) + uint64_t(output_fifo_ctr_out_l.read());
+    return read_stable_u64([this] { return output_fifo_ctr_out_l.read(); },
+                           [this] { return output_fifo_ctr_out_h.read(); });
   }
 
   // Print transport/fifo accounting information used by higher-level verification paths.

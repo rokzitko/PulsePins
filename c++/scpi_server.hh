@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <deque>
+#include <cctype>
 #include <exception>
 #include <functional>
 #include <sstream>
@@ -28,16 +29,20 @@ struct ScpiNode {
 
     explicit ScpiNode(std::string n) : name(std::move(n)) {
         min_len = 0;
-        for (char c : name) if (std::isupper(c)) ++min_len;
+        for (char c : name) {
+            if (std::isupper(static_cast<unsigned char>(c))) ++min_len;
+        }
         if (min_len == 0) min_len = name.size();
     }
 
     bool matches(const std::string& token) const {
         if (token.size() < min_len) return false;
         std::string upname = name;
-        std::transform(upname.begin(), upname.end(), upname.begin(), ::toupper);
+        std::transform(upname.begin(), upname.end(), upname.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
         std::string uptok = token;
-        std::transform(uptok.begin(), uptok.end(), uptok.begin(), ::toupper);
+        std::transform(uptok.begin(), uptok.end(), uptok.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
         return upname.compare(0, uptok.size(), uptok) == 0;
     }
 };
@@ -81,7 +86,8 @@ enum class SessionAction {
 class ScpiSessionBase : public std::enable_shared_from_this<ScpiSessionBase> {
 public:
     explicit ScpiSessionBase(tcp::socket socket)
-        : socket_(std::move(socket)) {
+        : socket_(std::move(socket)),
+          buffer_(max_line_bytes) {
         root_ = std::make_shared<ScpiNode>("ROOT");
         sesr_ |= POWER_ON;
     }
@@ -91,6 +97,8 @@ public:
     void start() { read(); }
 
 protected:
+    static constexpr std::size_t max_line_bytes = 64 * 1024;
+
     tcp::socket socket_;
     asio::streambuf buffer_;
     std::shared_ptr<ScpiNode> root_;
@@ -98,10 +106,12 @@ protected:
 
     // Status system
     std::deque<std::string> error_queue_;
+    std::deque<std::shared_ptr<std::string>> write_queue_;
     uint8_t sesr_ = 0;
     uint8_t ese_mask_ = 0;
     uint8_t sre_mask_ = 0;
     uint8_t stb_ = 0;
+    bool write_in_progress_ = false;
 
     // For derived classes: add commands to tree
     void add_node(const std::vector<std::string>& path,
@@ -238,6 +248,15 @@ protected:
                         close_session();
                         stop_server();
                     }
+                } else if (ec != asio::error::operation_aborted) {
+                    if (verbose) {
+                        if (ec == asio::error::not_found && buffer_.size() >= max_line_bytes) {
+                            std::cerr << "SCPI read error: line too long" << std::endl;
+                        } else {
+                            std::cerr << "SCPI read error: " << ec.message() << std::endl;
+                        }
+                    }
+                    close_session();
                 }
             });
     }
@@ -255,10 +274,38 @@ protected:
 
     void write(const std::string &msg) {
         if (msg.empty()) return;
+        write_queue_.push_back(std::make_shared<std::string>(msg + "\n"));
+        if (!write_in_progress()) {
+            start_next_write();
+        }
+    }
+
+    bool write_in_progress() const noexcept {
+        return write_in_progress_;
+    }
+
+    void start_next_write() {
+        if (write_queue_.empty()) {
+            write_in_progress_ = false;
+            return;
+        }
+
+        write_in_progress_ = true;
         auto self(shared_from_this());
-        auto out = std::make_shared<std::string>(msg + "\n");
+        auto out = write_queue_.front();
         asio::async_write(socket_, asio::buffer(*out),
-            [this, self, out](asio::error_code, std::size_t) {});
+            [this, self, out](asio::error_code ec, std::size_t) {
+                write_queue_.pop_front();
+                if (ec) {
+                    write_in_progress_ = false;
+                    if (verbose) {
+                        std::cerr << "SCPI write error: " << ec.message() << std::endl;
+                    }
+                    close_session();
+                    return;
+                }
+                start_next_write();
+            });
     }
 
     // Utility

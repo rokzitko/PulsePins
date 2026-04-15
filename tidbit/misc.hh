@@ -225,6 +225,17 @@ inline uint32_t higher32(const uint64_t x) {
   return (uint32_t)(x >> 32);
 }
 
+template <typename ReadLow, typename ReadHigh>
+inline uint64_t read_stable_u64(ReadLow read_low, ReadHigh read_high) {
+  while (true) {
+    const uint32_t hi1 = read_high();
+    const uint32_t lo = read_low();
+    const uint32_t hi2 = read_high();
+    if (hi1 == hi2)
+      return (uint64_t(hi1) << 32) | uint64_t(lo);
+  }
+}
+
 template<typename T, typename Cmp, typename Merge>
 inline void merge_adjacent(std::deque<T>& dq, Cmp cmp, Merge merge) {
   if (dq.size() < 2) return;

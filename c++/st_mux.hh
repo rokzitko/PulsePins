@@ -42,12 +42,14 @@ public:
 
   // Number of successful Avalon-ST transfers observed on input 1.
   uint64_t ctr1() {
-    return (uint64_t(ctr1_h.read()) << 32) + uint64_t(ctr1_l.read());
+    return read_stable_u64([this] { return ctr1_l.read(); },
+                           [this] { return ctr1_h.read(); });
   }
 
   // Number of successful Avalon-ST transfers observed on input 2.
   uint64_t ctr2() {
-    return (uint64_t(ctr2_h.read()) << 32) + uint64_t(ctr2_l.read());
+    return read_stable_u64([this] { return ctr2_l.read(); },
+                           [this] { return ctr2_h.read(); });
   }
 
   void report() {

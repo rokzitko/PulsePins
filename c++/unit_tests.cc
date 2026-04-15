@@ -73,6 +73,68 @@ TEST_CASE("InputParser reports missing arguments and handles first_arg_int safel
   CHECK_FALSE(non_numeric.first_arg_int().has_value());
 }
 
+TEST_CASE("read_stable_u64 retries across a rollover") {
+  int hi_reads = 0;
+  const auto read_low = [&]() -> uint32_t {
+    return 0;
+  };
+  const auto read_high = [&]() -> uint32_t {
+    ++hi_reads;
+    return hi_reads == 1 ? 7u : 8u;
+  };
+
+  CHECK(read_stable_u64(read_low, read_high) == (uint64_t(8) << 32));
+  CHECK(hi_reads >= 3);
+}
+
+TEST_CASE("runs_counter reports n/a for empty statistics") {
+  runs_counter runs([](uint32_t half, uint32_t addr) -> uint32_t {
+    if (half != 0)
+      return 0;
+    switch (addr) {
+    case 0: return 5;  // ctr_run
+    case 2: return 0;  // nr_run_l
+    case 3: return 4;  // nr_run_h
+    case 4: return 0;  // sum_run_l
+    case 5: return 20; // sum_run_h
+    case 6: return 0;
+    case 7: return 7;
+    case 8: return 0;
+    case 9: return 0;
+    default: return 0;
+    }
+  });
+
+  const auto report = runs.str();
+  CHECK(contains(report, "avg_l=n/a"));
+  CHECK(contains(report, "avg_h=5"));
+}
+
+TEST_CASE("packet_stats uses completed packets for averages") {
+  packet_stats stats([](uint32_t half, uint32_t addr) -> uint32_t {
+    if (half != 0)
+      return 0;
+    switch (addr) {
+    case 0: return 30; // total
+    case 1: return 20; // valid
+    case 2: return 10; // idle
+    case 3: return 3;  // pkt_begin
+    case 4: return 2;  // pkt_end
+    case 5: return 10; // pkt_len_sum
+    case 6: return 52; // pkt_len_sum2
+    default: return 0;
+    }
+  });
+
+  const auto report = stats.str();
+  CHECK(contains(report, "avg_len=5"));
+}
+
+TEST_CASE("chars_to_uint32 preserves high-bit bytes") {
+  const char bytes[4] = {char(0x80), char(0xFF), char(0x01), char(0x02)};
+  CHECK(chars_to_uint32(bytes) == 0x80FF0102u);
+}
+
 TEST_CASE("strobe class") {
   count_t c = 10;
   Strobe c1(c);

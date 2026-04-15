@@ -147,18 +147,31 @@ public:
 #ifdef DO_SUM2
     ss << " sum2_h=" << with_underscores(sum2_run_h());
 #endif
-    auto avg_l = double(sum_run_l())/nr_l;
-    auto avg_h = double(sum_run_h())/nr_h;
-    ss << " avg_l=" << avg_l;
-    ss << " avg_h=" << avg_h;
+    if (nr_l == 0) {
+      ss << " avg_l=n/a";
+    } else {
+      auto avg_l = double(sum_run_l())/nr_l;
+      ss << " avg_l=" << avg_l;
 #ifdef DO_SUM2
-    auto var_l = double(sum2_run_l())/nr_l-std::pow(avg_l,2);
-    auto dev_l = std::sqrt(var_l);
-    auto var_h = double(sum2_run_h())/nr_h-std::pow(avg_h,2);
-    auto dev_h = std::sqrt(var_h);
-    ss << " dev_l=" << dev_l;
-    ss << " dev_h=" << dev_h;
+      auto var_l = double(sum2_run_l())/nr_l-std::pow(avg_l,2);
+      auto dev_l = std::sqrt(var_l);
+      ss << " dev_l=" << dev_l;
 #endif
+    }
+    if (nr_h == 0) {
+      ss << " avg_h=n/a";
+#ifdef DO_SUM2
+      ss << " dev_h=n/a";
+#endif
+    } else {
+      auto avg_h = double(sum_run_h())/nr_h;
+      ss << " avg_h=" << avg_h;
+#ifdef DO_SUM2
+      auto var_h = double(sum2_run_h())/nr_h-std::pow(avg_h,2);
+      auto dev_h = std::sqrt(var_h);
+      ss << " dev_h=" << dev_h;
+#endif
+    }
     return ss.str();
   }
 };
@@ -214,7 +227,11 @@ public:
     auto sum2 = pkt_len_sum2();
     ss << " pkt_len_sum=" << with_underscores(sum);
     ss << " pkt_len_sum2=" << with_underscores(sum2);
-    auto nr = std::max(bg, en);
+    const auto nr = en; // packet length statistics are committed only when a packet ends
+    if (nr == 0) {
+      ss << " avg_len=n/a dev=n/a";
+      return ss.str();
+    }
     auto avg = double(sum)/nr;
     auto var = double(sum2)/nr - pow(avg, 2);
     auto dev = sqrt(var);

@@ -10,6 +10,7 @@
 #include <cerrno>
 #include <cstring>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <optional>
 #include <stdexcept>
@@ -24,6 +25,8 @@
 #include <unistd.h>
 
 enum class Proto { TCP, UDP };
+
+inline constexpr std::size_t max_line_bytes = 64 * 1024;
 
 inline std::string client_ip_string(int cfd) {
   sockaddr_storage ss{}; socklen_t slen = sizeof(ss);
@@ -91,6 +94,9 @@ static void read_lines_from_stream(int fd, const std::atomic<bool>& stop_flag,
       throw std::runtime_error("recv() failed: " + std::string(std::strerror(errno)));
     }
     buf.append(tmp.data(), static_cast<size_t>(n));
+    if (buf.size() > max_line_bytes) {
+      throw std::runtime_error("line too long");
+    }
     // Extract full lines.
     size_t pos = 0;
     while (true) {
@@ -123,6 +129,9 @@ static void read_lines_from_udp(int fd, const std::atomic<bool>& stop_flag,
       throw std::runtime_error("recvfrom() failed: " + std::string(std::strerror(errno)));
     }
     std::string payload(tmp.data(), tmp.data() + n);
+    if (payload.size() > max_line_bytes) {
+      throw std::runtime_error("datagram line payload too long");
+    }
     size_t start = 0;
     while (start <= payload.size()) {
       size_t nl = payload.find('\n', start);
@@ -148,7 +157,15 @@ public:
   void start() {
     if (thread_.joinable()) throw std::runtime_error("Server already started");
     stop_flag_.store(false, std::memory_order_relaxed);
-    thread_ = std::thread([this] { this->run(); });
+    auto startup = std::make_shared<StartupSignal>();
+    auto ready = startup->ready.get_future();
+    thread_ = std::thread([this, startup] { this->run(startup); });
+    try {
+      ready.get();
+    } catch (...) {
+      if (thread_.joinable()) thread_.join();
+      throw;
+    }
   }
 
   void stop() {
@@ -170,10 +187,29 @@ public:
   }
 
 private:
-  void run() {
+  struct StartupSignal {
+    std::promise<void> ready;
+    std::atomic<bool> delivered{false};
+  };
+
+  static void signal_startup_success(const std::shared_ptr<StartupSignal> &startup) {
+    if (startup && !startup->delivered.exchange(true)) {
+      startup->ready.set_value();
+    }
+  }
+
+  static void signal_startup_failure(const std::shared_ptr<StartupSignal> &startup,
+                                     std::exception_ptr eptr) {
+    if (startup && !startup->delivered.exchange(true)) {
+      startup->ready.set_exception(eptr);
+    }
+  }
+
+  void run(const std::shared_ptr<StartupSignal> &startup) {
     try {
       const int lfd = make_listen_socket(bind_ip_, port_, proto_);
       listen_fd_.store(lfd);
+      signal_startup_success(startup);
       if (proto_ == Proto::TCP) {
         for (;;) {
           // Accept exactly one connection, then read lines until it closes or stop() is called.
@@ -204,6 +240,7 @@ private:
         if (old_lfd >= 0) ::close(old_lfd);
       }
     } catch (const std::exception& e) {
+      signal_startup_failure(startup, std::current_exception());
       // In real code, route this to your logging system.
       std::cerr << "LineServer error: " << e.what() << "\n";
     }

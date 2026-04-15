@@ -5,7 +5,7 @@
 
 inline void sleep_1us()
 {
-  std::this_thread::sleep_for(std::chrono::microseconds(1000));
+  std::this_thread::sleep_for(std::chrono::microseconds(1));
 }
 
 inline void sleep_1ms()

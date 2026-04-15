@@ -13,7 +13,9 @@
 
 #pragma once
 
+#include <cerrno>
 #include <iostream>
+#include <system_error>
 #include <sys/mman.h>
 
 #include "options.hh"
@@ -26,7 +28,8 @@ inline RealtimeScheduler bootstrap_process(const Verbosity &v, const int version
   // Process bootstrap is intentionally separated from FPGA startup so future tools can
   // reuse one policy without necessarily applying the other.
   check_version(version);
-  mlockall(MCL_CURRENT | MCL_FUTURE);
+  if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0)
+    throw std::system_error(errno, std::generic_category(), "mlockall failed");
   RealtimeScheduler rt;
   if (v.veryverbose)
     std::cout << "Scheduler: " << rt.report() << std::endl;

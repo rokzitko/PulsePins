@@ -159,7 +159,7 @@ always_ff @(posedge clk) begin
     // Control writes intentionally stay in the Avalon/control clock domain; the deeper
     // streamer core consumes the resulting control signals and performs the required CDC.
     unique case (st_if_w_t'(avs_s0_address))
-      IF_CTRL:       {stop_on_buffer_error, qout_select, trigger_reset_int, reset_streamer, trigger_enable_int, trigger_force_int, stop} <= avs_s0_writedata[5:0];
+      IF_CTRL:       {stop_on_buffer_error, qout_select, trigger_reset_int, reset_streamer, trigger_enable_int, trigger_force_int, stop} <= avs_s0_writedata[6:0];
       INIT_VAL:      initial_value[WIDTH_AVS-1:0] <= avs_s0_writedata;
       QOUT_OVERRIDE: qout_override[WIDTH_AVS-1:0] <= avs_s0_writedata;
       GATING_W:      {gate_mask, gate_in_en, gating} <= avs_s0_writedata[WIDTH_TRIGGER+2-1:0];

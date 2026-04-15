@@ -153,7 +153,7 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
   std::string fmt = "%4l  %t  ctr=%10c  ts=%15s  %15D";
   try {
     const long long nr = parse_uint64(input, "-nr", "0");
-    for (ctr = 0; nr == 0 || ctr <= nr; ctr++) {
+    for (ctr = 0; nr == 0 || ctr < nr; ctr++) {
       current = read();
       if (silent_after < 0 || ctr < silent_after)
         LOCKCOUT( std::cout << format_with_dispatch(fmt, d) << std::endl; )

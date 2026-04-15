@@ -49,10 +49,10 @@ using namespace std::string_literals;
 inline uint32_t chars_to_uint32(const char buffer[4])
 {
   const uint32_t num =
-    (uint32_t)buffer[0] << 24 |
-    (uint32_t)buffer[1] << 16 |
-    (uint32_t)buffer[2] << 8  |
-    (uint32_t)buffer[3];
+    uint32_t(static_cast<unsigned char>(buffer[0])) << 24 |
+    uint32_t(static_cast<unsigned char>(buffer[1])) << 16 |
+    uint32_t(static_cast<unsigned char>(buffer[2])) << 8  |
+    uint32_t(static_cast<unsigned char>(buffer[3]));
   return num;
 };
 
