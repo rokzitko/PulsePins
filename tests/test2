@@ -13,5 +13,4 @@ pptest 2 -c 0 -v 42 -check
 
 time pptest 2 -c 100_000_000 -v 42 -check
 time pptest 2 -c 1_000_000_000 -v 42 -check
-time pptest 2 -c 5_000_000_000 -v 42 -check
-# The last one will be truncated to length 0xFFFFFFFF (42 seconds at 100MHz)
+time pptest 2 -c 0xffffffff -v 42 -check
