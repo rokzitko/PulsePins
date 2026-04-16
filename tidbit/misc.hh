@@ -322,7 +322,7 @@ inline uint32_t random_log_uniform(uint32_t min_len, uint32_t max_len) {
 }
 
 inline uint32_t random_lin_uniform(uint32_t min_len, uint32_t max_len) {
-  return (random_u32() % max_len) + min_len;
+  return std::max(random_u32() % (max_len+1), min_len);
 }
 
 // Shift Left Logical (SLL)
