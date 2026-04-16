@@ -198,29 +198,29 @@ inline int run_post_execution_checks(streamer_control &sc,
   } else {
     if (!(envVarExists("PP_IGNORE_QOUT_FINAL") || input.exists("-pp_ignore_qout_final"))) {
       std::cout << red << " Mismatch: expecting " << hex8(final) << rst << std::endl;
-      rc |= RC_ERROR_QOUT_FINAL;
+      rc |= RC_ERROR_CHECK;
     }
   }
   sc.statistics();
   if (sc.get_input_fifo1_ctr_in() != sc.get_input_fifo1_ctr_out()) {
     std::cout << red << "Mismatch in the streamer input FIFO1 detected." << rst << std::endl;
-    rc |= RC_ERROR_FIFO_CTR;
+    rc |= RC_ERROR_CHECK;
   }
   if (sc.get_input_fifo2_ctr_in() != sc.get_input_fifo2_ctr_out()) {
     std::cout << red << "Mismatch in the streamer input FIFO2 detected." << rst << std::endl;
-    rc |= RC_ERROR_FIFO_CTR;
+    rc |= RC_ERROR_CHECK;
   }
   if (sc.get_output_fifo_ctr_in() != sc.get_output_fifo_ctr_out()) {
     std::cout << red << "Mismatch in the streamer output FIFO detected." << rst << std::endl;
-    rc |= RC_ERROR_FIFO_CTR;
+    rc |= RC_ERROR_CHECK;
   }
   if (sc.get_overflow()) {
     std::cout << red << "Input FIFO overflow detected." << rst << std::endl;
-    rc |= RC_ERROR_OVERFLOW_FIFO;
+    rc |= RC_ERROR_OVERFLOW;
   }
   if (rb.overflow()) {
     std::cout << red << "Readback overflow detected." << rst << std::endl;
-    rc |= RC_ERROR_OVERFLOW_RB;
+    rc |= RC_ERROR_OVERFLOW;
   }
   ctr.latch_all();
   ctr.short_report();
