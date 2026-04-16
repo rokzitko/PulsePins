@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 source defs.sh
 ppts -nr 5
 ppts -nr 10 -timeout 3.0 -selA 0 -sigA

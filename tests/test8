@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 source defs.sh
 pptest 8 -c 1 -v 200 -check -dump-converted # Problematic at the highest frequencies ??
 pptest 8 -c 2 -v 200 -check -dump-converted

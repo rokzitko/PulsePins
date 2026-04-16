@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 source defs.sh
 
 pptest 42 -f sequence.simple -check

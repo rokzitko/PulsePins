@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 source defs.sh
 pptest 5 -c 1 -check
 pptest 5 -c 10 -check

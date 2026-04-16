@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Tests for clock synthesis using PLL
 source defs.sh
 

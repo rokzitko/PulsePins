@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Tests that depend on FIFO buffer being sufficiently large.
 source defs.sh
 

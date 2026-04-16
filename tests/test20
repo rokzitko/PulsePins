@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 source defs.sh
 # May fail for too small c (1000 seems to be fine)
 pptest 20 -c 100_000 -v 20 -rnd
