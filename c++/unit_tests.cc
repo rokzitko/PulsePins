@@ -49,6 +49,13 @@ InputParser make_input(std::initializer_list<std::string> args) {
   return InputParser(std::vector<std::string>(args));
 }
 
+std::pair<Sequence, bool> roundtrip_binary(const Sequence &seq, const bool force_trigger = false) {
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, force_trigger);
+  std::istringstream in(out.str(), std::ios::binary);
+  return Sequence::read_binary(in);
+}
+
 struct FakeWebGuiService : WebGuiService {
   StatusSnapshot status;
   std::string last_error;
@@ -291,6 +298,99 @@ TEST_CASE("BitFlip class") {
   CHECK(contains(v1.value_str(), "[           42]"));
 }
 
+TEST_CASE("BitNot class") {
+  value_t v = 42;
+  BitNot v1(v);
+  CHECK(v1.value() == v);
+  CHECK(get_value(v1) == v);
+  CHECK(v1.mode_bits() == BITNOT);
+  CHECK(get_mode_bits(v1) == BITNOT);
+  CHECK(v1.desc() == bitnotstring);
+  CHECK(get_desc(v1) == bitnotstring);
+  CHECK(v1.result(0x00) == value_t(~value_t(0x00)));
+  CHECK(v1.result(0x0f) == value_t(~value_t(0x0f)));
+  CHECK(get_result(v1, 0x00) == value_t(~value_t(0x00)));
+  CHECK(get_result(v1, 0x0f) == value_t(~value_t(0x0f)));
+}
+
+TEST_CASE("BitAnd class") {
+  value_t v = 0x0c;
+  BitAnd v1(v);
+  CHECK(v1.value() == v);
+  CHECK(get_value(v1) == v);
+  CHECK(v1.mode_bits() == BITAND);
+  CHECK(get_mode_bits(v1) == BITAND);
+  CHECK(v1.desc() == bitandstring);
+  CHECK(get_desc(v1) == bitandstring);
+  CHECK(v1.result(0x0a) == 0x08);
+  CHECK(get_result(v1, 0x0a) == 0x08);
+}
+
+TEST_CASE("BitOr class") {
+  value_t v = 0x0c;
+  BitOr v1(v);
+  CHECK(v1.value() == v);
+  CHECK(get_value(v1) == v);
+  CHECK(v1.mode_bits() == BITOR);
+  CHECK(get_mode_bits(v1) == BITOR);
+  CHECK(v1.desc() == bitorstring);
+  CHECK(get_desc(v1) == bitorstring);
+  CHECK(v1.result(0x03) == 0x0f);
+  CHECK(get_result(v1, 0x03) == 0x0f);
+}
+
+TEST_CASE("BitXor class") {
+  value_t v = 0x0c;
+  BitXor v1(v);
+  CHECK(v1.value() == v);
+  CHECK(get_value(v1) == v);
+  CHECK(v1.mode_bits() == BITXOR);
+  CHECK(get_mode_bits(v1) == BITXOR);
+  CHECK(v1.desc() == bitxorstring);
+  CHECK(get_desc(v1) == bitxorstring);
+  CHECK(v1.result(0x0a) == 0x06);
+  CHECK(get_result(v1, 0x0a) == 0x06);
+}
+
+TEST_CASE("BitXnor class") {
+  value_t v = 0x0c;
+  BitXnor v1(v);
+  CHECK(v1.value() == v);
+  CHECK(get_value(v1) == v);
+  CHECK(v1.mode_bits() == BITXNOR);
+  CHECK(get_mode_bits(v1) == BITXNOR);
+  CHECK(v1.desc() == bitxnorstring);
+  CHECK(get_desc(v1) == bitxnorstring);
+  CHECK(v1.result(0x0a) == value_t(~value_t(0x06)));
+  CHECK(get_result(v1, 0x0a) == value_t(~value_t(0x06)));
+}
+
+TEST_CASE("BitSll class") {
+  value_t v = 3;
+  BitSll v1(v);
+  CHECK(v1.value() == v);
+  CHECK(get_value(v1) == v);
+  CHECK(v1.mode_bits() == BITSLL);
+  CHECK(get_mode_bits(v1) == BITSLL);
+  CHECK(v1.desc() == bitsllstring);
+  CHECK(get_desc(v1) == bitsllstring);
+  CHECK(v1.result(0x11) == 0x88);
+  CHECK(get_result(v1, 0x11) == 0x88);
+}
+
+TEST_CASE("BitSrl class") {
+  value_t v = 3;
+  BitSrl v1(v);
+  CHECK(v1.value() == v);
+  CHECK(get_value(v1) == v);
+  CHECK(v1.mode_bits() == BITSRL);
+  CHECK(get_mode_bits(v1) == BITSRL);
+  CHECK(v1.desc() == bitsrlstring);
+  CHECK(get_desc(v1) == bitsrlstring);
+  CHECK(v1.result(0x80) == 0x10);
+  CHECK(get_result(v1, 0x80) == 0x10);
+}
+
 TEST_CASE("el general constructor 1") {
   count_t c = 10;
   value_t v = 42;
@@ -451,6 +551,49 @@ TEST_CASE("trigger constructor, final") {
   CHECK(contains(e.desc(), "1010101")); // 85 in binary
 }
 
+TEST_CASE("replay constructor") {
+  el e(Replay{}, 7, 4);
+  CHECK(e.count() == 7);
+  CHECK(e.value() == 4);
+  CHECK(e.control() == REPLAY);
+  CHECK(!e.is_regular());
+  CHECK(!e.is_final());
+  CHECK(contains(e.desc(), "Replay: repetitions=7 length=4"));
+}
+
+TEST_CASE("retrig constructor") {
+  el e(Retrig{});
+  CHECK(e.count() == 1);
+  CHECK(e.value() == default_final_value);
+  CHECK(e.control() == RETRIG);
+  CHECK(!e.is_regular());
+  CHECK(!e.is_final());
+  CHECK(contains(e.desc(), retrigstring));
+}
+
+TEST_CASE("pseudo-random constructor") {
+  el e(PseudoRandom{}, 9);
+  CHECK(e.count() == 9);
+  CHECK(e.value() == 0);
+  CHECK(e.control() == PRNG);
+  CHECK(!e.is_regular());
+  CHECK(!e.is_final());
+  CHECK(contains(e.desc(), prngstring));
+}
+
+TEST_CASE("store marks an element for replay memory") {
+  el e(3, 0x12);
+  e.store(2);
+  CHECK(e.control() == control_t(STORE + (2u << SHIFT_POSITION)));
+  CHECK(contains(e.decode(), "store 2"));
+  CHECK(e != el(3, 0x12));
+}
+
+TEST_CASE("store rejects out-of-range slot") {
+  el e(3, 0x12);
+  CHECK_THROWS_WITH_AS(e.store(POSITIONS), "store() out of bounds", std::runtime_error);
+}
+
 TEST_CASE("convert_to_BitLoad") {
   Sequence s1;
   s1.push_back(el(1, BitLoad(1)));
@@ -487,6 +630,44 @@ TEST_CASE("merge 2") {
   s2.push_back(el(60, 42));
   auto s1bis = s1.merge();
   CHECK(s1bis == s2);
+}
+
+TEST_CASE("Sequence length and data_size count only regular elements") {
+  Sequence seq;
+  seq.push_back(el(0x01, 0x03, false));
+  seq.push_back(el(3, 0x12));
+  seq.push_back(el(Replay{}, 7, 4));
+  seq.push_back(el(NoStrobe(5), 0x34));
+  seq.push_back(el(0x56));
+
+  CHECK(seq.length() == 8);
+  CHECK(seq.data_size() == 2);
+}
+
+TEST_CASE("merge preserves regular control semantics") {
+  Sequence seq;
+  seq.push_back(el(NoStrobe(2), BitSet(0x03)).store(1));
+  seq.push_back(el(NoStrobe(3), BitSet(0x03)).store(1));
+
+  Sequence expected;
+  el merged(NoStrobe(5), BitSet(0x03));
+  merged.store(1);
+  expected.push_back(merged);
+
+  const auto result = seq.merge();
+  REQUIRE(result.size() == 1);
+  CHECK(result == expected);
+  CHECK(result[0].updated_value(0x01) == expected[0].updated_value(0x01));
+  CHECK(result[0].desc() == expected[0].desc());
+}
+
+TEST_CASE("merge keeps adjacent regular elements with different control separate") {
+  Sequence seq;
+  seq.push_back(el(2, 0x12));
+  seq.push_back(el(NoStrobe(3), 0x12));
+  seq.push_back(el(4, BitSet(0x12)));
+
+  CHECK(seq.merge() == seq);
 }
 
 TEST_CASE("parseVerilogInt") {
@@ -960,6 +1141,40 @@ TEST_CASE("binary round-trips regular sequence exactly") {
   CHECK(compare(roundtrip, seq));
 }
 
+TEST_CASE("binary round-trip preserves regular element semantics") {
+  Sequence seq;
+  seq.push_back(el(1, BitLoad(0x12)));
+  seq.push_back(el(NoStrobe(2), BitSet(0x03)).store(1));
+  seq.push_back(el(3, BitClear(0x0c)));
+  seq.push_back(el(4, BitFlip(0x30)));
+  seq.push_back(el(5, BitNot(0xff)));
+  seq.push_back(el(6, BitAnd(0x0f)));
+  seq.push_back(el(7, BitOr(0xf0)));
+  seq.push_back(el(8, BitXor(0x33)));
+  seq.push_back(el(9, BitXnor(0x55)));
+  seq.push_back(el(10, BitSll(3)));
+  seq.push_back(el(11, BitSrl(2)));
+
+  auto [roundtrip, force_trigger] = roundtrip_binary(seq);
+
+  CHECK(!force_trigger);
+  REQUIRE(roundtrip.size() == seq.size());
+
+  value_t expected_prev = 0x12345678;
+  value_t actual_prev = expected_prev;
+  for (size_t i = 0; i < seq.size(); ++i) {
+    CHECK(roundtrip[i] == seq[i]);
+    CHECK(roundtrip[i].desc() == seq[i].desc());
+
+    const auto expected = seq[i].updated_value(expected_prev);
+    const auto actual = roundtrip[i].updated_value(actual_prev);
+    CHECK(actual == expected);
+
+    expected_prev = expected;
+    actual_prev = actual;
+  }
+}
+
 TEST_CASE("binary round-trips mixed sequence exactly") {
   Sequence seq;
   seq.push_back(el(3, 0x12));
@@ -993,6 +1208,21 @@ TEST_CASE("binary round-trips empty sequence") {
   CHECK(roundtrip.empty());
 }
 
+TEST_CASE("binary file round-trips sequence exactly") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  seq.push_back(el(NoStrobe(4), 0x34));
+  seq.push_back(el(5, BitSet(0x40)).store(2));
+
+  const std::string filename = "unit_tests_output_roundtrip.ppbin";
+  seq.write_binary_file(filename, true);
+  auto [roundtrip, force_trigger] = Sequence::read_binary_file(filename);
+
+  CHECK(force_trigger);
+  CHECK(compare(roundtrip, seq));
+  std::remove(filename.c_str());
+}
+
 TEST_CASE("binary reader rejects bad magic") {
   Sequence seq;
   seq.push_back(el(3, 0x12));
@@ -1015,6 +1245,28 @@ TEST_CASE("binary reader rejects unsupported major version") {
   CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
 }
 
+TEST_CASE("binary reader rejects unsupported endianness") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data[6] = char(2);
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
+TEST_CASE("binary reader rejects unsupported payload kind") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data[7] = char(1);
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
 TEST_CASE("binary reader rejects width mismatch") {
   Sequence seq;
   seq.push_back(el(3, 0x12));
@@ -1023,6 +1275,20 @@ TEST_CASE("binary reader rejects width mismatch") {
   auto data = out.str();
   data[8] = char(0x10);
   data[9] = char(0x00);
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
+TEST_CASE("binary reader rejects unsupported header size") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data[20] = char(0x00);
+  data[21] = char(0x00);
+  data[22] = char(0x00);
+  data[23] = char(0x00);
   std::istringstream in(data, std::ios::binary);
   CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
 }
@@ -1052,6 +1318,17 @@ TEST_CASE("binary reader rejects truncated payload") {
   seq.write_binary(out, false);
   auto data = out.str();
   data.resize(data.size() - 1);
+  std::istringstream in(data, std::ios::binary);
+  CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
+}
+
+TEST_CASE("binary reader rejects trailing data after payload") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  auto data = out.str();
+  data.push_back(char(0x00));
   std::istringstream in(data, std::ios::binary);
   CHECK_THROWS_AS(Sequence::read_binary(in), std::runtime_error);
 }
@@ -1215,6 +1492,57 @@ TEST_CASE("parse_sequence_from_stream rejects truncated final trigger records") 
 TEST_CASE("parse_sequence_from_stream rejects truncated non-final trigger records") {
   std::istringstream in("tn 0b01");
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in), "Incomplete 'tn' record: expected pattern and mask", std::runtime_error);
+}
+
+TEST_CASE("write_sequence_to_stream serializes all regular operator tokens") {
+  Sequence seq;
+  seq.push_back(el(1, 0x1));
+  seq.push_back(el(NoStrobe(2), 0x2));
+  seq.push_back(el(3, BitSet(0x3)));
+  seq.push_back(el(4, BitClear(0x4)));
+  seq.push_back(el(5, BitFlip(0x5)));
+  seq.push_back(el(6, BitNot(0x6)));
+  seq.push_back(el(7, BitAnd(0x7)));
+  seq.push_back(el(8, BitOr(0x8)));
+  seq.push_back(el(9, BitXor(0x9)));
+  seq.push_back(el(10, BitXnor(0xa)));
+  seq.push_back(el(11, BitSll(0xb)));
+  seq.push_back(el(12, BitSrl(0xc)));
+  seq.push_back(el(13, BitSet(0xd)).store(2));
+
+  std::ostringstream out;
+  write_sequence_to_stream(seq, out, false);
+
+  const std::string expected =
+      "d 1 0x1\n"
+      "dn 2 0x2\n"
+      "s 3 0x3\n"
+      "c 4 0x4\n"
+      "x 5 0x5\n"
+      "n 6 0x6\n"
+      "a 7 0x7\n"
+      "o 8 0x8\n"
+      "xr 9 0x9\n"
+      "xn 10 0xa\n"
+      "sl 11 0xb\n"
+      "sr 12 0xc\n"
+      "store 2 s 13 0xd\n";
+  CHECK(out.str() == expected);
+
+  std::istringstream in(out.str());
+  auto [roundtrip, force_trigger] = parse_sequence_from_stream(in);
+  CHECK(!force_trigger);
+  CHECK(roundtrip == seq);
+}
+
+TEST_CASE("write_sequence_to_stream rejects non-BITLOAD no-strobe elements") {
+  Sequence seq;
+  seq.push_back(el(NoStrobe(3), BitSet(0x12)));
+
+  std::ostringstream out;
+  CHECK_THROWS_WITH_AS(write_sequence_to_stream(seq, out, false),
+                       "Text sequence writer does not support non-BITLOAD no-strobe elements",
+                       std::runtime_error);
 }
 
 TEST_CASE("spi sequence builder quantizes requested frequency") {

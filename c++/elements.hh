@@ -43,6 +43,7 @@ public:
   }
   virtual control_t control_bits() const { return 0; } // corresponding control bits (that need to be or'd in)
   virtual std::string desc() const { return ""; } // descriptive string
+  virtual std::shared_ptr<Counter> with_count(count_t new_count) const { return std::make_shared<Counter>(new_count); }
   virtual std::shared_ptr<Counter> clone() const { return std::make_shared<Counter>(*this); } // deep-copy semantics, because copy is cheap
 };
 
@@ -53,6 +54,7 @@ public:
   Strobe(count_t c) : Counter(c) {}
   control_t control_bits() const override { return STROBE; }
   std::string desc() const override { return strobestring; }
+  std::shared_ptr<Counter> with_count(count_t new_count) const override { return std::make_shared<Strobe>(new_count); }
   std::shared_ptr<Counter> clone() const override { return std::make_shared<Strobe>(*this); }
 };
 
@@ -63,6 +65,7 @@ public:
   NoStrobe(count_t c) : Counter(c) {}
   control_t control_bits() const override { return NOSTROBE; }
   std::string desc() const override { return nostrobestring; }
+  std::shared_ptr<Counter> with_count(count_t new_count) const override { return std::make_shared<NoStrobe>(new_count); }
   std::shared_ptr<Counter> clone() const override { return std::make_shared<NoStrobe>(*this); }
 };
 
@@ -254,7 +257,7 @@ public:
   el(value_t _v = default_final_value) : el(el_type::final, Counter(1), Value(_v), TERMINATE) {}
   // Regular element
   el(count_t _c, value_t _v) : el(el_type::regular, Counter(_c), BitLoad(_v)) {};
-  el(const Counter &_cc, value_t &_v) : el(el_type::regular, _cc, BitLoad(_v)) {};
+  el(const Counter &_cc, value_t _v) : el(el_type::regular, _cc, BitLoad(_v)) {};
   el(const Counter &_cc, const Value &_vv) : el(el_type::regular, _cc, _vv) {};
   // Trigger element
   el(trigger_t pattern, trigger_t mask, bool final) : el(el_type::trigger, Counter(0), TriggerCondition(pattern, mask, final), final ? TRIGGERFINAL : 0) {}
@@ -278,6 +281,7 @@ public:
   }
 
   void set_control(control_t _y) { y = _y; }
+  void set_count(count_t _c) { cc = cc->with_count(_c); }
   void set_count(const Counter &_cc) { cc = _cc.clone(); }
   void set_value(const Value &_vv) { vv = _vv.clone(); }
 

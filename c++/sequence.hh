@@ -147,20 +147,26 @@ inline void validate_binary_header(const BinarySequenceHeader &h)
     throw std::runtime_error("Binary sequence payload size mismatch");
 }
 
-inline Value regular_value_from_control(control_t control, value_t value)
+inline el regular_element_from_control(control_t control, count_t count, value_t value)
 {
+  const auto make_element = [control, count](const Value &regular_value) {
+    el e = ((control & NOSTROBE) == NOSTROBE) ? el(NoStrobe(count), regular_value) : el(Counter(count), regular_value);
+    e.set_control(control);
+    return e;
+  };
+
   switch (control & MODEBITS) {
-    case BITLOAD: return BitLoad(value);
-    case BITSET: return BitSet(value);
-    case BITCLEAR: return BitClear(value);
-    case BITFLIP: return BitFlip(value);
-    case BITNOT: return BitNot(value);
-    case BITAND: return BitAnd(value);
-    case BITOR: return BitOr(value);
-    case BITXOR: return BitXor(value);
-    case BITXNOR: return BitXnor(value);
-    case BITSLL: return BitSll(value);
-    case BITSRL: return BitSrl(value);
+    case BITLOAD: return make_element(BitLoad(value));
+    case BITSET: return make_element(BitSet(value));
+    case BITCLEAR: return make_element(BitClear(value));
+    case BITFLIP: return make_element(BitFlip(value));
+    case BITNOT: return make_element(BitNot(value));
+    case BITAND: return make_element(BitAnd(value));
+    case BITOR: return make_element(BitOr(value));
+    case BITXOR: return make_element(BitXor(value));
+    case BITXNOR: return make_element(BitXnor(value));
+    case BITSLL: return make_element(BitSll(value));
+    case BITSRL: return make_element(BitSrl(value));
     default:
       throw std::runtime_error("Unsupported regular element mode in binary sequence reader");
   }
@@ -197,10 +203,7 @@ inline el element_from_raw_triplet(control_t control, count_t count, value_t val
     return e;
   }
 
-  Value regular_value = regular_value_from_control(control, value);
-  el e = ((control & NOSTROBE) == NOSTROBE) ? el(NoStrobe(count), regular_value) : el(Counter(count), regular_value);
-  e.set_control(control);
-  return e;
+  return regular_element_from_control(control, count, value);
 }
 
 // Thin extension of `std::deque<el>` with helpers that reflect the semantics of a
@@ -276,7 +279,7 @@ public:
     Sequence s = *this; // make a copy
     merge_adjacent<el>(s,
                         [](const el &x, const el &y){ return x.is_regular() && y.is_regular() && x.control() == y.control() && x.value() == y.value(); },
-                        [](const el &x, const el &y){ return el(Counter(x.count() + y.count()), Value(x.value())); });
+                        [](const el &x, const el &y){ el merged = x; merged.set_count(x.count() + y.count()); return merged; });
     return s;
   }
 
