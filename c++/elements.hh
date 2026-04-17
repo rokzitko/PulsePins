@@ -8,7 +8,6 @@
 #include <bitset>
 #include <cstdint> // integer types, uint32_t, etc.
 #include <iostream>
-#include <memory> // shared_ptr
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -21,12 +20,12 @@
 // Element types: regular (value update), trigger conditions, replay, sequence terminator, retrigger, random
 enum class el_type { regular, trigger, replay, final, retrig, prng };
 
-const std::string strobestring = "(strobe)"s;
-const std::string nostrobestring = "(no strobe)"s;
-const std::string finalstring = "(final)"s;
-const std::string retrigstring = "(retrig)"s;
-const std::string triggerstring = "(trigger)"s;
-const std::string prngstring = "(PRNG)"s;
+inline constexpr char strobestring[] = "(strobe)";
+inline constexpr char nostrobestring[] = "(no strobe)";
+inline constexpr char finalstring[] = "(final)";
+inline constexpr char retrigstring[] = "(retrig)";
+inline constexpr char triggerstring[] = "(trigger)";
+inline constexpr char prngstring[] = "(PRNG)";
 
 // base wrapper class for storing the count value
 class Counter {
@@ -43,8 +42,6 @@ public:
   }
   virtual control_t control_bits() const { return 0; } // corresponding control bits (that need to be or'd in)
   virtual std::string desc() const { return ""; } // descriptive string
-  virtual std::shared_ptr<Counter> with_count(count_t new_count) const { return std::make_shared<Counter>(new_count); }
-  virtual std::shared_ptr<Counter> clone() const { return std::make_shared<Counter>(*this); } // deep-copy semantics, because copy is cheap
 };
 
 // wrapper class for storing the counter for elements that need to be strobed out
@@ -54,8 +51,6 @@ public:
   Strobe(count_t c) : Counter(c) {}
   control_t control_bits() const override { return STROBE; }
   std::string desc() const override { return strobestring; }
-  std::shared_ptr<Counter> with_count(count_t new_count) const override { return std::make_shared<Strobe>(new_count); }
-  std::shared_ptr<Counter> clone() const override { return std::make_shared<Strobe>(*this); }
 };
 
 // wrapper class for storing the counter for elements that are emitted without strobing
@@ -65,21 +60,19 @@ public:
   NoStrobe(count_t c) : Counter(c) {}
   control_t control_bits() const override { return NOSTROBE; }
   std::string desc() const override { return nostrobestring; }
-  std::shared_ptr<Counter> with_count(count_t new_count) const override { return std::make_shared<NoStrobe>(new_count); }
-  std::shared_ptr<Counter> clone() const override { return std::make_shared<NoStrobe>(*this); }
 };
 
-const std::string bitloadstring = "(load)"s;
-const std::string bitsetstring = "(set)"s;
-const std::string bitclearstring = "(clear)"s;
-const std::string bitflipstring = "(flip)"s;
-const std::string bitnotstring = "(not)"s;
-const std::string bitandstring = "(and)"s;
-const std::string bitorstring = "(or)"s;
-const std::string bitxorstring = "(xor)"s;
-const std::string bitxnorstring = "(xnor)"s;
-const std::string bitsllstring = "(sll)"s;
-const std::string bitsrlstring = "(srl)"s;
+inline constexpr char bitloadstring[] = "(load)";
+inline constexpr char bitsetstring[] = "(set)";
+inline constexpr char bitclearstring[] = "(clear)";
+inline constexpr char bitflipstring[] = "(flip)";
+inline constexpr char bitnotstring[] = "(not)";
+inline constexpr char bitandstring[] = "(and)";
+inline constexpr char bitorstring[] = "(or)";
+inline constexpr char bitxorstring[] = "(xor)";
+inline constexpr char bitxnorstring[] = "(xnor)";
+inline constexpr char bitsllstring[] = "(sll)";
+inline constexpr char bitsrlstring[] = "(srl)";
 
 // base wrapper class for storing binary values
 class Value
@@ -98,7 +91,6 @@ public:
   virtual value_t result([[maybe_unused]] const value_t v_prev) const { return v; }
   virtual control_t mode_bits() const { return 0; }
   virtual std::string desc() const { return ""; }
-  virtual std::shared_ptr<Value> clone() const { return std::make_shared<Value>(*this); } // deep-copy semantics, because copy is cheap
 };
 
 // wrapper class for storing a bit setting pattern
@@ -109,7 +101,6 @@ public:
   value_t result([[maybe_unused]] const value_t v_prev) const override { return v; }
   control_t mode_bits() const override { return BITLOAD; }
   std::string desc() const override { return bitloadstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitLoad>(*this); }
 };
 
 // wrapper class for storing a bit setting pattern
@@ -120,7 +111,6 @@ public:
   value_t result(const value_t v_prev) const override { return v_prev | v; }
   control_t mode_bits() const override { return BITSET; }
   std::string desc() const override { return bitsetstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitSet>(*this); }
 };
 
 // wrapper class for storing a bit clearing pattern
@@ -131,7 +121,6 @@ public:
   value_t result(const value_t v_prev) const override { return v_prev & ~v; }
   control_t mode_bits() const override { return BITCLEAR; }
   std::string desc() const override { return bitclearstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitClear>(*this); }
 };
 
 // wrapper class for string a bit flipping pattern
@@ -142,7 +131,6 @@ public:
   value_t result(const value_t v_prev) const override { return v_prev ^ v; }
   control_t mode_bits() const override { return BITFLIP; }
   std::string desc() const override { return bitflipstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitFlip>(*this); }
 };
 
 class BitNot : public Value
@@ -152,7 +140,6 @@ public:
   value_t result(const value_t v_prev) const override { return ~v_prev; }
   control_t mode_bits() const override { return BITNOT; }
   std::string desc() const override { return bitnotstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitNot>(*this); }
 };
 
 class BitAnd : public Value
@@ -162,7 +149,6 @@ public:
   value_t result(const value_t v_prev) const override { return v & v_prev; }
   control_t mode_bits() const override { return BITAND; }
   std::string desc() const override { return bitandstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitAnd>(*this); }
 };
 
 class BitOr : public Value
@@ -172,7 +158,6 @@ public:
   value_t result(const value_t v_prev) const override { return v | v_prev; }
   control_t mode_bits() const override { return BITOR; }
   std::string desc() const override { return bitorstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitOr>(*this); }
 };
 
 class BitXor : public Value
@@ -182,7 +167,6 @@ public:
   value_t result(const value_t v_prev) const override { return v ^ v_prev; }
   control_t mode_bits() const override { return BITXOR; }
   std::string desc() const override { return bitxorstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitXor>(*this); }
 };
 
 class BitXnor : public Value
@@ -192,7 +176,6 @@ public:
   value_t result(const value_t v_prev) const override { return ~(v ^ v_prev); }
   control_t mode_bits() const override { return BITXNOR; }
   std::string desc() const override { return bitxnorstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitXnor>(*this); }
 };
 
 class BitSll : public Value
@@ -202,7 +185,6 @@ public:
   value_t result(const value_t v_prev) const override { return sll(v_prev, v); }
   control_t mode_bits() const override { return BITSLL; }
   std::string desc() const override { return bitsllstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitSll>(*this); }
 };
 
 class BitSrl : public Value
@@ -212,7 +194,6 @@ public:
   value_t result(const value_t v_prev) const override { return srl(v_prev, v); }
   control_t mode_bits() const override { return BITSRL; }
   std::string desc() const override { return bitsrlstring; }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<BitSrl>(*this); }
 };
 
 class TriggerCondition : public Value
@@ -222,7 +203,7 @@ private:
 public:
   TriggerCondition(trigger_t pattern, trigger_t mask, bool _final) : Value(((value_t)mask << WIDTH_TRIGGER) + (value_t)pattern), final(_final) {}
   control_t mode_bits() const override { return TRIGGER | (final ? TRIGGERFINAL : 0); }
-  std::string desc() const override { return triggerstring + (final ? finalstring : ""); }
+  std::string desc() const override { return std::string(triggerstring) + (final ? finalstring : ""); }
   std::string value_str() const override {
     std::stringstream ss;
     trigger_t pattern = v & TRIGGER_MASK;
@@ -232,7 +213,6 @@ public:
         << "mask=0x" << std::hex << int(mask)    << " {" << std::bitset<WIDTH_TRIGGER>(int(mask))    << "}";
     return ss.str();
   }
-  std::shared_ptr<Value> clone() const override { return std::make_shared<TriggerCondition>(*this); }
 };
 
 // markers
@@ -340,7 +320,7 @@ private:
   }
 
   std::string trigger_desc() const {
-    return triggerstring + (((y & TRIGGERFINAL) == TRIGGERFINAL) ? finalstring : "");
+    return std::string(triggerstring) + (((y & TRIGGERFINAL) == TRIGGERFINAL) ? finalstring : "");
   }
 
   value_t apply_value(value_t previous) const {
@@ -428,7 +408,10 @@ public:
 
   bool is_regular() const { return t == el_type::regular; }
   bool is_trigger() const { return t == el_type::trigger; }
+  bool is_replay() const { return t == el_type::replay; }
   bool is_final() const { return t == el_type::final; }
+  bool is_retrig() const { return t == el_type::retrig; }
+  bool is_prng() const { return t == el_type::prng; }
 
   // Additional info about control bits
   std::string decode() const {
@@ -442,26 +425,21 @@ public:
 
   std::string desc() const {
     std::stringstream ss;
-    switch (t) {
-    case el_type::regular:
+    if (is_regular()) {
       ss << value_str(v) << " " << count_str(c) << " " << counter_desc(counter_kind) << " " << value_desc(value_kind);
       ss << " control=0x" << std::hex << control() << decode();
-      break;
-    case el_type::trigger:
+    } else if (is_trigger()) {
       ss << trigger_value_str() << " " << trigger_desc();
-      break;
-    case el_type::replay:
+    } else if (is_replay()) {
       ss << "Replay: repetitions=" << std::dec << count() << " length=" << std::dec << value();
-      break;
-    case el_type::final:
+    } else if (is_final()) {
       ss << finalstring;
-      break;
-    case el_type::retrig:
+    } else if (is_retrig()) {
       ss << retrigstring;
-      break;
-    case el_type::prng:
+    } else if (is_prng()) {
       ss << prngstring << " length=" << std::dec << count();
-      break;
+    } else {
+      throw std::runtime_error("Unknown element kind");
     }
     return ss.str();
   }

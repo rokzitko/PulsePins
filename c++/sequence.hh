@@ -488,13 +488,13 @@ inline void write_sequence_to_stream(const Sequence &sequence,
         << " 0x" << std::hex << int(mask) << "\n";
     } else if (e.is_final()) {
       f << "final 0x" << std::hex << e.value() << "\n";
-    } else if ((control & REPLAY) == REPLAY) {
+    } else if (e.is_replay()) {
       f << "r"
         << " " << std::dec << e.count()
         << " 0x" << std::hex << e.value() << "\n";
-    } else if ((control & RETRIG) == RETRIG) {
+    } else if (e.is_retrig()) {
       f << "rt\n";
-    } else if ((control & PRNG) == PRNG) {
+    } else if (e.is_prng()) {
       f << "pr"
         << " " << std::dec << e.count() << "\n";
     } else {
