@@ -8,7 +8,7 @@ all: spi spi_ad9833
 spi: spi.cc spi_rle_encoder.hh
 	$(CXX) $(CXXFLAGS) $< -o $@
 
-spi_ad9833: spi_ad9833.cc spi_rle_encoder.hh
+spi_ad9833: spi_ad9833.cc ad9833.hh spi_rle_encoder.hh
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 clean:

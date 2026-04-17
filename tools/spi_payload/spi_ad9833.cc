@@ -1,106 +1,78 @@
-#include <array>
-#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <stdexcept>
 
-#include "spi_rle_encoder.hh"
+#include "ad9833.hh"
 
-using spi_payload::SpiRleEncoder;
+using spi_payload::Ad9833;
 
-static constexpr double kAd9833MasterClockHz = 25e6;
-static constexpr double kTargetOutputFrequencyHz = 5e6;
+namespace {
 
-static uint32_t ad9833_frequency_word(double output_frequency_hz,
-                                      double master_clock_hz = kAd9833MasterClockHz)
+constexpr double kTargetOutputFrequencyHz = 5e6;
+
+void print_word(uint16_t word, const char *meaning)
 {
-  if (output_frequency_hz < 0.0)
-    throw std::invalid_argument("AD9833 output frequency must be non-negative");
-  if (master_clock_hz <= 0.0)
-    throw std::invalid_argument("AD9833 master clock must be positive");
-
-  constexpr double scale = 268435456.0; // 2^28
-  const double exact_word = (output_frequency_hz * scale) / master_clock_hz;
-  if (exact_word > (scale - 1.0))
-    throw std::invalid_argument("AD9833 output frequency exceeds the 28-bit tuning range");
-
-  return static_cast<uint32_t>(std::llround(exact_word));
+  std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << word
+            << std::setfill(' ') << std::dec << " = " << meaning << "\n";
 }
 
-static double ad9833_realized_frequency_hz(uint32_t frequency_word,
-                                           double master_clock_hz = kAd9833MasterClockHz)
+void print_word32(uint32_t word, const char *meaning)
 {
-  constexpr double scale = 268435456.0; // 2^28
-  return (static_cast<double>(frequency_word) * master_clock_hz) / scale;
+  std::cout << "0x" << std::hex << std::setw(8) << std::setfill('0') << word
+            << std::setfill(' ') << std::dec << " = " << meaning << "\n";
 }
 
-static uint16_t ad9833_freq0_lsb_word(uint32_t frequency_word)
-{
-  return static_cast<uint16_t>(0x4000u | (frequency_word & 0x3fffu));
-}
-
-static uint16_t ad9833_freq0_msb_word(uint32_t frequency_word)
-{
-  return static_cast<uint16_t>(0x4000u | ((frequency_word >> 14) & 0x3fffu));
-}
-
-static std::array<uint16_t, 5> ad9833_sine_program(uint32_t frequency_word)
-{
-  return {
-      0x2100u,
-      ad9833_freq0_lsb_word(frequency_word),
-      ad9833_freq0_msb_word(frequency_word),
-      0xC000u,
-      0x2000u,
-  };
-}
+} // namespace
 
 int main()
 {
-  SpiRleEncoder::Config cfg;
-  cfg.decoder_clock_hz = 100e6;
-  cfg.spi_clock_hz = 10e6;
-  cfg.mode = 2;
-  cfg.bit_order = SpiRleEncoder::BitOrder::MSB_FIRST;
-  cfg.bit_sclk = 18;
-  cfg.bit_mosi = 17;
-  cfg.bit_cs = 19;  // AD9833 FSY/FSYNC, active low
-  cfg.bit_aux = 16; // MCP41010 CS, held high so the shared bus only addresses the AD9833
-  cfg.chip_select_active_high = false;
-  cfg.aux_default = true;
-  cfg.select_setup_ticks = 2;
-  cfg.deselect_hold_ticks = 2;
-  cfg.post_idle_ticks = 4;
+  Ad9833 dds;
+  const uint32_t freq0_tuning_word = Ad9833::tuning_word_for_frequency(kTargetOutputFrequencyHz, dds.master_clock_hz());
+  const double realized_output_frequency_hz = Ad9833::realized_frequency_hz(freq0_tuning_word, dds.master_clock_hz());
 
-  const uint32_t frequency_word = ad9833_frequency_word(kTargetOutputFrequencyHz);
-  const double realized_output_frequency_hz = ad9833_realized_frequency_hz(frequency_word);
-  const auto program = ad9833_sine_program(frequency_word);
+  dds.set_b28(true);
+  dds.select_frequency(Ad9833::FrequencyReg::Freq0);
+  dds.select_phase(Ad9833::PhaseReg::Phase0);
+  dds.set_waveform(Ad9833::Waveform::Sine);
 
-  SpiRleEncoder enc(cfg);
-  for (const uint16_t word : program) {
-    enc.select();
-    enc.write_word16(word);
-    enc.deselect();
-  }
+  dds.set_reset(true);
+  const uint16_t control_reset = dds.control_word();
+  const auto freq0_words = Ad9833::frequency_words(Ad9833::FrequencyReg::Freq0, freq0_tuning_word);
+  const uint16_t phase0_zero = Ad9833::phase_word(Ad9833::PhaseReg::Phase0, 0x000u);
 
-  std::cout << "Requested SPI clock:    " << cfg.spi_clock_hz << " Hz\n";
-  std::cout << "Achieved  SPI clock:    " << enc.achieved_spi_clock_hz() << " Hz\n";
-  std::cout << "Half-period ticks:      " << enc.half_period_ticks() << "\n";
-  std::cout << "AD9833 master clock:    " << kAd9833MasterClockHz << " Hz\n";
+  dds.set_reset(false);
+  const uint16_t control_run = dds.control_word();
+
+  dds.set_reset(true);
+  dds.write_control();
+  dds.write_frequency(Ad9833::FrequencyReg::Freq0, freq0_tuning_word);
+  dds.write_phase(Ad9833::PhaseReg::Phase0, 0x000u);
+  dds.set_reset(false);
+  dds.write_control();
+
+  std::cout << "Requested SPI clock:    " << Ad9833::default_spi_config().spi_clock_hz << " Hz\n";
+  std::cout << "Achieved  SPI clock:    " << dds.achieved_spi_clock_hz() << " Hz\n";
+  std::cout << "Half-period ticks:      " << dds.half_period_ticks() << "\n";
+  std::cout << "AD9833 master clock:    " << dds.master_clock_hz() << " Hz\n";
   std::cout << "Requested output freq:  " << kTargetOutputFrequencyHz << " Hz\n";
   std::cout << "Realized  output freq:  " << std::fixed << std::setprecision(9) << realized_output_frequency_hz << " Hz\n";
-  std::cout << "Frequency register:     0x" << std::hex << frequency_word << std::dec << "\n";
+  print_word32(freq0_tuning_word, "round(f_out * 2^28 / MCLK) for 5 MHz on a 25 MHz AD9833 clock");
+  print_word(control_reset, "control(B28 | RESET)");
+  print_word(freq0_words[0], "FREQ0 low14(tuning_word)");
+  print_word(freq0_words[1], "FREQ0 high14(tuning_word)");
+  print_word(phase0_zero, "PHASE0(0)");
+  print_word(control_run, "control(B28, waveform=sine, FREQ0, PHASE0)");
+
   std::cout << "Programming words:      ";
-  for (const uint16_t word : program)
+  for (const uint16_t word : {control_reset, freq0_words[0], freq0_words[1], phase0_zero, control_run})
     std::cout << "0x" << std::hex << word << " ";
   std::cout << std::dec << "\n\n";
 
-  spi_payload::dump_tokens(enc.tokens());
+  spi_payload::dump_tokens(dds.tokens());
 
   std::cout << "qout[19]=FSY qout[18]=CLK qout[17]=DAT qout[16]=CS(MCP41010)" << std::endl;
 
   std::ofstream sequence_file("sequence");
-  spi_payload::dump_tokens_seq(enc.tokens(), sequence_file);
+  spi_payload::dump_tokens_seq(dds.tokens(), sequence_file);
   return 0;
 }
