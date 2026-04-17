@@ -221,4 +221,15 @@ inline void dump_tokens_seq(const std::vector<SpiRleEncoder::Token> &tokens, std
   stream << "f\n";
 }
 
+inline void append_tokens(std::vector<SpiRleEncoder::Token> &dst,
+                          const std::vector<SpiRleEncoder::Token> &src) {
+  for (const auto &token : src) {
+    if (!dst.empty() && dst.back().pins == token.pins) {
+      dst.back().repeat += token.repeat;
+    } else {
+      dst.push_back(token);
+    }
+  }
+}
+
 } // namespace spi_payload
