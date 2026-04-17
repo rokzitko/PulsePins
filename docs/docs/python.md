@@ -62,6 +62,8 @@ seq2, force_trigger2 = pp.read_sequence_binary("capture.ppbin")
 
 Bindings that wrap MMIO-backed hardware objects should still be treated as owning long-lived board resources even though the module now keeps the immediate `mm`/`FPGA` constructor arguments alive for the wrapper object.
 
+The small helper scripts in `python/pptool.py` and `tests/test2.py` now use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` still disabling the readback timeout.
+
 ## Testing expectations
 
 `make -C python test` currently runs `pytest python/test.py`.

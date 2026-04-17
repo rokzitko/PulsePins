@@ -312,8 +312,8 @@ NB_MODULE(pp, m) {
     .def("status_report", &readback::status_report)
     .def("overflow", &readback::overflow)
     .def("read", &readback::read)
-    .def("read_all", &readback::read_all)
-    .def("check", &readback::check);
+    .def("read_all", static_cast<void (readback::*)(const double)>(&readback::read_all))
+    .def("check", static_cast<bool (readback::*)(Sequence, const double)>(&readback::check));
 
   // pio
   nb::class_<pio>(m, "pio")

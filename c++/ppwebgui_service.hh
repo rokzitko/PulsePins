@@ -51,6 +51,15 @@ private:
                                     const std::string &stream_message);
   void reset_hardware_locked();
   void reset_hardware_locked(const ClockConfigState &clocking_state);
+  void reset_hardware_locked(const ClockConfigState &clocking_state,
+                             const TriggerConfigState &trigger_state,
+                             const CombinerRequest &combiner_state,
+                             const StreamerOverrideState &override_state);
+  void restore_known_good_state_locked(const ClockConfigState &clocking_state,
+                                       const TriggerConfigState &trigger_state,
+                                       const CombinerRequest &combiner_state,
+                                       const StreamerOverrideState &override_state,
+                                       const std::exception &cause);
   void measure_clocks_locked(bool report);
   PortState read_port_state_locked(combiner_qout &combiner, int index, uint32_t cfg);
   void sync_qout_combiner_shadow_locked();

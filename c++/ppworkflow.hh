@@ -60,13 +60,26 @@ inline void convert_for_readback_check(Sequence &s) {
   s = s_new;
 }
 
-inline auto readback_timeout(const InputParser &input) {
-  double timeout = 0.0;
-  if (input.exists("-timeout")) {
-    timeout = parse_double(input, "-timeout", "0");
-    std::cout << "readback timeout=" << abs(timeout) << (timeout > 0 ? "s [after last read]" : "s [after start]") << std::endl;
+inline constexpr double default_readback_first_element_timeout_s = 2.0;
+inline constexpr double default_readback_idle_timeout_s = 2.0;
+
+inline ReadbackTimeoutPolicy readback_timeout_policy(const InputParser &input) {
+  if (!input.exists("-timeout")) {
+    return {default_readback_first_element_timeout_s, default_readback_idle_timeout_s, 0.0};
   }
-  return timeout;
+
+  const double timeout = parse_double(input, "-timeout", "0");
+  if (timeout == 0.0) {
+    std::cout << "readback timeout disabled" << std::endl;
+    return {};
+  }
+  if (timeout > 0.0) {
+    std::cout << "readback timeout=" << timeout << "s [after last read]" << std::endl;
+    return {0.0, timeout, 0.0};
+  }
+
+  std::cout << "readback timeout=" << std::abs(timeout) << "s [after start]" << std::endl;
+  return {0.0, 0.0, std::abs(timeout)};
 }
 
 inline std::optional<value_t> explicit_final_output(const Sequence &elements)
@@ -159,12 +172,12 @@ inline void deactivate_trigger(streamer_control &sc,
 
 template<typename Convert>
 inline bool run_readback_check_phase(readback &rb,
-                                    Sequence &elements,
-                                    const InputParser &input,
-                                    const Verbosity &v,
-                                    Convert convert,
-                                    const double timeout,
-                                    int &rc)
+                                     Sequence &elements,
+                                     const InputParser &input,
+                                     const Verbosity &v,
+                                     Convert convert,
+                                     const ReadbackTimeoutPolicy &timeout_policy,
+                                     int &rc)
 {
   bool rb_failure = false;
   if (input.exists("-check")) {
@@ -177,10 +190,12 @@ inline bool run_readback_check_phase(readback &rb,
       elements.dump(std::cout, "% ");
     if (v.veryverbose)
       rb.check_fill_status();
-    const auto successful = rb.check(elements, timeout);
+    const auto successful = rb.check(elements, timeout_policy);
     if (!successful) {
       rb_failure = true;
       rc |= RC_ERROR_CHECK;
+      if (rb.last_operation_timed_out())
+        rc |= RC_TIMEOUT;
     }
   }
   return rb_failure;
@@ -189,12 +204,12 @@ inline bool run_readback_check_phase(readback &rb,
 inline void run_readback_dump_phase(readback &rb,
                                     const InputParser &input,
                                     const Verbosity &v,
-                                    const double timeout)
+                                    const ReadbackTimeoutPolicy &timeout_policy)
 {
   if (input.exists("-read")) {
     if (v.veryverbose)
       rb.check_fill_status();
-    rb.read_all(timeout);
+    rb.read_all(timeout_policy);
   }
 }
 
@@ -209,7 +224,12 @@ inline int run_post_execution_checks(streamer_control &sc,
                                     int rc)
 {
   // The remaining checks are post-completion invariants for the whole streamer path.
-  sc.wait_to_complete(v);
+  rc |= sc.wait_to_complete(v);
+  if (rc & RC_TIMEOUT) {
+    std::cout << red << "Skipping post-completion checks because the streamer did not report completion." << rst << std::endl;
+    deactivate_trigger(sc, force_trigger, v);
+    return rc;
+  }
   sleep_1ms();
   value_t final_qout = sc.get_qout();
   const bool match = final_qout == final;
@@ -290,9 +310,9 @@ inline int send_and_trig(Transport &tr,
   transmit_sequence(tr, sc, working_elements, v);
   activate_trigger(sc, input, force_trigger, v);
 
-  const double timeout = readback_timeout(input);
-  bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout, rc);
-  run_readback_dump_phase(rb, input, v, timeout);
+  const auto timeout_policy = readback_timeout_policy(input);
+  bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout_policy, rc);
+  run_readback_dump_phase(rb, input, v, timeout_policy);
 
   if (input.exists("-dont_wait"))
     return rc;

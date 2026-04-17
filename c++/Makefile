@@ -132,8 +132,8 @@ ppwebgui: $(PPWEBGUI_OBJS)
 
 HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h)
 
-unit_tests: unit_tests.cc $(HEADERS)
-	g++ $(CPPFLAGS) $< -o $@
+unit_tests: unit_tests.cc ppwebgui_http.cc ppwebgui_json.cc $(HEADERS)
+	g++ $(CPPFLAGS) $(LDFLAGS) unit_tests.cc -o $@
 
 pptool.o : pptool.cc ../hps_0.h $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS) $(CPPFLAGS) -c $< -o $@

@@ -86,12 +86,38 @@ void validate_pll_profile_string(const std::string &profile, const char *label) 
   }
 }
 
+void validate_requested_pll_profile_string(const std::string &profile, const char *label) {
+  const auto resolved = applyReplacement(profile, pll_rules);
+  if (resolved.empty()) {
+    return;
+  }
+
+  std::istringstream iss(resolved);
+  int n = 0;
+  int m = 0;
+  int c = 0;
+  char comma1 = '\0';
+  char comma2 = '\0';
+  if (!(iss >> n >> comma1 >> m >> comma2 >> c) || comma1 != ',' || comma2 != ',') {
+    throw WebGuiBadRequest(std::string("Invalid ") + label + " profile: '" + profile + "'");
+  }
+  iss >> std::ws;
+  if (!iss.eof()) {
+    throw WebGuiBadRequest(std::string("Invalid ") + label + " profile: '" + profile + "'");
+  }
+}
+
 void validate_clock_config_state(const ClockConfigState &state) {
   if (state.selection.source == StreamerClockSource::raw_select && !state.selection.raw_select.has_value()) {
     throw std::runtime_error("Clock config is missing the raw -clk selector value");
   }
   validate_pll_profile_string(state.core.profile, "core_clk");
   validate_pll_profile_string(state.internal.profile, "int_clk");
+}
+
+void validate_requested_clock_config_state(const ClockConfigState &state) {
+  validate_requested_pll_profile_string(state.core.profile, "core_clk");
+  validate_requested_pll_profile_string(state.internal.profile, "int_clk");
 }
 
 uint32_t pack_live_trigger_status(const trigger_t trigger_in, const port_t trigger_ctrl) {
@@ -230,8 +256,26 @@ StatusSnapshot WebGuiController::get_status_copy() {
 
 void WebGuiController::apply_clock_config(const ClockConfigRequest &request) {
   auto lock = fpga.acquire_lock();
+  const auto previous_clocking = read_clock_config_locked();
+  const auto previous_trigger = read_trigger_config_locked();
+  const auto previous_combiner = read_combiner_config_locked();
+  const auto previous_override = snapshot.streamer.override_state;
   const auto requested = clock_config_from_request_locked(request);
-  reset_hardware_locked(requested);
+  validate_requested_clock_config_state(requested);
+  try {
+    reset_hardware_locked(requested, previous_trigger, previous_combiner, previous_override);
+  } catch (const std::exception &e) {
+    restore_known_good_state_locked(previous_clocking, previous_trigger, previous_combiner, previous_override, e);
+    throw;
+  } catch (...) {
+    restore_known_good_state_locked(
+      previous_clocking,
+      previous_trigger,
+      previous_combiner,
+      previous_override,
+      std::runtime_error("Unhandled non-standard exception while applying clock config"));
+    throw;
+  }
   publish_action_locked("applied clock config", "");
 }
 
@@ -261,7 +305,25 @@ void WebGuiController::apply_trigger_config(const TriggerConfigRequest &request)
 
 ResetResult WebGuiController::reset_hardware() {
   auto lock = fpga.acquire_lock();
-  reset_hardware_locked();
+  const auto previous_clocking = read_clock_config_locked();
+  const auto previous_trigger = read_trigger_config_locked();
+  const auto previous_combiner = read_combiner_config_locked();
+  const auto previous_override = snapshot.streamer.override_state;
+
+  try {
+    reset_hardware_locked(previous_clocking, previous_trigger, previous_combiner, previous_override);
+  } catch (const std::exception &e) {
+    restore_known_good_state_locked(previous_clocking, previous_trigger, previous_combiner, previous_override, e);
+    throw;
+  } catch (...) {
+    restore_known_good_state_locked(
+      previous_clocking,
+      previous_trigger,
+      previous_combiner,
+      previous_override,
+      std::runtime_error("Unhandled non-standard exception while resetting hardware"));
+    throw;
+  }
 
   publish_action_locked("reset hardware", "");
   return {true, "Hardware reset completed and web settings restored"};
@@ -272,7 +334,7 @@ StreamResult WebGuiController::stream_text_sequence(StreamLaunchRequest request)
     std::stringstream sequence_stream(request.sequence_text);
     auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
     if (explicit_final_output(sequence)) {
-      throw std::runtime_error("Sequence already contains an explicit final output; omit -t or remove the final record");
+      throw WebGuiBadRequest("Sequence already contains an explicit final output; omit -t or remove the final record");
     }
     const bool force_trigger_request = request.force_trigger_override.value_or(parsed_force_trigger);
 
@@ -282,7 +344,24 @@ StreamResult WebGuiController::stream_text_sequence(StreamLaunchRequest request)
     }
 
     auto lock = fpga.acquire_lock();
-    reset_hardware_locked();
+    const auto previous_clocking = read_clock_config_locked();
+    const auto previous_trigger = read_trigger_config_locked();
+    const auto previous_combiner = read_combiner_config_locked();
+    const auto previous_override = snapshot.streamer.override_state;
+    try {
+      reset_hardware_locked(previous_clocking, previous_trigger, previous_combiner, previous_override);
+    } catch (const std::exception &e) {
+      restore_known_good_state_locked(previous_clocking, previous_trigger, previous_combiner, previous_override, e);
+      throw;
+    } catch (...) {
+      restore_known_good_state_locked(
+        previous_clocking,
+        previous_trigger,
+        previous_combiner,
+        previous_override,
+        std::runtime_error("Unhandled non-standard exception while preparing the streamer"));
+      throw;
+    }
     const value_t final_value = snapshot.streamer.qout_streamer;
     request_input.add_with_arg("-t", hex8(final_value));
     const int rc = send_and_trig(
@@ -304,9 +383,14 @@ StreamResult WebGuiController::stream_text_sequence(StreamLaunchRequest request)
       return {true, rc, 200, message};
     }
 
-    const auto error = std::string("Streaming failed with rc=") + std::to_string(rc);
+    const bool timed_out = (rc & RC_TIMEOUT) != 0;
+    const auto error = std::string(timed_out ? "Streaming timed out with rc=" : "Streaming failed with rc=") + std::to_string(rc);
     publish_stream_result_locked("stream failed", error, rc, error);
-    return {false, rc, 500, error};
+    return {false, rc, timed_out ? 504 : 500, error};
+  } catch (const WebGuiBadRequest &e) {
+    auto lock = fpga.acquire_lock();
+    publish_stream_result_locked("stream failed", e.what(), RC_INVALID_ARG, e.what());
+    throw;
   } catch (const std::exception &e) {
     auto lock = fpga.acquire_lock();
     publish_stream_result_locked("stream failed", e.what(), RC_EXCEPTION, e.what());
@@ -345,14 +429,17 @@ void WebGuiController::publish_stream_result_locked(const std::string &last_acti
 }
 
 void WebGuiController::reset_hardware_locked() {
-  reset_hardware_locked(read_clock_config_locked());
+  reset_hardware_locked(read_clock_config_locked(), read_trigger_config_locked(), read_combiner_config_locked(), snapshot.streamer.override_state);
 }
 
 void WebGuiController::reset_hardware_locked(const ClockConfigState &clocking_state) {
-  const auto preserved_combiner = read_combiner_config_locked();
-  const auto preserved_trigger = read_trigger_config_locked();
-  const auto preserved_override = snapshot.streamer.override_state;
+  reset_hardware_locked(clocking_state, read_trigger_config_locked(), read_combiner_config_locked(), snapshot.streamer.override_state);
+}
 
+void WebGuiController::reset_hardware_locked(const ClockConfigState &clocking_state,
+                                             const TriggerConfigState &trigger_state,
+                                             const CombinerRequest &combiner_state,
+                                             const StreamerOverrideState &override_state) {
   rstmgr rm;
   rm.s2f_reset(verbosity.verbose);
   apply_clock_config_locked(clocking_state, true);
@@ -364,9 +451,27 @@ void WebGuiController::reset_hardware_locked(const ClockConfigState &clocking_st
   counters.reset_all();
   snapshot.streamer.qout_streamer = config.streamer_options.initial_value;
 
-  apply_trigger_config_locked(preserved_trigger);
-  apply_combiner_config_locked(preserved_combiner);
-  apply_streamer_override_locked(preserved_override);
+  apply_trigger_config_locked(trigger_state);
+  apply_combiner_config_locked(combiner_state);
+  apply_streamer_override_locked(override_state);
+}
+
+void WebGuiController::restore_known_good_state_locked(const ClockConfigState &clocking_state,
+                                                       const TriggerConfigState &trigger_state,
+                                                       const CombinerRequest &combiner_state,
+                                                       const StreamerOverrideState &override_state,
+                                                       const std::exception &cause) {
+  try {
+    reset_hardware_locked(clocking_state, trigger_state, combiner_state, override_state);
+  } catch (const std::exception &restore_error) {
+    throw std::runtime_error(
+      std::string("Hardware apply failed: ") + cause.what() +
+      ". Failed to restore the previous web-managed state: " + restore_error.what());
+  } catch (...) {
+    throw std::runtime_error(
+      std::string("Hardware apply failed: ") + cause.what() +
+      ". Failed to restore the previous web-managed state due to a non-standard exception.");
+  }
 }
 
 void WebGuiController::measure_clocks_locked(const bool report) {

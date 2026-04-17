@@ -107,12 +107,12 @@ int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
     fpga.output_enable(oe);
   }
   readback rb(input, fpga);
-  const double timeout = readback_timeout(input);
+  const auto timeout_policy = readback_timeout_policy(input);
   const bool export_vcd = input.exists("-save-vcd");
   const bool export_text = input.exists("-save-text");
   const bool export_binary = input.exists("-save-binary");
   if (export_vcd || export_text || export_binary) {
-    Sequence captured = rb.capture_sequence(timeout);
+    Sequence captured = rb.capture_sequence(timeout_policy);
     const std::string vcd_filename = input.get_string("-save-vcd", "capture.vcd");
     if (export_text)
       write_sequence_to_file(captured, input.get_string("-save-text", "capture.seq"), false);
@@ -131,7 +131,7 @@ int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
   } else {
     if (v.veryverbose)
       rb.check_fill_status();
-    rb.read_all(timeout);
+    rb.read_all(timeout_policy);
   }
   return RC_OK;
 }

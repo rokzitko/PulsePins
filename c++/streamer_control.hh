@@ -232,9 +232,10 @@ public:
       std::cout << "Waiting for streamer to complete" << std::endl;
     uint64_t cnt = 0;
     while (!(done() || buffer_error()) && cnt < max_cnt) { sleep_1ms(); cnt++; }
-    if (cnt == max_cnt && v.verbose) {
-      std::cout << "wait_to_complete(): timeout exceeded while waiting for completion." << std::endl;
+    if (cnt == max_cnt) {
       rc = RC_TIMEOUT;
+      if (v.verbose)
+        std::cout << "wait_to_complete(): timeout exceeded while waiting for completion." << std::endl;
     }
     if (v.veryverbose)
       status_report();

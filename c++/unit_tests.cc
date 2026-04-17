@@ -8,10 +8,12 @@
 
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <cstdio>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "include/doctest.h"
@@ -21,11 +23,20 @@
 #include "PMODDA3.hh"
 #include "SPI.hh"
 #include "options.hh"
+#include "ppwebgui_frontend.hh"
+#include "ppwebgui_http.hh"
+#include "ppwebgui_service_api.hh"
 #include "ppworkflow.hh"
 #include "sequence_file_format.hh"
 #include "sequence.hh"
 #include "streamer.hh"
+#include "third_party/httplib.h"
 #include "vcd_parser.hh"
+
+// Keep host unit tests as a single translation unit. These route-only implementations are
+// host-safe and let `unit_tests` exercise HTTP validation paths without linking extra objects.
+#include "ppwebgui_json.cc"
+#include "ppwebgui_http.cc"
 
 count_t get_count(const Counter &x) { return x.count(); }
 control_t get_control_bits(const Counter &x) { return x.control_bits(); }
@@ -37,6 +48,55 @@ bool contains(const std::string &str, const std::string &substr) {
 InputParser make_input(std::initializer_list<std::string> args) {
   return InputParser(std::vector<std::string>(args));
 }
+
+struct FakeWebGuiService : WebGuiService {
+  StatusSnapshot status;
+  std::string last_error;
+  int apply_clock_calls = 0;
+  int stream_calls = 0;
+  std::function<void(const ClockConfigRequest &)> apply_clock_hook = [](const ClockConfigRequest &) {};
+  std::function<StreamResult(StreamLaunchRequest)> stream_hook = [](StreamLaunchRequest) {
+    return StreamResult{true, RC_OK, 200, "ok"};
+  };
+
+  StatusSnapshot get_status_copy() override { return status; }
+  void apply_clock_config(const ClockConfigRequest &request) override {
+    apply_clock_calls++;
+    apply_clock_hook(request);
+  }
+  void measure_clocks() override {}
+  void apply_streamer_override(const StreamerOverrideState &) override {}
+  void apply_combiner_config(const CombinerRequest &) override {}
+  void apply_trigger_config(const TriggerConfigRequest &) override {}
+  ResetResult reset_hardware() override { return {true, "reset"}; }
+  StreamResult stream_text_sequence(StreamLaunchRequest request) override {
+    stream_calls++;
+    return stream_hook(std::move(request));
+  }
+  void set_last_error(const std::string &message) override { last_error = message; }
+};
+
+struct ScopedTestWebGuiServer {
+  httplib::Server server;
+  std::thread thread;
+  int port = -1;
+
+  explicit ScopedTestWebGuiServer(WebGuiService &service) {
+    register_ppwebgui_routes(server, service, {}, {"<html></html>", "", ""});
+    port = server.bind_to_any_port("127.0.0.1");
+    if (port <= 0)
+      throw std::runtime_error("Failed to bind test ppwebgui server");
+    thread = std::thread([this]() {
+      server.listen_after_bind();
+    });
+  }
+
+  ~ScopedTestWebGuiServer() {
+    server.stop();
+    if (thread.joinable())
+      thread.join();
+  }
+};
 
 TEST_CASE("counter class") {
   count_t c = 10;
@@ -683,12 +743,27 @@ TEST_CASE("convert_for_readback_check normalizes effective output stream") {
   CHECK(seq == expected);
 }
 
-TEST_CASE("readback_timeout defaults to zero without timeout option") {
-  CHECK(readback_timeout(make_input({})) == doctest::Approx(0.0));
+TEST_CASE("readback_timeout_policy uses safe defaults when timeout is omitted") {
+  const auto policy = readback_timeout_policy(make_input({}));
+
+  CHECK(policy.first_element_timeout_s == doctest::Approx(default_readback_first_element_timeout_s));
+  CHECK(policy.idle_timeout_s == doctest::Approx(default_readback_idle_timeout_s));
+  CHECK(policy.total_timeout_s == doctest::Approx(0.0));
 }
 
-TEST_CASE("readback_timeout parses explicit timeout") {
-  CHECK(readback_timeout(make_input({"-timeout", "0.25"})) == doctest::Approx(0.25));
+TEST_CASE("readback_timeout_policy respects explicit timeout overrides") {
+  const auto idle_policy = readback_timeout_policy(make_input({"-timeout", "0.25"}));
+  CHECK(idle_policy.first_element_timeout_s == doctest::Approx(0.0));
+  CHECK(idle_policy.idle_timeout_s == doctest::Approx(0.25));
+  CHECK(idle_policy.total_timeout_s == doctest::Approx(0.0));
+
+  const auto disabled_policy = readback_timeout_policy(make_input({"-timeout", "0"}));
+  CHECK_FALSE(disabled_policy.enabled());
+
+  const auto total_policy = readback_timeout_policy(make_input({"-timeout", "-1.5"}));
+  CHECK(total_policy.first_element_timeout_s == doctest::Approx(0.0));
+  CHECK(total_policy.idle_timeout_s == doctest::Approx(0.0));
+  CHECK(total_policy.total_timeout_s == doctest::Approx(1.5));
 }
 
 TEST_CASE("freq_meter normalizes zero-length gate requests") {
@@ -699,6 +774,47 @@ TEST_CASE("freq_meter normalizes zero-length gate requests") {
 TEST_CASE("freq_meter waits at least one microsecond for tiny gates") {
   CHECK(freq_meter::gate_wait_time_us(1, 50'000'000.0) == 1);
   CHECK(freq_meter::gate_wait_time_us(500'000, 50'000'000.0) == 10'000);
+}
+
+TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {
+  FakeWebGuiService service;
+  service.stream_hook = [](StreamLaunchRequest) -> StreamResult {
+    throw WebGuiBadRequest("Sequence already contains an explicit final output; omit -t or remove the final record");
+  };
+
+  ScopedTestWebGuiServer server(service);
+  httplib::Client client("127.0.0.1", server.port);
+  const httplib::Params params {
+    {"sequence_text", "d 1 0x1\n"},
+    {"check_readback", "0"},
+  };
+
+  const auto res = client.Post("/api/stream", params);
+
+  REQUIRE(res);
+  CHECK(res->status == httplib::StatusCode::BadRequest_400);
+  CHECK(contains(res->body, "explicit final output"));
+  CHECK(service.stream_calls == 1);
+  CHECK(service.last_error == "Sequence already contains an explicit final output; omit -t or remove the final record");
+}
+
+TEST_CASE("ppwebgui routes reject malformed clock requests before calling the service") {
+  FakeWebGuiService service;
+
+  ScopedTestWebGuiServer server(service);
+  httplib::Client client("127.0.0.1", server.port);
+  const httplib::Params params {
+    {"core_profile", "100M"},
+    {"int_profile", "100M"},
+  };
+
+  const auto res = client.Post("/api/clocking", params);
+
+  REQUIRE(res);
+  CHECK(res->status == httplib::StatusCode::BadRequest_400);
+  CHECK(contains(res->body, "Missing parameter: source"));
+  CHECK(service.apply_clock_calls == 0);
+  CHECK(service.last_error == "Missing parameter: source");
 }
 
 TEST_CASE("VCD parser") {

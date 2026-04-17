@@ -6,6 +6,9 @@ import pp_impl
 import time
 usleep = lambda x: time.sleep(x/1000000.0)
 
+DEFAULT_READBACK_TIMEOUT_S = 2.0
+DEFAULT_COMPLETION_TIMEOUT_S = 10.0
+
 ip = pp.InputParser( [] )
 dev_lw  = pp.mm(pp_impl.LWHPSFPGA_OFST, pp_impl.LWH2F_RANGE)
 dev_h2f = pp.mm(pp_impl.HPSFPGA_OFST,   pp_impl.H2F_RANGE)
@@ -34,10 +37,13 @@ elements.push_back(pp.el())
 fifo.send_sequence(elements)
 usleep(100)
 sc.trigger_force()
-timeout = 0
+timeout = DEFAULT_READBACK_TIMEOUT_S
 success = rb.check(elements, timeout)
 assert success
+start = time.monotonic()
 while not(sc.done() or sc.buffer_error()):
+    if DEFAULT_COMPLETION_TIMEOUT_S > 0 and (time.monotonic() - start) > DEFAULT_COMPLETION_TIMEOUT_S:
+        raise TimeoutError("Timeout waiting for streamer completion.")
     usleep(1)
 final_qout = sc.get_qout()
 assert final_qout == 0

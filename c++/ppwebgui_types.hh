@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 #include "combiner.hh"
@@ -17,6 +18,10 @@ struct PortState {
   uint32_t mask = 0;
   bool force_enabled = false;
   uint32_t force_value = 0;
+};
+
+struct WebGuiBadRequest : std::runtime_error {
+  using std::runtime_error::runtime_error;
 };
 
 struct StreamerOverrideState {

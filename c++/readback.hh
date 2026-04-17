@@ -11,15 +11,18 @@
 #pragma once
 
 #include <chrono>
+#include <cmath>
 #include <exception>
 #include <iomanip>
 #include <iostream>
+#include <optional>
 #include <string>
 
-#include "streamer.hh"
 #include "colors.hh"
+#include "delay.hh"
 #include "fpga.hh"
 #include "options.hh"
+#include "streamer.hh"
 
 class ReadbackException : std::exception {
   std::string msg;
@@ -29,6 +32,24 @@ public:
     return msg.c_str();
   }
 };
+
+struct ReadbackTimeoutPolicy {
+  double first_element_timeout_s = 0.0;
+  double idle_timeout_s = 0.0;
+  double total_timeout_s = 0.0;
+
+  bool enabled() const noexcept {
+    return first_element_timeout_s > 0.0 || idle_timeout_s > 0.0 || total_timeout_s > 0.0;
+  }
+};
+
+inline ReadbackTimeoutPolicy legacy_readback_timeout_policy(const double timeout) {
+  if (timeout > 0.0)
+    return {0.0, timeout, 0.0};
+  if (timeout < 0.0)
+    return {0.0, 0.0, std::abs(timeout)};
+  return {};
+}
 
 class readback
 {
@@ -43,6 +64,50 @@ private:
   const Verbosity &v;
   std::ostream &F = std::cout; // output stream for messages
   std::string prefix = "C ";   // prefix for element reporting
+  bool last_operation_timed_out_ = false;
+
+  using time_point = std::chrono::steady_clock::time_point;
+
+  [[noreturn]] void throw_timeout(const std::string &message) {
+    last_operation_timed_out_ = true;
+    throw ReadbackException(message);
+  }
+
+  void check_timeout(const ReadbackTimeoutPolicy &timeout_policy,
+                     const time_point &initial_time,
+                     const std::optional<time_point> &last_read) {
+    if (!timeout_policy.enabled())
+      return;
+
+    const auto now = std::chrono::steady_clock::now();
+    if (timeout_policy.total_timeout_s > 0.0) {
+      const auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
+      if (elapsed.count() > timeout_policy.total_timeout_s)
+        throw_timeout("Timeout waiting for readback completion.");
+    }
+
+    if (!last_read.has_value()) {
+      if (timeout_policy.first_element_timeout_s > 0.0) {
+        const auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
+        if (elapsed.count() > timeout_policy.first_element_timeout_s)
+          throw_timeout("Timeout waiting for the first readback element.");
+      }
+      return;
+    }
+
+    if (timeout_policy.idle_timeout_s > 0.0) {
+      const auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - *last_read);
+      if (elapsed.count() > timeout_policy.idle_timeout_s)
+        throw_timeout("Timeout waiting for more readback data.");
+    }
+  }
+
+  void wait_for_more_data(const ReadbackTimeoutPolicy &timeout_policy,
+                          const time_point &initial_time,
+                          const std::optional<time_point> &last_read) {
+    check_timeout(timeout_policy, initial_time, last_read);
+    sleep_1ms();
+  }
 
 public:
   readback(FPGA &_fpga,
@@ -130,8 +195,12 @@ public:
 
     // Returns true if the encoder attempted to write into a full FIFO. This implies data
     // loss and should be treated as a verification failure.
-    bool overflow() {
+  bool overflow() {
     return lstatus.read() & 8;
+  }
+
+  bool last_operation_timed_out() const noexcept {
+    return last_operation_timed_out_;
   }
 
   el read() {
@@ -141,13 +210,13 @@ public:
     return el{count, value}; // regular element
   }
 
-  Sequence capture_sequence(const double timeout = 0.0) {
+  Sequence capture_sequence(const ReadbackTimeoutPolicy &timeout_policy = {}) {
     if (v.veryverbose)
       status_report();
+    last_operation_timed_out_ = false;
     Sequence captured;
-    std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point last_read;
-    size_t n = 0;
+    const auto initial_time = std::chrono::steady_clock::now();
+    std::optional<time_point> last_read;
     try {
       while (1) {
         auto fill = filled();
@@ -155,22 +224,10 @@ public:
           el e = read();
           captured.push_back(e);
           last_read = std::chrono::steady_clock::now();
-          n++;
           fill = filled();
-          if (timeout < 0) {
-            auto now = std::chrono::steady_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
-            if (elapsed.count() > abs(timeout))
-              throw ReadbackException("Timeout.");
-          }
+          check_timeout(timeout_policy, initial_time, last_read);
         }
-        if (timeout != 0.0 && (timeout > 0 ? n : true)) {
-          auto now = std::chrono::steady_clock::now();
-          auto elapsed = (timeout > 0 ? std::chrono::duration_cast<std::chrono::duration<double>>(now - last_read) :
-                                        std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time));
-          if (elapsed.count() > abs(timeout))
-            throw ReadbackException("Timeout.");
-        }
+        wait_for_more_data(timeout_policy, initial_time, last_read);
       }
     }
     catch (const ReadbackException &e) {
@@ -182,14 +239,19 @@ public:
     return captured;
   }
 
+  Sequence capture_sequence(const double timeout) {
+    return capture_sequence(legacy_readback_timeout_policy(timeout));
+  }
+
     // Read back indefinitely and print each captured run if verbosity is enabled.
     // If timeout>0: timeout in seconds after the last data were read.
     // If timeout<0: timeout in seconds (abs value) after the initial time.
-  void read_all(const double timeout = 0.0) {
+  void read_all(const ReadbackTimeoutPolicy &timeout_policy = {}) {
     if (v.veryverbose)
       status_report();
-    std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point last_read;
+    last_operation_timed_out_ = false;
+    const auto initial_time = std::chrono::steady_clock::now();
+    std::optional<time_point> last_read;
     size_t n = 0;   // Element counter
     size_t len = 0; // Total length counter
     try {
@@ -203,20 +265,9 @@ public:
           n++;
           len += e.count();
           fill = filled();
-          if (timeout < 0) {
-            auto now = std::chrono::steady_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
-            if (elapsed.count() > abs(timeout))
-              throw ReadbackException("Timeout.");
-          }
+          check_timeout(timeout_policy, initial_time, last_read);
         }
-        if (timeout != 0.0 && (timeout > 0 ? n : true)) { // if timeout enabled and if we have started reading...
-          auto now = std::chrono::steady_clock::now();
-          auto elapsed = (timeout > 0 ? std::chrono::duration_cast<std::chrono::duration<double>>(now - last_read) :
-                                        std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time));
-          if (elapsed.count() > abs(timeout))
-            throw ReadbackException("Timeout.");
-        }
+        wait_for_more_data(timeout_policy, initial_time, last_read);
       }
     }
     catch (const ReadbackException &e) {
@@ -227,23 +278,28 @@ public:
       status_report();
   }
 
+  void read_all(const double timeout) {
+    read_all(legacy_readback_timeout_policy(timeout));
+  }
+
     // Compare a captured readback stream against a reference sequence.
     // Returns true if no errors are detected.
   bool check(Sequence elements,
-              const double timeout = 0.0) {
+             const ReadbackTimeoutPolicy &timeout_policy = {}) {
     // size, data_size, length need to be computed now, because elements are consumed in the checking process
     const size_t size = elements.size();
     const size_t data_size = elements.data_size();
     const size_t length = elements.length();
     if (v.veryverbose)
       status_report();
+    last_operation_timed_out_ = false;
     if (v.verbosecheck)
       F << prefix << "Starting a readback check, size=" << std::dec << size << " length=" << std::dec << length << std::endl;
     size_t n = 0;       // Element counter
     size_t n_error = 0; // Number of errors
     size_t len = 0;     // Total length counter
-    std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point last_read;
+    const auto initial_time = std::chrono::steady_clock::now();
+    std::optional<time_point> last_read;
     try {
       while (!elements.empty()) {
         auto fill = filled();
@@ -269,25 +325,14 @@ public:
           n++;
           len += e.count();
           fill = filled();
-          if (timeout < 0) {
-            auto now = std::chrono::steady_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
-            if (elapsed.count() > abs(timeout))
-              throw ReadbackException("Timeout.");
-          }
+          check_timeout(timeout_policy, initial_time, last_read);
         }
         if (elements.empty())
           throw ReadbackException("Reference sequence exhaused, terminating the check.");
         el e_next = elements.front();
         if (e_next.is_final())
           break;
-        if (timeout != 0.0 && (timeout > 0 ? n : true)) { // if timeout enabled and if we have started reading...
-          auto now = std::chrono::steady_clock::now();
-          auto elapsed = (timeout > 0 ? std::chrono::duration_cast<std::chrono::duration<double>>(now - last_read) :
-                                        std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time));
-          if (elapsed.count() > abs(timeout))
-            throw ReadbackException("Timeout.");
-        }
+        wait_for_more_data(timeout_policy, initial_time, last_read);
       }
     }
     catch (const ReadbackException &e) {
@@ -303,5 +348,9 @@ public:
     F << prefix << "Size difference=" << diff_size << " Length difference=" << diff_length << std::endl;
     F << prefix << (n_error ? red : green) << (n_error ? "#### FAILURE ####" : "SUCCESS") << rst << std::endl;
     return n_error == 0;
+  }
+
+  bool check(Sequence elements, const double timeout) {
+    return check(elements, legacy_readback_timeout_policy(timeout));
   }
 };

@@ -26,10 +26,6 @@ namespace {
 constexpr size_t MAX_FORM_BODY_BYTES = 64 * 1024;
 constexpr size_t MAX_SEQUENCE_TEXT_BYTES = 32 * 1024;
 
-struct BadRequest : public std::runtime_error {
-  using std::runtime_error::runtime_error;
-};
-
 const char *bool_text(const bool value) {
   return value ? "true" : "false";
 }
@@ -48,7 +44,7 @@ ClockSourceSelection clock_source_from_string(std::string source) {
   }
   if (source == "int_clk") return ClockSourceSelection::INT_CLK;
   if (source == "ext_clk") return ClockSourceSelection::EXT_CLK;
-  throw BadRequest("Invalid clock source: " + source);
+  throw WebGuiBadRequest("Invalid clock source: " + source);
 }
 
 const char *trigger_mode_text(const TriggerModeSelection mode) {
@@ -73,7 +69,7 @@ TriggerModeSelection trigger_mode_from_string(std::string mode) {
   if (mode == "MISC") return TriggerModeSelection::MISC;
   if (mode == "ANY") return TriggerModeSelection::ANY;
   if (mode == "ALL") return TriggerModeSelection::ALL;
-  throw BadRequest("Invalid trigger mode: " + mode);
+  throw WebGuiBadRequest("Invalid trigger mode: " + mode);
 }
 
 comb_mode comb_mode_from_string(std::string mode) {
@@ -94,7 +90,7 @@ comb_mode comb_mode_from_string(std::string mode) {
   if (mode == "SUM12") return comb_mode::SUM12;
   if (mode == "SUM1234") return comb_mode::SUM1234;
   if (mode == "DIFF12") return comb_mode::DIFF12;
-  throw BadRequest("Invalid combiner mode: " + mode);
+  throw WebGuiBadRequest("Invalid combiner mode: " + mode);
 }
 
 uint32_t parse_u32_literal(std::string value) {
@@ -145,19 +141,19 @@ void respond_error(httplib::Response &res, const int status, std::string_view er
 void require_form_post(const httplib::Request &req, const size_t max_body_bytes = MAX_FORM_BODY_BYTES) {
   const auto content_type = req.get_header_value("Content-Type");
   if (content_type.empty()) {
-    throw BadRequest("Missing Content-Type header");
+    throw WebGuiBadRequest("Missing Content-Type header");
   }
   if (content_type.find("application/x-www-form-urlencoded") == std::string::npos) {
-    throw BadRequest("Expected application/x-www-form-urlencoded request body");
+    throw WebGuiBadRequest("Expected application/x-www-form-urlencoded request body");
   }
   if (req.body.size() > max_body_bytes) {
-    throw BadRequest("Request body is too large");
+    throw WebGuiBadRequest("Request body is too large");
   }
 }
 
 std::string require_param(const httplib::Request &req, const char *name) {
   if (!req.has_param(name)) {
-    throw BadRequest(std::string("Missing parameter: ") + name);
+    throw WebGuiBadRequest(std::string("Missing parameter: ") + name);
   }
   return req.get_param_value(name);
 }
@@ -169,7 +165,7 @@ std::string optional_param(const httplib::Request &req, const char *name, const 
 std::string require_bounded_text_param(const httplib::Request &req, const char *name, const size_t max_bytes) {
   const auto value = require_param(req, name);
   if (value.size() > max_bytes) {
-    throw BadRequest(std::string(name) + " exceeds the maximum supported size");
+    throw WebGuiBadRequest(std::string(name) + " exceeds the maximum supported size");
   }
   return value;
 }
@@ -179,7 +175,7 @@ uint32_t parse_u32_param(const httplib::Request &req, const char *name, const st
   try {
     return parse_u32_literal(value);
   } catch (const std::exception &) {
-    throw BadRequest(std::string("Invalid integer for ") + name + ": " + value);
+    throw WebGuiBadRequest(std::string("Invalid integer for ") + name + ": " + value);
   }
 }
 
@@ -188,7 +184,7 @@ bool parse_bool_param(const httplib::Request &req, const char *name, const bool 
   try {
     return parse_bool(value);
   } catch (const std::exception &) {
-    throw BadRequest(std::string("Invalid boolean for ") + name + ": " + value);
+    throw WebGuiBadRequest(std::string("Invalid boolean for ") + name + ": " + value);
   }
 }
 
@@ -205,10 +201,10 @@ ClockConfigRequest parse_clock_config_request(const httplib::Request &req) {
   request.core_profile = require_param(req, "core_profile");
   request.int_profile = require_param(req, "int_profile");
   if (request.core_profile.empty()) {
-    throw BadRequest("core_profile must not be empty");
+    throw WebGuiBadRequest("core_profile must not be empty");
   }
   if (request.int_profile.empty()) {
-    throw BadRequest("int_profile must not be empty");
+    throw WebGuiBadRequest("int_profile must not be empty");
   }
   return request;
 }
@@ -275,7 +271,7 @@ void register_ppwebgui_routes(httplib::Server &server,
     return [service_ptr, handler = std::move(handler)](const httplib::Request &req, httplib::Response &res) mutable {
       try {
         handler(req, res);
-      } catch (const BadRequest &e) {
+      } catch (const WebGuiBadRequest &e) {
         service_ptr->set_last_error(e.what());
         respond_error(res, httplib::StatusCode::BadRequest_400, e.what());
       } catch (const std::exception &e) {
@@ -387,7 +383,7 @@ void register_ppwebgui_routes(httplib::Server &server,
     StreamLaunchRequest request;
     request.sequence_text = require_bounded_text_param(req, "sequence_text", MAX_SEQUENCE_TEXT_BYTES);
     if (request.sequence_text.empty()) {
-      throw BadRequest("Sequence text must not be empty");
+      throw WebGuiBadRequest("Sequence text must not be empty");
     }
     request.force_trigger_override = force_trigger_override;
     request.check_readback = parse_bool_param(req, "check_readback");

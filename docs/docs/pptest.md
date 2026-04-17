@@ -22,7 +22,7 @@ Command line switches:
 * ``-m``: trigger mask
 * ``-t``: final data value
 * ``-check``: perform verification using the read-back method
-* ``-timeout``: specifies a timeout in seconds to interrupt checking process if no data is received for an extended period of time
+* ``-timeout``: controls readback wait bounds during ``-check`` and ``-read``; if omitted, the shared workflow uses a conservative 2s timeout both for the first readback element and for later idle gaps. Use a positive value for idle-gap timeout, a negative value for absolute timeout from start, or ``-timeout 0`` to disable timeout protection.
 * ``-dump-converted``: dump out the sequence of elements after converting elements with non-trivial update modes to simple BITLOAD elements
 * ``-i``: initial value to be presented on the output ports before the sequence begins to stream out
 * ``-core_pll``: configure the core/control-side PLL using a preset name or raw ``N,M,C`` string
@@ -36,6 +36,7 @@ Tests return code 0 if successful. Non-zero error indicates an error. The follow
 
 * bit 0: mismatch detected in sequence checker
 * bit 1: incorrect final data value detected
+* bit 6: timeout while waiting for readback or streamer completion
 
 ### Integer parameter parsing
 

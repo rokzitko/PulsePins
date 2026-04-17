@@ -103,6 +103,8 @@ The trigger form uses the same semantic mode names as the CLI trigger tool:
 
 Browser-triggered streams first run the same hardware reset/bring-up sequence exposed by the **Reset hardware** button, then append the currently tracked idle raw qout value as the final output element. That keeps each run deterministic and starts the streamer from a clean reset state. Because `ppwebgui` owns that final-output policy, sequence text submitted through the browser must not also contain an explicit `final ...` record.
 
+When **Check readback** is enabled, `ppwebgui` uses the same default safe timeout policy as the shared CLI/SCPI workflow: 2s waiting for the first readback element and 2s for later idle gaps. A timeout during streaming is reported back to the browser as an HTTP `504` result.
+
 The header also includes a **Reset hardware** button. That action reruns the same FPGA-side bring-up sequence used by `ppwebgui` startup, including the FPGA reset-manager pulse, tracked clock/PLL policy, and the startup frequency-meter report. After that it reapplies the current web-managed trigger, combiner, and output-override settings so the browser state is preserved across the reset. If the tracked source came from an unmanaged startup/raw selector state, that exact state is preserved instead of being coerced to `int_clk`.
 
 The backend keeps hardware access serialized and the UI polls `/api/status` at the configured interval.
@@ -146,13 +148,13 @@ Values shown in the browser are rendered in hexadecimal by default. Input fields
 Version 1 keeps the API small:
 
 * `GET /api/status` returns JSON status for AUX, trigger state, trigger-combiner settings, active streamer qout state, combiner state, and recent action/error text
-* `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with managed `source` (`int_clk` or `ext_clk`), `core_profile`, and `int_profile`; applying clock settings reruns reset/bring-up and then remeasures all clocks
+* `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with managed `source` (`int_clk` or `ext_clk`), `core_profile`, and `int_profile`; malformed requests or invalid profile strings return HTTP `400`, while valid requests rerun reset/bring-up and then remeasure all clocks
 * `POST /api/clocking/measure` reruns the frequency-meter measurement path without changing tracked clock settings
 * `POST /api/trigger` expects an `application/x-www-form-urlencoded` body with `mode`, `invert_result`, `invert_int`, `invert_ext`, `invert_misc`, `mask_int`, `mask_ext`, and `mask_misc`
 * `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `override_enabled` and `override_value`
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
 * `POST /api/reset` reruns the `ppwebgui` FPGA bring-up path and reapplies the current web-managed settings
-* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`; before streaming, the backend reruns the `ppwebgui` hardware reset/bring-up path and then appends the current tracked idle raw qout as the final output value, so submitted text must not already contain `final ...`
+* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`; before streaming, the backend reruns the `ppwebgui` hardware reset/bring-up path and then appends the current tracked idle raw qout as the final output value, so submitted text must not already contain `final ...`. Request-validation failures return HTTP `400`; hardware timeouts return HTTP `504`.
 
 The current implementation rejects oversized form submissions and limits `sequence_text` to 32 KiB per request.
 
