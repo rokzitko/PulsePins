@@ -7,3 +7,4 @@ pptest 42 -f sequence.one_line -check
 pptest 42 -f sequence.pmmodda3_2.5V -check
 pptest 42 -f sequence.pmmodda3_2V -check
 pptest 42 -f sequence.pmmodda3_1V -check
+pptest 42 -f sequence.ad9833_50kHz -check
