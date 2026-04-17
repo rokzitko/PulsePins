@@ -241,17 +241,15 @@ struct PseudoRandom{};
 class el
 {
 private:
-  el_type t; // regular, trigger or final(terminator)
   control_t y;
   count_t c;
   value_t v;
   counter_kind_t counter_kind;
   value_kind_t value_kind;
 
-  static value_kind_t value_kind_from_mode_bits(control_t control, value_kind_t fallback) {
+  static value_kind_t value_kind_from_mode_bits(control_t control) {
     switch (control & MODEBITS) {
-      case BITLOAD:
-        return fallback == value_kind_t::plain ? value_kind_t::plain : value_kind_t::bitload;
+      case BITLOAD: return value_kind_t::bitload;
       case BITSET:
         return value_kind_t::bitset;
       case BITCLEAR:
@@ -277,6 +275,14 @@ private:
     }
   }
 
+  static value_kind_t normalized_regular_value_kind(const Value &value) {
+    return value.kind() == value_kind_t::plain ? value_kind_t::bitload : value.kind();
+  }
+
+  static control_t normalized_regular_mode_bits(const Value &value) {
+    return normalized_regular_value_kind(value) == value_kind_t::bitload ? BITLOAD : value.mode_bits();
+  }
+
   static el_type type_from_control(control_t control) {
     if ((control & TRIGGERBITS) == TRIGGER || (control & TRIGGERBITS) == (TRIGGER | TRIGGERFINAL))
       return el_type::trigger;
@@ -292,14 +298,13 @@ private:
   }
 
   void sync_cached_state_from_control() {
-    t = type_from_control(y);
-    if (t == el_type::regular) {
+    if (classify_control(y) == el_type::regular) {
       if ((y & NOSTROBE) == NOSTROBE) {
         counter_kind = counter_kind_t::nostrobe;
       } else if (counter_kind == counter_kind_t::nostrobe) {
         counter_kind = counter_kind_t::plain;
       }
-      value_kind = value_kind_from_mode_bits(y, value_kind);
+      value_kind = value_kind_from_mode_bits(y);
     }
   }
 
@@ -411,30 +416,44 @@ private:
     }
   }
 
-public:
-  // General constructor, called internally by other constructors, less appropriate for general use
-  el(el_type _t, const Counter &_cc, const Value &_vv, control_t _y = 0)
-      : t(_t),
-        y(_cc.control_bits() | _vv.mode_bits() | _y),
-        c(_cc.count()),
-        v(_vv.value()),
-        counter_kind(_cc.kind()),
-        value_kind(_vv.kind()) {
+  el(control_t control, count_t count, value_t value, counter_kind_t counter_kind_, value_kind_t value_kind_)
+      : y(control),
+        c(count),
+        v(value),
+        counter_kind(counter_kind_),
+        value_kind(value_kind_) {
+    sync_cached_state_from_control();
   }
+
+public:
   // Sequence terminator
-  el(value_t _v = default_final_value) : el(el_type::final, Counter(1), Value(_v), TERMINATE) {}
+  el(value_t _v = default_final_value)
+      : el(TERMINATE, 1, _v, counter_kind_t::plain, value_kind_t::plain) {}
   // Regular element
-  el(count_t _c, value_t _v) : el(el_type::regular, Counter(_c), BitLoad(_v)) {};
-  el(const Counter &_cc, value_t _v) : el(el_type::regular, _cc, BitLoad(_v)) {};
-  el(const Counter &_cc, const Value &_vv) : el(el_type::regular, _cc, _vv) {};
+  el(count_t _c, value_t _v)
+      : el(BITLOAD, _c, _v, counter_kind_t::plain, value_kind_t::bitload) {};
+  el(const Counter &_cc, value_t _v)
+      : el(static_cast<control_t>(_cc.control_bits() | BITLOAD),
+           _cc.count(), _v, _cc.kind(), value_kind_t::bitload) {};
+  el(const Counter &_cc, const Value &_vv)
+      : el(static_cast<control_t>(_cc.control_bits() | normalized_regular_mode_bits(_vv)),
+           _cc.count(), _vv.value(), _cc.kind(), normalized_regular_value_kind(_vv)) {};
   // Trigger element
-  el(trigger_t pattern, trigger_t mask, bool final) : el(el_type::trigger, Counter(0), TriggerCondition(pattern, mask, final), final ? TRIGGERFINAL : 0) {}
+  el(trigger_t pattern, trigger_t mask, bool final)
+      : el(static_cast<control_t>(TRIGGER | (final ? TRIGGERFINAL : 0)),
+           0,
+           static_cast<value_t>((static_cast<value_t>(mask) << WIDTH_TRIGGER) + static_cast<value_t>(pattern)),
+           counter_kind_t::plain,
+           value_kind_t::trigger) {}
   // Repetitions
-  el(Replay, count_t repetitions, value_t length) : el(el_type::replay, Counter(repetitions), Value(length), REPLAY) {}
+  el(Replay, count_t repetitions, value_t length)
+      : el(REPLAY, repetitions, length, counter_kind_t::plain, value_kind_t::plain) {}
   // Retriggering
-  el(Retrig, value_t _v = default_final_value) : el(el_type::retrig, Counter(1), Value(_v), RETRIG) {}
+  el(Retrig, value_t _v = default_final_value)
+      : el(RETRIG, 1, _v, counter_kind_t::plain, value_kind_t::plain) {}
   // Pseudo random
-  el(PseudoRandom, count_t _c) : el(el_type::prng, Counter(_c), Value(0), PRNG) {}
+  el(PseudoRandom, count_t _c)
+      : el(PRNG, _c, 0, counter_kind_t::plain, value_kind_t::plain) {}
 
   static el_type classify_control(control_t control) { return type_from_control(control); }
   static control_t mode_from_control(control_t control) { return control & MODEBITS; }
@@ -448,6 +467,68 @@ public:
   static trigger_t trigger_pattern_from_value(value_t value) { return static_cast<trigger_t>(value & TRIGGER_MASK); }
   static trigger_t trigger_mask_from_value(value_t value) { return static_cast<trigger_t>((value >> WIDTH_TRIGGER) & TRIGGER_MASK); }
   static bool trigger_final_from_control(control_t control) { return (control & TRIGGERFINAL) == TRIGGERFINAL; }
+  static control_t regular_control_from_token(const std::string &token, const char *context = nullptr) {
+    if (token == "d")
+      return BITLOAD;
+    if (token == "dn")
+      return static_cast<control_t>(BITLOAD | NOSTROBE);
+    if (token == "s")
+      return BITSET;
+    if (token == "c")
+      return BITCLEAR;
+    if (token == "x")
+      return BITFLIP;
+    if (token == "n")
+      return BITNOT;
+    if (token == "a")
+      return BITAND;
+    if (token == "o")
+      return BITOR;
+    if (token == "xr")
+      return BITXOR;
+    if (token == "xn")
+      return BITXNOR;
+    if (token == "sl")
+      return BITSLL;
+    if (token == "sr")
+      return BITSRL;
+
+    if (context != nullptr)
+      throw std::runtime_error("Unknown regular sequence token in '" + std::string(context) + "': '" + token + "'");
+    throw std::runtime_error("Unknown regular sequence token: '" + token + "'");
+  }
+  static std::string regular_token_from_control(control_t control) {
+    const bool no_strobe = no_strobe_from_control(control);
+    const control_t mode = mode_from_control(control);
+
+    if (no_strobe && mode != BITLOAD)
+      throw std::runtime_error("Text sequence writer does not support non-BITLOAD no-strobe elements");
+
+    if (mode == BITLOAD)
+      return no_strobe ? "dn" : "d";
+    if (mode == BITSET)
+      return "s";
+    if (mode == BITCLEAR)
+      return "c";
+    if (mode == BITFLIP)
+      return "x";
+    if (mode == BITNOT)
+      return "n";
+    if (mode == BITAND)
+      return "a";
+    if (mode == BITOR)
+      return "o";
+    if (mode == BITXOR)
+      return "xr";
+    if (mode == BITXNOR)
+      return "xn";
+    if (mode == BITSLL)
+      return "sl";
+    if (mode == BITSRL)
+      return "sr";
+
+    throw std::runtime_error("Unsupported regular element mode in text sequence writer");
+  }
   static el from_raw_triplet(control_t control, count_t count, value_t value) {
     switch (classify_control(control)) {
       case el_type::trigger: {
@@ -481,12 +562,21 @@ public:
 
     throw std::runtime_error("Unsupported element control kind in binary sequence reader");
   }
+  static el from_regular_token(const std::string &token, count_t count, value_t value, const char *context = nullptr) {
+    return from_raw_triplet(regular_control_from_token(token, context), count, value);
+  }
 
   control_t control() const { return y; }
   count_t count() const { return c; }
   value_t value() const { return v; }
+  el_type kind() const { return classify_control(y); }
   control_t mode() const { return mode_from_control(y); }
   bool no_strobe() const { return no_strobe_from_control(y); }
+  std::string regular_token() const {
+    if (!is_regular())
+      throw std::runtime_error("regular_token() requires a regular element");
+    return regular_token_from_control(y);
+  }
   bool is_stored() const { return stored_from_control(y); }
   size_t store_slot() const {
     return store_slot_from_control(y);
@@ -503,32 +593,73 @@ public:
     return *this;
   }
 
-  void set_control(control_t _y) {
-    y = _y;
-    sync_cached_state_from_control();
+  el with_control(control_t control) const {
+    el copy = *this;
+    copy.y = control;
+    copy.sync_cached_state_from_control();
+    return copy;
   }
-  void set_count(count_t _c) { c = _c; }
+
+  el with_count(count_t count) const {
+    el copy = *this;
+    copy.c = count;
+    return copy;
+  }
+
+  el with_counter(const Counter &counter) const {
+    el copy = *this;
+    copy.c = counter.count();
+    copy.counter_kind = counter.kind();
+    copy.y = static_cast<control_t>((copy.y & ~NOSTROBE) | counter.control_bits());
+    copy.sync_cached_state_from_control();
+    return copy;
+  }
+
+  el with_regular_value(const Value &value) const {
+    if (!is_regular())
+      throw std::runtime_error("with_regular_value() requires a regular element");
+    el copy = *this;
+    copy.v = value.value();
+    copy.value_kind = normalized_regular_value_kind(value);
+    copy.y = static_cast<control_t>((copy.y & ~(MODEBITS | TRIGGERBITS)) | normalized_regular_mode_bits(value));
+    copy.sync_cached_state_from_control();
+    return copy;
+  }
+
+  el as_bitload_after(value_t previous_value) const {
+    if (!is_regular())
+      return *this;
+    return with_regular_value(BitLoad(updated_value(previous_value)));
+  }
+
+  void set_control(control_t _y) {
+    *this = with_control(_y);
+  }
+  void set_count(count_t _c) { *this = with_count(_c); }
   void set_count(const Counter &_cc) {
-    c = _cc.count();
-    counter_kind = _cc.kind();
-    y = (y & ~NOSTROBE) | _cc.control_bits();
+    *this = with_counter(_cc);
   }
   void set_value(const Value &_vv) {
+    if (is_regular()) {
+      *this = with_regular_value(_vv);
+      return;
+    }
+
     v = _vv.value();
     value_kind = _vv.kind();
-    y = (y & ~(MODEBITS | TRIGGERBITS)) | _vv.mode_bits();
+    y = static_cast<control_t>((y & ~(MODEBITS | TRIGGERBITS)) | _vv.mode_bits());
     sync_cached_state_from_control();
   }
 
   // The resulting data value if the previous value was v_prev and the value was updated according to the contained Value object
   value_t updated_value(const value_t v_prev) const { return apply_value(v_prev); }
 
-  bool is_regular() const { return t == el_type::regular; }
-  bool is_trigger() const { return t == el_type::trigger; }
-  bool is_replay() const { return t == el_type::replay; }
-  bool is_final() const { return t == el_type::final; }
-  bool is_retrig() const { return t == el_type::retrig; }
-  bool is_prng() const { return t == el_type::prng; }
+  bool is_regular() const { return kind() == el_type::regular; }
+  bool is_trigger() const { return kind() == el_type::trigger; }
+  bool is_replay() const { return kind() == el_type::replay; }
+  bool is_final() const { return kind() == el_type::final; }
+  bool is_retrig() const { return kind() == el_type::retrig; }
+  bool is_prng() const { return kind() == el_type::prng; }
 
   // Additional info about control bits
   std::string decode() const {

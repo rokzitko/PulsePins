@@ -198,19 +198,15 @@ public:
     // observed at the streamer output rather than the original update operators.
     Sequence convert_to_BitLoad() const {
     Sequence s;
-    size_t n = 0; // counts regular elements only
-    value_t v_prev;
+    bool seen_regular = false;
+    value_t v_prev = 0;
     for (const auto &e: *this) {
-      el enew = e;
-      if (n && e.is_regular()) {
-        enew.set_value(BitLoad(e.updated_value(v_prev)));
-        enew.set_control((e.control() & ~MODEBITS) | BITLOAD);
-      }
+      const el enew = (seen_regular && e.is_regular()) ? e.as_bitload_after(v_prev) : e;
       s.push_back(enew);
-      if (e.is_regular())
+      if (e.is_regular()) {
         v_prev = enew.value();
-      if (e.is_regular())
-        n++;
+        seen_regular = true;
+      }
     }
     return s;
   }
@@ -220,7 +216,7 @@ public:
     Sequence s = *this; // make a copy
     merge_adjacent<el>(s,
                         [](const el &x, const el &y){ return x.is_regular() && y.is_regular() && x.control() == y.control() && x.value() == y.value(); },
-                        [](const el &x, const el &y){ el merged = x; merged.set_count(x.count() + y.count()); return merged; });
+                        [](const el &x, const el &y){ return x.with_count(x.count() + y.count()); });
     return s;
   }
 
@@ -363,50 +359,13 @@ inline bool operator==(const Sequence &X, const Sequence &Y) {
   return compare(X, Y);
 }
 
-inline std::string sequence_regular_token(const el &e)
-{
-  if (!e.is_regular())
-    throw std::runtime_error("sequence_regular_token() requires a regular element");
-
-  const bool no_strobe = e.no_strobe();
-  const control_t mode = e.mode();
-
-  if (no_strobe && mode != BITLOAD)
-    throw std::runtime_error("Text sequence writer does not support non-BITLOAD no-strobe elements");
-
-  if (mode == BITLOAD)
-    return no_strobe ? "dn" : "d";
-  if (mode == BITSET)
-    return "s";
-  if (mode == BITCLEAR)
-    return "c";
-  if (mode == BITFLIP)
-    return "x";
-  if (mode == BITNOT)
-    return "n";
-  if (mode == BITAND)
-    return "a";
-  if (mode == BITOR)
-    return "o";
-  if (mode == BITXOR)
-    return "xr";
-  if (mode == BITXNOR)
-    return "xn";
-  if (mode == BITSLL)
-    return "sl";
-  if (mode == BITSRL)
-    return "sr";
-
-  throw std::runtime_error("Unsupported regular element mode in text sequence writer");
-}
-
 inline void write_sequence_to_stream(const Sequence &sequence,
                                     std::ostream &f,
                                     const bool force_trigger = false)
 {
   for (const auto &e : sequence) {
     if (e.is_regular()) {
-      const auto token = sequence_regular_token(e);
+      const auto token = e.regular_token();
       if (e.is_stored()) {
         f << "store " << std::dec << e.store_slot() << " " << token
           << " " << std::dec << e.count()
@@ -488,44 +447,8 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
   };
 
   auto parse_regular_element = [&parse_regular_args](const std::string &token_name) {
-    if (token_name == "d") {
-      auto [c, v] = parse_regular_args("d");
-      return el(c, v);
-    } else if (token_name == "dn") {
-      auto [c, v] = parse_regular_args("dn");
-      return el(NoStrobe(c), v);
-    } else if (token_name == "s") {
-      auto [c, v] = parse_regular_args("s");
-      return el(c, BitSet(v));
-    } else if (token_name == "c") {
-      auto [c, v] = parse_regular_args("c");
-      return el(c, BitClear(v));
-    } else if (token_name == "x") {
-      auto [c, v] = parse_regular_args("x");
-      return el(c, BitFlip(v));
-    } else if (token_name == "n") {
-      auto [c, v] = parse_regular_args("n");
-      return el(c, BitNot(v));
-    } else if (token_name == "a") {
-      auto [c, v] = parse_regular_args("a");
-      return el(c, BitAnd(v));
-    } else if (token_name == "o") {
-      auto [c, v] = parse_regular_args("o");
-      return el(c, BitOr(v));
-    } else if (token_name == "xr") {
-      auto [c, v] = parse_regular_args("xr");
-      return el(c, BitXor(v));
-    } else if (token_name == "xn") {
-      auto [c, v] = parse_regular_args("xn");
-      return el(c, BitXnor(v));
-    } else if (token_name == "sl") {
-      auto [c, v] = parse_regular_args("sl");
-      return el(c, BitSll(v));
-    } else if (token_name == "sr") {
-      auto [c, v] = parse_regular_args("sr");
-      return el(c, BitSrl(v));
-    }
-    throw std::runtime_error("Unknown regular sequence token in 'store': '" + token_name + "'");
+    auto [c, v] = parse_regular_args(token_name.c_str());
+    return el::from_regular_token(token_name, c, v, "store");
   };
 
   while (f) {

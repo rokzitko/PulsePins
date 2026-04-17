@@ -391,29 +391,17 @@ TEST_CASE("BitSrl class") {
   CHECK(get_result(v1, 0x80) == 0x10);
 }
 
-TEST_CASE("el general constructor 1") {
+TEST_CASE("el constructor from Counter and plain Value normalizes to bitload") {
   count_t c = 10;
   value_t v = 42;
   Counter c1(c);
   Value v1(v);
-  el e(el_type::regular, c1, v1);
+  el e(c1, v1);
   CHECK(e.count() == c);
   CHECK(e.value() == v);
-  CHECK(e.control() == 0);
-  CHECK(contains(e.desc(), "[           10]"));
-  CHECK(contains(e.desc(), "[           42]"));
-}
-
-TEST_CASE("el general constructor 2") {
-  count_t c = 10;
-  value_t v = 42;
-  control_t y = TERMINATE;
-  Counter c1(c);
-  Value v1(v);
-  el e(el_type::regular, c1, v1, y);
-  CHECK(e.count() == c);
-  CHECK(e.value() == v);
-  CHECK(e.control() == y);
+  CHECK(e.control() == BITLOAD);
+  CHECK(e.mode() == BITLOAD);
+  CHECK(contains(e.desc(), bitloadstring));
   CHECK(contains(e.desc(), "[           10]"));
   CHECK(contains(e.desc(), "[           42]"));
 }
@@ -603,15 +591,13 @@ TEST_CASE("set_control resynchronizes regular mode semantics") {
   CHECK(contains(e.desc(), bitsetstring));
 }
 
-TEST_CASE("set_control preserves plain authored regular description for BITLOAD control") {
-  Counter c1(10);
-  Value v1(42);
-  el e(el_type::regular, c1, v1);
+TEST_CASE("set_control normalizes regular mode semantics for BITLOAD control") {
+  el e(3, BitFlip(0x03));
   e.set_control(BITLOAD);
 
-  CHECK(e.updated_value(0x00) == 42);
-  CHECK(!contains(e.desc(), bitloadstring));
-  CHECK(contains(e.desc(), "[           42]"));
+  CHECK(e.control() == BITLOAD);
+  CHECK(e.updated_value(0x04) == 0x03);
+  CHECK(contains(e.desc(), bitloadstring));
 }
 
 TEST_CASE("set_control updates special element type when control is unambiguous") {
@@ -639,6 +625,51 @@ TEST_CASE("set_value updates regular mode semantics") {
   CHECK((e.control() & MODEBITS) == BITXOR);
   CHECK(e.updated_value(0x04) == 0x07);
   CHECK(contains(e.desc(), bitxorstring));
+}
+
+TEST_CASE("immutable el transforms preserve regular semantics") {
+  SUBCASE("with_count") {
+    const el original(NoStrobe(3), BitSet(0x12));
+    const auto updated = original.with_count(7);
+
+    CHECK(original.count() == 3);
+    CHECK(updated.count() == 7);
+    CHECK(updated.no_strobe());
+    CHECK(updated.mode() == BITSET);
+    CHECK(updated.updated_value(0x01) == 0x13);
+  }
+
+  SUBCASE("with_counter") {
+    const el original(3, BitSet(0x12));
+    const auto updated = original.with_counter(NoStrobe(7));
+
+    CHECK(original.count() == 3);
+    CHECK(updated.count() == 7);
+    CHECK(updated.no_strobe());
+    CHECK(contains(updated.desc(), nostrobestring));
+  }
+
+  SUBCASE("with_regular_value") {
+    const el original(NoStrobe(3), BitSet(0x12));
+    const auto updated = original.with_regular_value(BitXor(0x03));
+
+    CHECK(updated.count() == 3);
+    CHECK(updated.no_strobe());
+    CHECK(updated.mode() == BITXOR);
+    CHECK(updated.updated_value(0x04) == 0x07);
+    CHECK(contains(updated.desc(), bitxorstring));
+  }
+
+  SUBCASE("as_bitload_after") {
+    const el original(NoStrobe(3), BitFlip(0x03));
+    const auto updated = original.as_bitload_after(0x04);
+
+    CHECK(updated.no_strobe());
+    CHECK(updated.mode() == BITLOAD);
+    CHECK(updated.value() == 0x07);
+    CHECK(updated.updated_value(0x00) == 0x07);
+    CHECK(contains(updated.desc(), bitloadstring));
+  }
 }
 
 TEST_CASE("element helpers decode store and trigger fields") {
@@ -708,6 +739,19 @@ TEST_CASE("from_raw_triplet reconstructs encoded elements") {
     CHECK(e.trigger_mask() == 0x2a);
     CHECK(e.trigger_is_final());
   }
+}
+
+TEST_CASE("regular token helpers round-trip regular element encoding") {
+  const auto e = el::from_regular_token("xr", 7, 0x12);
+  CHECK(e.is_regular());
+  CHECK(e.count() == 7);
+  CHECK(e.value() == 0x12);
+  CHECK(e.mode() == BITXOR);
+  CHECK(e.regular_token() == "xr");
+
+  const auto dn = el::from_regular_token("dn", 3, 0x55);
+  CHECK(dn.no_strobe());
+  CHECK(dn.regular_token() == "dn");
 }
 
 TEST_CASE("convert_to_BitLoad") {
