@@ -412,20 +412,31 @@ public:
   // Pseudo random
   el(PseudoRandom, count_t _c) : el(el_type::prng, Counter(_c), Value(0), PRNG) {}
 
+  static el_type classify_control(control_t control) { return type_from_control(control); }
+  static control_t mode_from_control(control_t control) { return control & MODEBITS; }
+  static bool no_strobe_from_control(control_t control) { return (control & NOSTROBE) == NOSTROBE; }
+  static bool stored_from_control(control_t control) { return (control & STORE) == STORE; }
+  static size_t store_slot_from_control(control_t control) {
+    if (!stored_from_control(control))
+      throw std::runtime_error("Element is not marked for storage");
+    return (control & POSITIONS_MASK) >> SHIFT_POSITION;
+  }
+  static trigger_t trigger_pattern_from_value(value_t value) { return static_cast<trigger_t>(value & TRIGGER_MASK); }
+  static trigger_t trigger_mask_from_value(value_t value) { return static_cast<trigger_t>((value >> WIDTH_TRIGGER) & TRIGGER_MASK); }
+  static bool trigger_final_from_control(control_t control) { return (control & TRIGGERFINAL) == TRIGGERFINAL; }
+
   control_t control() const { return y; }
   count_t count() const { return c; }
   value_t value() const { return v; }
-  control_t mode() const { return y & MODEBITS; }
-  bool no_strobe() const { return (y & NOSTROBE) == NOSTROBE; }
-  bool is_stored() const { return (y & STORE) == STORE; }
+  control_t mode() const { return mode_from_control(y); }
+  bool no_strobe() const { return no_strobe_from_control(y); }
+  bool is_stored() const { return stored_from_control(y); }
   size_t store_slot() const {
-    if (!is_stored())
-      throw std::runtime_error("Element is not marked for storage");
-    return (y & POSITIONS_MASK) >> SHIFT_POSITION;
+    return store_slot_from_control(y);
   }
-  trigger_t trigger_pattern() const { return static_cast<trigger_t>(v & TRIGGER_MASK); }
-  trigger_t trigger_mask() const { return static_cast<trigger_t>((v >> WIDTH_TRIGGER) & TRIGGER_MASK); }
-  bool trigger_is_final() const { return (y & TRIGGERFINAL) == TRIGGERFINAL; }
+  trigger_t trigger_pattern() const { return trigger_pattern_from_value(v); }
+  trigger_t trigger_mask() const { return trigger_mask_from_value(v); }
+  bool trigger_is_final() const { return trigger_final_from_control(y); }
 
   // Mark an element for storage in fast memory register i
   el& store(unsigned int i) {

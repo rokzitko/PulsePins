@@ -150,12 +150,12 @@ inline void validate_binary_header(const BinarySequenceHeader &h)
 inline el regular_element_from_control(control_t control, count_t count, value_t value)
 {
   const auto make_element = [control, count](const Value &regular_value) {
-    el e = ((control & NOSTROBE) == NOSTROBE) ? el(NoStrobe(count), regular_value) : el(Counter(count), regular_value);
+    el e = el::no_strobe_from_control(control) ? el(NoStrobe(count), regular_value) : el(Counter(count), regular_value);
     e.set_control(control);
     return e;
   };
 
-  switch (control & MODEBITS) {
+  switch (el::mode_from_control(control)) {
     case BITLOAD: return make_element(BitLoad(value));
     case BITSET: return make_element(BitSet(value));
     case BITCLEAR: return make_element(BitClear(value));
@@ -174,36 +174,40 @@ inline el regular_element_from_control(control_t control, count_t count, value_t
 
 inline el element_from_raw_triplet(control_t control, count_t count, value_t value)
 {
-  if ((control & TRIGGERBITS) == TRIGGER || (control & TRIGGERBITS) == (TRIGGER | TRIGGERFINAL)) {
-    const auto pattern = static_cast<trigger_t>(value & TRIGGER_MASK);
-    const auto mask = static_cast<trigger_t>((value >> WIDTH_TRIGGER) & TRIGGER_MASK);
-    const bool final = (control & TRIGGERFINAL) == TRIGGERFINAL;
-    el e(pattern, mask, final);
-    e.set_control(control);
-    return e;
-  }
-  if ((control & REPLAY) == REPLAY) {
-    el e(Replay{}, count, value);
-    e.set_control(control);
-    return e;
-  }
-  if ((control & RETRIG) == RETRIG) {
-    el e(Retrig{}, value);
-    e.set_control(control);
-    return e;
-  }
-  if ((control & PRNG) == PRNG) {
-    el e(PseudoRandom{}, count);
-    e.set_control(control);
-    return e;
-  }
-  if ((control & TERMINATE) == TERMINATE) {
-    el e(value);
-    e.set_control(control);
-    return e;
+  switch (el::classify_control(control)) {
+    case el_type::trigger: {
+      const auto pattern = el::trigger_pattern_from_value(value);
+      const auto mask = el::trigger_mask_from_value(value);
+      const bool final = el::trigger_final_from_control(control);
+      el e(pattern, mask, final);
+      e.set_control(control);
+      return e;
+    }
+    case el_type::replay: {
+      el e(Replay{}, count, value);
+      e.set_control(control);
+      return e;
+    }
+    case el_type::retrig: {
+      el e(Retrig{}, value);
+      e.set_control(control);
+      return e;
+    }
+    case el_type::prng: {
+      el e(PseudoRandom{}, count);
+      e.set_control(control);
+      return e;
+    }
+    case el_type::final: {
+      el e(value);
+      e.set_control(control);
+      return e;
+    }
+    case el_type::regular:
+      return regular_element_from_control(control, count, value);
   }
 
-  return regular_element_from_control(control, count, value);
+  throw std::runtime_error("Unsupported element control kind in binary sequence reader");
 }
 
 // Thin extension of `std::deque<el>` with helpers that reflect the semantics of a

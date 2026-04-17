@@ -660,6 +660,28 @@ TEST_CASE("element helpers decode store and trigger fields") {
   }
 }
 
+TEST_CASE("classify_control matches element control categories") {
+  CHECK(el::classify_control(BITLOAD) == el_type::regular);
+  CHECK(el::classify_control(TRIGGER) == el_type::trigger);
+  CHECK(el::classify_control(REPLAY) == el_type::replay);
+  CHECK(el::classify_control(RETRIG) == el_type::retrig);
+  CHECK(el::classify_control(PRNG) == el_type::prng);
+  CHECK(el::classify_control(TERMINATE) == el_type::final);
+}
+
+TEST_CASE("static control and trigger decoders match encoded values") {
+  CHECK(el::mode_from_control(BITXOR | NOSTROBE) == BITXOR);
+  CHECK(el::no_strobe_from_control(BITXOR | NOSTROBE));
+  CHECK(el::stored_from_control(control_t(STORE | (3u << SHIFT_POSITION))));
+  CHECK(el::store_slot_from_control(control_t(STORE | (3u << SHIFT_POSITION))) == 3);
+  CHECK_THROWS_WITH_AS(el::store_slot_from_control(BITLOAD), "Element is not marked for storage", std::runtime_error);
+
+  const value_t trigger_value = (value_t(0x2a) << WIDTH_TRIGGER) | value_t(0x55);
+  CHECK(el::trigger_pattern_from_value(trigger_value) == 0x55);
+  CHECK(el::trigger_mask_from_value(trigger_value) == 0x2a);
+  CHECK(el::trigger_final_from_control(TRIGGER | TRIGGERFINAL));
+}
+
 TEST_CASE("convert_to_BitLoad") {
   Sequence s1;
   s1.push_back(el(1, BitLoad(1)));
