@@ -243,15 +243,145 @@ struct PseudoRandom{};
 class el
 {
 private:
+  enum class CounterKind { plain, strobe, nostrobe };
+  enum class ValueKind { plain, bitload, bitset, bitclear, bitflip, bitnot, bit_and, bit_or, bitxor, bitxnor, bitsll, bitsrl, trigger };
+
   el_type t; // regular, trigger or final(terminator)
   control_t y;
-  std::shared_ptr<Counter> cc;
-  std::shared_ptr<Value> vv;
+  count_t c;
+  value_t v;
+  CounterKind counter_kind;
+  ValueKind value_kind;
+
+  static CounterKind counter_kind_from(const Counter &counter) {
+    if (dynamic_cast<const NoStrobe *>(&counter))
+      return CounterKind::nostrobe;
+    if (dynamic_cast<const Strobe *>(&counter))
+      return CounterKind::strobe;
+    return CounterKind::plain;
+  }
+
+  static ValueKind value_kind_from(const Value &value) {
+    if (dynamic_cast<const TriggerCondition *>(&value))
+      return ValueKind::trigger;
+    if (dynamic_cast<const BitLoad *>(&value))
+      return ValueKind::bitload;
+    if (dynamic_cast<const BitSet *>(&value))
+      return ValueKind::bitset;
+    if (dynamic_cast<const BitClear *>(&value))
+      return ValueKind::bitclear;
+    if (dynamic_cast<const BitFlip *>(&value))
+      return ValueKind::bitflip;
+    if (dynamic_cast<const BitNot *>(&value))
+      return ValueKind::bitnot;
+    if (dynamic_cast<const BitAnd *>(&value))
+      return ValueKind::bit_and;
+    if (dynamic_cast<const BitOr *>(&value))
+      return ValueKind::bit_or;
+    if (dynamic_cast<const BitXor *>(&value))
+      return ValueKind::bitxor;
+    if (dynamic_cast<const BitXnor *>(&value))
+      return ValueKind::bitxnor;
+    if (dynamic_cast<const BitSll *>(&value))
+      return ValueKind::bitsll;
+    if (dynamic_cast<const BitSrl *>(&value))
+      return ValueKind::bitsrl;
+    return ValueKind::plain;
+  }
+
+  static std::string count_str(count_t count) {
+    std::stringstream ss;
+    ss << "count=" << hex8(count) << " [" << dec13(count) << "]";
+    return ss.str();
+  }
+
+  static std::string value_str(value_t value) {
+    std::stringstream ss;
+    ss << "value=" << hex8(value) << " [" << dec13(value) << "]";
+    return ss.str();
+  }
+
+  static std::string counter_desc(CounterKind kind) {
+    switch (kind) {
+      case CounterKind::plain: return "";
+      case CounterKind::strobe: return strobestring;
+      case CounterKind::nostrobe: return nostrobestring;
+    }
+    throw std::runtime_error("Unknown counter kind");
+  }
+
+  static std::string value_desc(ValueKind kind) {
+    switch (kind) {
+      case ValueKind::plain: return "";
+      case ValueKind::bitload: return bitloadstring;
+      case ValueKind::bitset: return bitsetstring;
+      case ValueKind::bitclear: return bitclearstring;
+      case ValueKind::bitflip: return bitflipstring;
+      case ValueKind::bitnot: return bitnotstring;
+      case ValueKind::bit_and: return bitandstring;
+      case ValueKind::bit_or: return bitorstring;
+      case ValueKind::bitxor: return bitxorstring;
+      case ValueKind::bitxnor: return bitxnorstring;
+      case ValueKind::bitsll: return bitsllstring;
+      case ValueKind::bitsrl: return bitsrlstring;
+      case ValueKind::trigger: return triggerstring;
+    }
+    throw std::runtime_error("Unknown value kind");
+  }
+
+  std::string trigger_value_str() const {
+    std::stringstream ss;
+    trigger_t pattern = v & TRIGGER_MASK;
+    trigger_t mask = (v >> WIDTH_TRIGGER) & TRIGGER_MASK;
+    ss << "0x" << std::hex << int(v) << " "
+       << "trig=0x" << std::hex << int(pattern) << " {" << std::bitset<WIDTH_TRIGGER>(int(pattern)) << "} "
+       << "mask=0x" << std::hex << int(mask) << " {" << std::bitset<WIDTH_TRIGGER>(int(mask)) << "}";
+    return ss.str();
+  }
+
+  std::string trigger_desc() const {
+    return triggerstring + (((y & TRIGGERFINAL) == TRIGGERFINAL) ? finalstring : "");
+  }
+
+  value_t apply_value(value_t previous) const {
+    switch (value_kind) {
+      case ValueKind::plain:
+      case ValueKind::bitload:
+      case ValueKind::trigger:
+        return v;
+      case ValueKind::bitset:
+        return previous | v;
+      case ValueKind::bitclear:
+        return previous & ~v;
+      case ValueKind::bitflip:
+        return previous ^ v;
+      case ValueKind::bitnot:
+        return ~previous;
+      case ValueKind::bit_and:
+        return v & previous;
+      case ValueKind::bit_or:
+        return v | previous;
+      case ValueKind::bitxor:
+        return v ^ previous;
+      case ValueKind::bitxnor:
+        return ~(v ^ previous);
+      case ValueKind::bitsll:
+        return sll(previous, v);
+      case ValueKind::bitsrl:
+        return srl(previous, v);
+    }
+    throw std::runtime_error("Unknown value kind");
+  }
 
 public:
   // General constructor, called internally by other constructors, less appropriate for general use
-  el(el_type _t, const Counter &_cc, const Value &_vv, control_t _y = 0) : t(_t), cc(_cc.clone()), vv(_vv.clone()) {
-    y = cc->control_bits() | vv->mode_bits() | _y;
+  el(el_type _t, const Counter &_cc, const Value &_vv, control_t _y = 0)
+      : t(_t),
+        y(_cc.control_bits() | _vv.mode_bits() | _y),
+        c(_cc.count()),
+        v(_vv.value()),
+        counter_kind(counter_kind_from(_cc)),
+        value_kind(value_kind_from(_vv)) {
   }
   // Sequence terminator
   el(value_t _v = default_final_value) : el(el_type::final, Counter(1), Value(_v), TERMINATE) {}
@@ -269,8 +399,8 @@ public:
   el(PseudoRandom, count_t _c) : el(el_type::prng, Counter(_c), Value(0), PRNG) {}
 
   control_t control() const { return y; }
-  count_t count() const { return cc->count(); }
-  value_t value() const { return vv->value(); }
+  count_t count() const { return c; }
+  value_t value() const { return v; }
 
   // Mark an element for storage in fast memory register i
   el& store(unsigned int i) {
@@ -281,12 +411,20 @@ public:
   }
 
   void set_control(control_t _y) { y = _y; }
-  void set_count(count_t _c) { cc = cc->with_count(_c); }
-  void set_count(const Counter &_cc) { cc = _cc.clone(); }
-  void set_value(const Value &_vv) { vv = _vv.clone(); }
+  void set_count(count_t _c) { c = _c; }
+  void set_count(const Counter &_cc) {
+    c = _cc.count();
+    counter_kind = counter_kind_from(_cc);
+    y = (y & ~NOSTROBE) | _cc.control_bits();
+  }
+  void set_value(const Value &_vv) {
+    v = _vv.value();
+    value_kind = value_kind_from(_vv);
+    y = (y & ~(MODEBITS | TRIGGERBITS)) | _vv.mode_bits();
+  }
 
   // The resulting data value if the previous value was v_prev and the value was updated according to the contained Value object
-  value_t updated_value(const value_t v_prev) const { return vv->result(v_prev); }
+  value_t updated_value(const value_t v_prev) const { return apply_value(v_prev); }
 
   bool is_regular() const { return t == el_type::regular; }
   bool is_trigger() const { return t == el_type::trigger; }
@@ -306,11 +444,11 @@ public:
     std::stringstream ss;
     switch (t) {
     case el_type::regular:
-      ss << vv->value_str() << " " << cc->count_str() << " " << cc->desc() << " " << vv->desc();
+      ss << value_str(v) << " " << count_str(c) << " " << counter_desc(counter_kind) << " " << value_desc(value_kind);
       ss << " control=0x" << std::hex << control() << decode();
       break;
     case el_type::trigger:
-      ss << vv->value_str() << " " << vv->desc();
+      ss << trigger_value_str() << " " << trigger_desc();
       break;
     case el_type::replay:
       ss << "Replay: repetitions=" << std::dec << count() << " length=" << std::dec << value();
@@ -335,7 +473,7 @@ public:
 
   // We only compare the values, the type of stored objects is ignored.
   friend inline bool operator==(const el &X, const el &Y) {
-    return X.y == Y.y && X.cc->count() == Y.cc->count() && X.vv->value()  == Y.vv->value();
+    return X.y == Y.y && X.c == Y.c && X.v == Y.v;
   }
 
   friend inline bool operator!=(const el &X, const el &Y) { return !(X == Y); }
