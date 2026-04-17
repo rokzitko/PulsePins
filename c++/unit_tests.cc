@@ -614,6 +614,52 @@ TEST_CASE("set_control preserves plain authored regular description for BITLOAD 
   CHECK(contains(e.desc(), "[           42]"));
 }
 
+TEST_CASE("set_control updates special element type when control is unambiguous") {
+  el e(3, 0x12);
+  e.set_control(REPLAY);
+
+  CHECK(e.is_replay());
+  CHECK(!e.is_regular());
+  CHECK(contains(e.desc(), "Replay: repetitions=3 length=18"));
+}
+
+TEST_CASE("set_count with counter wrapper updates count and strobe semantics") {
+  el e(3, 0x12);
+  e.set_count(NoStrobe(7));
+
+  CHECK(e.count() == 7);
+  CHECK((e.control() & NOSTROBE) == NOSTROBE);
+  CHECK(contains(e.desc(), nostrobestring));
+}
+
+TEST_CASE("set_value updates regular mode semantics") {
+  el e(3, 0x12);
+  e.set_value(BitXor(0x03));
+
+  CHECK((e.control() & MODEBITS) == BITXOR);
+  CHECK(e.updated_value(0x04) == 0x07);
+  CHECK(contains(e.desc(), bitxorstring));
+}
+
+TEST_CASE("element helpers decode store and trigger fields") {
+  SUBCASE("store helpers") {
+    el e(3, 0x12);
+    CHECK_FALSE(e.is_stored());
+    CHECK_THROWS_WITH_AS(e.store_slot(), "Element is not marked for storage", std::runtime_error);
+
+    e.store(2);
+    CHECK(e.is_stored());
+    CHECK(e.store_slot() == 2);
+  }
+
+  SUBCASE("trigger helpers") {
+    el e(0x55, 0x2a, true);
+    CHECK(e.trigger_pattern() == 0x55);
+    CHECK(e.trigger_mask() == 0x2a);
+    CHECK(e.trigger_is_final());
+  }
+}
+
 TEST_CASE("convert_to_BitLoad") {
   Sequence s1;
   s1.push_back(el(1, BitLoad(1)));

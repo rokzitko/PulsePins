@@ -427,9 +427,8 @@ inline std::string sequence_regular_token(const el &e)
   if (!e.is_regular())
     throw std::runtime_error("sequence_regular_token() requires a regular element");
 
-  const control_t control = e.control();
-  const bool no_strobe = (control & NOSTROBE) == NOSTROBE;
-  const control_t mode = control & MODEBITS;
+  const bool no_strobe = e.no_strobe();
+  const control_t mode = e.mode();
 
   if (no_strobe && mode != BITLOAD)
     throw std::runtime_error("Text sequence writer does not support non-BITLOAD no-strobe elements");
@@ -465,13 +464,10 @@ inline void write_sequence_to_stream(const Sequence &sequence,
                                     const bool force_trigger = false)
 {
   for (const auto &e : sequence) {
-    const control_t control = e.control();
-
     if (e.is_regular()) {
       const auto token = sequence_regular_token(e);
-      if ((control & STORE) == STORE) {
-        const auto slot = (control & POSITIONS_MASK) >> SHIFT_POSITION;
-        f << "store " << std::dec << slot << " " << token
+      if (e.is_stored()) {
+        f << "store " << std::dec << e.store_slot() << " " << token
           << " " << std::dec << e.count()
           << " 0x" << std::hex << e.value() << "\n";
       } else {
@@ -480,9 +476,9 @@ inline void write_sequence_to_stream(const Sequence &sequence,
           << " 0x" << std::hex << e.value() << "\n";
       }
     } else if (e.is_trigger()) {
-      const auto pattern = static_cast<trigger_t>(e.value() & TRIGGER_MASK);
-      const auto mask = static_cast<trigger_t>((e.value() >> WIDTH_TRIGGER) & TRIGGER_MASK);
-      const bool final = (control & TRIGGERFINAL) == TRIGGERFINAL;
+      const auto pattern = e.trigger_pattern();
+      const auto mask = e.trigger_mask();
+      const bool final = e.trigger_is_final();
       f << (final ? "t" : "tn")
         << " 0x" << std::hex << int(pattern)
         << " 0x" << std::hex << int(mask) << "\n";

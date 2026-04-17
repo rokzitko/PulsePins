@@ -277,7 +277,22 @@ private:
     }
   }
 
+  static el_type type_from_control(control_t control) {
+    if ((control & TRIGGERBITS) == TRIGGER || (control & TRIGGERBITS) == (TRIGGER | TRIGGERFINAL))
+      return el_type::trigger;
+    if ((control & REPLAY) == REPLAY)
+      return el_type::replay;
+    if ((control & RETRIG) == RETRIG)
+      return el_type::retrig;
+    if ((control & PRNG) == PRNG)
+      return el_type::prng;
+    if ((control & TERMINATE) == TERMINATE)
+      return el_type::final;
+    return el_type::regular;
+  }
+
   void sync_cached_state_from_control() {
+    t = type_from_control(y);
     if (t == el_type::regular) {
       if ((y & NOSTROBE) == NOSTROBE) {
         counter_kind = counter_kind_t::nostrobe;
@@ -330,8 +345,8 @@ private:
 
   std::string trigger_value_str() const {
     std::stringstream ss;
-    trigger_t pattern = v & TRIGGER_MASK;
-    trigger_t mask = (v >> WIDTH_TRIGGER) & TRIGGER_MASK;
+    const trigger_t pattern = trigger_pattern();
+    const trigger_t mask = trigger_mask();
     ss << "0x" << std::hex << int(v) << " "
        << "trig=0x" << std::hex << int(pattern) << " {" << std::bitset<WIDTH_TRIGGER>(int(pattern)) << "} "
        << "mask=0x" << std::hex << int(mask) << " {" << std::bitset<WIDTH_TRIGGER>(int(mask)) << "}";
@@ -339,7 +354,7 @@ private:
   }
 
   std::string trigger_desc() const {
-    return std::string(triggerstring) + (((y & TRIGGERFINAL) == TRIGGERFINAL) ? finalstring : "");
+    return std::string(triggerstring) + (trigger_is_final() ? finalstring : "");
   }
 
   value_t apply_value(value_t previous) const {
@@ -400,6 +415,17 @@ public:
   control_t control() const { return y; }
   count_t count() const { return c; }
   value_t value() const { return v; }
+  control_t mode() const { return y & MODEBITS; }
+  bool no_strobe() const { return (y & NOSTROBE) == NOSTROBE; }
+  bool is_stored() const { return (y & STORE) == STORE; }
+  size_t store_slot() const {
+    if (!is_stored())
+      throw std::runtime_error("Element is not marked for storage");
+    return (y & POSITIONS_MASK) >> SHIFT_POSITION;
+  }
+  trigger_t trigger_pattern() const { return static_cast<trigger_t>(v & TRIGGER_MASK); }
+  trigger_t trigger_mask() const { return static_cast<trigger_t>((v >> WIDTH_TRIGGER) & TRIGGER_MASK); }
+  bool trigger_is_final() const { return (y & TRIGGERFINAL) == TRIGGERFINAL; }
 
   // Mark an element for storage in fast memory register i
   el& store(unsigned int i) {
@@ -423,6 +449,7 @@ public:
     v = _vv.value();
     value_kind = _vv.kind();
     y = (y & ~(MODEBITS | TRIGGERBITS)) | _vv.mode_bits();
+    sync_cached_state_from_control();
   }
 
   // The resulting data value if the previous value was v_prev and the value was updated according to the contained Value object
@@ -438,10 +465,8 @@ public:
   // Additional info about control bits
   std::string decode() const {
     std::stringstream s;
-    if ((y & STORE) == STORE) {
-      size_t i = (y & POSITIONS_MASK) >> SHIFT_POSITION;
-      s << " (store " << i << ")";
-    }
+    if (is_stored())
+      s << " (store " << store_slot() << ")";
     return s.str();
   }
 
