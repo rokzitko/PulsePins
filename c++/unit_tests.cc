@@ -762,6 +762,16 @@ TEST_CASE("regular token helpers round-trip regular element encoding") {
   CHECK(dn.regular_token() == "dn");
 }
 
+TEST_CASE("sequence_record serializes element kinds") {
+  CHECK(el(7, BitXor(0x12)).sequence_record() == "xr 7 0x12");
+  CHECK(el(7, BitXor(0x12)).stored_in(3).sequence_record() == "store 3 xr 7 0x12");
+  CHECK(el(0x55, 0x2a, true).sequence_record() == "t 0x55 0x2a");
+  CHECK(el(Replay{}, 3, 9).sequence_record() == "r 3 0x9");
+  CHECK(el(Retrig{}).sequence_record() == "rt");
+  CHECK(el(PseudoRandom{}, 11).sequence_record() == "pr 11");
+  CHECK(el(0x42).sequence_record() == "final 0x42");
+}
+
 TEST_CASE("convert_to_BitLoad") {
   Sequence s1;
   s1.push_back(el(1, BitLoad(1)));

@@ -547,6 +547,40 @@ public:
     return ss.str();
   }
 
+  std::string sequence_record() const {
+    std::ostringstream out;
+    if (is_regular()) {
+      const auto token = regular_token();
+      if (is_stored()) {
+        out << "store " << std::dec << store_slot() << " " << token
+            << " " << std::dec << count()
+            << " 0x" << std::hex << value();
+      } else {
+        out << token
+            << " " << std::dec << count()
+            << " 0x" << std::hex << value();
+      }
+    } else if (is_trigger()) {
+      out << (trigger_is_final() ? "t" : "tn")
+          << " 0x" << std::hex << int(trigger_pattern())
+          << " 0x" << std::hex << int(trigger_mask());
+    } else if (is_final()) {
+      out << "final 0x" << std::hex << value();
+    } else if (is_replay()) {
+      out << "r"
+          << " " << std::dec << count()
+          << " 0x" << std::hex << value();
+    } else if (is_retrig()) {
+      out << "rt";
+    } else if (is_prng()) {
+      out << "pr"
+          << " " << std::dec << count();
+    } else {
+      throw std::runtime_error("Unsupported element in text sequence writer");
+    }
+    return out.str();
+  }
+
   friend inline std::ostream &operator<<(std::ostream &o, const el &e) {
     o << e.desc();
     return o;

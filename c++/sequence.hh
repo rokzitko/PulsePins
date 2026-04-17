@@ -363,40 +363,8 @@ inline void write_sequence_to_stream(const Sequence &sequence,
                                     std::ostream &f,
                                     const bool force_trigger = false)
 {
-  for (const auto &e : sequence) {
-    if (e.is_regular()) {
-      const auto token = e.regular_token();
-      if (e.is_stored()) {
-        f << "store " << std::dec << e.store_slot() << " " << token
-          << " " << std::dec << e.count()
-          << " 0x" << std::hex << e.value() << "\n";
-      } else {
-        f << token
-          << " " << std::dec << e.count()
-          << " 0x" << std::hex << e.value() << "\n";
-      }
-    } else if (e.is_trigger()) {
-      const auto pattern = e.trigger_pattern();
-      const auto mask = e.trigger_mask();
-      const bool final = e.trigger_is_final();
-      f << (final ? "t" : "tn")
-        << " 0x" << std::hex << int(pattern)
-        << " 0x" << std::hex << int(mask) << "\n";
-    } else if (e.is_final()) {
-      f << "final 0x" << std::hex << e.value() << "\n";
-    } else if (e.is_replay()) {
-      f << "r"
-        << " " << std::dec << e.count()
-        << " 0x" << std::hex << e.value() << "\n";
-    } else if (e.is_retrig()) {
-      f << "rt\n";
-    } else if (e.is_prng()) {
-      f << "pr"
-        << " " << std::dec << e.count() << "\n";
-    } else {
-      throw std::runtime_error("Unsupported element in text sequence writer");
-    }
-  }
+  for (const auto &e : sequence)
+    f << e.sequence_record() << "\n";
 
   if (force_trigger)
     f << "f\n";
