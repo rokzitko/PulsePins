@@ -1,1 +1,30 @@
-For testing, plug in PMMODDA3 module into first PMOD connector, upper row.
+`make` builds two standalone sequence generators in this directory.
+
+`./spi`
+
+Generates the original PMODDA3 transaction and writes the PulsePins text sequence to `sequence`.
+For testing, plug the PMODDA3 module into the first PMOD connector, upper row.
+
+`./spi_ad9833`
+
+Generates an AD9833 programming sequence for a 5 MHz sine output and writes the PulsePins text sequence to `sequence`.
+
+AD9833 module wiring on `qout`:
+
+* `qout[16]` -> module `CS` (MCP41010 chip-select, held high)
+* `qout[17]` -> module `DAT`
+* `qout[18]` -> module `CLK`
+* `qout[19]` -> module `FSY` / `FSYNC`
+
+The AD9833 binary uses SPI mode `2` and sends these 16-bit words to the AD9833:
+
+* `0x2100`
+* `0x7333`
+* `0x4ccc`
+* `0xc000`
+* `0x2000`
+
+Manual testing:
+
+- copy the generated 'sequence' file to the bard
+- run pptest 42 -f sequence -veryverbose
