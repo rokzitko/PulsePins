@@ -17,6 +17,7 @@
 #include "include/doctest.h"
 
 #include "elements.hh"
+#include "freq_meter.hh"
 #include "PMODDA3.hh"
 #include "SPI.hh"
 #include "options.hh"
@@ -613,6 +614,42 @@ TEST_CASE("append_final_output appends final element when -t is absent") {
   CHECK(seq.back().value() == final);
 }
 
+TEST_CASE("append_final_output reuses authored final terminator") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  seq.push_back(el(0x34));
+
+  auto final = append_final_output(seq, make_input({}));
+
+  CHECK(final == 0x34);
+  REQUIRE(seq.size() == 2);
+  CHECK(seq.back() == el(0x34));
+}
+
+TEST_CASE("append_final_output rejects -t when sequence already has final terminator") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  seq.push_back(el(0x34));
+
+  CHECK_THROWS_WITH_AS(
+    append_final_output(seq, make_input({"-t", "0x56"})),
+    "Sequence already contains an explicit final output; omit -t or remove the final record",
+    std::runtime_error);
+}
+
+TEST_CASE("prepare_sequence_for_streaming keeps caller sequence unchanged") {
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+
+  auto [prepared, final] = prepare_sequence_for_streaming(seq, make_input({"-t", "0x34"}));
+
+  CHECK(final == 0x34);
+  REQUIRE(seq.size() == 1);
+  CHECK(seq.back() == el(3, 0x12));
+  REQUIRE(prepared.size() == 2);
+  CHECK(prepared.back() == el(0x34));
+}
+
 TEST_CASE("drop_count0 removes only zero-count elements") {
   Sequence seq;
   seq.push_back(el(0, 0x10));
@@ -652,6 +689,16 @@ TEST_CASE("readback_timeout defaults to zero without timeout option") {
 
 TEST_CASE("readback_timeout parses explicit timeout") {
   CHECK(readback_timeout(make_input({"-timeout", "0.25"})) == doctest::Approx(0.25));
+}
+
+TEST_CASE("freq_meter normalizes zero-length gate requests") {
+  CHECK(freq_meter::normalize_gate_len(0) == 1);
+  CHECK(freq_meter::normalize_gate_len(7) == 7);
+}
+
+TEST_CASE("freq_meter waits at least one microsecond for tiny gates") {
+  CHECK(freq_meter::gate_wait_time_us(1, 50'000'000.0) == 1);
+  CHECK(freq_meter::gate_wait_time_us(500'000, 50'000'000.0) == 10'000);
 }
 
 TEST_CASE("VCD parser") {

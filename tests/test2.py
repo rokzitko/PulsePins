@@ -14,7 +14,7 @@ fifo = pp.streamer_fifo(dev_h2f, pp_impl.FIFO_1_IN_BASE, pp_impl.FIFO_1_IN_CSR_B
 initial_value = 0
 sc.set_initial_value(initial_value)
 verbose = True
-sc.reset(verbose)
+sc.reset()
 v = pp.Verbosity()
 v.veryverbose = True
 v.verbosecheck = True

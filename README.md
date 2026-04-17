@@ -15,7 +15,7 @@ PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit 
 * Output FIFO with throttling to guarantee loss-free streaming.
 * Preprocessor implementing a second level of run-length decoding (repetitions of short sequences of RLE elements), enabling compact representation of periodic signals.
 * Internal clock (PLL-generated) or external clock input.
-* Rich set of data-path update operations: load, set, clear, toggle, rotate left/right, NOT, AND, OR, XOR, XNOR.
+* Rich set of data-path update operations: load, set, clear, toggle, shift left/right, NOT, AND, OR, XOR, XNOR.
 * Pseudorandom bitstream generator based on the xoroshiro128+ algorithm.
 * Explicit control over output strobing (presence/absence of strobe pulses), configurable on the fly while streaming a sequence.
 * Advanced multi-bit, multi-stage triggering with arbitrarily long trigger programs (bounded only by the configurable trigger-stage buffer, 256 stages by default). Each stage is defined by a mask (which bits are observed) and a pattern (expected bit values). The 8 trigger inputs can be extended to a wider trigger bus.

@@ -183,32 +183,40 @@ NB_MODULE(pp, m) {
     .def("get_loc", &mm::get_loc);
 
   nb::class_<MGR>(m, "MGR")
-    .def(nb::init<mm &, const Verbosity &>())
+    .def(nb::init<mm &, const Verbosity &>(),
+         nb::keep_alive<1, 2>(),
+         nb::keep_alive<1, 3>())
     .def("status", &MGR::status)
     .def("gpio_write", &MGR::gpio_write)
     .def("gpio_read", &MGR::gpio_read);
 
-  nb::class_<hpsled>(m, "hpsled");
+  nb::class_<hpsled>(m, "hpsled")
+    .def(nb::init<mm &, std::uintptr_t>(),
+         "dev"_a,
+         "base"_a = std::uintptr_t(0xFF709000),
+         nb::keep_alive<1, 2>())
+    .def("on", &hpsled::on)
+    .def("off", &hpsled::off);
 
   nb::class_<FPGA>(m, "FPGA")
-    .def(nb::init<const Verbosity &>())
+    .def(nb::init<const Verbosity &>(), nb::keep_alive<1, 2>())
     .def("status", &FPGA::status)
     .def("output_enable", &FPGA::output_enable);
 
   nb::class_<freq_meter>(m, "freq_meter")
-    .def(nb::init<mm &, const std::uintptr_t, bool>());
+    .def(nb::init<mm &, const std::uintptr_t, bool>(), nb::keep_alive<1, 2>());
 
   nb::class_<pp_freq_meter>(m, "pp_freq_meter")
-    .def(nb::init<InputParser &, FPGA &, const bool>())
+    .def(nb::init<InputParser &, FPGA &, const bool>(), nb::keep_alive<1, 3>())
     .def("report", &pp_freq_meter::report);
 
   nb::class_<sysid>(m, "sysid")
-    .def(nb::init<mm &, const std::uintptr_t>())
-    .def(nb::init<mm &, const std::uintptr_t, const uint32_t>())
+    .def(nb::init<mm &, const std::uintptr_t>(), nb::keep_alive<1, 2>())
+    .def(nb::init<mm &, const std::uintptr_t, const uint32_t>(), nb::keep_alive<1, 2>())
     .def("get_id", &sysid::get_id);
 
   nb::class_<fifo>(m, "fifo")
-    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t>())
+    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t>(), nb::keep_alive<1, 2>())
     .def("read", &fifo::read)
     .def("write", &fifo::write)
     .def("status", &fifo::status)
@@ -218,7 +226,7 @@ NB_MODULE(pp, m) {
     .def("clear_fifo", &fifo::clear_fifo);
 
   nb::class_<streamer_control>(m, "streamer_control")
-    .def(nb::init<mm &, std::uintptr_t>())
+    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
     .def("status", &streamer_control::status)
     .def("get_control", &streamer_control::get_control)
     .def("get_overflow", &streamer_control::get_overflow)
@@ -256,7 +264,7 @@ NB_MODULE(pp, m) {
     .def("set_gating_from_string", &streamer_control::set_gating_from_string);
 
   nb::class_<c_dma>(m, "c_dma")
-    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t, bool>())
+    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t, bool>(), nb::keep_alive<1, 2>())
     .def("status_string", &c_dma::status_string)
     .def("status", &c_dma::status)
     .def("write_fill", &c_dma::write_fill)
@@ -275,7 +283,9 @@ NB_MODULE(pp, m) {
     .def("read_in_chunks", &c_dma::read_in_chunks);
 
   nb::class_<streamer_dma, c_dma>(m, "streamer_dma")
-    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t, size_t, const Verbosity &>())
+    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t, size_t, const Verbosity &>(),
+         nb::keep_alive<1, 2>(),
+         nb::keep_alive<1, 7>())
     .def("write_element", &streamer_dma::write_element)
     .def("prepare", &streamer_dma::prepare)
     .def("verify", &streamer_dma::verify)
@@ -284,14 +294,16 @@ NB_MODULE(pp, m) {
     .def("send_sequence", &streamer_dma::send_sequence);
 
   nb::class_<streamer_fifo, fifo>(m, "streamer_fifo")
-    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t>())
+    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t>(), nb::keep_alive<1, 2>())
     .def("out", &streamer_fifo::out)
     .def("check_fill_status", &streamer_fifo::check_fill_status)
     .def("report", &streamer_fifo::report)
     .def("send_sequence", &streamer_fifo::send_sequence);
 
   nb::class_<readback>(m, "readback")
-    .def(nb::init<FPGA &, mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t>())
+    .def(nb::init<FPGA &, mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t>(),
+         nb::keep_alive<1, 2>(),
+         nb::keep_alive<1, 3>())
     .def("check_fill_status", &readback::check_fill_status)
     .def("filled", &readback::filled)
     .def("clear_fifo", &readback::clear_fifo)
@@ -305,15 +317,15 @@ NB_MODULE(pp, m) {
 
   // pio
   nb::class_<pio>(m, "pio")
-    .def(nb::init<mm &, std::uintptr_t>());
+    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>());
 
   nb::class_<pio_out, pio>(m, "pio_out")
-    .def(nb::init<mm &, std::uintptr_t>())
+    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
     .def("write", &pio_out::write)
     .def("read", &pio_out::read);
 
   nb::class_<pio_in, pio>(m, "pio_in")
-    .def(nb::init<mm &, std::uintptr_t>())
+    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
     .def("read", &pio_in::read)
     .def("mask", &pio_in::mask)
     .def("edgecapture", &pio_in::edgecapture)
@@ -358,7 +370,7 @@ NB_MODULE(pp, m) {
   });
 
   nb::class_<pll>(m, "pll")
-    .def(nb::init<mm &, std::uintptr_t>())
+    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
     .def("report", &pll::report)
     .def("set_N", &pll::set_N)
     .def("set_M", &pll::set_M)
@@ -366,30 +378,31 @@ NB_MODULE(pp, m) {
 
   // pll_clk
   nb::class_<pll_core_clk>(m, "pll_core_clk")
-    .def(nb::init<mm &>())
+    .def(nb::init<mm &>(), nb::keep_alive<1, 2>())
     .def("set_core_clk", &pll_core_clk::set_core_clk);
 
   nb::class_<pll_int_clk>(m, "pll_int_clk")
-    .def(nb::init<mm &>())
+    .def(nb::init<mm &>(), nb::keep_alive<1, 2>())
     .def("set_int_clk", &pll_int_clk::set_int_clk);
 
   // basic_multi_dma
   nb::class_<basic_streamer>(m, "basic_streamer")
-    .def(nb::init<const InputParser &, FPGA &, const std::uintptr_t, const std::uintptr_t, const std::uintptr_t>())
+    .def(nb::init<const InputParser &, FPGA &, const std::uintptr_t, const std::uintptr_t, const std::uintptr_t>(),
+         nb::keep_alive<1, 3>())
     .def("set_initial_value", &basic_streamer::set_initial_value);
 
   nb::class_<streamer, basic_streamer>(m, "streamer")
-    .def(nb::init<const InputParser &, FPGA &, const std::uintptr_t>());
+    .def(nb::init<const InputParser &, FPGA &, const std::uintptr_t>(), nb::keep_alive<1, 3>());
 
   nb::class_<dma_streamer, streamer>(m, "dma_streamer")
-    .def(nb::init<const InputParser &, FPGA &>());
+    .def(nb::init<const InputParser &, FPGA &>(), nb::keep_alive<1, 3>());
 
   nb::class_<multistreamer>(m, "multistreamer")
-    .def(nb::init<const InputParser &, FPGA &>());
+    .def(nb::init<const InputParser &, FPGA &>(), nb::keep_alive<1, 3>());
 
   // combiner
   nb::class_<combiner>(m, "combiner")
-    .def(nb::init<mm &, std::uintptr_t>())
+    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
     .def("mode", &combiner::mode)
     .def("get_mode", &combiner::get_mode)
     .def("cfg", &combiner::cfg)
@@ -423,7 +436,7 @@ NB_MODULE(pp, m) {
     .value("XOR", trig_mode::XOR);
 
   nb::class_<combiner_trig, combiner>(m, "combiner_trig")
-    .def(nb::init<mm &, std::uintptr_t>())
+    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
     .def("mode", &combiner::mode)
     .def("invert_int", &combiner_trig::invert_int)
     .def("invert_ext", &combiner_trig::invert_ext)
@@ -615,7 +628,8 @@ NB_MODULE(pp, m) {
 
   nb::class_<counter>(m, "counter")
     .def(nb::init<const InputParser&, FPGA&, const std::uintptr_t>(),
-         "input"_a, "fpga"_a, "base"_a = COUNTER_Q_BASE)
+         "input"_a, "fpga"_a, "base"_a = COUNTER_Q_BASE,
+         nb::keep_alive<1, 3>())
     .def("read", &counter::read, "instr"_a, "part"_a, "addr"_a)
     .def("reset_all", &counter::reset_all)
     .def("latch_all", &counter::latch_all)
@@ -645,10 +659,12 @@ NB_MODULE(pp, m) {
     .export_values();
 
   nb::class_<combiner_qout, combiner>(m, "combiner_qout")
-    .def(nb::init<const mm&, const std::uintptr_t>());
+    .def(nb::init<const mm&, const std::uintptr_t>(), nb::keep_alive<1, 2>());
 
   nb::class_<qout>(m, "qout")
-    .def(nb::init<const InputParser&, const Verbosity&, FPGA&>())
+    .def(nb::init<const InputParser&, const Verbosity&, FPGA&>(),
+         nb::keep_alive<1, 3>(),
+         nb::keep_alive<1, 4>())
     .def("set", &qout::set, "input"_a)
     .def("in1", &qout::in1)
     .def("in2", &qout::in2)
@@ -661,7 +677,9 @@ NB_MODULE(pp, m) {
 
   // st_mux
   nb::class_<st_mux>(m, "StMux")
-    .def(nb::init<const mm&, const Verbosity&, const std::uintptr_t>())
+    .def(nb::init<const mm&, const Verbosity&, const std::uintptr_t>(),
+         nb::keep_alive<1, 2>(),
+         nb::keep_alive<1, 3>())
     .def("channel", &st_mux::channel, "ch"_a)
     .def("ctr1", &st_mux::ctr1)
     .def("ctr2", &st_mux::ctr2)
@@ -669,10 +687,10 @@ NB_MODULE(pp, m) {
 
   // trigger
   nb::class_<trigger>(m, "trigger")
-    .def(nb::init<const InputParser&, const FPGA&>())
+    .def(nb::init<const InputParser&, const FPGA&>(), nb::keep_alive<1, 3>())
     .def("set", &trigger::set, "input"_a);
 
   nb::class_<trigger_ext, pio_in>(m, "trigger_ext")
-    .def(nb::init<mm&, uintptr_t>())
+    .def(nb::init<mm&, uintptr_t>(), nb::keep_alive<1, 2>())
     .def("status", &trigger_ext::status);
 }

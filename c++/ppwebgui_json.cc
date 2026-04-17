@@ -79,16 +79,6 @@ std::string trigger_mode_to_semantic_string(const TriggerConfigState &state) {
   }
 }
 
-std::string clock_source_to_string(const ClockSourceSelection source) {
-  switch (source) {
-  case ClockSourceSelection::INT_CLK:
-    return "int_clk";
-  case ClockSourceSelection::EXT_CLK:
-    return "ext_clk";
-  }
-  return "unknown";
-}
-
 } // namespace
 
 std::string json_escape(std::string_view input) {
@@ -144,7 +134,9 @@ std::string status_to_json(const StatusSnapshot &status) {
   out << "\"mask_aux\":" << status.trigger_settings.mask_aux << "},";
   out << "\"clocking\":{";
   out << "\"tracked\":{";
-  out << "\"source\":\"" << clock_source_to_string(status.clocking.tracked.source) << "\",";
+  out << "\"source\":\"" << (status.clocking.tracked.source_managed ? json_escape(status.clocking.tracked.source_display) : "unmanaged") << "\",";
+  out << "\"source_display\":\"" << json_escape(status.clocking.tracked.source_display) << "\",";
+  out << "\"source_managed\":" << (status.clocking.tracked.source_managed ? "true" : "false") << ',';
   out << "\"core_profile\":\"" << json_escape(status.clocking.tracked.core.profile) << "\",";
   out << "\"int_profile\":\"" << json_escape(status.clocking.tracked.internal.profile) << "\"},";
   out << "\"measured\":{";

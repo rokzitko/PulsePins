@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <optional>
 
 #include "colors.hh"
 #include "format.hh"
@@ -68,11 +69,31 @@ inline auto readback_timeout(const InputParser &input) {
   return timeout;
 }
 
+inline std::optional<value_t> explicit_final_output(const Sequence &elements)
+{
+  if (!elements.empty() && elements.back().is_final())
+    return elements.back().value();
+  return std::nullopt;
+}
+
 inline value_t append_final_output(Sequence &elements, const InputParser &input)
 {
+  if (const auto explicit_final = explicit_final_output(elements)) {
+    if (input.exists("-t"))
+      throw std::runtime_error("Sequence already contains an explicit final output; omit -t or remove the final record");
+    return *explicit_final;
+  }
   const value_t final = input.exists("-t") ? parse_value(input, "-t", "0") : random_value();
   elements.push_back(el(final));
   return final;
+}
+
+inline std::pair<Sequence, value_t> prepare_sequence_for_streaming(const Sequence &elements,
+                                                                   const InputParser &input)
+{
+  Sequence prepared = elements;
+  const value_t final = append_final_output(prepared, input);
+  return {prepared, final};
 }
 
 inline void dump_sequence(const Sequence &elements, const Verbosity &v)
@@ -257,19 +278,20 @@ inline int send_and_trig(Transport &tr,
                         Convert convert)
 {
   // Contract:
-  // - `elements` is the sequence requested by the caller and is modified in place.
-  // - a final output element is always appended so the post-run qout state can be checked.
-  // - if `-check` is enabled, the same sequence may be converted into a readback-friendly
+  // - `elements` is the caller-owned requested sequence and is left unchanged.
+  // - a working copy is prepared so the post-run qout state can be checked without mutating
+  //   cached text/binary/SCPI sequences.
+  // - if `-check` is enabled, only that working copy may be converted into a readback-friendly
   //   form before comparison.
   // - the return code accumulates multiple error bits instead of stopping at first failure.
   int rc = RC_OK;
-  const value_t final = append_final_output(elements, input);
-  dump_sequence(elements, v);
-  transmit_sequence(tr, sc, elements, v);
+  auto [working_elements, final] = prepare_sequence_for_streaming(elements, input);
+  dump_sequence(working_elements, v);
+  transmit_sequence(tr, sc, working_elements, v);
   activate_trigger(sc, input, force_trigger, v);
 
   const double timeout = readback_timeout(input);
-  bool rb_failure = run_readback_check_phase(rb, elements, input, v, convert, timeout, rc);
+  bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout, rc);
   run_readback_dump_phase(rb, input, v, timeout);
 
   if (input.exists("-dont_wait"))

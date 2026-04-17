@@ -26,7 +26,8 @@ period)
 * ``-gate``: gate settings, specified by a [gate string](#gate-settings)
 * ``-gate_debug``: start the program in gate debug mode, the current state of gate signals is dumped
 every 100ms
-* ``-pll``, ``-pll_charge_pump``, ``-pll_bandwidth``: PLL settings, as explained [here](pptest.md#pll-settings)
+* ``-core_pll``, ``-core_pll_charge_pump``, ``-core_pll_bandwidth``: core-clock PLL settings, as explained [here](pptest.md#pll-settings)
+* ``-int_pll``, ``-int_pll_charge_pump``, ``-int_pll_bandwidth``: internal streamer-clock PLL settings, as explained [here](pptest.md#pll-settings)
 
 There are two modes of operation, burst mode and continuous mode.
 

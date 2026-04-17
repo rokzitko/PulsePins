@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 #include "tidbit.hh"
 #include "freqfmt.hh"
 #include "fpga.hh"
@@ -36,6 +37,17 @@ private:
   bool verbose;
 
 public:
+  static Ticks normalize_gate_len(const Ticks requested_gate_len) {
+    return std::max<Ticks>(1, requested_gate_len);
+  }
+
+  static useconds_t gate_wait_time_us(const Ticks current_gate_len, const double cnt_clk_freq_hz) {
+    if (!(cnt_clk_freq_hz > 0.0))
+      throw std::runtime_error("freq_meter: counter clock frequency must be positive");
+    const auto wait_us = std::llround(double(current_gate_len) / cnt_clk_freq_hz * 1000.0 * 1000.0);
+    return static_cast<useconds_t>(std::max<long long>(1, wait_us));
+  }
+
   freq_meter(const mm &dev, const std::uintptr_t base, const bool _verbose = false) :
     lctl(dev.get_addr(base, 0), "fm/ctl"),
     lgate_len(dev.get_addr(base, 4), "fm/gate_len"),
@@ -55,8 +67,8 @@ public:
 
   // Reprogram the measurement window and restart accumulation.
   void set_gate_len(Ticks new_gate_len) {
-    gate_len = std::max<Ticks>(1, new_gate_len);
-    lgate_len.write(new_gate_len);
+    gate_len = normalize_gate_len(new_gate_len);
+    lgate_len.write(gate_len);
     lctl.write(2); // clear
     lctl.write(1); // enable
     if (verbose)
@@ -103,7 +115,7 @@ public:
 
   // Wait long enough for one fresh measurement interval to complete.
   void wait_one_gate_time() const {
-    usleep( double(gate_len)/nominal_cnt_clk_freq * 1000*1000 );
+    usleep(gate_wait_time_us(gate_len, nominal_cnt_clk_freq));
   }
 };
 

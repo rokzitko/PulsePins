@@ -37,6 +37,7 @@ Standard commands:
 * `*RST` - clear loaded sequence and session state
 * `*CLS` - clear status and error queue
 * `*OPC` / `*OPC?` - operation complete flag/query
+* `*WAI` - compatibility no-op; `STREAM` itself is synchronous
 * `*ESR?` - standard event status register
 * `*STB?` - status byte
 * `SYST:ERR?` - query and drain the error queue
@@ -44,7 +45,7 @@ Standard commands:
 PulsePins-specific commands:
 
 * `TEST1` - run a built-in short self-test sequence
-* `SEQ <data>` - parse and load a sequence from textual representation
+* `SEQ <data>` - parse and load a sequence from textual representation, including `f`, `final`, and control-flow records supported by `parse_sequence_from_stream(...)`
 * `CHECK <bool>` - enable or disable readback checking during `STREAM`
 * `CHECK?` - query the current check setting
 * `STREAM` - send the currently loaded sequence and trigger execution
@@ -64,6 +65,8 @@ PulsePins-specific commands:
 
 * `STREAM` uses the same send/trigger path as the local tools, including optional readback verification.
 * `SEQ` stores the parsed sequence in memory; nothing is transmitted to the streamer until `STREAM` is issued.
+* Repeated `STREAM` commands reuse the stored sequence exactly as parsed; the cached session sequence is not rewritten by readback checking or final-output preparation.
+* Hardware-touching commands are serialized across sessions through the shared FPGA lock, so multiple clients can stay connected without racing each other on streamer/reset state.
 * The server is intended for remote orchestration, not for high-throughput binary bulk transfer.
 * Command-handler exceptions are converted into SCPI error/status state instead of tearing down the whole server process.
 * After `DISCONNECT`, clients can reconnect and start a fresh independent session.

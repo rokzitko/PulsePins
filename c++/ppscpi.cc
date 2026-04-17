@@ -91,6 +91,7 @@ private:
                 elements.push_back(el(1, 0b11));
                 auto input1 = input;
                 input1.add("-check");
+                auto lock = fpga.acquire_lock();
                 int rc = send_and_trig(s.fifo, s.sc, rb, ctr, elements, input1, force_trigger, v);
                 return (rc ? "FAILURE" : "SUCCESS");
               });
@@ -119,6 +120,7 @@ private:
               [this](const std::string&) {
                 auto input1 = input;
                 if (check) input1.add("-check");
+                auto lock = fpga.acquire_lock();
                 int rc = send_and_trig(s.fifo, s.sc, rb, ctr, elements, input1, force_trigger_p, v); // to do: async?
                 sesr_|=OPERATION_COMPLETE;
                 return (rc == 0 ? "SUCCESS" : "FAILURE");
@@ -144,6 +146,7 @@ public:
 protected:
   std::shared_ptr<ScpiSessionBase> make_session(tcp::socket socket) override {
     std::cout << "Connection from " << socket.remote_endpoint().address().to_string() << std::endl;
+    auto lock = fpga.acquire_lock();
     return std::make_shared<PPSession>(std::move(socket), input, fpga, v);
   }
 };

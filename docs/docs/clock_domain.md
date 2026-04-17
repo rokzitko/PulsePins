@@ -103,7 +103,7 @@ PLL programming and clock-source selection are separate operations.
 
 `FPGA::set_clk()` only performs the reset-wrapped source-switch sequence when the caller explicitly requested a source change through `ClockSelectionOptions`.
 
-`ppwebgui` now exposes the same source-switch path through `POST /api/clocking`, but keeps the applied clock choice in tracked controller state so later reset and stream operations reuse the updated source/profile settings instead of falling back to startup-only config.
+`ppwebgui` now exposes the same source-switch path through `POST /api/clocking`, but keeps the applied clock choice in tracked controller state so later reset and stream operations reuse the updated source/profile settings instead of falling back to startup-only config. If startup used no explicit source request or a raw `-clk` selector, that state stays tracked as read-only until the user explicitly applies a managed `int_clk` or `ext_clk` choice.
 
 ### Measured streamer clock
 

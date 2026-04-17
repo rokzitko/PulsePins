@@ -9,35 +9,89 @@
 
 #include "freq_meter.hh"
 #include "parser.hh"
+#include "pll_rules.hh"
 #include "ppworkflow.hh"
 #include "startup.hh"
 
 namespace {
 
-ClockSourceSelection clock_source_from_options(const ClockSelectionOptions &opts) {
-  if (opts.source == StreamerClockSource::external) {
-    return ClockSourceSelection::EXT_CLK;
+std::string clock_source_display_from_options(const ClockSelectionOptions &opts) {
+  if (!opts.source) {
+    return "startup default";
   }
-  if (opts.source == StreamerClockSource::raw_select && opts.raw_select && *opts.raw_select == ch_ext) {
-    return ClockSourceSelection::EXT_CLK;
+
+  switch (*opts.source) {
+  case StreamerClockSource::internal:
+    return "int_clk";
+  case StreamerClockSource::external:
+    return "ext_clk";
+  case StreamerClockSource::raw_select:
+    return "raw -clk " + std::to_string(opts.raw_select.value_or(0));
   }
-  return ClockSourceSelection::INT_CLK;
+
+  return "unknown";
+}
+
+bool clock_source_is_managed(const ClockSelectionOptions &opts) {
+  return opts.source == StreamerClockSource::internal || opts.source == StreamerClockSource::external;
 }
 
 ClockPllState pll_state_from_options(const PllOptions &opts) {
   return {opts.profile, opts.charge_pump, opts.bandwidth};
 }
 
-ClockSelectionOptions clock_selection_options_from_state(const ClockConfigState &state) {
+ClockConfigState clock_config_state_from_options(const ClockSelectionOptions &clock_selection,
+                                                 const PllOptions &core,
+                                                 const PllOptions &internal) {
+  ClockConfigState state;
+  state.selection = clock_selection;
+  state.source_display = clock_source_display_from_options(clock_selection);
+  state.source_managed = clock_source_is_managed(clock_selection);
+  state.core = pll_state_from_options(core);
+  state.internal = pll_state_from_options(internal);
+  return state;
+}
+
+ClockSelectionOptions clock_selection_options_from_request(const ClockConfigRequest &request) {
   ClockSelectionOptions opts;
-  opts.source = state.source == ClockSourceSelection::EXT_CLK
+  opts.source = request.source == ClockSourceSelection::EXT_CLK
     ? StreamerClockSource::external
     : StreamerClockSource::internal;
+  opts.raw_select.reset();
   return opts;
 }
 
 PllOptions pll_options_from_state(const ClockPllState &state) {
   return {state.profile, state.charge_pump, state.bandwidth};
+}
+
+void validate_pll_profile_string(const std::string &profile, const char *label) {
+  const auto resolved = applyReplacement(profile, pll_rules);
+  if (resolved.empty()) {
+    return;
+  }
+
+  std::istringstream iss(resolved);
+  int n = 0;
+  int m = 0;
+  int c = 0;
+  char comma1 = '\0';
+  char comma2 = '\0';
+  if (!(iss >> n >> comma1 >> m >> comma2 >> c) || comma1 != ',' || comma2 != ',') {
+    throw std::runtime_error(std::string("Invalid ") + label + " profile: '" + profile + "'");
+  }
+  iss >> std::ws;
+  if (!iss.eof()) {
+    throw std::runtime_error(std::string("Invalid ") + label + " profile: '" + profile + "'");
+  }
+}
+
+void validate_clock_config_state(const ClockConfigState &state) {
+  if (state.selection.source == StreamerClockSource::raw_select && !state.selection.raw_select.has_value()) {
+    throw std::runtime_error("Clock config is missing the raw -clk selector value");
+  }
+  validate_pll_profile_string(state.core.profile, "core_clk");
+  validate_pll_profile_string(state.internal.profile, "int_clk");
 }
 
 uint32_t pack_live_trigger_status(const trigger_t trigger_in, const port_t trigger_ctrl) {
@@ -153,9 +207,7 @@ WebGuiController::WebGuiController(FPGA &fpga_, const WebGuiRuntimeConfig &confi
   comb(qout_ctrl.cq),
   trig_comb(trigger_ctrl.ct) {
   snapshot.poll_ms = config.poll_ms;
-  snapshot.clocking.tracked.source = clock_source_from_options(config.clock_selection);
-  snapshot.clocking.tracked.core = pll_state_from_options(config.core_pll);
-  snapshot.clocking.tracked.internal = pll_state_from_options(config.int_pll);
+  snapshot.clocking.tracked = clock_config_state_from_options(config.clock_selection, config.core_pll, config.int_pll);
   snapshot.trigger_settings = trigger_config_from_options(config.trigger_options);
   combiner_base_config = config.combiner_request;
   snapshot.combiner_mode = to_string(combiner_base_config.mode);
@@ -178,8 +230,8 @@ StatusSnapshot WebGuiController::get_status_copy() {
 
 void WebGuiController::apply_clock_config(const ClockConfigRequest &request) {
   auto lock = fpga.acquire_lock();
-  snapshot.clocking.tracked = clock_config_from_request_locked(request);
-  reset_hardware_locked();
+  const auto requested = clock_config_from_request_locked(request);
+  reset_hardware_locked(requested);
   publish_action_locked("applied clock config", "");
 }
 
@@ -219,6 +271,9 @@ StreamResult WebGuiController::stream_text_sequence(StreamLaunchRequest request)
   try {
     std::stringstream sequence_stream(request.sequence_text);
     auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
+    if (explicit_final_output(sequence)) {
+      throw std::runtime_error("Sequence already contains an explicit final output; omit -t or remove the final record");
+    }
     const bool force_trigger_request = request.force_trigger_override.value_or(parsed_force_trigger);
 
     InputParser request_input(std::vector<std::string>{});
@@ -290,14 +345,17 @@ void WebGuiController::publish_stream_result_locked(const std::string &last_acti
 }
 
 void WebGuiController::reset_hardware_locked() {
+  reset_hardware_locked(read_clock_config_locked());
+}
+
+void WebGuiController::reset_hardware_locked(const ClockConfigState &clocking_state) {
   const auto preserved_combiner = read_combiner_config_locked();
-  const auto preserved_clocking = read_clock_config_locked();
   const auto preserved_trigger = read_trigger_config_locked();
   const auto preserved_override = snapshot.streamer.override_state;
 
   rstmgr rm;
   rm.s2f_reset(verbosity.verbose);
-  apply_clock_config_locked(preserved_clocking, true);
+  apply_clock_config_locked(clocking_state, true);
 
   play_streamer.set_initial_value_opts(config.streamer_options);
   fpga.output_enable(true);
@@ -347,7 +405,9 @@ CombinerRequest WebGuiController::read_combiner_config_locked() {
 
 ClockConfigState WebGuiController::clock_config_from_request_locked(const ClockConfigRequest &request) {
   ClockConfigState state = snapshot.clocking.tracked;
-  state.source = request.source;
+  state.selection = clock_selection_options_from_request(request);
+  state.source_display = request.source == ClockSourceSelection::EXT_CLK ? "ext_clk" : "int_clk";
+  state.source_managed = true;
   state.core.profile = request.core_profile;
   state.internal.profile = request.int_profile;
   return state;
@@ -373,7 +433,8 @@ StatusSnapshot WebGuiController::read_status_locked() {
 }
 
 void WebGuiController::apply_clock_config_locked(const ClockConfigState &state, const bool report_measurements) {
-  fpga.set_clk(clock_selection_options_from_state(state));
+  validate_clock_config_state(state);
+  fpga.set_clk(state.selection);
   fpga.pll_core.set_core_clk(pll_options_from_state(state.core), verbosity);
   fpga.pll_int.set_int_clk(pll_options_from_state(state.internal), verbosity);
   snapshot.clocking.tracked = state;

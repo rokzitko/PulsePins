@@ -151,10 +151,13 @@ const char *index_html = R"HTML(<!doctype html>
         </div>
       </div>
       <div id="clocking-form-state" class="form-state">Tracked clock settings are shown below. Local edits stay in the browser until you click Apply or Revert.</div>
-      <div class="panel-note">Applying clock settings reruns reset and bring-up, then remeasures clocks. Measured values below are the last captured snapshot, not live-polled frequencies.</div>
+      <div class="panel-note">Applying clock settings reruns reset and bring-up, then remeasures clocks. Measured values below are the last captured snapshot, not live-polled frequencies. The current tracked source is shown read-only below.</div>
+      <div class="settings-grid">
+        <div class="setting"><div class="label">Current tracked source</div><div id="clocking-source-current" class="mono"></div></div>
+      </div>
       <form id="clocking-form">
         <div class="settings-grid">
-          <label>Streamer clock source
+          <label>Managed streamer clock source
             <select name="source" id="clocking-source-select">
               <option value="int_clk">int_clk</option>
               <option value="ext_clk">ext_clk</option>
@@ -215,7 +218,7 @@ const char *index_html = R"HTML(<!doctype html>
           <button id="clocking-measure-button" type="button" class="secondary-button">Remeasure clocks</button>
         </div>
       </form>
-      <div class="meta">Profile menus expose the standard `pll_rules.hh` presets. If `ppwebgui` starts from a nonstandard current profile, that exact value is shown so the UI stays honest. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
+      <div class="meta">Profile menus expose the standard `pll_rules.hh` presets. If `ppwebgui` starts from a nonstandard current profile, that exact value is shown so the UI stays honest. If startup used an unmanaged/raw source selector, the current source stays read-only until you explicitly apply `int_clk` or `ext_clk` here. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
       <div class="settings-grid">
         <div class="setting"><div class="label">ext_clk</div><div id="clocking-ext-hz" class="mono"></div></div>
         <div class="setting"><div class="label">int_clk</div><div id="clocking-int-hz" class="mono"></div></div>
@@ -654,7 +657,7 @@ const char *app_js = R"JS((() => {
   const triggerLocalTag = document.getElementById('trigger-local-tag');
   const qoutLocalTag = document.getElementById('qout-local-tag');
   const combinerLocalTag = document.getElementById('combiner-local-tag');
-  const clockingCleanText = 'Tracked clock settings are shown below. Local edits stay in the browser until you click Apply or Revert.';
+  let clockingCleanText = 'Tracked clock settings are shown below. Local edits stay in the browser until you click Apply or Revert.';
   const triggerCleanText = 'Tracked trigger settings are shown below. Local edits stay in the browser until you click Apply or Revert.';
   const qoutCleanText = 'Tracked output-override values are shown below. Local edits stay in the browser until you click Apply or Revert.';
   const combinerCleanText = 'Tracked combiner values are shown below. Local edits stay in the browser until you click Apply or Revert.';
@@ -752,6 +755,13 @@ const char *app_js = R"JS((() => {
       'Local edit only. This clocking form differs from the tracked ppwebgui state until you click Apply or Revert.');
   }
 
+  function clockingCleanTextForStatus(clocking) {
+    if (clocking.tracked.source_managed) {
+      return 'Tracked clock settings are shown below. Local edits stay in the browser until you click Apply or Revert.';
+    }
+    return `Clock settings are tracked, but the current source (${clocking.tracked.source_display}) is read-only until you explicitly apply int_clk or ext_clk.`;
+  }
+
   function setTriggerDirty(dirty) {
     triggerDirty = dirty;
     setFormDirty(
@@ -791,8 +801,14 @@ const char *app_js = R"JS((() => {
     setText('clocking-int-hz', formatFrequencyHz(clocking.measured.int_clk_hz));
     setText('clocking-streamer-hz', formatFrequencyHz(clocking.measured.streamer_clk_hz));
     setText('clocking-core-hz', formatFrequencyHz(clocking.measured.core_clk_hz));
+    setText('clocking-source-current', clocking.tracked.source_display);
     if (!force && clockingDirty) return;
-    clockingSourceSelect.value = clocking.tracked.source;
+    clockingCleanText = clockingCleanTextForStatus(clocking);
+    if (clocking.tracked.source_managed) {
+      clockingSourceSelect.value = clocking.tracked.source;
+    } else {
+      clockingSourceSelect.value = 'int_clk';
+    }
     ensureSelectValue(clockingCoreProfileSelect, clocking.tracked.core_profile);
     ensureSelectValue(clockingIntProfileSelect, clocking.tracked.int_profile);
     setClockingDirty(false);

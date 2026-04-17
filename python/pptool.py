@@ -28,7 +28,7 @@ class pptool:
 
     def init(self):
         self.sc.set_initial_value(self.initial_value)
-        self.sc.reset(self.verbose)
+        self.sc.reset()
         self.rb.reset()
         self.rb.check_fill_status()
 

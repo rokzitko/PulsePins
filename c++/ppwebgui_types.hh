@@ -10,6 +10,7 @@
 
 #include "combiner.hh"
 #include "definitions.hh"
+#include "options.hh"
 
 struct PortState {
   uint32_t invert = 0;
@@ -42,7 +43,9 @@ struct ClockPllState {
 };
 
 struct ClockConfigState {
-  ClockSourceSelection source = ClockSourceSelection::INT_CLK;
+  ClockSelectionOptions selection;
+  std::string source_display = "startup default";
+  bool source_managed = false;
   ClockPllState core;
   ClockPllState internal;
 };

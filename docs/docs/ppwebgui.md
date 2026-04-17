@@ -2,7 +2,7 @@
 
 `ppwebgui` is a standalone host-side web server for PulsePins.
 
-It starts an embedded HTTP server, serves a small browser UI from the same binary, shows live AUX and trigger status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream PulsePins text sequences from the browser.
+It starts an embedded HTTP server, serves a small browser UI from the same binary, shows live AUX, trigger-input/control, and streamer-runtime status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream PulsePins text sequences from the browser.
 
 ## v1 scope
 
@@ -80,7 +80,7 @@ The page exposes these main sections:
 * Status Provenance: a legend explaining which values are live hardware polls, which are tracked by `ppwebgui`, and which form edits are still local to the browser
 * Live Hardware: AUX bits, trigger bits, trigger enable/force/reset flags, and the live streamer runtime status word
 * Tracked by ppwebgui: displayed qout, tracked idle streamer qout, output-override state, combiner mode, trigger mode, and recent action/error text
-* Clocking: tracked streamer clock-source selection plus tracked `core_clk` and `int_clk` PLL profiles, together with the last measured `ext_clk`, `int_clk`, `streamer_clk`, and `core_clk` frequencies
+* Clocking: a read-only display of the current tracked streamer clock source, editable managed `int_clk`/`ext_clk` selection, tracked `core_clk` and `int_clk` PLL profiles, and the last measured `ext_clk`, `int_clk`, `streamer_clk`, and `core_clk` frequencies
 * Trigger Settings: tracked trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask remain visible read-only
 * Output Override: one manual final-output override control for the active streamer path used by browser-triggered sequence playback
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
@@ -88,7 +88,7 @@ The page exposes these main sections:
 
 The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard current PLL profile, the current value is still surfaced in the menu so the browser state remains accurate.
 
-Applying clock settings reruns the same hardware reset/bring-up path used by **Reset hardware**, then remeasures all four clocks and returns the updated snapshot. The displayed frequencies are therefore measurement snapshots, not live-polled readbacks.
+Applying clock settings reruns the same hardware reset/bring-up path used by **Reset hardware**, then remeasures all four clocks and returns the updated snapshot. The displayed frequencies are therefore measurement snapshots, not live-polled readbacks. If startup used no explicit source request or a raw `-clk` selector, that current source is shown read-only until the user explicitly applies a managed `int_clk` or `ext_clk` choice.
 
 The trigger form uses the same semantic mode names as the CLI trigger tool:
 
@@ -101,13 +101,13 @@ The trigger form uses the same semantic mode names as the CLI trigger tool:
 
 `STANDARD` matches the CLI meaning: it selects the OR combiner path and forces all EXT trigger lines inverted. In the browser UI, `EXT invert` becomes read-only while `STANDARD` is selected so the visible form state stays consistent with the applied semantics.
 
-Browser-triggered streams first run the same hardware reset/bring-up sequence exposed by the **Reset hardware** button, then append the currently tracked idle raw qout value as the final output element. That keeps each run deterministic and starts the streamer from a clean reset state.
+Browser-triggered streams first run the same hardware reset/bring-up sequence exposed by the **Reset hardware** button, then append the currently tracked idle raw qout value as the final output element. That keeps each run deterministic and starts the streamer from a clean reset state. Because `ppwebgui` owns that final-output policy, sequence text submitted through the browser must not also contain an explicit `final ...` record.
 
-The header also includes a **Reset hardware** button. That action reruns the same FPGA-side bring-up sequence used by `ppwebgui` startup, including the FPGA reset-manager pulse, startup clock/PLL policy, and the startup frequency-meter report. After that it reapplies the current web-managed combiner and output-override settings so the browser state is preserved across the reset.
+The header also includes a **Reset hardware** button. That action reruns the same FPGA-side bring-up sequence used by `ppwebgui` startup, including the FPGA reset-manager pulse, tracked clock/PLL policy, and the startup frequency-meter report. After that it reapplies the current web-managed trigger, combiner, and output-override settings so the browser state is preserved across the reset. If the tracked source came from an unmanaged startup/raw selector state, that exact state is preserved instead of being coerced to `int_clk`.
 
 The backend keeps hardware access serialized and the UI polls `/api/status` at the configured interval.
 
-The current implementation restores live polling only for register paths that have been stable on the deployed hardware: AUX input state and the streamer runtime status word. Trigger-combiner settings, combiner routing, and the displayed qout values remain controller-managed snapshots so the web GUI does not re-enter the crashy register read paths.
+The current implementation restores live polling only for register paths that have been stable on the deployed hardware: AUX input state, external trigger input/control status, and the streamer runtime status word. Trigger-combiner settings, combiner routing, the clocking snapshot, and the displayed qout values remain controller-managed snapshots so the web GUI does not re-enter the crashy register read paths.
 
 ## Maintainer note
 
@@ -137,7 +137,7 @@ Higher layers should never own or relocate the hardware wrapper graph directly.
 
 While the user is editing the **Trigger Settings**, **Output Override**, or **Output Combiner** form, the browser keeps those local edits visible until **Apply** or **Revert local edits** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
 
-The **Clocking** form behaves the same way. Local clock edits stay in the browser until **Apply clock settings** or **Revert local edits** is pressed, while the measured frequency fields continue to reflect the last captured snapshot.
+The **Clocking** form behaves the same way. Local clock edits stay in the browser until **Apply clock settings** or **Revert local edits** is pressed, while the measured frequency fields continue to reflect the last captured snapshot. When the tracked source is unmanaged, the current source display remains read-only and the pulldown selects the next managed source to adopt if the user clicks **Apply clock settings**.
 
 Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
 
@@ -146,13 +146,13 @@ Values shown in the browser are rendered in hexadecimal by default. Input fields
 Version 1 keeps the API small:
 
 * `GET /api/status` returns JSON status for AUX, trigger state, trigger-combiner settings, active streamer qout state, combiner state, and recent action/error text
-* `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with `source`, `core_profile`, and `int_profile`; applying clock settings reruns reset/bring-up and then remeasures all clocks
+* `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with managed `source` (`int_clk` or `ext_clk`), `core_profile`, and `int_profile`; applying clock settings reruns reset/bring-up and then remeasures all clocks
 * `POST /api/clocking/measure` reruns the frequency-meter measurement path without changing tracked clock settings
 * `POST /api/trigger` expects an `application/x-www-form-urlencoded` body with `mode`, `invert_result`, `invert_int`, `invert_ext`, `invert_misc`, `mask_int`, `mask_ext`, and `mask_misc`
 * `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `override_enabled` and `override_value`
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
 * `POST /api/reset` reruns the `ppwebgui` FPGA bring-up path and reapplies the current web-managed settings
-* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`; before streaming, the backend reruns the `ppwebgui` hardware reset/bring-up path and then appends the current tracked idle raw qout as the final output value
+* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`; before streaming, the backend reruns the `ppwebgui` hardware reset/bring-up path and then appends the current tracked idle raw qout as the final output value, so submitted text must not already contain `final ...`
 
 The current implementation rejects oversized form submissions and limits `sequence_text` to 32 KiB per request.
 
@@ -198,6 +198,8 @@ and a `trigger_settings` object with:
 and a `clocking` object with:
 
 * `tracked.source`
+* `tracked.source_display`
+* `tracked.source_managed`
 * `tracked.core_profile`
 * `tracked.int_profile`
 * `measured.ext_clk_hz`
