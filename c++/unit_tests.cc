@@ -594,6 +594,26 @@ TEST_CASE("store rejects out-of-range slot") {
   CHECK_THROWS_WITH_AS(e.store(POSITIONS), "store() out of bounds", std::runtime_error);
 }
 
+TEST_CASE("set_control resynchronizes regular mode semantics") {
+  el e(3, BitFlip(0x03));
+  e.set_control(BITSET);
+
+  CHECK(e.control() == BITSET);
+  CHECK(e.updated_value(0x04) == 0x07);
+  CHECK(contains(e.desc(), bitsetstring));
+}
+
+TEST_CASE("set_control preserves plain authored regular description for BITLOAD control") {
+  Counter c1(10);
+  Value v1(42);
+  el e(el_type::regular, c1, v1);
+  e.set_control(BITLOAD);
+
+  CHECK(e.updated_value(0x00) == 42);
+  CHECK(!contains(e.desc(), bitloadstring));
+  CHECK(contains(e.desc(), "[           42]"));
+}
+
 TEST_CASE("convert_to_BitLoad") {
   Sequence s1;
   s1.push_back(el(1, BitLoad(1)));

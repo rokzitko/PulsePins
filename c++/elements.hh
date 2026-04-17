@@ -19,6 +19,8 @@
 
 // Element types: regular (value update), trigger conditions, replay, sequence terminator, retrigger, random
 enum class el_type { regular, trigger, replay, final, retrig, prng };
+enum class counter_kind_t { plain, strobe, nostrobe };
+enum class value_kind_t { plain, bitload, bitset, bitclear, bitflip, bitnot, bit_and, bit_or, bitxor, bitxnor, bitsll, bitsrl, trigger };
 
 inline constexpr char strobestring[] = "(strobe)";
 inline constexpr char nostrobestring[] = "(no strobe)";
@@ -42,6 +44,7 @@ public:
   }
   virtual control_t control_bits() const { return 0; } // corresponding control bits (that need to be or'd in)
   virtual std::string desc() const { return ""; } // descriptive string
+  virtual counter_kind_t kind() const { return counter_kind_t::plain; }
 };
 
 // wrapper class for storing the counter for elements that need to be strobed out
@@ -51,6 +54,7 @@ public:
   Strobe(count_t c) : Counter(c) {}
   control_t control_bits() const override { return STROBE; }
   std::string desc() const override { return strobestring; }
+  counter_kind_t kind() const override { return counter_kind_t::strobe; }
 };
 
 // wrapper class for storing the counter for elements that are emitted without strobing
@@ -60,6 +64,7 @@ public:
   NoStrobe(count_t c) : Counter(c) {}
   control_t control_bits() const override { return NOSTROBE; }
   std::string desc() const override { return nostrobestring; }
+  counter_kind_t kind() const override { return counter_kind_t::nostrobe; }
 };
 
 inline constexpr char bitloadstring[] = "(load)";
@@ -91,6 +96,7 @@ public:
   virtual value_t result([[maybe_unused]] const value_t v_prev) const { return v; }
   virtual control_t mode_bits() const { return 0; }
   virtual std::string desc() const { return ""; }
+  virtual value_kind_t kind() const { return value_kind_t::plain; }
 };
 
 // wrapper class for storing a bit setting pattern
@@ -101,6 +107,7 @@ public:
   value_t result([[maybe_unused]] const value_t v_prev) const override { return v; }
   control_t mode_bits() const override { return BITLOAD; }
   std::string desc() const override { return bitloadstring; }
+  value_kind_t kind() const override { return value_kind_t::bitload; }
 };
 
 // wrapper class for storing a bit setting pattern
@@ -111,6 +118,7 @@ public:
   value_t result(const value_t v_prev) const override { return v_prev | v; }
   control_t mode_bits() const override { return BITSET; }
   std::string desc() const override { return bitsetstring; }
+  value_kind_t kind() const override { return value_kind_t::bitset; }
 };
 
 // wrapper class for storing a bit clearing pattern
@@ -121,6 +129,7 @@ public:
   value_t result(const value_t v_prev) const override { return v_prev & ~v; }
   control_t mode_bits() const override { return BITCLEAR; }
   std::string desc() const override { return bitclearstring; }
+  value_kind_t kind() const override { return value_kind_t::bitclear; }
 };
 
 // wrapper class for string a bit flipping pattern
@@ -131,6 +140,7 @@ public:
   value_t result(const value_t v_prev) const override { return v_prev ^ v; }
   control_t mode_bits() const override { return BITFLIP; }
   std::string desc() const override { return bitflipstring; }
+  value_kind_t kind() const override { return value_kind_t::bitflip; }
 };
 
 class BitNot : public Value
@@ -140,6 +150,7 @@ public:
   value_t result(const value_t v_prev) const override { return ~v_prev; }
   control_t mode_bits() const override { return BITNOT; }
   std::string desc() const override { return bitnotstring; }
+  value_kind_t kind() const override { return value_kind_t::bitnot; }
 };
 
 class BitAnd : public Value
@@ -149,6 +160,7 @@ public:
   value_t result(const value_t v_prev) const override { return v & v_prev; }
   control_t mode_bits() const override { return BITAND; }
   std::string desc() const override { return bitandstring; }
+  value_kind_t kind() const override { return value_kind_t::bit_and; }
 };
 
 class BitOr : public Value
@@ -158,6 +170,7 @@ public:
   value_t result(const value_t v_prev) const override { return v | v_prev; }
   control_t mode_bits() const override { return BITOR; }
   std::string desc() const override { return bitorstring; }
+  value_kind_t kind() const override { return value_kind_t::bit_or; }
 };
 
 class BitXor : public Value
@@ -167,6 +180,7 @@ public:
   value_t result(const value_t v_prev) const override { return v ^ v_prev; }
   control_t mode_bits() const override { return BITXOR; }
   std::string desc() const override { return bitxorstring; }
+  value_kind_t kind() const override { return value_kind_t::bitxor; }
 };
 
 class BitXnor : public Value
@@ -176,6 +190,7 @@ public:
   value_t result(const value_t v_prev) const override { return ~(v ^ v_prev); }
   control_t mode_bits() const override { return BITXNOR; }
   std::string desc() const override { return bitxnorstring; }
+  value_kind_t kind() const override { return value_kind_t::bitxnor; }
 };
 
 class BitSll : public Value
@@ -185,6 +200,7 @@ public:
   value_t result(const value_t v_prev) const override { return sll(v_prev, v); }
   control_t mode_bits() const override { return BITSLL; }
   std::string desc() const override { return bitsllstring; }
+  value_kind_t kind() const override { return value_kind_t::bitsll; }
 };
 
 class BitSrl : public Value
@@ -194,6 +210,7 @@ public:
   value_t result(const value_t v_prev) const override { return srl(v_prev, v); }
   control_t mode_bits() const override { return BITSRL; }
   std::string desc() const override { return bitsrlstring; }
+  value_kind_t kind() const override { return value_kind_t::bitsrl; }
 };
 
 class TriggerCondition : public Value
@@ -204,6 +221,7 @@ public:
   TriggerCondition(trigger_t pattern, trigger_t mask, bool _final) : Value(((value_t)mask << WIDTH_TRIGGER) + (value_t)pattern), final(_final) {}
   control_t mode_bits() const override { return TRIGGER | (final ? TRIGGERFINAL : 0); }
   std::string desc() const override { return std::string(triggerstring) + (final ? finalstring : ""); }
+  value_kind_t kind() const override { return value_kind_t::trigger; }
   std::string value_str() const override {
     std::stringstream ss;
     trigger_t pattern = v & TRIGGER_MASK;
@@ -223,50 +241,51 @@ struct PseudoRandom{};
 class el
 {
 private:
-  enum class CounterKind { plain, strobe, nostrobe };
-  enum class ValueKind { plain, bitload, bitset, bitclear, bitflip, bitnot, bit_and, bit_or, bitxor, bitxnor, bitsll, bitsrl, trigger };
-
   el_type t; // regular, trigger or final(terminator)
   control_t y;
   count_t c;
   value_t v;
-  CounterKind counter_kind;
-  ValueKind value_kind;
+  counter_kind_t counter_kind;
+  value_kind_t value_kind;
 
-  static CounterKind counter_kind_from(const Counter &counter) {
-    if (dynamic_cast<const NoStrobe *>(&counter))
-      return CounterKind::nostrobe;
-    if (dynamic_cast<const Strobe *>(&counter))
-      return CounterKind::strobe;
-    return CounterKind::plain;
+  static value_kind_t value_kind_from_mode_bits(control_t control, value_kind_t fallback) {
+    switch (control & MODEBITS) {
+      case BITLOAD:
+        return fallback == value_kind_t::plain ? value_kind_t::plain : value_kind_t::bitload;
+      case BITSET:
+        return value_kind_t::bitset;
+      case BITCLEAR:
+        return value_kind_t::bitclear;
+      case BITFLIP:
+        return value_kind_t::bitflip;
+      case BITNOT:
+        return value_kind_t::bitnot;
+      case BITAND:
+        return value_kind_t::bit_and;
+      case BITOR:
+        return value_kind_t::bit_or;
+      case BITXOR:
+        return value_kind_t::bitxor;
+      case BITXNOR:
+        return value_kind_t::bitxnor;
+      case BITSLL:
+        return value_kind_t::bitsll;
+      case BITSRL:
+        return value_kind_t::bitsrl;
+      default:
+        throw std::runtime_error("Unknown regular value mode");
+    }
   }
 
-  static ValueKind value_kind_from(const Value &value) {
-    if (dynamic_cast<const TriggerCondition *>(&value))
-      return ValueKind::trigger;
-    if (dynamic_cast<const BitLoad *>(&value))
-      return ValueKind::bitload;
-    if (dynamic_cast<const BitSet *>(&value))
-      return ValueKind::bitset;
-    if (dynamic_cast<const BitClear *>(&value))
-      return ValueKind::bitclear;
-    if (dynamic_cast<const BitFlip *>(&value))
-      return ValueKind::bitflip;
-    if (dynamic_cast<const BitNot *>(&value))
-      return ValueKind::bitnot;
-    if (dynamic_cast<const BitAnd *>(&value))
-      return ValueKind::bit_and;
-    if (dynamic_cast<const BitOr *>(&value))
-      return ValueKind::bit_or;
-    if (dynamic_cast<const BitXor *>(&value))
-      return ValueKind::bitxor;
-    if (dynamic_cast<const BitXnor *>(&value))
-      return ValueKind::bitxnor;
-    if (dynamic_cast<const BitSll *>(&value))
-      return ValueKind::bitsll;
-    if (dynamic_cast<const BitSrl *>(&value))
-      return ValueKind::bitsrl;
-    return ValueKind::plain;
+  void sync_cached_state_from_control() {
+    if (t == el_type::regular) {
+      if ((y & NOSTROBE) == NOSTROBE) {
+        counter_kind = counter_kind_t::nostrobe;
+      } else if (counter_kind == counter_kind_t::nostrobe) {
+        counter_kind = counter_kind_t::plain;
+      }
+      value_kind = value_kind_from_mode_bits(y, value_kind);
+    }
   }
 
   static std::string count_str(count_t count) {
@@ -281,30 +300,30 @@ private:
     return ss.str();
   }
 
-  static std::string counter_desc(CounterKind kind) {
+  static std::string counter_desc(counter_kind_t kind) {
     switch (kind) {
-      case CounterKind::plain: return "";
-      case CounterKind::strobe: return strobestring;
-      case CounterKind::nostrobe: return nostrobestring;
+      case counter_kind_t::plain: return "";
+      case counter_kind_t::strobe: return strobestring;
+      case counter_kind_t::nostrobe: return nostrobestring;
     }
     throw std::runtime_error("Unknown counter kind");
   }
 
-  static std::string value_desc(ValueKind kind) {
+  static std::string value_desc(value_kind_t kind) {
     switch (kind) {
-      case ValueKind::plain: return "";
-      case ValueKind::bitload: return bitloadstring;
-      case ValueKind::bitset: return bitsetstring;
-      case ValueKind::bitclear: return bitclearstring;
-      case ValueKind::bitflip: return bitflipstring;
-      case ValueKind::bitnot: return bitnotstring;
-      case ValueKind::bit_and: return bitandstring;
-      case ValueKind::bit_or: return bitorstring;
-      case ValueKind::bitxor: return bitxorstring;
-      case ValueKind::bitxnor: return bitxnorstring;
-      case ValueKind::bitsll: return bitsllstring;
-      case ValueKind::bitsrl: return bitsrlstring;
-      case ValueKind::trigger: return triggerstring;
+      case value_kind_t::plain: return "";
+      case value_kind_t::bitload: return bitloadstring;
+      case value_kind_t::bitset: return bitsetstring;
+      case value_kind_t::bitclear: return bitclearstring;
+      case value_kind_t::bitflip: return bitflipstring;
+      case value_kind_t::bitnot: return bitnotstring;
+      case value_kind_t::bit_and: return bitandstring;
+      case value_kind_t::bit_or: return bitorstring;
+      case value_kind_t::bitxor: return bitxorstring;
+      case value_kind_t::bitxnor: return bitxnorstring;
+      case value_kind_t::bitsll: return bitsllstring;
+      case value_kind_t::bitsrl: return bitsrlstring;
+      case value_kind_t::trigger: return triggerstring;
     }
     throw std::runtime_error("Unknown value kind");
   }
@@ -325,29 +344,29 @@ private:
 
   value_t apply_value(value_t previous) const {
     switch (value_kind) {
-      case ValueKind::plain:
-      case ValueKind::bitload:
-      case ValueKind::trigger:
+      case value_kind_t::plain:
+      case value_kind_t::bitload:
+      case value_kind_t::trigger:
         return v;
-      case ValueKind::bitset:
+      case value_kind_t::bitset:
         return previous | v;
-      case ValueKind::bitclear:
+      case value_kind_t::bitclear:
         return previous & ~v;
-      case ValueKind::bitflip:
+      case value_kind_t::bitflip:
         return previous ^ v;
-      case ValueKind::bitnot:
+      case value_kind_t::bitnot:
         return ~previous;
-      case ValueKind::bit_and:
+      case value_kind_t::bit_and:
         return v & previous;
-      case ValueKind::bit_or:
+      case value_kind_t::bit_or:
         return v | previous;
-      case ValueKind::bitxor:
+      case value_kind_t::bitxor:
         return v ^ previous;
-      case ValueKind::bitxnor:
+      case value_kind_t::bitxnor:
         return ~(v ^ previous);
-      case ValueKind::bitsll:
+      case value_kind_t::bitsll:
         return sll(previous, v);
-      case ValueKind::bitsrl:
+      case value_kind_t::bitsrl:
         return srl(previous, v);
     }
     throw std::runtime_error("Unknown value kind");
@@ -360,8 +379,8 @@ public:
         y(_cc.control_bits() | _vv.mode_bits() | _y),
         c(_cc.count()),
         v(_vv.value()),
-        counter_kind(counter_kind_from(_cc)),
-        value_kind(value_kind_from(_vv)) {
+        counter_kind(_cc.kind()),
+        value_kind(_vv.kind()) {
   }
   // Sequence terminator
   el(value_t _v = default_final_value) : el(el_type::final, Counter(1), Value(_v), TERMINATE) {}
@@ -390,16 +409,19 @@ public:
     return *this;
   }
 
-  void set_control(control_t _y) { y = _y; }
+  void set_control(control_t _y) {
+    y = _y;
+    sync_cached_state_from_control();
+  }
   void set_count(count_t _c) { c = _c; }
   void set_count(const Counter &_cc) {
     c = _cc.count();
-    counter_kind = counter_kind_from(_cc);
+    counter_kind = _cc.kind();
     y = (y & ~NOSTROBE) | _cc.control_bits();
   }
   void set_value(const Value &_vv) {
     v = _vv.value();
-    value_kind = value_kind_from(_vv);
+    value_kind = _vv.kind();
     y = (y & ~(MODEBITS | TRIGGERBITS)) | _vv.mode_bits();
   }
 
