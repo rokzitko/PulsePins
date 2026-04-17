@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <array>
 #include <bitset>
 #include <cstdint> // integer types, uint32_t, etc.
 #include <iostream>
@@ -22,6 +23,58 @@ enum class el_type { regular, trigger, replay, final, retrig, prng };
 enum class counter_kind_t { plain, strobe, nostrobe };
 enum class value_kind_t { plain, bitload, bitset, bitclear, bitflip, bitnot, bit_and, bit_or, bitxor, bitxnor, bitsll, bitsrl, trigger };
 
+inline value_t apply_value_kind(value_kind_t kind, value_t operand, value_t previous) {
+  switch (kind) {
+    case value_kind_t::plain:
+    case value_kind_t::bitload:
+    case value_kind_t::trigger:
+      return operand;
+    case value_kind_t::bitset:
+      return previous | operand;
+    case value_kind_t::bitclear:
+      return previous & ~operand;
+    case value_kind_t::bitflip:
+      return previous ^ operand;
+    case value_kind_t::bitnot:
+      return ~previous;
+    case value_kind_t::bit_and:
+      return operand & previous;
+    case value_kind_t::bit_or:
+      return operand | previous;
+    case value_kind_t::bitxor:
+      return operand ^ previous;
+    case value_kind_t::bitxnor:
+      return ~(operand ^ previous);
+    case value_kind_t::bitsll:
+      return sll(previous, operand);
+    case value_kind_t::bitsrl:
+      return srl(previous, operand);
+  }
+  throw std::runtime_error("Unknown value kind");
+}
+
+inline std::string format_count(count_t count) {
+  std::stringstream ss;
+  ss << "count=" << hex8(count) << " [" << dec13(count) << "]";
+  return ss.str();
+}
+
+inline std::string format_value(value_t value) {
+  std::stringstream ss;
+  ss << "value=" << hex8(value) << " [" << dec13(value) << "]";
+  return ss.str();
+}
+
+inline std::string format_trigger_value(value_t value) {
+  const auto pattern = static_cast<trigger_t>(value & TRIGGER_MASK);
+  const auto mask = static_cast<trigger_t>((value >> WIDTH_TRIGGER) & TRIGGER_MASK);
+  std::stringstream ss;
+  ss << "0x" << std::hex << int(value) << " "
+     << "trig=0x" << std::hex << int(pattern) << " {" << std::bitset<WIDTH_TRIGGER>(int(pattern)) << "} "
+     << "mask=0x" << std::hex << int(mask) << " {" << std::bitset<WIDTH_TRIGGER>(int(mask)) << "}";
+  return ss.str();
+}
+
 inline constexpr char strobestring[] = "(strobe)";
 inline constexpr char nostrobestring[] = "(no strobe)";
 inline constexpr char finalstring[] = "(final)";
@@ -38,34 +91,26 @@ public:
   virtual ~Counter() = default;
   count_t count() const noexcept { return c; }
   virtual std::string count_str() const {
-    std::stringstream ss;
-    ss << "count=" << hex8(count()) << " [" << dec13(count()) << "]";
-    return ss.str();
+    return format_count(count());
   }
   virtual control_t control_bits() const { return 0; } // corresponding control bits (that need to be or'd in)
   virtual std::string desc() const { return ""; } // descriptive string
   virtual counter_kind_t kind() const { return counter_kind_t::plain; }
 };
 
-// wrapper class for storing the counter for elements that need to be strobed out
-class Strobe : public Counter
-{
+template<control_t ControlBits, counter_kind_t Kind, const char *DescString>
+class TaggedCounter : public Counter {
 public:
-  Strobe(count_t c) : Counter(c) {}
-  control_t control_bits() const override { return STROBE; }
-  std::string desc() const override { return strobestring; }
-  counter_kind_t kind() const override { return counter_kind_t::strobe; }
+  using Counter::Counter;
+  control_t control_bits() const override { return ControlBits; }
+  std::string desc() const override { return DescString; }
+  counter_kind_t kind() const override { return Kind; }
 };
 
+using Strobe = TaggedCounter<STROBE, counter_kind_t::strobe, strobestring>;
+
 // wrapper class for storing the counter for elements that are emitted without strobing
-class NoStrobe : public Counter
-{
-public:
-  NoStrobe(count_t c) : Counter(c) {}
-  control_t control_bits() const override { return NOSTROBE; }
-  std::string desc() const override { return nostrobestring; }
-  counter_kind_t kind() const override { return counter_kind_t::nostrobe; }
-};
+using NoStrobe = TaggedCounter<NOSTROBE, counter_kind_t::nostrobe, nostrobestring>;
 
 inline constexpr char bitloadstring[] = "(load)";
 inline constexpr char bitsetstring[] = "(set)";
@@ -89,129 +134,34 @@ public:
   virtual ~Value() = default;
   value_t value() const { return v; }
   virtual std::string value_str() const{
-    std::stringstream ss;
-    ss << "value=" << hex8(value()) << " [" << dec13(value()) << "]";
-    return ss.str();
+    return format_value(value());
   }
-  virtual value_t result([[maybe_unused]] const value_t v_prev) const { return v; }
+  virtual value_t result([[maybe_unused]] const value_t v_prev) const { return apply_value_kind(kind(), v, v_prev); }
   virtual control_t mode_bits() const { return 0; }
   virtual std::string desc() const { return ""; }
   virtual value_kind_t kind() const { return value_kind_t::plain; }
 };
 
-// wrapper class for storing a bit setting pattern
-class BitLoad : public Value
-{
+template<control_t ModeBits, value_kind_t Kind, const char *DescString>
+class TaggedValue : public Value {
 public:
-  BitLoad(value_t _v) : Value(_v) {}
-  value_t result([[maybe_unused]] const value_t v_prev) const override { return v; }
-  control_t mode_bits() const override { return BITLOAD; }
-  std::string desc() const override { return bitloadstring; }
-  value_kind_t kind() const override { return value_kind_t::bitload; }
+  using Value::Value;
+  control_t mode_bits() const override { return ModeBits; }
+  std::string desc() const override { return DescString; }
+  value_kind_t kind() const override { return Kind; }
 };
 
-// wrapper class for storing a bit setting pattern
-class BitSet : public Value
-{
-public:
-  BitSet(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return v_prev | v; }
-  control_t mode_bits() const override { return BITSET; }
-  std::string desc() const override { return bitsetstring; }
-  value_kind_t kind() const override { return value_kind_t::bitset; }
-};
-
-// wrapper class for storing a bit clearing pattern
-class BitClear : public Value
-{
-public:
-  BitClear(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return v_prev & ~v; }
-  control_t mode_bits() const override { return BITCLEAR; }
-  std::string desc() const override { return bitclearstring; }
-  value_kind_t kind() const override { return value_kind_t::bitclear; }
-};
-
-// wrapper class for string a bit flipping pattern
-class BitFlip : public Value
-{
-public:
-  BitFlip(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return v_prev ^ v; }
-  control_t mode_bits() const override { return BITFLIP; }
-  std::string desc() const override { return bitflipstring; }
-  value_kind_t kind() const override { return value_kind_t::bitflip; }
-};
-
-class BitNot : public Value
-{
-public:
-  BitNot(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return ~v_prev; }
-  control_t mode_bits() const override { return BITNOT; }
-  std::string desc() const override { return bitnotstring; }
-  value_kind_t kind() const override { return value_kind_t::bitnot; }
-};
-
-class BitAnd : public Value
-{
-public:
-  BitAnd(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return v & v_prev; }
-  control_t mode_bits() const override { return BITAND; }
-  std::string desc() const override { return bitandstring; }
-  value_kind_t kind() const override { return value_kind_t::bit_and; }
-};
-
-class BitOr : public Value
-{
-public:
-  BitOr(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return v | v_prev; }
-  control_t mode_bits() const override { return BITOR; }
-  std::string desc() const override { return bitorstring; }
-  value_kind_t kind() const override { return value_kind_t::bit_or; }
-};
-
-class BitXor : public Value
-{
-public:
-  BitXor(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return v ^ v_prev; }
-  control_t mode_bits() const override { return BITXOR; }
-  std::string desc() const override { return bitxorstring; }
-  value_kind_t kind() const override { return value_kind_t::bitxor; }
-};
-
-class BitXnor : public Value
-{
-public:
-  BitXnor(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return ~(v ^ v_prev); }
-  control_t mode_bits() const override { return BITXNOR; }
-  std::string desc() const override { return bitxnorstring; }
-  value_kind_t kind() const override { return value_kind_t::bitxnor; }
-};
-
-class BitSll : public Value
-{
-public:
-  BitSll(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return sll(v_prev, v); }
-  control_t mode_bits() const override { return BITSLL; }
-  std::string desc() const override { return bitsllstring; }
-  value_kind_t kind() const override { return value_kind_t::bitsll; }
-};
-
-class BitSrl : public Value
-{
-public:
-  BitSrl(value_t _v) : Value(_v) {}
-  value_t result(const value_t v_prev) const override { return srl(v_prev, v); }
-  control_t mode_bits() const override { return BITSRL; }
-  std::string desc() const override { return bitsrlstring; }
-  value_kind_t kind() const override { return value_kind_t::bitsrl; }
-};
+using BitLoad = TaggedValue<BITLOAD, value_kind_t::bitload, bitloadstring>;
+using BitSet = TaggedValue<BITSET, value_kind_t::bitset, bitsetstring>;
+using BitClear = TaggedValue<BITCLEAR, value_kind_t::bitclear, bitclearstring>;
+using BitFlip = TaggedValue<BITFLIP, value_kind_t::bitflip, bitflipstring>;
+using BitNot = TaggedValue<BITNOT, value_kind_t::bitnot, bitnotstring>;
+using BitAnd = TaggedValue<BITAND, value_kind_t::bit_and, bitandstring>;
+using BitOr = TaggedValue<BITOR, value_kind_t::bit_or, bitorstring>;
+using BitXor = TaggedValue<BITXOR, value_kind_t::bitxor, bitxorstring>;
+using BitXnor = TaggedValue<BITXNOR, value_kind_t::bitxnor, bitxnorstring>;
+using BitSll = TaggedValue<BITSLL, value_kind_t::bitsll, bitsllstring>;
+using BitSrl = TaggedValue<BITSRL, value_kind_t::bitsrl, bitsrlstring>;
 
 class TriggerCondition : public Value
 {
@@ -222,15 +172,7 @@ public:
   control_t mode_bits() const override { return TRIGGER | (final ? TRIGGERFINAL : 0); }
   std::string desc() const override { return std::string(triggerstring) + (final ? finalstring : ""); }
   value_kind_t kind() const override { return value_kind_t::trigger; }
-  std::string value_str() const override {
-    std::stringstream ss;
-    trigger_t pattern = v & TRIGGER_MASK;
-    trigger_t mask = (v >> WIDTH_TRIGGER) & TRIGGER_MASK;
-    ss << "0x" << std::hex << int(v) << " "
-        << "trig=0x" << std::hex << int(pattern) << " {" << std::bitset<WIDTH_TRIGGER>(int(pattern)) << "} "
-        << "mask=0x" << std::hex << int(mask)    << " {" << std::bitset<WIDTH_TRIGGER>(int(mask))    << "}";
-    return ss.str();
-  }
+  std::string value_str() const override { return format_trigger_value(v); }
 };
 
 // markers
@@ -241,38 +183,51 @@ struct PseudoRandom{};
 class el
 {
 private:
+  struct regular_mode_spec {
+    control_t mode;
+    value_kind_t kind;
+    const char *token;
+  };
+
   control_t y;
   count_t c;
   value_t v;
   counter_kind_t counter_kind;
   value_kind_t value_kind;
 
+  static constexpr std::array<regular_mode_spec, 11> regular_modes = {{
+      {BITLOAD, value_kind_t::bitload, "d"},
+      {BITSET, value_kind_t::bitset, "s"},
+      {BITCLEAR, value_kind_t::bitclear, "c"},
+      {BITFLIP, value_kind_t::bitflip, "x"},
+      {BITNOT, value_kind_t::bitnot, "n"},
+      {BITAND, value_kind_t::bit_and, "a"},
+      {BITOR, value_kind_t::bit_or, "o"},
+      {BITXOR, value_kind_t::bitxor, "xr"},
+      {BITXNOR, value_kind_t::bitxnor, "xn"},
+      {BITSLL, value_kind_t::bitsll, "sl"},
+      {BITSRL, value_kind_t::bitsrl, "sr"},
+  }};
+
+  static const regular_mode_spec *find_regular_mode_by_mode(control_t control) {
+    const control_t mode = control & MODEBITS;
+    for (const auto &spec : regular_modes)
+      if (spec.mode == mode)
+        return &spec;
+    return nullptr;
+  }
+
+  static const regular_mode_spec *find_regular_mode_by_token(const std::string &token) {
+    for (const auto &spec : regular_modes)
+      if (token == spec.token)
+        return &spec;
+    return nullptr;
+  }
+
   static value_kind_t value_kind_from_mode_bits(control_t control) {
-    switch (control & MODEBITS) {
-      case BITLOAD: return value_kind_t::bitload;
-      case BITSET:
-        return value_kind_t::bitset;
-      case BITCLEAR:
-        return value_kind_t::bitclear;
-      case BITFLIP:
-        return value_kind_t::bitflip;
-      case BITNOT:
-        return value_kind_t::bitnot;
-      case BITAND:
-        return value_kind_t::bit_and;
-      case BITOR:
-        return value_kind_t::bit_or;
-      case BITXOR:
-        return value_kind_t::bitxor;
-      case BITXNOR:
-        return value_kind_t::bitxnor;
-      case BITSLL:
-        return value_kind_t::bitsll;
-      case BITSRL:
-        return value_kind_t::bitsrl;
-      default:
-        throw std::runtime_error("Unknown regular value mode");
-    }
+    if (const auto *spec = find_regular_mode_by_mode(control))
+      return spec->kind;
+    throw std::runtime_error("Unknown regular value mode");
   }
 
   static value_kind_t normalized_regular_value_kind(const Value &value) {
@@ -309,15 +264,11 @@ private:
   }
 
   static std::string count_str(count_t count) {
-    std::stringstream ss;
-    ss << "count=" << hex8(count) << " [" << dec13(count) << "]";
-    return ss.str();
+    return format_count(count);
   }
 
   static std::string value_str(value_t value) {
-    std::stringstream ss;
-    ss << "value=" << hex8(value) << " [" << dec13(value) << "]";
-    return ss.str();
+    return format_value(value);
   }
 
   static std::string counter_desc(counter_kind_t kind) {
@@ -349,13 +300,7 @@ private:
   }
 
   std::string trigger_value_str() const {
-    std::stringstream ss;
-    const trigger_t pattern = trigger_pattern();
-    const trigger_t mask = trigger_mask();
-    ss << "0x" << std::hex << int(v) << " "
-       << "trig=0x" << std::hex << int(pattern) << " {" << std::bitset<WIDTH_TRIGGER>(int(pattern)) << "} "
-       << "mask=0x" << std::hex << int(mask) << " {" << std::bitset<WIDTH_TRIGGER>(int(mask)) << "}";
-    return ss.str();
+    return format_trigger_value(v);
   }
 
   std::string trigger_desc() const {
@@ -363,57 +308,13 @@ private:
   }
 
   value_t apply_value(value_t previous) const {
-    switch (value_kind) {
-      case value_kind_t::plain:
-      case value_kind_t::bitload:
-      case value_kind_t::trigger:
-        return v;
-      case value_kind_t::bitset:
-        return previous | v;
-      case value_kind_t::bitclear:
-        return previous & ~v;
-      case value_kind_t::bitflip:
-        return previous ^ v;
-      case value_kind_t::bitnot:
-        return ~previous;
-      case value_kind_t::bit_and:
-        return v & previous;
-      case value_kind_t::bit_or:
-        return v | previous;
-      case value_kind_t::bitxor:
-        return v ^ previous;
-      case value_kind_t::bitxnor:
-        return ~(v ^ previous);
-      case value_kind_t::bitsll:
-        return sll(previous, v);
-      case value_kind_t::bitsrl:
-        return srl(previous, v);
-    }
-    throw std::runtime_error("Unknown value kind");
+    return apply_value_kind(value_kind, v, previous);
   }
 
   static el regular_from_control(control_t control, count_t count, value_t value) {
-    const auto make_element = [control, count](const Value &regular_value) {
-      el e = no_strobe_from_control(control) ? el(NoStrobe(count), regular_value) : el(Counter(count), regular_value);
-      e.set_control(control);
-      return e;
-    };
-
-    switch (mode_from_control(control)) {
-      case BITLOAD: return make_element(BitLoad(value));
-      case BITSET: return make_element(BitSet(value));
-      case BITCLEAR: return make_element(BitClear(value));
-      case BITFLIP: return make_element(BitFlip(value));
-      case BITNOT: return make_element(BitNot(value));
-      case BITAND: return make_element(BitAnd(value));
-      case BITOR: return make_element(BitOr(value));
-      case BITXOR: return make_element(BitXor(value));
-      case BITXNOR: return make_element(BitXnor(value));
-      case BITSLL: return make_element(BitSll(value));
-      case BITSRL: return make_element(BitSrl(value));
-      default:
-        throw std::runtime_error("Unsupported regular element mode in binary sequence reader");
-    }
+    return el(control, count, value,
+              no_strobe_from_control(control) ? counter_kind_t::nostrobe : counter_kind_t::plain,
+              value_kind_from_mode_bits(control));
   }
 
   el(control_t control, count_t count, value_t value, counter_kind_t counter_kind_, value_kind_t value_kind_)
@@ -468,30 +369,10 @@ public:
   static trigger_t trigger_mask_from_value(value_t value) { return static_cast<trigger_t>((value >> WIDTH_TRIGGER) & TRIGGER_MASK); }
   static bool trigger_final_from_control(control_t control) { return (control & TRIGGERFINAL) == TRIGGERFINAL; }
   static control_t regular_control_from_token(const std::string &token, const char *context = nullptr) {
-    if (token == "d")
-      return BITLOAD;
     if (token == "dn")
       return static_cast<control_t>(BITLOAD | NOSTROBE);
-    if (token == "s")
-      return BITSET;
-    if (token == "c")
-      return BITCLEAR;
-    if (token == "x")
-      return BITFLIP;
-    if (token == "n")
-      return BITNOT;
-    if (token == "a")
-      return BITAND;
-    if (token == "o")
-      return BITOR;
-    if (token == "xr")
-      return BITXOR;
-    if (token == "xn")
-      return BITXNOR;
-    if (token == "sl")
-      return BITSLL;
-    if (token == "sr")
-      return BITSRL;
+    if (const auto *spec = find_regular_mode_by_token(token))
+      return spec->mode;
 
     if (context != nullptr)
       throw std::runtime_error("Unknown regular sequence token in '" + std::string(context) + "': '" + token + "'");
@@ -499,63 +380,33 @@ public:
   }
   static std::string regular_token_from_control(control_t control) {
     const bool no_strobe = no_strobe_from_control(control);
-    const control_t mode = mode_from_control(control);
+    const auto *spec = find_regular_mode_by_mode(control);
 
-    if (no_strobe && mode != BITLOAD)
+    if (spec == nullptr)
+      throw std::runtime_error("Unsupported regular element mode in text sequence writer");
+
+    if (no_strobe && spec->mode != BITLOAD)
       throw std::runtime_error("Text sequence writer does not support non-BITLOAD no-strobe elements");
 
-    if (mode == BITLOAD)
+    if (spec->mode == BITLOAD)
       return no_strobe ? "dn" : "d";
-    if (mode == BITSET)
-      return "s";
-    if (mode == BITCLEAR)
-      return "c";
-    if (mode == BITFLIP)
-      return "x";
-    if (mode == BITNOT)
-      return "n";
-    if (mode == BITAND)
-      return "a";
-    if (mode == BITOR)
-      return "o";
-    if (mode == BITXOR)
-      return "xr";
-    if (mode == BITXNOR)
-      return "xn";
-    if (mode == BITSLL)
-      return "sl";
-    if (mode == BITSRL)
-      return "sr";
-
-    throw std::runtime_error("Unsupported regular element mode in text sequence writer");
+    return spec->token;
+  }
+  static bool is_regular_token(const std::string &token) {
+    return token == "dn" || find_regular_mode_by_token(token) != nullptr;
   }
   static el from_raw_triplet(control_t control, count_t count, value_t value) {
     switch (classify_control(control)) {
-      case el_type::trigger: {
-        el e(trigger_pattern_from_value(value), trigger_mask_from_value(value), trigger_final_from_control(control));
-        e.set_control(control);
-        return e;
-      }
-      case el_type::replay: {
-        el e(Replay{}, count, value);
-        e.set_control(control);
-        return e;
-      }
-      case el_type::retrig: {
-        el e(Retrig{}, value);
-        e.set_control(control);
-        return e;
-      }
-      case el_type::prng: {
-        el e(PseudoRandom{}, count);
-        e.set_control(control);
-        return e;
-      }
-      case el_type::final: {
-        el e(value);
-        e.set_control(control);
-        return e;
-      }
+      case el_type::trigger:
+        return el(control, 0, value, counter_kind_t::plain, value_kind_t::trigger);
+      case el_type::replay:
+        return el(control, count, value, counter_kind_t::plain, value_kind_t::plain);
+      case el_type::retrig:
+        return el(control, 1, value, counter_kind_t::plain, value_kind_t::plain);
+      case el_type::prng:
+        return el(control, count, 0, counter_kind_t::plain, value_kind_t::plain);
+      case el_type::final:
+        return el(control, 1, value, counter_kind_t::plain, value_kind_t::plain);
       case el_type::regular:
         return regular_from_control(control, count, value);
     }
@@ -586,10 +437,16 @@ public:
   bool trigger_is_final() const { return trigger_final_from_control(y); }
 
   // Mark an element for storage in fast memory register i
-  el& store(unsigned int i) {
+  el stored_in(unsigned int i) const {
     if (i >= POSITIONS)
       throw std::runtime_error("store() out of bounds");
-    y |= STORE + (i << SHIFT_POSITION);
+    el copy = *this;
+    copy.y = static_cast<control_t>(copy.y | STORE | (i << SHIFT_POSITION));
+    return copy;
+  }
+
+  el& store(unsigned int i) {
+    *this = stored_in(i);
     return *this;
   }
 

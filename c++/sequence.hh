@@ -456,16 +456,14 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
     f >> token;
     if (!f) break;
 
-    if (token == "d" || token == "dn" || token == "s" || token == "c" || token == "x" ||
-        token == "n" || token == "a" || token == "o" || token == "xr" || token == "xn" ||
-        token == "sl" || token == "sr") {
+    if (el::is_regular_token(token)) {
       elements.push_back(parse_regular_element(token));
     } else if (token == "store") {
       std::string si, op;
       if (!(f >> si >> op))
         throw std::runtime_error("Incomplete 'store' record: expected slot and regular-element token");
       auto e = parse_regular_element(op);
-      elements.push_back(e.store(parse_count_t(si)));
+      elements.push_back(e.stored_in(parse_count_t(si)));
     } else if (token == "r") {
       std::string sr, slen;
       if (!(f >> sr >> slen))

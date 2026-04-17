@@ -575,11 +575,15 @@ TEST_CASE("store marks an element for replay memory") {
   CHECK(e.control() == control_t(STORE + (2u << SHIFT_POSITION)));
   CHECK(contains(e.decode(), "store 2"));
   CHECK(e != el(3, 0x12));
+
+  const auto immutable = el(3, 0x12).stored_in(2);
+  CHECK(immutable == e);
 }
 
 TEST_CASE("store rejects out-of-range slot") {
   el e(3, 0x12);
   CHECK_THROWS_WITH_AS(e.store(POSITIONS), "store() out of bounds", std::runtime_error);
+  CHECK_THROWS_WITH_AS(el(3, 0x12).stored_in(POSITIONS), "store() out of bounds", std::runtime_error);
 }
 
 TEST_CASE("set_control resynchronizes regular mode semantics") {
@@ -742,6 +746,10 @@ TEST_CASE("from_raw_triplet reconstructs encoded elements") {
 }
 
 TEST_CASE("regular token helpers round-trip regular element encoding") {
+  CHECK(el::is_regular_token("xr"));
+  CHECK(el::is_regular_token("dn"));
+  CHECK_FALSE(el::is_regular_token("t"));
+
   const auto e = el::from_regular_token("xr", 7, 0x12);
   CHECK(e.is_regular());
   CHECK(e.count() == 7);
