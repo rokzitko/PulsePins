@@ -387,6 +387,30 @@ private:
     throw std::runtime_error("Unknown value kind");
   }
 
+  static el regular_from_control(control_t control, count_t count, value_t value) {
+    const auto make_element = [control, count](const Value &regular_value) {
+      el e = no_strobe_from_control(control) ? el(NoStrobe(count), regular_value) : el(Counter(count), regular_value);
+      e.set_control(control);
+      return e;
+    };
+
+    switch (mode_from_control(control)) {
+      case BITLOAD: return make_element(BitLoad(value));
+      case BITSET: return make_element(BitSet(value));
+      case BITCLEAR: return make_element(BitClear(value));
+      case BITFLIP: return make_element(BitFlip(value));
+      case BITNOT: return make_element(BitNot(value));
+      case BITAND: return make_element(BitAnd(value));
+      case BITOR: return make_element(BitOr(value));
+      case BITXOR: return make_element(BitXor(value));
+      case BITXNOR: return make_element(BitXnor(value));
+      case BITSLL: return make_element(BitSll(value));
+      case BITSRL: return make_element(BitSrl(value));
+      default:
+        throw std::runtime_error("Unsupported regular element mode in binary sequence reader");
+    }
+  }
+
 public:
   // General constructor, called internally by other constructors, less appropriate for general use
   el(el_type _t, const Counter &_cc, const Value &_vv, control_t _y = 0)
@@ -424,6 +448,39 @@ public:
   static trigger_t trigger_pattern_from_value(value_t value) { return static_cast<trigger_t>(value & TRIGGER_MASK); }
   static trigger_t trigger_mask_from_value(value_t value) { return static_cast<trigger_t>((value >> WIDTH_TRIGGER) & TRIGGER_MASK); }
   static bool trigger_final_from_control(control_t control) { return (control & TRIGGERFINAL) == TRIGGERFINAL; }
+  static el from_raw_triplet(control_t control, count_t count, value_t value) {
+    switch (classify_control(control)) {
+      case el_type::trigger: {
+        el e(trigger_pattern_from_value(value), trigger_mask_from_value(value), trigger_final_from_control(control));
+        e.set_control(control);
+        return e;
+      }
+      case el_type::replay: {
+        el e(Replay{}, count, value);
+        e.set_control(control);
+        return e;
+      }
+      case el_type::retrig: {
+        el e(Retrig{}, value);
+        e.set_control(control);
+        return e;
+      }
+      case el_type::prng: {
+        el e(PseudoRandom{}, count);
+        e.set_control(control);
+        return e;
+      }
+      case el_type::final: {
+        el e(value);
+        e.set_control(control);
+        return e;
+      }
+      case el_type::regular:
+        return regular_from_control(control, count, value);
+    }
+
+    throw std::runtime_error("Unsupported element control kind in binary sequence reader");
+  }
 
   control_t control() const { return y; }
   count_t count() const { return c; }

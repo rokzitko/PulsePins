@@ -682,6 +682,34 @@ TEST_CASE("static control and trigger decoders match encoded values") {
   CHECK(el::trigger_final_from_control(TRIGGER | TRIGGERFINAL));
 }
 
+TEST_CASE("from_raw_triplet reconstructs encoded elements") {
+  SUBCASE("regular") {
+    const auto e = el::from_raw_triplet(BITSET | NOSTROBE, 7, 0x12);
+    CHECK(e.is_regular());
+    CHECK(e.count() == 7);
+    CHECK(e.value() == 0x12);
+    CHECK(e.no_strobe());
+    CHECK(e.mode() == BITSET);
+    CHECK(e.updated_value(0x01) == 0x13);
+  }
+
+  SUBCASE("replay") {
+    const auto e = el::from_raw_triplet(REPLAY, 3, 9);
+    CHECK(e.is_replay());
+    CHECK(e.count() == 3);
+    CHECK(e.value() == 9);
+  }
+
+  SUBCASE("trigger") {
+    const auto trigger_value = (value_t(0x2a) << WIDTH_TRIGGER) | value_t(0x55);
+    const auto e = el::from_raw_triplet(TRIGGER | TRIGGERFINAL, 0, trigger_value);
+    CHECK(e.is_trigger());
+    CHECK(e.trigger_pattern() == 0x55);
+    CHECK(e.trigger_mask() == 0x2a);
+    CHECK(e.trigger_is_final());
+  }
+}
+
 TEST_CASE("convert_to_BitLoad") {
   Sequence s1;
   s1.push_back(el(1, BitLoad(1)));

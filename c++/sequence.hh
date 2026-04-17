@@ -147,69 +147,6 @@ inline void validate_binary_header(const BinarySequenceHeader &h)
     throw std::runtime_error("Binary sequence payload size mismatch");
 }
 
-inline el regular_element_from_control(control_t control, count_t count, value_t value)
-{
-  const auto make_element = [control, count](const Value &regular_value) {
-    el e = el::no_strobe_from_control(control) ? el(NoStrobe(count), regular_value) : el(Counter(count), regular_value);
-    e.set_control(control);
-    return e;
-  };
-
-  switch (el::mode_from_control(control)) {
-    case BITLOAD: return make_element(BitLoad(value));
-    case BITSET: return make_element(BitSet(value));
-    case BITCLEAR: return make_element(BitClear(value));
-    case BITFLIP: return make_element(BitFlip(value));
-    case BITNOT: return make_element(BitNot(value));
-    case BITAND: return make_element(BitAnd(value));
-    case BITOR: return make_element(BitOr(value));
-    case BITXOR: return make_element(BitXor(value));
-    case BITXNOR: return make_element(BitXnor(value));
-    case BITSLL: return make_element(BitSll(value));
-    case BITSRL: return make_element(BitSrl(value));
-    default:
-      throw std::runtime_error("Unsupported regular element mode in binary sequence reader");
-  }
-}
-
-inline el element_from_raw_triplet(control_t control, count_t count, value_t value)
-{
-  switch (el::classify_control(control)) {
-    case el_type::trigger: {
-      const auto pattern = el::trigger_pattern_from_value(value);
-      const auto mask = el::trigger_mask_from_value(value);
-      const bool final = el::trigger_final_from_control(control);
-      el e(pattern, mask, final);
-      e.set_control(control);
-      return e;
-    }
-    case el_type::replay: {
-      el e(Replay{}, count, value);
-      e.set_control(control);
-      return e;
-    }
-    case el_type::retrig: {
-      el e(Retrig{}, value);
-      e.set_control(control);
-      return e;
-    }
-    case el_type::prng: {
-      el e(PseudoRandom{}, count);
-      e.set_control(control);
-      return e;
-    }
-    case el_type::final: {
-      el e(value);
-      e.set_control(control);
-      return e;
-    }
-    case el_type::regular:
-      return regular_element_from_control(control, count, value);
-  }
-
-  throw std::runtime_error("Unsupported element control kind in binary sequence reader");
-}
-
 // Thin extension of `std::deque<el>` with helpers that reflect the semantics of a
 // pulse sequence rather than just container operations.
 class Sequence : public std::deque<el> {
@@ -394,7 +331,7 @@ public:
       const auto control = read_le<control_t>(f);
       const auto count = read_le<count_t>(f);
       const auto value = read_le<value_t>(f);
-      seq.push_back(element_from_raw_triplet(control, count, value));
+      seq.push_back(el::from_raw_triplet(control, count, value));
     }
     if (f.peek() != std::char_traits<char>::eof())
       throw std::runtime_error("Trailing data after binary sequence payload");
