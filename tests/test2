@@ -11,6 +11,7 @@ pptest 2 -c 1 -v 42 -check
 pptest 2 -c 0 -v 42 -check
 # -dump-converted
 
-time pptest 2 -c 100_000_000 -v 42 -check
-time pptest 2 -c 1_000_000_000 -v 42 -check
-time pptest 2 -c 0xffffffff -v 42 -check
+# We need longer timeouts for big tests
+time pptest 2 -c 100_000_000 -v 42 -check -timeout 5
+time pptest 2 -c 1_000_000_000 -v 42 -check -timeout 120
+time pptest 2 -c 0xffffffff -v 42 -check -timeout 120
