@@ -97,7 +97,7 @@ That keeps the non-hardware layers explicit and prevents them from reaching into
 If you want to customize or extend the host software, the usual starting points are:
 
 - add a new CLI mode: implement a new `pp...` function and register it in the dispatch table in `pptool.cc`
-- add a new sequence construct: extend `elements.hh` and `sequence.hh`, then update the relevant command or parser path
+- add a new sequence construct: extend `elements.hh` and `sequence.hh`, then update the relevant command or parser path. Prefer the immutable `el` helpers and shared reconstruction/token utilities in `elements.hh` over new ad hoc setter choreography or duplicated control-bit decoding.
 - change common streamer execution behavior: update `send_and_trig(...)` in `ppworkflow.hh`
 - change how sequences reach hardware: update `streamer_fifo.hh`, `streamer_dma.hh`, and `basic_multi_dma.hh`
 - change default startup behavior: update `apply_fpga_startup_policy(...)` in `startup.hh`

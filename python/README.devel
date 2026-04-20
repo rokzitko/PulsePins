@@ -18,3 +18,12 @@ Current Python sequence-serialization helpers include:
 * `Sequence.write_VCD_file(...)`
 * `pp.read_sequence_binary(...)`
 * `Sequence.write_binary_file(...)`
+
+The Python bindings also expose the current flattened `el` API rather than the older raw `(el_type, Counter, Value, control)` constructor. For sequence elements, prefer:
+
+* `pp.el(count, value)`
+* `pp.el(counter, value)`
+* `pp.el(counter, value_wrapper)`
+* immutable helpers such as `stored_in(...)`, `with_count(...)`, `with_counter(...)`, `with_regular_value(...)`, and `as_bitload_after(...)`
+
+See `docs/docs/python.md` for the supported element constructors and helper methods.

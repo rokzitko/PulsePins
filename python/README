@@ -26,3 +26,11 @@ The Python bindings now expose sequence serialization helpers too:
 * `Sequence.write_VCD_file(...)`
 * `pp.read_sequence_binary(...)`
 * `Sequence.write_binary_file(...)`
+
+Sequence elements now follow the same flattened `el` API as the C++ layer. Preferred Python-side construction and transformation paths are:
+
+* `pp.el(count, value)` or `pp.el(counter, value)` for regular `BITLOAD` elements
+* `pp.el(counter, value_wrapper)` for regular non-`BITLOAD` elements
+* `stored_in(...)`, `with_count(...)`, `with_counter(...)`, `with_regular_value(...)`, and `as_bitload_after(...)` for immutable element updates
+
+For the full current binding surface, see `docs/docs/python.md`.
