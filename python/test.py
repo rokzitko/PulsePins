@@ -535,44 +535,52 @@ def test_sequence_binary_roundtrip_control_flow_and_force_trigger():
       assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
 
 
+@pytest.mark.hardware
 def test_readback_mode_set_smoke(fpga, dev_h2f):
    rb = make_readback(fpga, dev_h2f)
    rb.mode(0)
    rb.mode(1)
 
 
+@pytest.mark.hardware
 def test_readback_status_report_smoke(fpga, dev_h2f):
    rb = make_readback(fpga, dev_h2f)
    rb.status_report()
 
 
+@pytest.mark.hardware
 def test_readback_check_fill_status_smoke(fpga, dev_h2f):
    rb = make_readback(fpga, dev_h2f)
    rb.check_fill_status()
 
 
+@pytest.mark.hardware
 def test_readback_clear_fifo_and_reset_smoke(fpga, dev_h2f):
    rb = make_readback(fpga, dev_h2f)
    rb.clear_fifo()
    rb.reset()
 
 
+@pytest.mark.hardware
 def test_readback_filled_and_overflow_smoke(fpga, dev_h2f):
    rb = make_readback(fpga, dev_h2f)
    assert isinstance(bool(rb.filled()), bool)
    assert isinstance(bool(rb.overflow()), bool)
 
 
+@pytest.mark.hardware
 def test_streamer_fifo_report_smoke(dev_h2f):
    fifo = make_streamer_fifo(dev_h2f)
    fifo.report()
 
 
+@pytest.mark.hardware
 def test_streamer_fifo_check_fill_status_smoke(dev_h2f):
    fifo = make_streamer_fifo(dev_h2f)
    fifo.check_fill_status()
 
 
+@pytest.mark.hardware
 def test_sc_qout_set_and_select_smoke(dev_h2f):
    sc = make_streamer_control(dev_h2f)
    sc.qout_set(0x1234)
@@ -580,6 +588,7 @@ def test_sc_qout_set_and_select_smoke(dev_h2f):
    sc.qout_select(False)
 
 
+@pytest.mark.hardware
 def test_sc_trigger_controls_smoke(dev_h2f):
    sc = make_streamer_control(dev_h2f)
    sc.trigger_enable()
@@ -587,40 +596,48 @@ def test_sc_trigger_controls_smoke(dev_h2f):
    sc.trigger_reset()
 
 
+@pytest.mark.hardware
 def test_sc_stop_on_buffer_error_smoke(dev_h2f):
    sc = make_streamer_control(dev_h2f)
    sc.stop_on_buffer_error(True)
    sc.stop_on_buffer_error(False)
 
 
+@pytest.mark.hardware
 def test_sc_gating_smoke(dev_h2f):
    sc = make_streamer_control(dev_h2f)
    sc.gating(True, False, 0)
    sc.gating(True, True, 0x1)
 
 
+@pytest.mark.hardware
 def test_sc_gate_status_helpers_smoke(dev_h2f):
    sc = make_streamer_control(dev_h2f)
    sc.gate_status()
    sc.gate_status_string()
    sc.gate_status_string_from_x(0)
 
+@pytest.mark.hardware
 def test_check_firmware():
    pp.check_firmware()
 
+@pytest.mark.hardware
 def test_mm(dev_lw):
    assert pp_impl.LWHPSFPGA_OFST == 0xFF200000
    assert pp_impl.LWH2F_RANGE == pp_impl.LWHPSFPGA_END - pp_impl.LWHPSFPGA_OFST
    loc = dev_lw.get_loc(pp_impl.ST_INTERFACE_1_BASE, 0)
 
 # check_ID() from misc.hh
+@pytest.mark.hardware
 def test_check_ID():
    dev = pp.mm(pp_impl.LWHPSFPGA_OFST, pp_impl.LWH2F_RANGE)
    pp.sysid(dev, pp_impl.SYSID_BASE, pp_impl.SYSID_ID)
 
+@pytest.mark.hardware
 def test_streamer_control(dev_h2f):
    pp.streamer_control(dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
 
+@pytest.mark.hardware
 def test_sc_initial_value(dev_h2f):
    sc = make_streamer_control(dev_h2f)
    v = 42
@@ -629,6 +646,7 @@ def test_sc_initial_value(dev_h2f):
    v2 = sc.get_qout()
    assert v == v2
 
+@pytest.mark.hardware
 def test_sc_reset(dev_h2f):
    sc = make_streamer_control(dev_h2f)
    fifo = make_streamer_fifo(dev_h2f)
@@ -645,9 +663,11 @@ def test_Verbosity():
    v.veryverbose = True
    v.verbosecheck = True
 
+@pytest.mark.hardware
 def test_FPGA(fpga):
    fpga.status()
 
+@pytest.mark.hardware
 def test_pll(dev_lw):
    pll = pp.pll(dev_lw, pp_impl.PLL_RECONFIG_INT_CLK_BASE)
    pll.set_M(32,True)

@@ -18,7 +18,7 @@ CXXFLAGS = $(PY_OPT_LEVEL) $(PY_DEBUG_FLAGS) -Wall -DTIDBITNR=${NR} \
 CXX = g++$(GCC_SUFFIX)
 CC = gcc$(GCC_SUFFIX)
 
-.PHONY: build test clean copy_sources copy_misc copy_sources_img
+.PHONY: build test test-host clean copy_sources copy_misc copy_sources_img
 
 # Configure and build the nanobind extension modules.
 build:
@@ -29,6 +29,10 @@ build:
 # Python-side test entry point.
 test:
 	PYTHONPATH=./build pytest test.py
+
+# Host-side CI entry point: run only the binding/API tests that do not require board-backed MMIO.
+test-host:
+	PYTHONPATH=./build pytest -m "not hardware" test.py
 
 clean:
 	rm -rf build
