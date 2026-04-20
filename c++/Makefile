@@ -23,31 +23,31 @@ GCC_SUFFIX ?= -7
 # compile checks without emitting a broken `--sysroot=` flag.
 ifneq ($(strip $(SYSROOT)),)
 CROSSCFLAGS = --sysroot=$(SYSROOT)
-CROSSCPPFLAGS = --sysroot=$(SYSROOT)
+CROSSCXXFLAGS = --sysroot=$(SYSROOT)
 else
 CROSSCFLAGS =
-CROSSCPPFLAGS =
+CROSSCXXFLAGS =
 endif
 
 BUILD ?= DEBUG
 
 ifeq ($(BUILD),DEBUG)
-OPTIMFLAGS = -g -O3 -Wall -Wextra -fno-omit-frame-pointer -fno-inline \
- -DPPWEBGUI_ENABLE_BACKTRACE
-LINKFLAGS = -g -rdynamic
-# For low-level troubleshooting:
-# DEBUG_FPGA_IO enables tracing out of all memory-mapped I/O to FPGA.
-# DEBUG_CONSTR enables traceing out class constructors.
-#HW_DEBUG += -DDEBUG_FPGA_IO
-#HW_DEBUG += -DDEBUG_CONSTR
+ OPTIMFLAGS = -g -O3 -Wall -Wextra -fno-omit-frame-pointer -fno-inline \
+  -DPPWEBGUI_ENABLE_BACKTRACE
+ LINKFLAGS = -g -rdynamic
+ # For low-level troubleshooting:
+ # DEBUG_FPGA_IO enables tracing out of all memory-mapped I/O to FPGA.
+ # DEBUG_CONSTR enables traceing out class constructors.
+ #HW_DEBUG += -DDEBUG_FPGA_IO
+ #HW_DEBUG += -DDEBUG_CONSTR
 else ifeq ($(BUILD),RELEASE)
-OPTIMFLAGS = -O3 -Wall
-LINKFLAGS =
-HW_DEBUG += -DDEBUG_FPGA_IO
+ OPTIMFLAGS = -O3 -Wall
+ LINKFLAGS =
+ HW_DEBUG += -DDEBUG_FPGA_IO
 endif
 
 CFLAGS   = $(OPTIMFLAGS) -fPIC
-CPPFLAGS = $(OPTIMFLAGS) -DTIDBITNR=${NR} \
+CXXFLAGS = $(OPTIMFLAGS) -DTIDBITNR=${NR} \
   -D$(ALT_DEVICE_FAMILY) \
   -DGIT_HASH=$(GIT_HASH) \
   -I$(TIDBIT_DIR) -I$(LUA_DIR) \
@@ -78,10 +78,10 @@ USE_PREGENERATED ?= 0
 
 ifeq ($(USE_PREGENERATED),1)
   HPSFILE := artifacts/hps_0.h
-  CPPFLAGS += -Iartifacts/
+  CXXFLAGS += -Iartifacts/
 else
   HPSFILE := ../hps_0.h
-  CPPFLAGS += -I..
+  CXXFLAGS += -I..
 endif
 
 # Main host-tools build. `pptool`, `ppscpi`, and `ppwebgui` are cross-compiled for the board, while
@@ -142,51 +142,55 @@ ppwebgui: $(PPWEBGUI_OBJS)
 HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h) $(HPSFILE)
 
 unit_tests: unit_tests.cc ppwebgui_http.cc ppwebgui_json.cc $(HEADERS)
-	g++ $(CPPFLAGS) $(LDFLAGS) unit_tests.cc -o $@
+	g++ $(CXXFLAGS) $(LDFLAGS) unit_tests.cc -o $@
 
 pptool.o : pptool.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS) $(CXXFLAGS) -c $< -o $@
 
 pptool_streaming.o : pptool_streaming.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 pptool_measurement.o : pptool_measurement.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppscpi.o : ppscpi.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_main.o : ppwebgui_main.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_service.o : ppwebgui_service.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_service_api.o : ppwebgui_service_api.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_json.o : ppwebgui_json.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_http.o : ppwebgui_http.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_assets.o : ppwebgui_assets.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_config.o : ppwebgui_config.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_bootstrap.o : ppwebgui_bootstrap.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_app.o : ppwebgui_app.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_server.o : ppwebgui_server.cc $(HEADERS)
-	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
-.PHONY: clean copy lint-whitespace
+.PHONY: test clean copy lint-whitespace
+
+test: unit_tests
+	./unit_tests
+
 clean:
 	rm -f $(TARGETS) unit_tests *.a *.o *~
 

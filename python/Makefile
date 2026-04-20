@@ -15,6 +15,16 @@ CXXFLAGS = $(PY_OPT_LEVEL) $(PY_DEBUG_FLAGS) -Wall -DTIDBITNR=${NR} \
   -D$(ALT_DEVICE_FAMILY) \
   -Wformat=0 -std=c++17
 
+USE_PREGENERATED ?= 0
+
+ifeq ($(USE_PREGENERATED),1)
+  HPSFILE := artifacts/hps_0.h
+  CXXFLAGS += -Iartifacts/
+else
+  HPSFILE := ../hps_0.h
+  CXXFLAGS += -I..
+endif
+
 CXX = g++$(GCC_SUFFIX)
 CC = gcc$(GCC_SUFFIX)
 

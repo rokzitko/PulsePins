@@ -15,7 +15,7 @@ hps_sdram_p0_summary.csv
 base_hps.sopcinfo
 c5_pin_model_dump.txt
 *_assignment_defaults.qdf
-hps_0.h
+./hps_0.h
 
 qar_info.json
 
