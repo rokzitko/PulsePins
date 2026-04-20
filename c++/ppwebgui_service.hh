@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cstdint>
+#include <exception>
 #include <string>
 
 #include "basic_multi_dma.hh"

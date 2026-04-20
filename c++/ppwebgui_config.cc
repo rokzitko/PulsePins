@@ -3,7 +3,6 @@
 
 #include "ppwebgui_config.hh"
 
-#include <cctype>
 #include <stdexcept>
 
 #include "misc.hh"

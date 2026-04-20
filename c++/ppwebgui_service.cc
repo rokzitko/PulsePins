@@ -3,6 +3,7 @@
 
 #include "ppwebgui_service.hh"
 
+#include <exception>
 #include <sstream>
 #include <utility>
 #include <vector>

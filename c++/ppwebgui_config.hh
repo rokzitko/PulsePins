@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <deque>
 #include <string>
 
 #include "options.hh"

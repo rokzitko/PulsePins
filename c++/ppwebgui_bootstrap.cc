@@ -4,6 +4,7 @@
 #include "ppwebgui_bootstrap.hh"
 
 #include <array>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <unordered_set>

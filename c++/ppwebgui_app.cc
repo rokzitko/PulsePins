@@ -3,7 +3,8 @@
 
 #include "ppwebgui_app.hh"
 
-#include <stdexcept>
+#include <exception>
+#include <iostream>
 
 #include "fpga.hh"
 #include "ppwebgui_assets.hh"

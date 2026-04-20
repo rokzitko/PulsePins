@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unistd.h>

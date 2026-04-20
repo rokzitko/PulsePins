@@ -5,6 +5,7 @@
 
 #include "ad9833.hh"
 #include "mcp41010.hh"
+#include "spi_rle_encoder.hh"
 
 using spi_payload::Ad9833;
 using spi_payload::Mcp41010;

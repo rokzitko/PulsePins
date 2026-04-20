@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "ad9833.hh"
+#include "spi_rle_encoder.hh"
 
 using spi_payload::Ad9833;
 

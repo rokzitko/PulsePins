@@ -10,13 +10,12 @@
 
 #pragma once
 
-#include <cassert>
-#include <iostream>
-#include <random>
-#include <cstdint>
-#include <string>
-#include <sstream>
 #include <bitset>
+#include <cassert>
+#include <cstdint>
+#include <iostream>
+#include <sstream>
+#include <string>
 
 #include "tidbit.hh"
 #include "config.h"

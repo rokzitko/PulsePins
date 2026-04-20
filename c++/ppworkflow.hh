@@ -16,9 +16,13 @@
 // The goal is consistent behavior across CLI entry points, so changes here should be
 // treated as policy changes for multiple commands, not as a local helper tweak.
 
-#include <iostream>
+#include <cmath>
+#include <cstddef>
 #include <iomanip>
+#include <iostream>
 #include <optional>
+#include <stdexcept>
+#include <utility>
 
 #include "colors.hh"
 #include "format.hh"

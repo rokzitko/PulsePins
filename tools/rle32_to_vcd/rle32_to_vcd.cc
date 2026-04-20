@@ -22,6 +22,7 @@
 //   g++ -std=c++17 -O2 -Wall -Wextra rle32_to_vcd.cpp -o rle32_to_vcd
 
 #include <cctype>
+#include <cerrno>
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
@@ -187,4 +188,3 @@ int main(int argc, char** argv)
 
     return 0;
 }
-

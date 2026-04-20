@@ -14,6 +14,7 @@
 #include "ppwebgui_config.hh"
 #include "ppversion.hh"
 
+#include <exception>
 #include <iostream>
 
 int main(int argc, char *argv[]) {

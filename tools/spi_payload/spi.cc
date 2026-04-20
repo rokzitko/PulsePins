@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <iostream>
+#include <stdexcept>
 
 #include "spi_rle_encoder.hh"
 

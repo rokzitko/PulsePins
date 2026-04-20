@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 
+#include "config.h"
 #include "ppwebgui_types.hh"
 
 std::string json_escape(std::string_view input);
