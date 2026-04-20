@@ -25,6 +25,7 @@ nav:
     - Getting started without hardware: getting_started_no_hardware.md
     - Getting started with hardware: getting_started_hardware.md
     - Choose the right tool: choose_tool.md
+    - Extension cookbook: extension_cookbook.md
     - Examples roadmap: examples.md
   - pptool:
     - pptool: pptool.md
