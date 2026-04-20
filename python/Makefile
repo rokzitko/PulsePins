@@ -19,10 +19,11 @@ USE_PREGENERATED ?= 0
 
 ifeq ($(USE_PREGENERATED),1)
   HPSFILE := artifacts/hps_0.h
-  CXXFLAGS += -I../c++/artifacts/
+	# Path relative to python/build
+  CXXFLAGS += -I../../c++/artifacts/
 else
   HPSFILE := ../hps_0.h
-  CXXFLAGS += -I..
+  CXXFLAGS += -I../..
 endif
 
 CXX = g++$(GCC_SUFFIX)
