@@ -60,6 +60,56 @@ seq.write_binary_file("capture.ppbin")
 seq2, force_trigger2 = pp.read_sequence_binary("capture.ppbin")
 ```
 
+## Sequence element API
+
+Python exposes the same sequence-element model as the C++ layer, but the supported construction paths now follow the flattened `el` design rather than the older raw `(el_type, Counter, Value, control)` constructor.
+
+Supported `pp.el(...)` constructors include:
+
+* `pp.el()` - final element with the default final output value
+* `pp.el(value)` - final element with an explicit final output value
+* `pp.el(count, value)` - regular `BITLOAD` element
+* `pp.el(counter, value)` - regular `BITLOAD` element with explicit `Counter` policy
+* `pp.el(counter, value_wrapper)` - regular element with explicit `Counter` and `Value` wrapper semantics
+* `pp.el(pattern, mask, final)` - trigger element
+* `pp.el(pp.Replay(), repetitions, length)` - replay element
+* `pp.el(pp.Retrig(), value=...)` - retrigger element
+* `pp.el(pp.PseudoRandom(), count)` - pseudo-random element
+
+Useful element inspectors and helpers now exposed in Python:
+
+* `kind()`, `mode()`, `no_strobe()`
+* `is_stored()`, `store_slot()`, `stored_in(...)`
+* `trigger_pattern()`, `trigger_mask()`, `trigger_is_final()`
+* `regular_token()`, `sequence_record()`
+* `with_control(...)`, `with_count(...)`, `with_counter(...)`, `with_regular_value(...)`, `as_bitload_after(...)`
+
+The mutating compatibility methods `store(...)`, `set_control(...)`, `set_count(...)`, and `set_value(...)` are still available, but new code should prefer the immutable helpers above.
+
+Static reconstruction helpers are also bound:
+
+* `pp.el.classify_control(...)`
+* `pp.el.from_raw_triplet(...)`
+* `pp.el.from_regular_token(...)`
+* `pp.el.is_regular_token(...)`
+
+Example:
+
+```python
+import pp
+import pp_impl
+
+e = pp.el(pp.NoStrobe(3), pp.BitXor(0x12))
+assert e.mode() == pp_impl.BITXOR
+
+converted = e.as_bitload_after(0x01)
+assert converted.regular_token() == "dn"
+assert converted.sequence_record() == "dn 3 0x13"
+
+decoded = pp.el.from_regular_token("xr", 7, 0x55)
+assert decoded.sequence_record() == "xr 7 0x55"
+```
+
 Bindings that wrap MMIO-backed hardware objects should still be treated as owning long-lived board resources even though the module now keeps the immediate `mm`/`FPGA` constructor arguments alive for the wrapper object.
 
 The small helper scripts in `python/pptool.py` and `tests/test2.py` now use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` still disabling the readback timeout.

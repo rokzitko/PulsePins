@@ -71,7 +71,9 @@ NB_MODULE(pp, m) {
     .value("regular", el_type::regular)
     .value("trigger", el_type::trigger)
     .value("replay",  el_type::replay)
-    .value("final",   el_type::final);
+    .value("final",   el_type::final)
+    .value("retrig",  el_type::retrig)
+    .value("prng",    el_type::prng);
 
   nb::class_<Counter>(m, "Counter")
     .def(nb::init<count_t>())
@@ -136,30 +138,69 @@ NB_MODULE(pp, m) {
   nb::class_<Replay>(m, "Replay")
     .def(nb::init<>());
 
+  nb::class_<Retrig>(m, "Retrig")
+    .def(nb::init<>());
+
+  nb::class_<PseudoRandom>(m, "PseudoRandom")
+    .def(nb::init<>());
+
   nb::class_<el>(m, "el")
-    .def(nb::init<el_type, Counter &, Value &, control_t>(),
-         nb::arg("_t"),
-         nb::arg("_cc"),
-         nb::arg("_vv"),
-         nb::arg("_y") = 0)
     .def(nb::init<value_t>(),
          nb::arg("_v") = 0)
     .def(nb::init<count_t, value_t>())
-    .def(nb::init<Counter &, value_t>())
-    .def(nb::init<Counter &, Value &>())
+    .def(nb::init<const Counter &, value_t>())
+    .def(nb::init<const Counter &, const Value &>())
     .def(nb::init<trigger_t, trigger_t, bool>())
     .def(nb::init<Replay, count_t, value_t>())
+    .def(nb::init<Retrig, value_t>(),
+         nb::arg("_r"),
+         nb::arg("_v") = default_final_value)
+    .def(nb::init<PseudoRandom, count_t>())
+    .def_static("classify_control", &el::classify_control)
+    .def_static("from_raw_triplet", &el::from_raw_triplet,
+         nb::arg("control"),
+         nb::arg("count"),
+         nb::arg("value"))
+    .def_static("from_regular_token", [](const std::string &token, count_t count, value_t value, const std::string &context) {
+         return context.empty() ? el::from_regular_token(token, count, value)
+                                : el::from_regular_token(token, count, value, context.c_str());
+       },
+         nb::arg("token"),
+         nb::arg("count"),
+         nb::arg("value"),
+         nb::arg("context") = "")
+    .def_static("is_regular_token", &el::is_regular_token)
     .def("control", &el::control)
     .def("count", &el::count)
     .def("value", &el::value)
+    .def("kind", &el::kind)
+    .def("mode", &el::mode)
+    .def("no_strobe", &el::no_strobe)
+    .def("regular_token", &el::regular_token)
+    .def("is_stored", &el::is_stored)
+    .def("store_slot", &el::store_slot)
+    .def("trigger_pattern", &el::trigger_pattern)
+    .def("trigger_mask", &el::trigger_mask)
+    .def("trigger_is_final", &el::trigger_is_final)
+    .def("stored_in", &el::stored_in)
+    .def("with_control", &el::with_control)
+    .def("with_count", &el::with_count)
+    .def("with_counter", &el::with_counter)
+    .def("with_regular_value", &el::with_regular_value)
+    .def("as_bitload_after", &el::as_bitload_after)
+    .def("sequence_record", &el::sequence_record)
     .def("store", &el::store)
     .def("set_control", &el::set_control)
-    .def("set_count", &el::set_count)
+    .def("set_count", nb::overload_cast<count_t>(&el::set_count))
+    .def("set_count", nb::overload_cast<const Counter &>(&el::set_count))
     .def("set_value", &el::set_value)
     .def("updated_value", &el::updated_value)
     .def("is_regular", &el::is_regular)
     .def("is_trigger", &el::is_trigger)
+    .def("is_replay", &el::is_replay)
     .def("is_final", &el::is_final)
+    .def("is_retrig", &el::is_retrig)
+    .def("is_prng", &el::is_prng)
     .def("decode", &el::decode)
     .def("desc", &el::desc)
     .def("__eq__", [](const el &a, const el &b) {
@@ -201,6 +242,7 @@ NB_MODULE(pp, m) {
   nb::class_<FPGA>(m, "FPGA")
     .def(nb::init<const Verbosity &>(), nb::keep_alive<1, 2>())
     .def("status", &FPGA::status)
+    .def("set_streamer_clk", &FPGA::set_streamer_clk)
     .def("output_enable", &FPGA::output_enable);
 
   nb::class_<freq_meter>(m, "freq_meter")

@@ -71,93 +71,107 @@ Current serialization capability matrix:
 | VCD | import + export | import + export | import via `ppplay` (`ppvcd` compatibility alias); export via `ppread -save-vcd` |
 | PulsePins binary sequence format | import + export | import + export | import via `ppplay`, export via `ppread -save-binary` |
 
-Class hierarchy for counter value objects:
+Class hierarchy for counter and value helper objects:
 
-* ``Counter`` (defined in ``elements.hh``): containers that hold the count value (number of repetitions)
+* ``Counter`` (defined in ``elements.hh``): lightweight wrappers that carry the repetition count and the strobe policy for regular elements
 
-    * ``Strobe``: regular elements that are strobed out
-    * ``NoStrobe``: elements that are not strobed out (and the qout_valid signal is deasserted)
+    * ``Strobe``: regular elements that assert the valid/strobe output
+    * ``NoStrobe``: regular elements that update qout without asserting the valid/strobe output
 
 Interface of ``Counter`` objects:
 
 * ``count()``: returns the count value
 * ``count_str()``: the count value as a string in hexadecimal and decimal form for inspection and troubleshooting
-* ``control_bits()``: returns the bits to be or'd in the control register
-* ``desc()``: get a descriptive string about the control settings; empty for the default case of ``Strobe``
-* ``clone()``: generate a `std::shared_ptr` to a cloned object for use in class compositions (element ``el`` objects, see below)
+* ``control_bits()``: returns the strobe-related bits to be or'd into the control word
+* ``desc()``: descriptive string for the strobe policy
 
-Update types (``d`` is the input value, ``q_prev`` is the previous output value, ``q`` is the new output value to be streamed out):
+Update types (``d`` is the input value, ``q_prev`` is the previous output value, ``q`` is the new streamed value):
 
-* ``LOAD``: loads new data, i.e., verbatim assignment, ``q = d``
-* ``SET``: sets bits according to a mask pattern, ``q = q_prev | d``
-* ``CLEAR``: clears bits according to a mask pattern, ``q = q_prev & ~d``
-* ``FLIP``: flips bits according to a mask pattern, ``q = q_prev ^ d``
-* ``NOT``: invert bits, ``q = ~q_prev`` (same as FLIP with all ones)
-* ``AND``: bitwise and, ``q = q_prev & d`` (same as CLEAR with inverted values)
-* ``OR`` : bitwise or, ``q = q_prev | d`` (same as SET)
-* ``XOR`` : bitwise xor, ``q = q_prev ^ d`` (same as FLIP)
-* ``XNOR``: bitwise xnor, ``q = q_prev ^~ d`` (equivalence)
-* ``SLL`` : shift left logical (fill with zero), ``q = q_prev << d``
-* ``SRL`` : shift right logical (fill with zero), ``q = q_prev >> d``
+* ``LOAD``: ``q = d``
+* ``SET``: ``q = q_prev | d``
+* ``CLEAR``: ``q = q_prev & ~d``
+* ``FLIP``: ``q = q_prev ^ d``
+* ``NOT``: ``q = ~q_prev``
+* ``AND``: ``q = q_prev & d``
+* ``OR``: ``q = q_prev | d``
+* ``XOR``: ``q = q_prev ^ d``
+* ``XNOR``: ``q = ~(q_prev ^ d)``
+* ``SLL``: ``q = q_prev << d``
+* ``SRL``: ``q = q_prev >> d``
 
-Corresponding class hierarchy:
+The corresponding ``Value`` helper hierarchy is still exposed in ``elements.hh``:
 
-* ``Value`` (defined in ``elements.hh``): parent class
+* ``Value``
+* ``BitLoad``
+* ``BitSet``
+* ``BitClear``
+* ``BitFlip``
+* ``BitNot``
+* ``BitAnd``
+* ``BitOr``
+* ``BitXor``
+* ``BitXnor``
+* ``BitSll``
+* ``BitSrl``
+* ``TriggerCondition``
 
-    * ``BitLoad``
-    * ``BitSet``
-    * ``BitClear``
-    * ``BitFlip``
-    * ``BitNot``
-    * ``BitAnd``
-    * ``BitOr``
-    * ``BitXor``
-    * ``BitXnor``
-    * ``BitSll``
-    * ``BitSrl``
+These helper types are now lightweight tags and inspectors for authored elements. The ``el`` object itself stores flattened raw ``control``, ``count``, and ``value`` fields; it no longer owns ``std::shared_ptr`` wrappers internally.
 
 Interface of ``Value`` objects:
 
 * ``value()``: returns the stored value
-* ``value_str()``: the count value as a string in hexadecimal and decimal form for inspection and troubleshooting
-* ``result(value_t v_prev)``: returns the result of the updated value, where ``v_prev`` is the previous value
-* ``mode_bits()``: returns the mode bits to be or'd in the control register
-* ``desc()``: get a descriptive string describing the update mode
-* ``clone()``: generate a std::share_ptr to a cloned object for use in compositions (element ``el`` objects, see below)
+* ``value_str()``: value in hexadecimal and decimal form for inspection and troubleshooting
+* ``result(value_t v_prev)``: returns the updated value for a given previous output state
+* ``mode_bits()``: returns the update-mode bits to be or'd into the control word
+* ``desc()``: descriptive string for the update mode
 
-An additional class derived from ``Value`` is the class ``TriggerCondition``. It has a bespoke constructor that takes
-pattern and mask bits as input and converts that into a ``value_t`` quantity. Furthermore, the ``value_str()`` method
-decomposes this value into pattern and mask and represents them as hexadecimal value and bitsets.
+``TriggerCondition`` remains a specialized ``Value`` subclass with a constructor that takes ``pattern``, ``mask``, and ``final``. Its string formatting decomposes the packed trigger value back into pattern and mask fields.
 
-Class ``el`` (defined in ``elements.hh``) represents elements of the sequence. There are multiple constructors:
+Class ``el`` (defined in ``elements.hh``) represents one encoded sequence element. Supported construction paths are:
 
-* ``el()``: sequence terminator with a default value of the output bus (0xFFFFFFFF)
-* ``el(value_t)``: sequence terminator with a selected final value of the output bus
+* ``el()``: sequence terminator with the default final output value
+* ``el(value_t)``: sequence terminator with an explicit final output value
 * ``el(count_t, value_t)``: regular element, ``BitLoad`` update
-* ``el(Count, value_t)``: regular element, either ``Strobe`` or ``NoStrobe``, ``BitLoad`` update
-* ``el(Count, Value)``: regular element, general interface (BitLoad, BitSet, BitClear, etc.)
+* ``el(Counter, value_t)``: regular element with explicit strobe policy, ``BitLoad`` update
+* ``el(Counter, Value)``: regular element with explicit strobe and update mode
 * ``el(trigger_t, trigger_t, bool)``: trigger condition element
-* ``el(Replay, count_t, value_t)``: replay a subsequence stored in the preprocessor a given number of times
+* ``el(Replay, count_t, value_t)``: replay a stored subsequence
 * ``el(Retrig, value_t)``: stop streaming and wait for a retrigger event
-* ``el(Random, count_t)``: generate random numbers
+* ``el(PseudoRandom, count_t)``: emit pseudo-random values for the selected count
 
-The counter and value are internally stored as ``std::shared_ptr`` objects for easy expandability. The
-control parameter is stored as a ``control_t`` integer value using bit patterns obtained from ``Counter``
-and ``Value`` objects using the ``control_bits`` and ``mode_bits`` member functions.
+Important implementation detail: the effective element kind is now derived from the encoded control word rather than stored separately. ``el`` keeps small authored metadata only where the raw wire format is ambiguous for regular elements (for example, to preserve descriptive strings around plain ``Value`` vs authored ``BitLoad`` construction).
 
-The public interface of ``el`` objects:
+Useful ``el`` methods:
 
-* ``control()``, ``count()``, ``value()``: integer representation to be sent to the RLE-decoder core
-* ``set_control()``, ``set_count()``, ``set_value()``: low-level update functions
-* ``updated_value()``: returns a ``value_t`` value that results from the update; the function takes the previous value
-as the input
-* ``desc()``: obtain a string representation of the element for inspection and debugging
-* ``store(int)``: tag an element for storing in the chosen register of the preprocessor
-* ``updated_value(value_t)``: determine what will be the output from the streaming core corresponding to the
-given element for a given previous output state
-* ``is_regular()``, ``is_trigger()``, ``is_final()``: tests for element type
+* ``control()``, ``count()``, ``value()``: raw integer representation sent to the streamer/RLE decoder
+* ``kind()``: returns the derived ``el_type``
+* ``mode()``: returns the regular-mode bits from the control word
+* ``no_strobe()``, ``is_stored()``, ``store_slot()``: inspect regular-element control metadata
+* ``trigger_pattern()``, ``trigger_mask()``, ``trigger_is_final()``: inspect trigger elements
+* ``updated_value(value_t)``: compute the effective streamed output for a previous output state
+* ``desc()``: detailed debug description
+* ``decode()``: currently exposes extra control decorations such as the ``store`` slot
+* ``regular_token()`` and ``sequence_record()``: render the element into the PulsePins text sequence grammar
 
-``el`` objects can be compared and passed to an std stream.
+Preferred transformation helpers on ``el`` are now immutable:
+
+* ``stored_in(int)``
+* ``with_control(control_t)``
+* ``with_count(count_t)``
+* ``with_counter(Counter)``
+* ``with_regular_value(Value)``
+* ``as_bitload_after(value_t)``
+
+The older mutating helpers ``set_control()``, ``set_count()``, ``set_value()``, and ``store()`` are still present for compatibility, but new code should prefer the immutable helpers above.
+
+``elements.hh`` also centralizes reconstruction helpers that are used by binary and text I/O:
+
+* ``el::classify_control(...)``
+* ``el::from_raw_triplet(...)``
+* ``el::from_regular_token(...)``
+* ``el::is_regular_token(...)``
+
+``el`` objects can be compared and sent to an ``std::ostream``.
 
 Class ``Sequence`` (defined in ``sequence.hh``) represents a sequence of elements. Internally, this is an overloaded `std::deque` of ``el`` objects.
 Public member functions are:

@@ -22,7 +22,14 @@ def fpga(verbosity):
    opts = pp.InputParser([])
    # Mirror the normal host-runtime startup path and ensure streamer clock is measured before
    # wrappers such as readback use streamer-clock-based waits.
-   pp.pp_freq_meter(opts, board, True)
+   try:
+      pp.pp_freq_meter(opts, board, True)
+   except RuntimeError as exc:
+      if "freq_meter" not in str(exc):
+         raise
+      # Some deployed images expose a different frequency-meter layout. The readback smoke
+      # tests only need a conservative streamer-clock estimate for reset-settling sleeps.
+      board.set_streamer_clk(100e6)
    return board
 
 
@@ -223,19 +230,19 @@ def test_TriggerConditionFinal():
 def test_el1():
    c = pp.Counter(1)
    v = pp.Value(2)
-   e = pp.el(pp.el_type.regular, c, v)
-   assert e.control() == 0
+   e = pp.el(c, v)
+   assert e.control() == pp_impl.BITLOAD
    assert e.count() == 1
    assert e.value() == 2
+   assert e.kind() == pp.el_type.regular
 
 def test_el2():
-   c = pp.Counter(1)
-   v = pp.Value(2)
-   y = 3
-   e = pp.el(pp.el_type.regular, c, v, y)
-   assert e.control() == 3
+   e = pp.el.from_raw_triplet(pp_impl.BITSET | pp_impl.NOSTROBE, 1, 2)
+   assert e.control() == pp_impl.BITSET | pp_impl.NOSTROBE
    assert e.count() == 1
    assert e.value() == 2
+   assert e.no_strobe()
+   assert e.kind() == pp.el_type.regular
 
 def test_el3():
    e = pp.el()
@@ -253,7 +260,7 @@ def test_el7_count_and_int_value():
    c = 1
    v = 2
    e = pp.el(c,v)
-   assert e.control() == 0
+   assert e.control() == pp_impl.BITLOAD
    assert e.count() == 1
    assert e.value() == 2
 
@@ -261,7 +268,7 @@ def test_el7_counter_and_int_value():
    c = pp.Counter(1)
    v = 2
    e = pp.el(c,v)
-   assert e.control() == 0
+   assert e.control() == pp_impl.BITLOAD
    assert e.count() == 1
    assert e.value() == 2
 
@@ -269,7 +276,7 @@ def test_el7_counter_and_value():
    c = pp.Counter(1)
    v = pp.Value(2)
    e = pp.el(c,v)
-   assert e.control() == 0
+   assert e.control() == pp_impl.BITLOAD
    assert e.count() == 1
    assert e.value() == 2
 
@@ -299,6 +306,20 @@ def test_el10():
    assert e.count() == r
    assert e.value() == l
 
+def test_el11_retrig():
+   e = pp.el(pp.Retrig())
+   assert e.control() == pp_impl.RETRIG
+   assert e.count() == 1
+   assert e.value() == pp_impl.default_final_value
+   assert e.kind() == pp.el_type.retrig
+
+def test_el12_prng():
+   e = pp.el(pp.PseudoRandom(), 9)
+   assert e.control() == pp_impl.PRNG
+   assert e.count() == 9
+   assert e.value() == 0
+   assert e.kind() == pp.el_type.prng
+
 def test_store1():
    c = pp.Counter(1)
    v = pp.Value(2)
@@ -317,44 +338,43 @@ def test_store2():
    with pytest.raises(Exception):
        e.store(position)
 
+def test_stored_in():
+   e = pp.el(1, 2)
+   e2 = e.stored_in(3)
+   assert e.control() == pp_impl.BITLOAD
+   assert e2.control() == pp_impl.STORE + (3 << pp_impl.SHIFT_POSITION)
+   assert e2.store_slot() == 3
+
 def test_set_control():
-   c = pp.Counter(1)
-   v = pp.Value(2)
-   y = 3
-   e = pp.el(pp.el_type.regular, c, v, y)
-   assert e.control() == 3
-   e.set_control(4)
-   assert e.control() == 4
+   e = pp.el(1, 2)
+   e.set_control(pp_impl.BITSET)
+   assert e.control() == pp_impl.BITSET
+   assert e.kind() == pp.el_type.regular
 
 def test_set_count():
-   c = pp.Counter(1)
-   v = pp.Value(2)
-   y = 3
-   e = pp.el(pp.el_type.regular, c, v, y)
+   e = pp.el(1, 2)
    assert e.count() == 1
    e.set_count(pp.Counter(4))
    assert e.count() == 4
 
 def test_set_value():
-   c = pp.Counter(1)
-   v = pp.Value(2)
-   y = 3
-   e = pp.el(pp.el_type.regular, c, v, y)
+   e = pp.el(1, 2)
    assert e.value() == 2
-   e.set_value(pp.Value(4))
+   e.set_value(pp.BitXor(4))
    assert e.value() == 4
+   assert e.mode() == pp_impl.BITXOR
 
 def test_updated_value():
    c = pp.Counter(1)
    v = pp.BitSet(2)
-   e = pp.el(pp.el_type.regular, c, v)
+   e = pp.el(c, v)
    assert e.value() == 2
    assert e.updated_value(1) == 3
 
 def test_is_regular():
    c = pp.Counter(1)
    v = pp.Value(2)
-   e = pp.el(pp.el_type.regular, c, v)
+   e = pp.el(c, v)
    assert e.is_regular()
 
 def test_is_trigger():
@@ -379,13 +399,57 @@ def test_decode():
 def test_eq():
    c1 = pp.Counter(1)
    v1 = pp.Value(2)
-   e1 = pp.el(pp.el_type.regular, c1, v1)
-   e1bis = pp.el(pp.el_type.regular, c1, v1)
+   e1 = pp.el(c1, v1)
+   e1bis = pp.el(c1, v1)
    c2 = pp.Counter(2)
    v2 = pp.Value(4)
-   e2 = pp.el(pp.el_type.regular, c2, v2)
+   e2 = pp.el(c2, v2)
    assert e1 == e1bis
    assert e1 != e2
+
+def test_element_helpers():
+   e = pp.el(pp.Counter(3), pp.BitSet(0x12))
+   assert e.no_strobe() == False
+   assert e.regular_token() == "s"
+   assert e.sequence_record() == "s 3 0x12"
+
+   changed = e.with_count(7)
+   assert changed.count() == 7
+   assert e.count() == 3
+
+   changed2 = e.with_counter(pp.Counter(5))
+   assert changed2.count() == 5
+   assert changed2.no_strobe() == False
+
+   changed3 = e.with_regular_value(pp.BitXor(0x03))
+   assert changed3.mode() == pp_impl.BITXOR
+   assert changed3.updated_value(0x04) == 0x07
+
+   changed4 = e.as_bitload_after(0x01)
+   assert changed4.mode() == pp_impl.BITLOAD
+   assert changed4.value() == 0x13
+
+   no_strobe = pp.el(pp.NoStrobe(3), 0x12)
+   assert no_strobe.no_strobe()
+   assert no_strobe.regular_token() == "dn"
+   assert no_strobe.sequence_record() == "dn 3 0x12"
+
+def test_element_static_helpers():
+   assert pp.el.classify_control(pp_impl.BITLOAD) == pp.el_type.regular
+   assert pp.el.classify_control(pp_impl.REPLAY) == pp.el_type.replay
+   assert pp.el.is_regular_token("xr")
+   assert pp.el.is_regular_token("dn")
+   assert pp.el.is_regular_token("t") == False
+
+   e = pp.el.from_regular_token("xr", 7, 0x12)
+   assert e.mode() == pp_impl.BITXOR
+   assert e.regular_token() == "xr"
+
+   e2 = pp.el.from_raw_triplet(pp_impl.TRIGGER | pp_impl.TRIGGERFINAL, 0, (0x2a << pp_impl.WIDTH_TRIGGER) + 0x55)
+   assert e2.is_trigger()
+   assert e2.trigger_pattern() == 0x55
+   assert e2.trigger_mask() == 0x2a
+   assert e2.trigger_is_final()
 
 def test_parse_sequence_text_roundtrip_regular():
    seq = pp.Sequence()

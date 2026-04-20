@@ -50,9 +50,12 @@ NB_MODULE(pp_impl, m) {
 
   m.attr("triggerstring") = triggerstring;
   m.attr("finalstring") = finalstring;
+  m.attr("default_final_value") = default_final_value;
 
   m.attr("TERMINATE") = TERMINATE;
   m.attr("REPLAY") = REPLAY;
+  m.attr("RETRIG") = RETRIG;
+  m.attr("PRNG") = PRNG;
 
   m.attr("POSITIONS") = POSITIONS;
   m.attr("STORE") = STORE;
