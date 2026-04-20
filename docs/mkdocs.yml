@@ -24,6 +24,7 @@ nav:
     - Hacking on PulsePins: hacking.md
     - Getting started without hardware: getting_started_no_hardware.md
     - Getting started with hardware: getting_started_hardware.md
+    - Choose the right tool: choose_tool.md
     - Examples roadmap: examples.md
   - pptool:
     - pptool: pptool.md
