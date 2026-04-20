@@ -1,6 +1,7 @@
 # PulsePins RLE-Decoder
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17903233.svg)](https://doi.org/10.5281/zenodo.17903233)
+[![CI](https://github.com/rokzitko/PulsePins/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rokzitko/PulsePins/actions/workflows/ci.yml)
 
 PulsePins is an open-hardware digital pulse sequencer designed for laboratories that need many precisely timed digital channels without the cost and opacity of full quantum-control racks. Functionally it occupies the same space as commercial pulse programmers and multi-channel digital delay generators: it compiles high-level timing programs into long, deterministic sequences on tens of TTL/LVDS outputs at clock rates up to the 100 MHz range. Unlike traditional instruments, however, PulsePins is built on a commodity SoC FPGA board with fully open RTL and software, native Linux integration, and a workflow that fits naturally into version control and scripting environments. Large-scale quantum-control platforms and high-end AWGs remain the tools of choice for analog and microwave envelope generation, but PulsePins offers a complementary, digital-only alternative: compact, affordable, and hackable, ideal both as the backbone of smaller experiments and as an expendable “digital glue” resource in larger setups.
 
