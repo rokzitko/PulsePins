@@ -93,7 +93,7 @@ Helpful commands:
 ```bash
 make -C docs site
 make -C python build
-make -C python test
+make -C python test-host
 make -C ip test
 ```
 

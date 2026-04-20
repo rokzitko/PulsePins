@@ -5,6 +5,40 @@
 
 PulsePins is an open-hardware digital pulse sequencer designed for laboratories that need many precisely timed digital channels without the cost and opacity of full quantum-control racks. Functionally it occupies the same space as commercial pulse programmers and multi-channel digital delay generators: it compiles high-level timing programs into long, deterministic sequences on tens of TTL/LVDS outputs at clock rates up to the 100 MHz range. Unlike traditional instruments, however, PulsePins is built on a commodity SoC FPGA board with fully open RTL and software, native Linux integration, and a workflow that fits naturally into version control and scripting environments. Large-scale quantum-control platforms and high-end AWGs remain the tools of choice for analog and microwave envelope generation, but PulsePins offers a complementary, digital-only alternative: compact, affordable, and hackable, ideal both as the backbone of smaller experiments and as an expendable “digital glue” resource in larger setups.
 
+## Start here
+
+Choose the path that matches what you want to do first:
+
+| Goal | Best entry point |
+| ---- | ---------------- |
+| Try PulsePins on real hardware | `INSTALL-quick_start.md` and `docs/docs/getting_started_hardware.md` |
+| Explore or contribute without a board | `HACKING.md` and `docs/docs/getting_started_no_hardware.md` |
+| Find the right CLI/API surface for a task | `docs/docs/choose_tool.md` |
+| See concrete end-to-end workflows | `docs/docs/examples.md` |
+| Extend the project with a new tool, binding, or feature | `docs/docs/extension_cookbook.md` |
+
+## Common tasks
+
+Useful first commands:
+
+```bash
+make -C docs site
+make -C c++ unit_tests
+make -C python build
+make -C python test-host
+```
+
+Typical task-oriented entry points:
+
+* generate a quick signal: `ppfg`, `ppdelay`
+* replay a saved sequence: `ppplay`
+* capture and inspect output: `ppread`
+* validate clocks or PPS timing: `ppfreq`, `ppts`
+* troubleshoot trigger routing: `pptrig`
+* run built-in board checks: `pptest`
+
+See `docs/docs/choose_tool.md` for the full chooser.
+
 ## Mode of operation
 
 PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit (or wider) parallel data buses with 10&nbsp;ns timing resolution and advanced triggering capabilities. It is designed for reliable, robust operation with extensive self-testing. Common use cases are quick to implement, while the architecture remains flexible and easily extensible.

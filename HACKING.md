@@ -30,7 +30,7 @@ Good first commands:
 ```bash
 make -C docs site
 make -C python build
-make -C python test
+make -C python test-host
 make -C ip test
 ```
 
@@ -77,7 +77,7 @@ For that baseline, the board:
 | ---- | ------------- | --------------- | ------------ |
 | Docs | `docs/` | no | `make -C docs site` |
 | C++ host tools | `c++/` | not always | `make -C c++ build` |
-| Python bindings | `python/` | not always | `make -C python build && make -C python test` |
+| Python bindings | `python/` | not always | `make -C python build && make -C python test-host` |
 | RTL simulation | `ip/` | no | `make -C ip test` |
 | Full FPGA build | repo root | toolchain required | `make` |
 | Board deployment | repo root, `image/` | yes | `make copy_all` |

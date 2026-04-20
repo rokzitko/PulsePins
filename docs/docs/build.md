@@ -89,7 +89,8 @@ compilation is not currently supported.
 The `python/Makefile` provides:
 
 * `build` - configure and build the extension modules under `python/build`
-* `test` - run `pytest test.py`
+* `test` - run the full Python test suite, including board-backed tests
+* `test-host` - run only the host-safe Python tests (`-m "not hardware"`)
 * `copy_sources` / `copy_misc` - copy sources to the target host
 * `copy_sources_img` - stage the sources into the image tree
 

@@ -48,6 +48,15 @@ Host-side builds are still useful for checking that the binding code compiles an
 That is helpful for contributor workflows without a board, but it should not be treated as a
 replacement for the board build.
 
+The recommended host-side command pair is:
+
+```bash
+make -C python build
+make -C python test-host
+```
+
+`test-host` intentionally skips tests marked `hardware`, which require `/dev/mem`, board-backed MMIO, or a live PulsePins runtime.
+
 ## Sequence I/O examples
 
 ```python
