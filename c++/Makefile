@@ -54,7 +54,6 @@ CPPFLAGS = $(OPTIMFLAGS) -DTIDBITNR=${NR} \
   -I$(HWLIBS_ROOT)/include/ -I$(HWLIBS_ROOT)/include/$(ALT_DEVICE_FAMILY) \
   -I./third_party/hwlib/include/ -I./third_party/hwlib/include/$(ALT_DEVICE_FAMILY) \
   -I./third_party/asio/include -I./third_party \
-  -I.. \
   -Wformat=0 -std=c++17 -Wno-psabi -Wno-cpp $(HW_DEBUG)
 LDFLAGS = $(LINKFLAGS) -Wall -pthread
 
@@ -73,6 +72,16 @@ ifeq ($(GCC_VERSION),8)
     FSLIB = -lstdc++fs
     LDFLAGS += $(FSLIB)
 endif
+endif
+
+USE_PREGENERATED ?= 0
+
+ifeq ($(USE_PREGENERATED),1)
+  HPSFILE := artifacts/hps_0.h
+  CPPFLAGS += -Iartifacts/
+else
+  HPSFILE := ../hps_0.h
+  CPPFLAGS += -I..
 endif
 
 # Main host-tools build. `pptool`, `ppscpi`, and `ppwebgui` are cross-compiled for the board, while
@@ -130,51 +139,51 @@ PPWEBGUI_OBJS = ppwebgui_main.o ppwebgui_app.o ppwebgui_server.o ppwebgui_servic
 ppwebgui: $(PPWEBGUI_OBJS)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB)
 
-HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h)
+HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h) $(HPSFILE)
 
 unit_tests: unit_tests.cc ppwebgui_http.cc ppwebgui_json.cc $(HEADERS)
 	g++ $(CPPFLAGS) $(LDFLAGS) unit_tests.cc -o $@
 
-pptool.o : pptool.cc ../hps_0.h $(HEADERS)
+pptool.o : pptool.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS) $(CPPFLAGS) -c $< -o $@
 
-pptool_streaming.o : pptool_streaming.cc ../hps_0.h $(HEADERS)
+pptool_streaming.o : pptool_streaming.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-pptool_measurement.o : pptool_measurement.cc ../hps_0.h $(HEADERS)
+pptool_measurement.o : pptool_measurement.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppscpi.o : ppscpi.cc ../hps_0.h $(HEADERS)
+ppscpi.o : ppscpi.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_main.o : ppwebgui_main.cc ../hps_0.h $(HEADERS)
+ppwebgui_main.o : ppwebgui_main.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_service.o : ppwebgui_service.cc ../hps_0.h $(HEADERS)
+ppwebgui_service.o : ppwebgui_service.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_service_api.o : ppwebgui_service_api.cc ../hps_0.h $(HEADERS)
+ppwebgui_service_api.o : ppwebgui_service_api.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_json.o : ppwebgui_json.cc ../hps_0.h $(HEADERS)
+ppwebgui_json.o : ppwebgui_json.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_http.o : ppwebgui_http.cc ../hps_0.h $(HEADERS)
+ppwebgui_http.o : ppwebgui_http.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_assets.o : ppwebgui_assets.cc ../hps_0.h $(HEADERS)
+ppwebgui_assets.o : ppwebgui_assets.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_config.o : ppwebgui_config.cc ../hps_0.h $(HEADERS)
+ppwebgui_config.o : ppwebgui_config.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_bootstrap.o : ppwebgui_bootstrap.cc ../hps_0.h $(HEADERS)
+ppwebgui_bootstrap.o : ppwebgui_bootstrap.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_app.o : ppwebgui_app.cc ../hps_0.h $(HEADERS)
+ppwebgui_app.o : ppwebgui_app.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
-ppwebgui_server.o : ppwebgui_server.cc ../hps_0.h $(HEADERS)
+ppwebgui_server.o : ppwebgui_server.cc $(HEADERS)
 	$(CXX) $(CROSSCPPFLAGS)  $(CPPFLAGS) -c $< -o $@
 
 .PHONY: clean copy lint-whitespace
@@ -198,7 +207,7 @@ copy_img: $(TARGETS)
 CPPDIR=c++/
 SOURCES=$(HEADERS) $(wildcard *.cc)
 MISCFILES=Makefile
-copy_sources:
+copy_sources: ../hps_0.h
 	ssh $(TARGETHOST) mkdir -p $(CPPDIR)
 	scp $(SOURCES) $(MISCFILES) @$(TARGETHOST):$(CPPDIR)
 	scp ../hps_0.h @$(TARGETHOST):
@@ -211,7 +220,7 @@ copy_sources:
 	scp -r unit_tests_input/ @$(TARGETHOST):$(CPPDIR)
 
 # Stage the same source bundle into the image tree for image-based rebuild workflows.
-copy_sources_img:
+copy_sources_img: ../hps_0.h
 	mkdir -p $(IMGROOT)/$(CPPDIR)
 	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(CPPDIR)
 	cp -v ../hps_0.h $(IMGROOT)

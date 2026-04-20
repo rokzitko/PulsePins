@@ -1,0 +1,4 @@
+Here we store an instance of hps_0.h for CI runs.
+This file needs to be updated when the interface for the FPGA design changes.
+In CI runs, this directory needs to be added in the include path.
+See .github/workflows/ci.yml

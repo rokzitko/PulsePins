@@ -17,7 +17,7 @@ jobs:
           submodules: recursive
 
       - name: Build and run unit tests
-        run: make -C c++ unit_tests && ./unit_tests
+        run: make USE_PREGENERATED=1 -C c++ unit_tests && ./unit_tests
 
       - name: Compile affected standalone tools
         run: |
@@ -61,10 +61,10 @@ jobs:
         run: python -m pip install --upgrade pip pytest nanobind cmake
 
       - name: Build Python bindings
-        run: make -C python build
+        run: make USE_PREGENERATED=1 -C python build
 
       - name: Run host-side Python tests
-        run: make -C python test-host
+        run: make USE_PREGENERATED=1 -C python test-host
 
   hygiene:
     name: Python syntax
