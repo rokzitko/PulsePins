@@ -51,7 +51,7 @@ clean:
 # Copy source files to the DE10-Nano board for native module builds.
 PYDIR=python/
 SOURCES=$(wildcard *.cc) $(wildcard *.hh) pptool.py
-MISCFILES=CMakeLists.txt Makefile test.py
+MISCFILES=CMakeLists.txt Makefile pytest.ini test.py
 copy_sources:
 	ssh $(TARGETHOST) mkdir -p $(PYDIR)
 	scp $(SOURCES) $(MISCFILES) @$(TARGETHOST):$(PYDIR)
