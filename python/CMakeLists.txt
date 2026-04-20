@@ -23,7 +23,14 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
 find_package(nanobind CONFIG REQUIRED)
 
-nanobind_add_module(pp pp.cc)
+nanobind_add_module(pp
+  pp.cc
+  pp_bind_misc.cc
+  pp_bind_sequence.cc
+  pp_bind_hw_base.cc
+  pp_bind_streaming.cc
+  pp_bind_signal_paths.cc
+  pp_bind_counters.cc)
 nanobind_add_module(pp_impl pp_impl.cc)
 
 target_include_directories(pp
