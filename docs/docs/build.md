@@ -24,6 +24,8 @@ Relevant targets in `Makefile`:
 * `lint` - run Verible lint on top-level Verilog/SystemVerilog
 * `clean` - remove generated artifacts across subprojects
 
+For a quick live-board regression pass after the build artifacts already exist, use `scripts/board_smoke.sh`. It redeploys the current `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui`, reloads the FPGA, and runs a small finite smoke sequence against the board plus the two network services.
+
 ### FPGA hardware build
 
 The FPGA build depends on:
