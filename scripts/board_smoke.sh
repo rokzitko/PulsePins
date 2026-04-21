@@ -5,8 +5,8 @@
 # 1. checks that the current `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` exist locally
 # 2. copies them to the target board and reloads the FPGA
 # 3. runs a small finite `pptool` smoke sequence on the board
-# 4. runs a real TCP smoke exchange against `ppscpi`
-# 5. runs a small HTTP smoke exchange against `ppwebgui`
+# 4. runs a real TCP smoke exchange against `ppscpi`, including basic error-queue checks
+# 5. runs a small HTTP smoke exchange against `ppwebgui`, including `400` and `504` checks
 #
 # Typical usage:
 #   ./scripts/board_smoke.sh
@@ -230,9 +230,11 @@ smoke_ppdmatest22() {
   ssh "${TARGETHOST}" './ppdmatest 22 -c 10 -v 16 -reps 4'
 }
 
-# Network smoke for the SCPI server: start it remotely, talk to it over TCP, then terminate it cleanly.
+# Network smoke for the SCPI server: start it remotely, exercise both normal commands
+# and one expected SCPI error path, then terminate it cleanly.
 smoke_ppscpi() {
-  ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" './ppscpi' &
+  ssh "${TARGETHOST}" 'pkill -f "(^|/)ppscpi($| )" >/dev/null 2>&1 || true'
+  ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" 'exec ./ppscpi' &
   PPSCPI_SSH_PID=$!
 
   python3 - <<'PY'
@@ -243,17 +245,32 @@ import time
 host = os.environ["BOARD_IP"]
 port = 5025
 
-for _ in range(40):
-    try:
-        sock = socket.create_connection((host, port), timeout=1)
-        break
-    except OSError:
-        time.sleep(0.5)
-else:
-    raise SystemExit("failed to connect to ppscpi")
+def connect_ready_socket():
+    for _ in range(40):
+        try:
+            sock = socket.create_connection((host, port), timeout=1)
+            sock.settimeout(5)
+            sock.sendall(b"*IDN?\n")
+            data = b""
+            while not data.endswith(b"\n"):
+                chunk = sock.recv(4096)
+                if not chunk:
+                    raise ConnectionResetError("connection closed before *IDN? reply")
+                data += chunk
+            reply = data.decode().strip()
+            if reply.startswith("PulsePins,"):
+                print(f"*IDN? -> {reply}")
+                return sock
+            sock.close()
+        except OSError:
+            time.sleep(0.5)
+    raise SystemExit("failed to connect to ready ppscpi server")
 
-with sock:
+with connect_ready_socket() as sock:
     sock.settimeout(5)
+
+    def send_only(cmd: str) -> None:
+        sock.sendall((cmd + "\n").encode())
 
     def ask(cmd: str) -> str:
         sock.sendall((cmd + "\n").encode())
@@ -267,18 +284,37 @@ with sock:
         print(f"{cmd} -> {reply}")
         return reply
 
-    assert ask("*IDN?").startswith("PulsePins,")
+    print("subcheck: built-in TEST1")
     assert ask("TEST1") == "SUCCESS"
+
+    print("subcheck: CHECK state toggles and SEQ loads")
+    send_only("CHECK ON")
+    assert ask("CHECK?") == "TRUE"
+    send_only("CHECK OFF")
+    assert ask("CHECK?") == "FALSE"
+    assert ask("SEQ d 1 0x1 f") == "LOADED"
+    assert ask("SYST:ERR?") == '0, "No error"'
+
+    print("subcheck: malformed command reaches error queue")
+    assert ask("BADCMD") == "ERROR"
+    error_text = ask("SYST:ERR?")
+    assert "unknown token 'BADCMD'" in error_text
+    assert ask("SYST:ERR?") == '0, "No error"'
+
     ask("TERMINATE")
 PY
 
+  set +e
   wait "${PPSCPI_SSH_PID}"
+  set -e
   PPSCPI_SSH_PID=""
 }
 
-# Network smoke for the web UI: start the server remotely, hit the main API flows, then stop it.
+# Network smoke for the web UI: start the server remotely, hit the main success flows,
+# then verify one bad-request path and one timeout path before stopping it.
 smoke_ppwebgui() {
-  ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" './ppwebgui -ip 0.0.0.0 -port 4242' &
+  ssh "${TARGETHOST}" 'pkill -f "(^|/)ppwebgui($| )" >/dev/null 2>&1 || true'
+  ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" 'exec ./ppwebgui -ip 0.0.0.0 -port 4242' &
   PPWEBGUI_SSH_PID=$!
 
   python3 - <<'PY'
@@ -286,6 +322,7 @@ import json
 import os
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 
 base = f"http://{os.environ['BOARD_IP']}:4242"
@@ -314,8 +351,27 @@ def post_form(path: str, data: dict):
     print(path, payload.get("message", ""))
     return payload
 
+def post_form_expect_http_error(path: str, data: dict, expected_status: int):
+    body = urllib.parse.urlencode(data).encode()
+    req = urllib.request.Request(
+        base + path,
+        data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    try:
+        urllib.request.urlopen(req, timeout=10)
+    except urllib.error.HTTPError as exc:
+        payload = json.loads(exc.read().decode())
+        print(path, exc.code, payload.get("error", payload.get("message", "")))
+        assert exc.code == expected_status
+        return payload
+    raise SystemExit(f"expected HTTP {expected_status} from {path}")
+
+print("subcheck: remeasure clocks")
 measure = post_form("/api/clocking/measure", {})
 assert "status" in measure
+
+print("subcheck: stream tiny valid sequence")
 stream = post_form(
     "/api/stream",
     {
@@ -325,6 +381,45 @@ stream = post_form(
     },
 )
 assert stream["ok"] is True
+
+print("subcheck: reject malformed clock request")
+bad_clocking = post_form_expect_http_error(
+    "/api/clocking",
+    {
+        "source": "bad",
+        "core_profile": "100M",
+        "int_profile": "100M",
+    },
+    400,
+)
+assert bad_clocking["ok"] is False
+assert "Invalid clock source" in bad_clocking["error"]
+
+print("subcheck: reject explicit final in browser sequence text")
+bad_stream = post_form_expect_http_error(
+    "/api/stream",
+    {
+        "sequence_text": "d 1 0x1\nfinal 0x0\n",
+        "force_trigger": "1",
+        "check_readback": "0",
+    },
+    400,
+)
+assert bad_stream["ok"] is False
+assert "explicit final output" in bad_stream["error"]
+
+print("subcheck: report readback timeout as HTTP 504")
+timed_out_stream = post_form_expect_http_error(
+    "/api/stream",
+    {
+        "sequence_text": "dn 1 0x1\n",
+        "force_trigger": "1",
+        "check_readback": "1",
+    },
+    504,
+)
+assert timed_out_stream["ok"] is False
+assert "timed out" in timed_out_stream["message"].lower()
 PY
 
   kill "${PPWEBGUI_SSH_PID}"
@@ -344,8 +439,8 @@ run_step "ppread -timeout 1" ppread-timeout smoke_ppread_timeout
 run_step "ppdmatest 22 -c 10 -v 16 -reps 4" ppdmatest22 smoke_ppdmatest22
 
 section "Network Smoke"
-run_step "ppscpi basic session" ppscpi smoke_ppscpi
-run_step "ppwebgui API smoke" ppwebgui smoke_ppwebgui
+run_step "ppscpi session and error handling" ppscpi smoke_ppscpi
+run_step "ppwebgui API success and failure paths" ppwebgui smoke_ppwebgui
 
 printf '\n== Summary ==\n'
 printf 'Target host: %s\n' "$TARGETHOST"
