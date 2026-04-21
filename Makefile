@@ -26,7 +26,7 @@ IPSOURCE=$(wildcard ip/*/*.v) $(wildcard ip/*/*.vh) $(wildcard ip/*/*.sv)
 # Optional local overrides
 -include Makefile.local
 
-.PHONY: c++
+.PHONY: c++ board-smoke
 # Full hardware + host-software build. This is the main project build entry point.
 all: ${HPS} ${SOF} ${RBF} c++
 
@@ -82,6 +82,11 @@ copy_all_img: copy_img
 	cd contrib/completions ; make copy_img
 
 copy_all_image: copy_all_img
+
+# Manual live-board smoke pass against the current build artifacts.
+# Use `TARGETHOST=... make board-smoke` to point it at a different board.
+board-smoke:
+	./scripts/board_smoke.sh "${TARGETHOST}"
 
 # Lint only the top-level Verilog/SystemVerilog files in the repository root.
 lint-verilator:
