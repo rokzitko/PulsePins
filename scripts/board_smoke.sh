@@ -70,7 +70,9 @@ PPSCPI_SSH_PID=""
 PPWEBGUI_SSH_PID=""
 STEP_LOG_FILE=""
 BOARD_IP=""
-BOARD_VERSION_LINE=""
+PPTOOL_VERSION_LINE=""
+PPSCPI_VERSION_LINE=""
+PPWEBGUI_VERSION_LINE=""
 BOARD_BITSTREAM_LINE=""
 declare -a PASSED_STEPS=()
 
@@ -154,14 +156,35 @@ require_cmd() {
   fi
 }
 
-capture_board_metadata_from_log() {
+capture_common_metadata_from_log() {
   local log_file="$1"
-  if [[ -z "${BOARD_VERSION_LINE}" ]]; then
-    BOARD_VERSION_LINE="$(grep -m1 '^Version .*commit ' "$log_file" | tr -d '\r' || true)"
-  fi
   if [[ -z "${BOARD_BITSTREAM_LINE}" ]]; then
     BOARD_BITSTREAM_LINE="$(grep -m1 '^Bitstream timestamp:' "$log_file" | tr -d '\r' || true)"
   fi
+}
+
+capture_binary_version_from_log() {
+  local tool_name="$1"
+  local log_file="$2"
+  local version_line
+  version_line="$(grep -m1 '^Version .*commit ' "$log_file" | tr -d '\r' || true)"
+  case "$tool_name" in
+    pptool)
+      if [[ -z "${PPTOOL_VERSION_LINE}" ]]; then
+        PPTOOL_VERSION_LINE="$version_line"
+      fi
+      ;;
+    ppscpi)
+      if [[ -z "${PPSCPI_VERSION_LINE}" ]]; then
+        PPSCPI_VERSION_LINE="$version_line"
+      fi
+      ;;
+    ppwebgui)
+      if [[ -z "${PPWEBGUI_VERSION_LINE}" ]]; then
+        PPWEBGUI_VERSION_LINE="$version_line"
+      fi
+      ;;
+  esac
 }
 
 cleanup() {
@@ -294,6 +317,16 @@ with connect_ready_socket() as sock:
     assert ask("CHECK?") == "FALSE"
     assert ask("SEQ d 1 0x1 f") == "LOADED"
     assert ask("STREAM") == "SUCCESS"
+    assert ask("SYST:ERR?") == '0, "No error"'
+
+    print("subcheck: checked non-strobed stream reports execution error")
+    send_only("CHECK ON")
+    assert ask("CHECK?") == "TRUE"
+    assert ask("SEQ dn 1 0x1 f") == "LOADED"
+    assert ask("STREAM") == "FAILURE"
+    error_text = ask("SYST:ERR?")
+    assert "STREAM failed with rc=" in error_text
+    assert "timeout" in error_text
     assert ask("SYST:ERR?") == '0, "No error"'
 
     print("subcheck: malformed command reaches error queue")
@@ -434,20 +467,31 @@ run_step "Discover board IP" discover-ip discover_board_ip
 
 section "pptool Smoke"
 run_step "ppcounter -test1 -check" ppcounter smoke_ppcounter
-capture_board_metadata_from_log "${LOG_DIR}/ppcounter.log"
+capture_common_metadata_from_log "${LOG_DIR}/ppcounter.log"
+capture_binary_version_from_log pptool "${LOG_DIR}/ppcounter.log"
 run_step "ppdmatest 21 -c 10 -v 16" ppdmatest21 smoke_ppdmatest21
 run_step "ppread -timeout 1" ppread-timeout smoke_ppread_timeout
 run_step "ppdmatest 22 -c 10 -v 16 -reps 4" ppdmatest22 smoke_ppdmatest22
 
 section "Network Smoke"
 run_step "ppscpi session and error handling" ppscpi smoke_ppscpi
+capture_common_metadata_from_log "${LOG_DIR}/ppscpi.log"
+capture_binary_version_from_log ppscpi "${LOG_DIR}/ppscpi.log"
 run_step "ppwebgui API success and failure paths" ppwebgui smoke_ppwebgui
+capture_common_metadata_from_log "${LOG_DIR}/ppwebgui.log"
+capture_binary_version_from_log ppwebgui "${LOG_DIR}/ppwebgui.log"
 
 printf '\n== Summary ==\n'
 printf 'Target host: %s\n' "$TARGETHOST"
 printf 'Board IP: %s\n' "$BOARD_IP"
-if [[ -n "${BOARD_VERSION_LINE}" ]]; then
-  printf 'pptool binary: %s\n' "$BOARD_VERSION_LINE"
+if [[ -n "${PPTOOL_VERSION_LINE}" ]]; then
+  printf 'pptool binary: %s\n' "$PPTOOL_VERSION_LINE"
+fi
+if [[ -n "${PPSCPI_VERSION_LINE}" ]]; then
+  printf 'ppscpi binary: %s\n' "$PPSCPI_VERSION_LINE"
+fi
+if [[ -n "${PPWEBGUI_VERSION_LINE}" ]]; then
+  printf 'ppwebgui binary: %s\n' "$PPWEBGUI_VERSION_LINE"
 fi
 if [[ -n "${BOARD_BITSTREAM_LINE}" ]]; then
   printf '%s\n' "$BOARD_BITSTREAM_LINE"

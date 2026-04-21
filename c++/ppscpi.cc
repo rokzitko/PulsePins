@@ -41,6 +41,29 @@ private:
   Sequence elements;
   bool force_trigger_p = false;
 
+  void push_rc_failure(const char *context, const int rc) {
+    std::ostringstream message;
+    message << "Execution error: " << context << " failed with rc=" << rc;
+    std::string detail_sep = " [";
+    auto add_detail = [&](const char *detail) {
+      message << detail_sep << detail;
+      detail_sep = ", ";
+    };
+    if (rc & RC_TIMEOUT)
+      add_detail("timeout");
+    if (rc & RC_ERROR_CHECK)
+      add_detail("readback mismatch");
+    if (rc & RC_ERROR_CRC_MISMATCH)
+      add_detail("crc mismatch");
+    if (rc & RC_ERROR_BUFFER_ERROR)
+      add_detail("buffer error");
+    if (rc & RC_ERROR_OVERFLOW)
+      add_detail("overflow");
+    if (detail_sep != " [")
+      message << ']';
+    push_error(message.str(), EXECUTION_ERROR);
+  }
+
   void prepare_stream_run() {
     s.sc.reset();
     rb.reset();
@@ -100,6 +123,8 @@ private:
                 auto lock = fpga.acquire_lock();
                 prepare_stream_run();
                 int rc = send_and_trig(s.fifo, s.sc, rb, ctr, elements, input1, force_trigger, v);
+                if (rc)
+                  push_rc_failure("TEST1", rc);
                 return (rc ? "FAILURE" : "SUCCESS");
               });
     // Load a sequence
@@ -131,6 +156,8 @@ private:
                 prepare_stream_run();
                 int rc = send_and_trig(s.fifo, s.sc, rb, ctr, elements, input1, force_trigger_p, v); // to do: async?
                 sesr_|=OPERATION_COMPLETE;
+                if (rc)
+                  push_rc_failure("STREAM", rc);
                 return (rc == 0 ? "SUCCESS" : "FAILURE");
               });
     // *WAI
