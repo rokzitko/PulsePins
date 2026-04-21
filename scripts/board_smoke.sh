@@ -287,12 +287,13 @@ with connect_ready_socket() as sock:
     print("subcheck: built-in TEST1")
     assert ask("TEST1") == "SUCCESS"
 
-    print("subcheck: CHECK state toggles and SEQ loads")
+    print("subcheck: CHECK state toggles and forced stream succeeds")
     send_only("CHECK ON")
     assert ask("CHECK?") == "TRUE"
     send_only("CHECK OFF")
     assert ask("CHECK?") == "FALSE"
     assert ask("SEQ d 1 0x1 f") == "LOADED"
+    assert ask("STREAM") == "SUCCESS"
     assert ask("SYST:ERR?") == '0, "No error"'
 
     print("subcheck: malformed command reaches error queue")
@@ -446,7 +447,7 @@ printf '\n== Summary ==\n'
 printf 'Target host: %s\n' "$TARGETHOST"
 printf 'Board IP: %s\n' "$BOARD_IP"
 if [[ -n "${BOARD_VERSION_LINE}" ]]; then
-  printf 'Binary: %s\n' "$BOARD_VERSION_LINE"
+  printf 'pptool binary: %s\n' "$BOARD_VERSION_LINE"
 fi
 if [[ -n "${BOARD_BITSTREAM_LINE}" ]]; then
   printf '%s\n' "$BOARD_BITSTREAM_LINE"

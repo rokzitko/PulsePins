@@ -41,6 +41,12 @@ private:
   Sequence elements;
   bool force_trigger_p = false;
 
+  void prepare_stream_run() {
+    s.sc.reset();
+    rb.reset();
+    ctr.reset_all();
+  }
+
   void build_tree() {
     // *IDN?
     add_node({"*IDN"}, {}, [this]() {
@@ -92,6 +98,7 @@ private:
                 auto input1 = input;
                 input1.add("-check");
                 auto lock = fpga.acquire_lock();
+                prepare_stream_run();
                 int rc = send_and_trig(s.fifo, s.sc, rb, ctr, elements, input1, force_trigger, v);
                 return (rc ? "FAILURE" : "SUCCESS");
               });
@@ -121,6 +128,7 @@ private:
                 auto input1 = input;
                 if (check) input1.add("-check");
                 auto lock = fpga.acquire_lock();
+                prepare_stream_run();
                 int rc = send_and_trig(s.fifo, s.sc, rb, ctr, elements, input1, force_trigger_p, v); // to do: async?
                 sesr_|=OPERATION_COMPLETE;
                 return (rc == 0 ? "SUCCESS" : "FAILURE");
