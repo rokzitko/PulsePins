@@ -247,7 +247,8 @@ inline int run_post_execution_checks(streamer_control &sc,
   // The remaining checks are post-completion invariants for the whole streamer path.
   rc |= sc.wait_to_complete(v);
   if (rc & RC_TIMEOUT) {
-    std::cout << red << "Skipping post-completion checks because the streamer did not report completion." << rst << std::endl;
+    std::cout << red << "Skipping post-completion checks because the streamer "
+              << streamer_completion_timeout_text << "." << rst << std::endl;
     deactivate_trigger(sc, force_trigger, v);
     return rc;
   }

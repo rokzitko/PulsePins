@@ -47,6 +47,24 @@ bool contains(const std::string &str, const std::string &substr) {
   return str.find(substr) != std::string::npos;
 }
 
+struct ScopedStreamCapture {
+  std::ostream &stream;
+  std::streambuf *original = nullptr;
+  std::ostringstream captured;
+
+  explicit ScopedStreamCapture(std::ostream &target) :
+    stream(target),
+    original(target.rdbuf(captured.rdbuf())) {}
+
+  ~ScopedStreamCapture() {
+    stream.rdbuf(original);
+  }
+
+  std::string str() const {
+    return captured.str();
+  }
+};
+
 InputParser make_input(std::initializer_list<std::string> args) {
   return InputParser(std::vector<std::string>(args));
 }
@@ -1116,14 +1134,17 @@ TEST_CASE("convert_for_readback_check normalizes effective output stream") {
 }
 
 TEST_CASE("readback_timeout_policy uses safe defaults when timeout is omitted") {
+  ScopedStreamCapture capture(std::cout);
   const auto policy = readback_timeout_policy(make_input({}));
 
   CHECK(policy.first_element_timeout_s == doctest::Approx(default_readback_first_element_timeout_s));
   CHECK(policy.idle_timeout_s == doctest::Approx(default_readback_idle_timeout_s));
   CHECK(policy.total_timeout_s == doctest::Approx(0.0));
+  CHECK(capture.str().empty());
 }
 
 TEST_CASE("readback_timeout_policy respects explicit timeout overrides") {
+  ScopedStreamCapture capture(std::cout);
   const auto idle_policy = readback_timeout_policy(make_input({"-timeout", "0.25"}));
   CHECK(idle_policy.first_element_timeout_s == doctest::Approx(0.0));
   CHECK(idle_policy.idle_timeout_s == doctest::Approx(0.25));
@@ -1136,6 +1157,11 @@ TEST_CASE("readback_timeout_policy respects explicit timeout overrides") {
   CHECK(total_policy.first_element_timeout_s == doctest::Approx(0.0));
   CHECK(total_policy.idle_timeout_s == doctest::Approx(0.0));
   CHECK(total_policy.total_timeout_s == doctest::Approx(1.5));
+
+  const auto output = capture.str();
+  CHECK(contains(output, "readback timeout=0.25s [after last read]"));
+  CHECK(contains(output, "readback timeout disabled"));
+  CHECK(contains(output, "readback timeout=1.5s [after start]"));
 }
 
 TEST_CASE("freq_meter normalizes zero-length gate requests") {
@@ -1193,6 +1219,7 @@ TEST_CASE("transmit_sequence_checked maps transport timeout to RC_TIMEOUT") {
 }
 
 TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {
+  ScopedStreamCapture capture(std::cerr);
   FakeWebGuiService service;
   service.stream_hook = [](StreamLaunchRequest) -> StreamResult {
     throw WebGuiBadRequest("Sequence already contains an explicit final output; omit -t or remove the final record");
@@ -1212,9 +1239,11 @@ TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {
   CHECK(contains(res->body, "explicit final output"));
   CHECK(service.stream_calls == 1);
   CHECK(service.last_error == "Sequence already contains an explicit final output; omit -t or remove the final record");
+  CHECK(contains(capture.str(), "ppwebgui: HTTP 400 error: Sequence already contains an explicit final output; omit -t or remove the final record"));
 }
 
 TEST_CASE("ppwebgui routes reject malformed clock requests before calling the service") {
+  ScopedStreamCapture capture(std::cerr);
   FakeWebGuiService service;
 
   ScopedTestWebGuiServer server(service);
@@ -1231,6 +1260,7 @@ TEST_CASE("ppwebgui routes reject malformed clock requests before calling the se
   CHECK(contains(res->body, "Missing parameter: source"));
   CHECK(service.apply_clock_calls == 0);
   CHECK(service.last_error == "Missing parameter: source");
+  CHECK(contains(capture.str(), "ppwebgui: HTTP 400 error: Missing parameter: source"));
 }
 
 TEST_CASE("VCD parser") {

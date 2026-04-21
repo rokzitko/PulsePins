@@ -41,6 +41,16 @@ Some signals are additionally brought out on the Arduino header for testing purp
 
 Some test procedures require additional external test equipment or external wiring.
 
+### Manual board smoke
+
+For a quick hand-run live-board regression check from the repository root, use:
+
+```bash
+make board-smoke
+```
+
+This is intentionally smaller and faster than `run_all_tests`: it redeploys the current local board artifacts, reloads the FPGA, runs a few finite `pptool` checks, and exercises both `ppscpi` and `ppwebgui` over the network. Override the target board with `TARGETHOST=...` if needed.
+
 ### Multiboard
 
 ### Random number generator

@@ -385,7 +385,12 @@ StreamResult WebGuiController::stream_text_sequence(StreamLaunchRequest request)
     }
 
     const bool timed_out = (rc & RC_TIMEOUT) != 0;
-    const auto error = std::string(timed_out ? "Streaming timed out with rc=" : "Streaming failed with rc=") + std::to_string(rc);
+    const bool readback_timeout = timed_out && (rc & RC_ERROR_CHECK) != 0;
+    const auto error = timed_out
+      ? (readback_timeout
+          ? std::string("Streaming timed out waiting for readback data with rc=") + std::to_string(rc)
+          : std::string("Streaming ") + streamer_completion_timeout_text + " with rc=" + std::to_string(rc))
+      : std::string("Streaming failed with rc=") + std::to_string(rc);
     publish_stream_result_locked("stream failed", error, rc, error);
     return {false, rc, timed_out ? 504 : 500, error};
   } catch (const WebGuiBadRequest &e) {

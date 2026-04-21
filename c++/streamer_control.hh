@@ -31,6 +31,10 @@
 #include "definitions.hh"
 #include "colors.hh"
 
+inline constexpr uint64_t default_streamer_completion_timeout_ms = 10'000;
+inline constexpr const char *streamer_completion_timeout_text =
+  "timed out waiting for streamer completion (10 s internal limit)";
+
 // Register-level host wrapper for one streamer interface instance.
 class streamer_control
 {
@@ -226,7 +230,7 @@ public:
     return status() & DONE;
   }
 
-  auto wait_to_complete(const Verbosity &v, const uint64_t max_cnt = 10000) { // 10s maximum wait time by default
+  auto wait_to_complete(const Verbosity &v, const uint64_t max_cnt = default_streamer_completion_timeout_ms) {
     int rc = RC_OK;
     if (v.veryverbose)
       std::cout << "Waiting for streamer to complete" << std::endl;
@@ -235,7 +239,7 @@ public:
     if (cnt == max_cnt) {
       rc = RC_TIMEOUT;
       if (v.verbose)
-        std::cout << "wait_to_complete(): timeout exceeded while waiting for completion." << std::endl;
+        std::cout << "wait_to_complete(): " << streamer_completion_timeout_text << "." << std::endl;
     }
     if (v.veryverbose)
       status_report();

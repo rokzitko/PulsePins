@@ -49,8 +49,12 @@ private:
       message << detail_sep << detail;
       detail_sep = ", ";
     };
-    if (rc & RC_TIMEOUT)
-      add_detail("timeout");
+    if (rc & RC_TIMEOUT) {
+      if (rc & RC_ERROR_CHECK)
+        add_detail("readback timeout");
+      else
+        add_detail(streamer_completion_timeout_text);
+    }
     if (rc & RC_ERROR_CHECK)
       add_detail("readback mismatch");
     if (rc & RC_ERROR_CRC_MISMATCH)

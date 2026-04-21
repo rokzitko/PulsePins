@@ -24,7 +24,7 @@ Relevant targets in `Makefile`:
 * `lint` - run Verible lint on top-level Verilog/SystemVerilog
 * `clean` - remove generated artifacts across subprojects
 
-For a quick manual live-board regression pass after the build artifacts already exist, use `make board-smoke`. That target wraps `scripts/board_smoke.sh`, redeploys the current `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui`, reloads the FPGA, and runs a small finite smoke sequence against the board plus the two network services, including a few selected failure-path checks (`ppscpi` error queue, `ppwebgui` HTTP `400`, and `ppwebgui` HTTP `504`). Override the target host with `TARGETHOST=...` when needed.
+For a quick manual live-board regression pass after the build artifacts already exist, use `make board-smoke`. That target wraps `scripts/board_smoke.sh`, redeploys the current local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, and runs a small finite smoke sequence against the board plus the two network services, including a few selected failure-path checks (`ppscpi` error queue, `ppwebgui` HTTP `400`, and `ppwebgui` HTTP `504`). It does not rebuild the artifacts first. Override the target host with `TARGETHOST=...` when needed.
 
 ### FPGA hardware build
 
@@ -100,6 +100,8 @@ The CMake configuration builds two modules:
 
 * `pp`
 * `pp_impl`
+
+The `pp` module is split across multiple translation units: `python/pp.cc` contains the nanobind module entry point, while the actual bindings live in `python/pp_bind_*.cc`.
 
 ### IP-level simulation/test benches
 

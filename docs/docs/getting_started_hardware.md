@@ -50,6 +50,14 @@ Expected result:
 
 Treat the runtime as approximate; it is expected to evolve as more tests are added.
 
+For a faster manual regression pass from the current repository checkout, use:
+
+```bash
+make board-smoke
+```
+
+This redeploys the current local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, kills any running `ppscpi` / `ppwebgui` processes on the board, and runs a concise finite smoke sequence. Override the board target with `TARGETHOST=...` when needed.
+
 ### Updating the board from the current repository
 
 The current recommended update flow is:

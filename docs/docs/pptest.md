@@ -38,6 +38,8 @@ Tests return code 0 if successful. Non-zero error indicates an error. The follow
 * bit 1: incorrect final data value detected
 * bit 6: timeout while waiting for transport queueing, readback, DMA setup, or streamer completion
 
+Finite playback runs also have an internal streamer-completion timeout: if the streamer does not report `done` within 10 s, the tools report `timed out waiting for streamer completion (10 s internal limit)` and skip the usual post-completion checks.
+
 ### Integer parameter parsing
 
 The numeric parameters can be expressed in decimal (42), hexadecimal (0x2A), octal (052) or binary (b101010). The

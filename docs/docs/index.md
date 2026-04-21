@@ -1,8 +1,5 @@
 # PulsePins pulse sequencer
 
-![PulsePins logo](img/pulsepins.jpg){: .heartbeat style="height:100px;width:100px"}
-{ .blink-img }
-
 PulsePins is a [feature-rich](about.md) general-purpose programmable pulse sequencer running on field-programmable gate array (FPGA) system-on-chip (SOC) modules.
 It targets low-speed (up to 100MHz) applications on a moderate number of digital output channels (typically 32 or 64).
 It is scriptable via Python and C++. It can run on small compact FPGA modules, such as
@@ -378,3 +375,6 @@ only the 32-bit version (32-bit for both data and count registers) is distribute
 PulsePins is easily portable to other Altera/Intel FPGA solutions and it has been tested, for example, on Arria 10
 FPGAs for driving 10Gbps transceivers, specifically on [Terasic HAN
 Pilot](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=1133), reaching 100ps timing accuracy.
+
+![PulsePins logo](img/pulsepins.jpg){: .heartbeat style="height:100px;width:100px"}
+{ .blink-img }

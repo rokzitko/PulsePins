@@ -98,19 +98,20 @@ Do not add parallel token/control/behavior mappings in several places if the fea
 
 The Python bindings live in:
 
-* `python/pp.cc` - high-level object bindings
+* `python/pp.cc` - nanobind module entry point for `pp`
+* `python/pp_bind_*.cc` - the split high-level object bindings for `pp`
 * `python/pp_impl.cc` - constants and low-level exported values
 * `python/test.py` - Python-side tests
 
 ### When to touch which file
 
-* add a new class or method wrapper: `python/pp.cc`
+* add or update a high-level class or method wrapper: the relevant `python/pp_bind_*.cc` file
 * export a new constant or symbolic string: `python/pp_impl.cc`
 * verify the binding surface: `python/test.py`
 
 ### Typical sequence
 
-1. Add the binding in `python/pp.cc`.
+1. Add the binding in the relevant `python/pp_bind_*.cc` file.
 2. If the Python tests need a constant from C++, export it in `python/pp_impl.cc`.
 3. Add host-safe tests to `python/test.py`.
 4. If the test requires a live board or `/dev/mem`, mark it with `@pytest.mark.hardware`.
@@ -246,7 +247,7 @@ If the feature is mainly for contributors, update:
 
 ### New Python API surface
 
-* binding added in `python/pp.cc`
+* binding added in the relevant `python/pp_bind_*.cc` file
 * constants added in `python/pp_impl.cc` if needed
 * tests added in `python/test.py`
 * hardware-only tests marked

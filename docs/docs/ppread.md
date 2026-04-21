@@ -8,8 +8,7 @@ Command line arguments:
 
 * ``-oe``: output enable (bool). If true, we are reading internally generated data. If false, we are
 reading external data on the device I/O pins. If unspecified, use the hardware default (false).
-* ``-timeout``: timeout in seconds (floating point number). If positive, interpreted as time after
-the last element read. If negative, interpreted as time after starting the tool.
+* ``-timeout``: controls readback wait bounds. If omitted, `ppread` uses a conservative default timeout: 2s waiting for the first readback element and 2s for later idle gaps. A positive value is interpreted as time after the last element read, a negative value as time after starting the tool, and ``-timeout 0`` disables timeout protection.
 * ``-save-vcd <file>``: capture the readback stream and save it as a VCD waveform file.
 * ``-save-text <file>``: capture the readback stream and save it in PulsePins text sequence format.
 * ``-save-binary <file>``: capture the readback stream and save it in the exact PulsePins binary sequence format.

@@ -69,6 +69,7 @@ PulsePins-specific commands:
 * Before each hardware-touching run (`TEST1` and `STREAM`), `ppscpi` resets the streamer core, readback encoder, and counters so repeated commands in the same process/session start from a clean hardware state.
 * If `TEST1` or `STREAM` returns `FAILURE`, `ppscpi` also pushes an execution-error record into `SYST:ERR?` with the aggregated PulsePins return-code bits so remote clients can distinguish timeout, readback, CRC, buffer, and overflow failures.
 * When `CHECK ON` is active and no explicit startup `-timeout` was supplied, the shared workflow uses a conservative default readback timeout: 2s for the first readback element and 2s for later idle gaps. Start `ppscpi` with `-timeout 0` to disable that protection or `-timeout <value>` to override it.
+* Finite `STREAM` runs also inherit the internal 10 s streamer-completion timeout from the shared playback path. When that timeout fires, the user-facing message is `timed out waiting for streamer completion (10 s internal limit)`.
 * Hardware-touching commands are serialized across sessions through the shared FPGA lock, so multiple clients can stay connected without racing each other on streamer/reset state.
 * The server is intended for remote orchestration, not for high-throughput binary bulk transfer.
 * Command-handler exceptions are converted into SCPI error/status state instead of tearing down the whole server process.
