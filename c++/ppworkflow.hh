@@ -32,6 +32,7 @@
 #include "verbosity.hh"
 #include "elements.hh"
 #include "sequence.hh"
+#include "stall_timeout.hh"
 #include "streamer_control.hh"
 #include "sequences.hh"
 #include "readback.hh"
@@ -119,10 +120,10 @@ inline void dump_sequence(const Sequence &elements, const Verbosity &v)
     elements.dump(std::cout, "| ");
 }
 
-template<typename Transport>
+template<typename Transport, typename StreamerControl>
 inline void transmit_sequence(Transport &tr,
-                              streamer_control &sc,
-                              Sequence &elements,
+                              StreamerControl &sc,
+                              const Sequence &elements,
                               const Verbosity &v)
 {
   if (v.veryverbose)
@@ -133,6 +134,22 @@ inline void transmit_sequence(Transport &tr,
   sc.status_report();
   if (v.veryverbose)
     tr.report();
+}
+
+template<typename Transport, typename StreamerControl>
+inline int transmit_sequence_checked(Transport &tr,
+                                     StreamerControl &sc,
+                                     const Sequence &elements,
+                                     const Verbosity &v,
+                                     std::ostream &out = std::cout)
+{
+  try {
+    transmit_sequence(tr, sc, elements, v);
+    return RC_OK;
+  } catch (const StallTimeout &e) {
+    out << red << e.what() << rst << std::endl;
+    return RC_TIMEOUT;
+  }
 }
 
 inline void activate_trigger(streamer_control &sc,
@@ -311,7 +328,9 @@ inline int send_and_trig(Transport &tr,
   int rc = RC_OK;
   auto [working_elements, final] = prepare_sequence_for_streaming(elements, input);
   dump_sequence(working_elements, v);
-  transmit_sequence(tr, sc, working_elements, v);
+  rc |= transmit_sequence_checked(tr, sc, working_elements, v);
+  if (rc & RC_TIMEOUT)
+    return rc;
   activate_trigger(sc, input, force_trigger, v);
 
   const auto timeout_policy = readback_timeout_policy(input);

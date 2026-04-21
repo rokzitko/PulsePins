@@ -22,6 +22,7 @@
 #include "delay.hh"
 #include "fpga.hh"
 #include "options.hh"
+#include "stall_timeout.hh"
 #include "streamer.hh"
 
 class ReadbackException : std::exception {
@@ -150,8 +151,14 @@ public:
   }
 
   void clear_fifo() {
-    while (filled())
+    TimeoutGuard watchdog("readback FIFO drain", default_transport_stall_timeout_s);
+    while (1) {
+      const auto current_fill = f.fill();
+      if (current_fill == 0)
+        return;
+      watchdog.throw_if_total_timeout("fill=" + std::to_string(current_fill));
       f.read(); // ignore return value
+    }
   }
 
     // Reset the hardware encoder, wait long enough for the streamer domain to observe it,

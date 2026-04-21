@@ -18,6 +18,7 @@
 #include "ppmstest.hh"
 #include "ppdmatest.hh"
 #include "ppfg.hh"
+#include "ppworkflow.hh"
 #include "trigger.hh"
 
 auto get_test_number(const InputParser &input)
@@ -138,10 +139,12 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
   if (input.exists("-cont")) {
     if (v.verbose)
       std::cout << "Continuous mode" << std::endl;
-    const auto seq = seq_continuous(p, m, nr_delay, nr_pos, nr_neg, v1, v0, start0);
+    auto seq = seq_continuous(p, m, nr_delay, nr_pos, nr_neg, v1, v0, start0);
     if (v.veryverbose)
       seq.dump(std::cout, "| ");
-    s.fifo.send_sequence(seq);
+    const auto rc = transmit_sequence_checked(s.fifo, s.sc, seq, v);
+    if (rc != RC_OK)
+      return rc;
     if (autotrig)
       s.sc.trigger_force();
     else
@@ -157,15 +160,18 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
     const auto seq = seq_burst(p, m, nr_delay, nr_pos, nr_neg, v1, v0, rep, start0, final);
     if (v.veryverbose)
       seq.dump(std::cout, "| ");
-    const auto seq_retrig = with_pushed(seq, el(Retrig{}));
-    const auto seq_final  = with_pushed(seq, el(final));
+    auto seq_retrig = with_pushed(seq, el(Retrig{}));
+    auto seq_final  = with_pushed(seq, el(final));
 
     const count_t n_max = parse_uint32(input, "-n_max", "1");
+    int rc = RC_OK;
     for (count_t n = 0; n_max == 0 || n < n_max; n++) {
       if (n_max == 0 || n < n_max-1)
-        s.fifo.send_sequence(seq_retrig);
+        rc |= transmit_sequence_checked(s.fifo, s.sc, seq_retrig, v);
       else
-        s.fifo.send_sequence(seq_final);
+        rc |= transmit_sequence_checked(s.fifo, s.sc, seq_final, v);
+      if (rc & RC_TIMEOUT)
+        return rc;
       if (n == 0) {
         if (autotrig)
           s.sc.trigger_force();
@@ -211,7 +217,9 @@ int ppdelay(FPGA &fpga, const InputParser &input, const Verbosity &v)
   const auto final = parse_value(input, "-t", "0");
   auto seq = seq_once(p, m, nr_delay, nr, nr_neg, v1, v0, final);
   if (v.veryverbose) seq.dump(std::cout, "| ");
-  s.fifo.send_sequence(seq);
+  const auto rc = transmit_sequence_checked(s.fifo, s.sc, seq, v);
+  if (rc != RC_OK)
+    return rc;
   s.sc.trigger_enable();
   return RC_OK;
 }

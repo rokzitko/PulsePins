@@ -7,6 +7,7 @@
 // https://github.com/doctest/doctest/blob/master/doc/markdown/tutorial.md
 
 #include <fstream>
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <cstdio>
@@ -29,6 +30,7 @@
 #include "ppworkflow.hh"
 #include "sequence_file_format.hh"
 #include "sequence.hh"
+#include "stall_timeout.hh"
 #include "streamer.hh"
 #include "third_party/httplib.h"
 #include "vcd_parser.hh"
@@ -102,6 +104,17 @@ struct ScopedTestWebGuiServer {
     server.stop();
     if (thread.joinable())
       thread.join();
+  }
+};
+
+struct FakeTransportControl {
+  void status_report() {}
+};
+
+struct ThrowingTransport {
+  void report() {}
+  void send_sequence(const Sequence &) {
+    throw StallTimeout("synthetic transport timeout");
   }
 };
 
@@ -1133,6 +1146,50 @@ TEST_CASE("freq_meter normalizes zero-length gate requests") {
 TEST_CASE("freq_meter waits at least one microsecond for tiny gates") {
   CHECK(freq_meter::gate_wait_time_us(1, 50'000'000.0) == 1);
   CHECK(freq_meter::gate_wait_time_us(500'000, 50'000'000.0) == 10'000);
+}
+
+TEST_CASE("TimeoutGuard raises total timeout after the deadline") {
+  TimeoutGuard guard("unit-test total timeout", 0.02);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(30));
+
+  CHECK_THROWS_AS(guard.throw_if_total_timeout("details"), StallTimeout);
+}
+
+TEST_CASE("TimeoutGuard resets the stall deadline on progress") {
+  TimeoutGuard guard("unit-test stall timeout", 0.02);
+  std::optional<int> previous;
+
+  CHECK(guard.progress_if_changed(previous, 1));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  CHECK_NOTHROW(guard.throw_if_stalled("before progress update"));
+  CHECK(guard.progress_if_changed(previous, 2));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  CHECK_NOTHROW(guard.throw_if_stalled("after progress update"));
+  std::this_thread::sleep_for(std::chrono::milliseconds(25));
+  CHECK_THROWS_AS(guard.throw_if_stalled("after idle wait"), StallTimeout);
+}
+
+TEST_CASE("TimeoutGuard can be disabled") {
+  TimeoutGuard guard("unit-test disabled timeout", 0.0);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(30));
+
+  CHECK_NOTHROW(guard.throw_if_total_timeout("disabled"));
+  CHECK_NOTHROW(guard.throw_if_stalled("disabled"));
+}
+
+TEST_CASE("transmit_sequence_checked maps transport timeout to RC_TIMEOUT") {
+  ThrowingTransport transport;
+  FakeTransportControl control;
+  Sequence seq;
+  Verbosity verbosity;
+  std::ostringstream out;
+
+  const auto rc = transmit_sequence_checked(transport, control, seq, verbosity, out);
+
+  CHECK(rc == RC_TIMEOUT);
+  CHECK(contains(out.str(), "synthetic transport timeout"));
 }
 
 TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {

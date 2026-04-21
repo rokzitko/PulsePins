@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstdint> // integer types, uint32_t, etc.
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unistd.h> // usleep
@@ -116,6 +117,8 @@ public:
   void transfer_multiple_times(const size_t size, const size_t repetitions) {
     constexpr size_t depth = MSGDMA_1_DESCRIPTOR_SLAVE_DESCRIPTOR_FIFO_DEPTH;  // Descriptor FIFO depth = 32
     reset();
+    TimeoutGuard watchdog("DMA descriptor FIFO space wait", default_transport_stall_timeout_s);
+    std::optional<uint16_t> previous_fill;
     for (size_t cnt = 0; cnt < repetitions || repetitions == 0; cnt++) {
       if (v.veryverbose) std::cout << "DMA transfer equeuing, cnt=" << std::dec << cnt << " fill=" << read_fill() << std::endl;
       if (v.veryverbose) report();
@@ -124,7 +127,16 @@ public:
         initiate_transfer();
         if (v.verbose) std::cout << "DMA transfer initiated." << std::endl;
       }
-      while (read_fill() >= depth-2) usleep(100);
+      while (1) {
+        const auto fill = read_fill();
+        if (fill < depth-2) {
+          watchdog.progress();
+          break;
+        }
+        watchdog.progress_if_changed(previous_fill, fill);
+        watchdog.throw_if_stalled(status_string());
+        usleep(100);
+      }
     }
     initiate_transfer(); // if not done in the for loop
     wait(report_interval*1000);

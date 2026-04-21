@@ -21,6 +21,7 @@
 #include "delay.hh"
 #include "misc.hh"
 #include "definitions.hh"
+#include "stall_timeout.hh"
 
 #define HAS_LUA
 #define HAS_SERVER
@@ -96,6 +97,10 @@ int main(int argc, char *argv[])
         rc = it->second(fpga, input, v);
         std::cout << "All done, exiting with return code " << std::dec << rc << std::endl;
       }
+      catch (const StallTimeout &e) {
+        std::cout << "timeout: " << e.what() << std::endl;
+        rc = RC_TIMEOUT;
+      }
       catch (const char *e) {
         std::cout << "exception: " << e << std::endl;
         rc = RC_EXCEPTION;
@@ -137,6 +142,9 @@ int main(int argc, char *argv[])
     }
 
     return rc;
+  } catch (const StallTimeout &e) {
+    std::cerr << "Timeout: " << e.what() << "\n";
+    return RC_TIMEOUT;
   } catch (const std::exception &e) {
     std::cerr << "Fatal: " << e.what() << "\n";
     return RC_EXCEPTION;

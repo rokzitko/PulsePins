@@ -36,7 +36,7 @@ Tests return code 0 if successful. Non-zero error indicates an error. The follow
 
 * bit 0: mismatch detected in sequence checker
 * bit 1: incorrect final data value detected
-* bit 6: timeout while waiting for readback or streamer completion
+* bit 6: timeout while waiting for transport queueing, readback, DMA setup, or streamer completion
 
 ### Integer parameter parsing
 

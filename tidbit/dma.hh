@@ -11,6 +11,7 @@
 #include <bitset>
 #include <string>
 
+#include "stall_timeout.hh"
 #include "tidbit.hh"
 
 class c_dma {
@@ -18,6 +19,15 @@ protected:
    loc dma_csr_status, dma_csr_control, dma_csr_fill_level; // control
    loc d_src_addr, d_dest_addr, d_length, d_control; // descriptors
    const bool verbose;
+
+   void wait_for_reset_clear_or_timeout(const char *context,
+                                        const double timeout_s = default_transport_stall_timeout_s) {
+      TimeoutGuard watchdog(context, timeout_s);
+      while (dma_csr_status.read() & (1 << 6)) {
+        watchdog.throw_if_total_timeout(status_string());
+        usleep(1000);
+      }
+   }
 
 public:
    c_dma(const mm &dev,
@@ -109,7 +119,8 @@ public:
       dma_csr_control.write(1 << 1); // reset dispatcher (RESET_DISPATCHER)
       dma_csr_control.write(0);
       uint32_t s;
-      while ((s=dma_csr_status.read()) & (1 << 6)) { usleep(1000); } // (RESETTING)
+      wait_for_reset_clear_or_timeout("DMA reset");
+      s = dma_csr_status.read();
       dma_csr_status.write(s & ~(1UL << 6)); // clear reset bit
       status();
       dma_csr_control.write(1 << 5); // stop descriptors (STOP_DESCR)
@@ -124,20 +135,22 @@ public:
       control_setbit(1UL << 1); // reset dispatcher (RESET_DISPATCHER)
       control_clearbit(1UL << 1);
       status();
-      while (dma_csr_status.read() & (1 << 6)) { usleep(1000); } // (RESETTING)
+      wait_for_reset_clear_or_timeout("DMA reset2");
 //      control_setbit((1UL << 3) | (1UL << 2) | (1UL << 4)); // (STOP_ON_EARLY_TERM), (STOP_ON_ERROR), (GLOBAL_INT_EN_MASK)
       control_setbit((1UL << 3) | (1UL << 2)); // (STOP_ON_EARLY_TERM), (STOP_ON_ERROR), (GLOBAL_INT_EN_MASK)
       status();
    }
 
    // wait until the DMA transfer queue is empty
-   void wait(int sleep_us = 100*1000) {
-     uint32_t s = status();
-     size_t cnt = 0;
-     while (s & (1<<0) ) { // wait until busy flag is cleared
-       usleep(sleep_us);
-       std::cout << "#" << cnt << " ";
-       s = status();
+    void wait(int sleep_us = 100*1000, const double timeout_s = default_transport_busy_timeout_s) {
+      TimeoutGuard watchdog("DMA busy wait", timeout_s);
+      uint32_t s = status();
+      size_t cnt = 0;
+      while (s & (1<<0) ) { // wait until busy flag is cleared
+        watchdog.throw_if_total_timeout(status_string());
+        usleep(sleep_us);
+        std::cout << "#" << cnt << " ";
+        s = status();
        cnt++;
      }
    }

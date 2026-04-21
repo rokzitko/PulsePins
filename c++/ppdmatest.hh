@@ -67,7 +67,13 @@ public:
     std::cout << "test21 - long sequence (DMA)" << std::endl;
     const auto len = write_sequence(true);
     std::thread trig(trig_force, std::ref(ds.sc));
-    ds.dma.transfer(BYTES_TOTAL*len);
+    try {
+      ds.dma.transfer(BYTES_TOTAL*len);
+    } catch (...) {
+      if (trig.joinable())
+        trig.join();
+      throw;
+    }
     trig.join();
     return ds.sc.wait_to_complete(verb);
   }
@@ -78,7 +84,13 @@ public:
     const auto reps = parse_count(input, "-reps", "0"); // repetitions, 0 = infinity
     std::cout << "reps=" << std::dec << reps << std::endl;
     std::thread trig(trig_force, std::ref(ds.sc));
-    ds.dma.transfer_multiple_times(BYTES_TOTAL*len, reps);
+    try {
+      ds.dma.transfer_multiple_times(BYTES_TOTAL*len, reps);
+    } catch (...) {
+      if (trig.joinable())
+        trig.join();
+      throw;
+    }
     trig.join();
     return ds.sc.wait_to_complete(verb);
   }
@@ -156,7 +168,13 @@ public:
     }
 
     std::thread trig(trig_force, std::ref(ds.sc));
-    ds.dma.transfer_multiple_times(BYTES_TOTAL*pos, reps);
+    try {
+      ds.dma.transfer_multiple_times(BYTES_TOTAL*pos, reps);
+    } catch (...) {
+      if (trig.joinable())
+        trig.join();
+      throw;
+    }
     trig.join();
     return ds.sc.wait_to_complete(verb);
   }
