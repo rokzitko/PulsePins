@@ -220,6 +220,7 @@ copy_sources: ../hps_0.h
 	scp -r third_party/lua-5.5.0 @$(TARGETHOST):$(CPPDIR)/third_party
 	ssh $(TARGETHOST) "cd c++/third_party ; ln -fs lua-5.5.0 lua"
 	scp -r third_party/asio @$(TARGETHOST):$(CPPDIR)/third_party
+	scp third_party/httplib.h @$(TARGETHOST):$(CPPDIR)/third_party
 	scp -r include/ @$(TARGETHOST):$(CPPDIR)
 	scp -r unit_tests_input/ @$(TARGETHOST):$(CPPDIR)
 
@@ -233,5 +234,6 @@ copy_sources_img: ../hps_0.h
 	cp -r third_party/lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party
 	ln -fs $(CPPDIR)/third_party/lua-5.5.0 $(CPPDIR)/third_party/lua
 	cp -r third_party/asio $(IMGROOT)/$(CPPDIR)/third_party
+	cp third_party/httplib.h $(IMGROOT)/$(CPPDIR)/third_party
 	cp -r include/ $(IMGROOT)/$(CPPDIR)
 	cp -r unit_tests_input/ $(IMGROOT)/$(CPPDIR)
