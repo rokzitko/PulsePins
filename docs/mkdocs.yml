@@ -21,12 +21,12 @@ nav:
     - Python API: python.md
     - Build and deployment: build.md
   - Contributor guide:
-    - Hacking on PulsePins: hacking.md
-    - Getting started without hardware: getting_started_no_hardware.md
     - Getting started with hardware: getting_started_hardware.md
     - Choose the right tool: choose_tool.md
     - Extension cookbook: extension_cookbook.md
-    - Examples roadmap: examples.md
+    - Worked examples: examples.md
+    - Hacking on PulsePins: hacking.md
+    - Host-side work without hardware: getting_started_no_hardware.md
   - pptool:
     - pptool: pptool.md
     - ppaux - AUX port tool: ppaux.md

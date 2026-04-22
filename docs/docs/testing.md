@@ -51,6 +51,18 @@ make board-smoke
 
 This is intentionally smaller and faster than `run_all_tests`: it redeploys the current local board artifacts, reloads the FPGA, runs a few finite `pptool` checks, and exercises both `ppscpi` and `ppwebgui` over the network. Override the target board with `TARGETHOST=...` if needed.
 
+For the host-side precursor check before touching the board, run:
+
+```bash
+make dev-check
+```
+
+Use the three levels like this:
+
+* `make dev-check` - host-safe contributor sanity pass
+* `make board-smoke` - fast manual live-board regression
+* `run_all_tests` - broader on-board validation sweep
+
 ### Multiboard
 
 ### Random number generator

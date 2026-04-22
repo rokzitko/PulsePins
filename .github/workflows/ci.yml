@@ -7,8 +7,8 @@ on:
   pull_request:
 
 jobs:
-  cpp:
-    name: C++ unit tests
+  host-checks:
+    name: Host-side checks
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -16,67 +16,19 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Build and run unit tests
-        run: make CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C c++ unit_tests test
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install host check dependencies
+        run: python -m pip install --upgrade pip pytest nanobind cmake mkdocs
+
+      - name: Run consolidated host-side checks
+        run: make dev-check
 
       - name: Compile affected standalone tools
         run: |
           g++ -std=c++17 -O2 -Wall -Wextra tools/cdce937_dump/cdce937_dump.cc -o /tmp/cdce937_dump
           g++ -std=c++17 -O2 -Wall -Wextra tools/rle32_to_vcd/rle32_to_vcd.cc -o /tmp/rle32_to_vcd
           make -C tools/spi_payload clean && make -C tools/spi_payload
-
-  docs:
-    name: Documentation build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install docs dependencies
-        run: python -m pip install --upgrade pip mkdocs
-
-      - name: Build docs site
-        run: make -C docs site
-
-  python:
-    name: Python host checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Python build/test dependencies
-        run: python -m pip install --upgrade pip pytest nanobind cmake
-
-      - name: Build Python bindings
-        run: make CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python build
-
-      - name: Run host-side Python tests
-        run: make CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python test-host
-
-  hygiene:
-    name: Python syntax
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Check Python script syntax
-        run: python -m py_compile python/test.py python/pptool.py tests/test2.py

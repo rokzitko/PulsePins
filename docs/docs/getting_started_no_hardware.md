@@ -1,6 +1,6 @@
-## Getting started without hardware
+## Host-side work without hardware
 
-You can contribute to PulsePins meaningfully without owning a board.
+PulsePins is primarily a hardware-backed project, but some useful contribution work can still be done without owning a board.
 
 ### Best entry points
 

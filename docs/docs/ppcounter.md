@@ -1,38 +1,67 @@
-## ppcounter
+# ppcounter
 
 `ppcounter` exercises the event-counter logic and reports captured counter values.
 
-It is implemented in `c++/pptool.cc` and uses the C++ counter interface from `c++/counter.hh`.
+It is primarily a measurement and self-test tool for the integrated counter subsystem rather than a generic waveform tool.
 
-For the hardware architecture behind the measurements, see `counter.md`.
+## When to use it
 
-`ppcounter` is primarily a measurement and self-test tool for the integrated counter subsystem rather than a generic waveform tool.
+Use `ppcounter` when you want to:
 
-The software-visible hardware wrapper is `c++/counter.hh`, and the main RTL integration block is `ip/counter/counter_if.sv`.
+* validate the integrated counter subsystem
+* inspect counter statistics after a known reference sequence
+* compare deterministic and pseudo-random counter behavior
 
-Common modes:
+For broader streamer and playback validation, use [`pptest`](pptest.md).
 
-* `-test1`: run the first built-in counter test sequence
-* `-test2`: run the second built-in counter test sequence
-* `-check`: validate the result of `-test1`
+## Common modes
 
-Behavior notes:
+* `-test1`: run the first built-in deterministic counter test sequence
+* `-test2`: run the second built-in pseudo-random counter test sequence
+* `-check`: validate the expected result of `-test1`
+* `-c`: repetition/count argument used by `-test2`
 
-* `-test1` uses a short deterministic pattern with known expected statistics
-* `-test2` uses a longer pseudo-random sequence whose length is controlled by the usual count arguments
-* the tool resets counters before streaming, then latches all results before reporting them
+## Examples
 
-The report includes multiple measurement families, typically:
+Run the short deterministic test sequence and print the reports:
+
+```bash
+ppcounter -test1
+```
+
+Run the same deterministic sequence and check the expected counters:
+
+```bash
+ppcounter -test1 -check
+```
+
+Run the longer pseudo-random test sequence with 1000 generated values:
+
+```bash
+ppcounter -test2 -c 1000
+```
+
+## What to expect
+
+The command performs the same high-level flow in all modes:
+
+1. reset the counter bank
+2. optionally generate a built-in test sequence
+3. stream it to the FPGA
+4. force execution
+5. latch all counter instruments
+6. print the reports
+
+The report typically includes:
 
 * basic statistics
 * run-length statistics
 * packet statistics
 * short-sequence histogramming
-* autocorrelation, and optionally crosscorrelation if enabled in the build
+* autocorrelation, and optionally cross-correlation if enabled in the build
 
-As with the other `pptool`-based utilities, standard verbosity and clock/streamer options are shared.
+## Related pages
 
-See also:
-
-* `counter.md`
+* [`counter.md`](counter.md)
+* [`pptest.md`](pptest.md)
 * `ip/counter/README.md`

@@ -17,6 +17,8 @@ Running `make` at the repository root performs these steps:
 Relevant targets in `Makefile`:
 
 * `all` - full hardware + C++ build
+* `dev-check` - consolidated host-side sanity pass
+* `board-smoke` - fast manual live-board smoke pass against current local artifacts
 * `copy` - copy `pulsepins.rbf` to the target host
 * `copy_boot` - copy the RBF to the boot partition path
 * `copy_all` - copy hardware, C++, Python, tests, and I2C helpers to the target host
@@ -25,6 +27,14 @@ Relevant targets in `Makefile`:
 * `clean` - remove generated artifacts across subprojects
 
 For a quick manual live-board regression pass after the build artifacts already exist, use `make board-smoke`. That target wraps `scripts/board_smoke.sh`, redeploys the current local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, and runs a small finite smoke sequence against the board plus the two network services, including a few selected failure-path checks (`ppscpi` error queue, `ppwebgui` HTTP `400`, and `ppwebgui` HTTP `504`). It does not rebuild the artifacts first. Override the target host with `TARGETHOST=...` when needed.
+
+For the normal host-side contributor sanity pass, use:
+
+```bash
+make dev-check
+```
+
+That target runs the host-safe C++, docs, and Python checks without touching the FPGA build or a live board.
 
 ### FPGA hardware build
 

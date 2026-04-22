@@ -12,7 +12,6 @@ Choose the path that matches what you want to do first:
 | Goal | Best entry point |
 | ---- | ---------------- |
 | Try PulsePins on real hardware | `INSTALL-quick_start.md` and `docs/docs/getting_started_hardware.md` |
-| Explore or contribute without a board | `HACKING.md` and `docs/docs/getting_started_no_hardware.md` |
 | Find the right CLI/API surface for a task | `docs/docs/choose_tool.md` |
 | See concrete end-to-end workflows | `docs/docs/examples.md` |
 | Extend the project with a new tool, binding, or feature | `docs/docs/extension_cookbook.md` |
@@ -22,11 +21,13 @@ Choose the path that matches what you want to do first:
 Useful first commands:
 
 ```bash
-make -C docs site
-make -C c++ unit_tests
-make -C python build
-make -C python test-host
+make dev-check
+make board-smoke
 ```
+
+Use `make dev-check` for the consolidated host-side sanity pass.
+Use `make board-smoke` for a quick manual live-board regression against the current local artifacts.
+For heavier board validation, use `run_all_tests` on the target.
 
 Typical task-oriented entry points:
 

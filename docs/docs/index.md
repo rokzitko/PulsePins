@@ -10,6 +10,44 @@ The predecessor to this code was written in 2020-2021. PulsePins was first relea
 
 Project repository: [https://github.com/rokzitko/PulsePins](https://github.com/rokzitko/PulsePins).
 
+## Start here
+
+If you have access to a board, these are the best first entry points:
+
+* [Getting started with hardware](getting_started_hardware.md)
+* [Choose the right tool](choose_tool.md)
+* [Worked examples](examples.md)
+* [Extension cookbook](extension_cookbook.md)
+
+PulsePins is primarily a hardware-backed project. Some host-side work is still useful, but the main workflows and validation paths revolve around a real board.
+
+## Common tasks
+
+If you want to...
+
+* bring up a board or run a live sanity check:
+  use [`getting_started_hardware.md`](getting_started_hardware.md), [`testing.md`](testing.md), `make board-smoke`, and `run_all_tests`
+* generate a quick digital pattern:
+  use [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), or [`pphelloworld`](pphelloworld.md)
+* replay a saved sequence:
+  use [`ppplay`](ppplay.md)
+* capture and inspect output:
+  use [`ppread`](ppread.md)
+* validate clocks or PPS timing:
+  use [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md)
+* extend the project:
+  start with [`extension_cookbook.md`](extension_cookbook.md)
+
+## What PulsePins is good for
+
+PulsePins is well suited to:
+
+* digital pulse sequencing for laboratory equipment with approximately 10 ns timing resolution
+* digital delay generation and synchronization
+* driving DACs, DDS chips, serializers, and other digital peripherals
+* exact capture/replay workflows via text, VCD, and binary sequence formats
+* hardware-backed verification and regression checking through the readback path
+
 ## Run-length encoding
 
 Run-length encoding (RLE) is a data-compression technique in which consecutive identical values

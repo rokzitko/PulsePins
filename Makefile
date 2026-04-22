@@ -26,12 +26,21 @@ IPSOURCE=$(wildcard ip/*/*.v) $(wildcard ip/*/*.vh) $(wildcard ip/*/*.sv)
 # Optional local overrides
 -include Makefile.local
 
-.PHONY: c++ board-smoke
+.PHONY: c++ board-smoke dev-check
 # Full hardware + host-software build. This is the main project build entry point.
 all: ${HPS} ${SOF} ${RBF} c++
 
 c++:
 	make -C c++
+
+# Consolidated host-side contributor sanity pass. This intentionally stays in the
+# host-safe lane and does not touch the FPGA toolchain or the live board.
+dev-check:
+	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C c++ unit_tests test
+	$(MAKE) -C docs site
+	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python build
+	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python test-host
+	python3 -m py_compile python/test.py python/pptool.py tests/test2.py
 
 ${SOPC}: ${QSYSIN} ${IPSOURCE} $(wildcard *_hw.tcl)
 	${QSYS} --synthesis=VERILOG ${QSYSIN} 2>&1 | tee build-log-qsys

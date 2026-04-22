@@ -30,9 +30,18 @@ Initial access details:
 
 1. Prepare a board with the latest released pre-built PulsePins image
 2. Connect over SSH or serial console
-3. Run the baseline test
-4. Verify the specific subsystem you plan to modify
-5. Record the exact commands and outputs that worked
+3. Run the host-side sanity check from your repository checkout
+4. Run the baseline test on the board
+5. Verify the specific subsystem you plan to modify
+6. Record the exact commands and outputs that worked
+
+Host-side sanity check:
+
+```bash
+make dev-check
+```
+
+This is the recommended precursor before moving to live-board smoke or heavier hardware testing.
 
 ### Baseline verification
 

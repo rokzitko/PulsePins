@@ -28,11 +28,13 @@ You can contribute without a board if you work on:
 Good first commands:
 
 ```bash
-make -C docs site
-make -C python build
-make -C python test-host
+make dev-check
+make board-smoke
 make -C ip test
 ```
+
+`dev-check` is the default host-side contributor sanity pass.
+`board-smoke` is the fast live-board regression check against the current local artifacts.
 
 For Python specifically:
 
@@ -75,10 +77,12 @@ For that baseline, the board:
 
 | Area | Main location | Hardware needed | Main command |
 | ---- | ------------- | --------------- | ------------ |
+| Host-side sanity checks | repo root | no | `make dev-check` |
 | Docs | `docs/` | no | `make -C docs site` |
 | C++ host tools | `c++/` | not always | `make -C c++ build` |
 | Python bindings | `python/` | not always | `make -C python build && make -C python test-host` |
 | RTL simulation | `ip/` | no | `make -C ip test` |
+| Fast board smoke | repo root | yes | `make board-smoke` |
 | Full FPGA build | repo root | toolchain required | `make` |
 | Board deployment | repo root, `image/` | yes | `make copy_all` |
 
