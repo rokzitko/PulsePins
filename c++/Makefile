@@ -29,7 +29,7 @@ CROSSCFLAGS =
 CROSSCXXFLAGS =
 endif
 
-BUILD ?= DEBUG
+BUILD ?= RELEASE
 
 ifeq ($(BUILD),DEBUG)
  OPTIMFLAGS = -g -O3 -Wall -Wextra -fno-omit-frame-pointer -fno-inline \
@@ -43,7 +43,6 @@ ifeq ($(BUILD),DEBUG)
 else ifeq ($(BUILD),RELEASE)
  OPTIMFLAGS = -O3 -Wall
  LINKFLAGS =
- HW_DEBUG += -DDEBUG_FPGA_IO
 endif
 
 CFLAGS   = $(OPTIMFLAGS) -fPIC
