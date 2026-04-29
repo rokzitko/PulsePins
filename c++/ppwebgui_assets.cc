@@ -334,8 +334,23 @@ const char *index_html = R"HTML(<!doctype html>
         <h2>Timeline Composer</h2>
         <span class="state-tag neutral-tag">browser only</span>
       </div>
-      <div class="panel-note">Build a simple pulse timeline in raw clock cycles, then generate ordinary PulsePins sequence text for the stream form below. Final output is still restored by ppwebgui from the current tracked qout.</div>
+      <div class="panel-note">Build a simple pulse timeline in raw cycles or absolute time units, then generate ordinary PulsePins sequence text for the stream form below. Final output is still restored by ppwebgui from the current tracked qout.</div>
       <div id="timeline-state" class="form-state">Edit channels and pulses, then generate sequence text.</div>
+
+      <div class="subpanel">
+        <div class="settings-grid">
+          <label>Pulse time unit
+            <select id="timeline-time-unit">
+              <option value="cycles">cycles</option>
+              <option value="ns">ns</option>
+              <option value="us">us</option>
+              <option value="ms">ms</option>
+              <option value="s">s</option>
+            </select>
+          </label>
+          <div class="setting"><div class="label">Clock used for time units</div><div id="timeline-clock-note" class="mono"></div></div>
+        </div>
+      </div>
 
       <div class="subpanel">
         <div class="panel-heading">
@@ -357,7 +372,7 @@ const char *index_html = R"HTML(<!doctype html>
         </div>
         <div class="table-wrap">
           <table class="timeline-table">
-            <thead><tr><th>Channel</th><th>Start cycle</th><th>Duration cycles</th><th></th></tr></thead>
+            <thead><tr><th>Channel</th><th id="timeline-start-heading">Start cycle</th><th id="timeline-duration-heading">Duration cycles</th><th></th></tr></thead>
             <tbody id="timeline-pulse-body"></tbody>
           </table>
         </div>
@@ -735,6 +750,10 @@ const char *app_js = R"JS((() => {
   const timelineState = document.getElementById('timeline-state');
   const timelineSummary = document.getElementById('timeline-summary');
   const timelinePreview = document.getElementById('timeline-preview');
+  const timelineTimeUnitSelect = document.getElementById('timeline-time-unit');
+  const timelineClockNote = document.getElementById('timeline-clock-note');
+  const timelineStartHeading = document.getElementById('timeline-start-heading');
+  const timelineDurationHeading = document.getElementById('timeline-duration-heading');
   const clockingSourceSelect = document.getElementById('clocking-source-select');
   const clockingCoreProfileSelect = document.getElementById('clocking-core-profile-select');
   const clockingIntProfileSelect = document.getElementById('clocking-int-profile-select');
@@ -769,6 +788,35 @@ const char *app_js = R"JS((() => {
   let timelineChannels = [];
   let timelinePulses = [];
   const timelinePalette = ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#f43f5e', '#facc15', '#14b8a6', '#fb7185'];
+  const timelineTimeUnits = {
+    cycles: { label: 'cycles', scale: null },
+    ns: { label: 'ns', scale: 1000000000n },
+    us: { label: 'us', scale: 1000000n },
+    ms: { label: 'ms', scale: 1000n },
+    s: { label: 's', scale: 1n },
+  };
+  const pllProfileTriplets = new Map([
+    ['100M', [5n, 20n, 2n]],
+    ['80M', [3n, 24n, 5n]],
+    ['75M', [5n, 30n, 4n]],
+    ['60M', [5n, 30n, 5n]],
+    ['50M', [5n, 30n, 6n]],
+    ['40M', [5n, 20n, 5n]],
+    ['25M', [10n, 30n, 6n]],
+    ['30M', [10n, 30n, 5n]],
+    ['20M', [10n, 20n, 5n]],
+    ['10M', [10n, 20n, 10n]],
+    ['5M', [20n, 20n, 10n]],
+    ['1M', [50n, 20n, 20n]],
+    ['100k', [100n, 20n, 100n]],
+    ['10k', [500n, 20n, 200n]],
+    ['lj', [1n, 20n, 10n]],
+    ['ilj', [1n, 17n, 13n]],
+    ['ih', [3n, 71n, 13n]],
+    ['il', [5n, 79n, 17n]],
+    ['i2h', [7n, 223n, 17n]],
+    ['i2l', [9n, 271n, 23n]],
+  ]);
 
   function formatHex(value, width = 8) {
     const normalized = Number(value) >>> 0;
@@ -815,6 +863,7 @@ const char *app_js = R"JS((() => {
     setBusy(qoutForm, busy);
     setBusy(combinerForm, busy);
     setBusy(streamForm, busy);
+    timelineTimeUnitSelect.disabled = busy;
     for (const button of [timelineAddChannelButton, timelineAddPulseButton, timelineGenerateButton, timelineLoadExampleButton]) {
       button.disabled = busy;
     }
@@ -841,6 +890,155 @@ const char *app_js = R"JS((() => {
 
   function hexBigInt(value) {
     return `0x${value.toString(16)}`;
+  }
+
+  function decimalRational(text) {
+    const match = String(text).trim().match(/^(?:(\d+)(?:\.(\d*))?|\.(\d+))$/);
+    if (!match) {
+      return null;
+    }
+    const whole = match[1] || '0';
+    const fraction = match[2] !== undefined ? match[2] : (match[3] || '');
+    const digits = `${whole}${fraction}`.replace(/^0+(?=\d)/, '') || '0';
+    return { numerator: BigInt(digits), denominator: 10n ** BigInt(fraction.length) };
+  }
+
+  function roundDivide(numerator, denominator) {
+    return (numerator + denominator / 2n) / denominator;
+  }
+
+  function parseFrequencyText(profile) {
+    const match = String(profile || '').trim().match(/^(\d+(?:\.\d*)?|\.\d+)\s*([A-Za-z]+)$/);
+    if (!match) {
+      return null;
+    }
+    const value = decimalRational(match[1]);
+    if (!value || value.numerator <= 0n) {
+      return null;
+    }
+    const rawUnit = match[2];
+    const unit = rawUnit.toLowerCase();
+    let scaleNum = 0n;
+    let scaleDen = 1n;
+    if (rawUnit === 'M' || unit === 'mhz') {
+      scaleNum = 1000000n;
+    } else if (unit === 'g' || unit === 'ghz') {
+      scaleNum = 1000000000n;
+    } else if (unit === 'k' || unit === 'khz') {
+      scaleNum = 1000n;
+    } else if (unit === 'hz') {
+      scaleNum = 1n;
+    } else if (unit === 'm') {
+      scaleNum = 1n;
+      scaleDen = 1000n;
+    } else if (unit === 'u') {
+      scaleNum = 1n;
+      scaleDen = 1000000n;
+    }
+    if (scaleNum === 0n) {
+      return null;
+    }
+    return { num: value.numerator * scaleNum, den: value.denominator * scaleDen };
+  }
+
+  function pllProfileClock(profile) {
+    const profileText = String(profile || '').trim();
+    const triplet = pllProfileTriplets.get(profileText);
+    const rawText = triplet ? triplet.join(',') : profileText;
+    const raw = rawText.match(/^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/);
+    if (raw) {
+      const n = BigInt(raw[1]);
+      const m = BigInt(raw[2]);
+      const c = BigInt(raw[3]);
+      if (n > 0n && m > 0n && c > 0n) {
+        return { num: 50000000n * m, den: n * c };
+      }
+    }
+    return parseFrequencyText(profileText);
+  }
+
+  function formatClockHz(clock) {
+    const hz = Number(clock.num) / Number(clock.den);
+    const exact = clock.den === 1n ? `${clock.num.toString()} Hz` : `${clock.num.toString()}/${clock.den.toString()} Hz`;
+    return `${formatFrequencyHz(hz)} (${exact})`;
+  }
+
+  function roundedLabClockHz(value) {
+    const measured = Number(value);
+    if (!Number.isFinite(measured) || measured <= 0) {
+      return null;
+    }
+    const order = Math.floor(Math.log10(measured));
+    for (let exponent = order; exponent >= 0; --exponent) {
+      const step = 10 ** exponent;
+      const rounded = Math.round(measured / step) * step;
+      if (rounded > 0 && Math.abs(rounded - measured) / measured <= 0.001) {
+        return Math.round(rounded);
+      }
+    }
+    return Math.round(measured);
+  }
+
+  function resolveTimelineClock() {
+    if (!lastStatus || !lastStatus.clocking) {
+      return { ok: false, message: 'Waiting for ppwebgui status before resolving absolute time units' };
+    }
+    const tracked = lastStatus.clocking.tracked;
+    const measured = lastStatus.clocking.measured;
+    if (tracked.source === 'int_clk') {
+      const clock = pllProfileClock(tracked.int_profile);
+      if (!clock) {
+        return { ok: false, message: `Cannot resolve nominal int_clk profile ${tracked.int_profile}` };
+      }
+      return { ok: true, clock, message: `int_clk ${tracked.int_profile} nominal ${formatClockHz(clock)}` };
+    }
+    if (tracked.source === 'ext_clk') {
+      const rounded = roundedLabClockHz(measured.ext_clk_hz);
+      if (rounded === null) {
+        return { ok: false, message: 'ext_clk has not been measured yet' };
+      }
+      const clock = { num: BigInt(rounded), den: 1n };
+      return { ok: true, clock, message: `ext_clk measured ${formatFrequencyHz(measured.ext_clk_hz)}, rounded to ${formatClockHz(clock)}` };
+    }
+    const rounded = roundedLabClockHz(measured.streamer_clk_hz);
+    if (rounded === null) {
+      return { ok: false, message: 'Streamer clock has not been measured yet' };
+    }
+    const clock = { num: BigInt(rounded), den: 1n };
+    return { ok: true, clock, message: `unmanaged source ${tracked.source_display}, streamer clock rounded to ${formatClockHz(clock)}` };
+  }
+
+  function timelineTimeContext(errors = null) {
+    const selected = timelineTimeUnits[timelineTimeUnitSelect.value] ? timelineTimeUnitSelect.value : 'cycles';
+    const unit = timelineTimeUnits[selected];
+    if (selected === 'cycles') {
+      return { ok: true, unit: selected, unitLabel: unit.label, unitScale: null, clock: null, clockText: 'Raw cycle counts; no clock conversion.' };
+    }
+    const resolved = resolveTimelineClock();
+    if (!resolved.ok) {
+      if (errors) {
+        errors.push(resolved.message);
+      }
+      return { ok: false, unit: selected, unitLabel: unit.label, unitScale: unit.scale, clock: null, clockText: resolved.message };
+    }
+    return { ok: true, unit: selected, unitLabel: unit.label, unitScale: unit.scale, clock: resolved.clock, clockText: resolved.message };
+  }
+
+  function updateTimelineUnitUi() {
+    const context = timelineTimeContext();
+    timelineStartHeading.textContent = context.unit === 'cycles' ? 'Start cycle' : `Start (${context.unitLabel})`;
+    timelineDurationHeading.textContent = context.unit === 'cycles' ? 'Duration cycles' : `Duration (${context.unitLabel})`;
+    timelineClockNote.textContent = context.clockText;
+    timelineClockNote.classList.toggle('warning-text', !context.ok);
+  }
+
+  function formatTimelineDuration(cycles, context) {
+    if (!context || !context.clock || !context.unitScale) {
+      return `${cycles.toString()} cycles`;
+    }
+    const value = Number(cycles) * Number(context.clock.den) * Number(context.unitScale) / Number(context.clock.num);
+    const formatted = Number.isFinite(value) ? value.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '(too large)';
+    return `${cycles.toString()} cycles (${formatted} ${context.unitLabel})`;
   }
 
   function setTimelineState(message, isError = false) {
@@ -938,6 +1136,7 @@ const char *app_js = R"JS((() => {
 
   function renderTimelinePulseRows() {
     timelinePulseBody.textContent = '';
+    const decimalInput = timelineTimeUnitSelect.value !== 'cycles';
     for (const pulse of timelinePulses) {
       const row = document.createElement('tr');
 
@@ -959,7 +1158,7 @@ const char *app_js = R"JS((() => {
 
       const startCell = document.createElement('td');
       const startInput = document.createElement('input');
-      startInput.inputMode = 'numeric';
+      startInput.inputMode = decimalInput ? 'decimal' : 'numeric';
       startInput.value = pulse.start;
       startInput.addEventListener('input', () => {
         pulse.start = startInput.value;
@@ -970,7 +1169,7 @@ const char *app_js = R"JS((() => {
 
       const durationCell = document.createElement('td');
       const durationInput = document.createElement('input');
-      durationInput.inputMode = 'numeric';
+      durationInput.inputMode = decimalInput ? 'decimal' : 'numeric';
       durationInput.value = pulse.duration;
       durationInput.addEventListener('input', () => {
         pulse.duration = durationInput.value;
@@ -1004,12 +1203,40 @@ const char *app_js = R"JS((() => {
     return parsed;
   }
 
+  function parseTimelineCount(value, label, errors, positive, context) {
+    if (!context || context.unit === 'cycles') {
+      return parseCycleCount(value, label, errors, positive);
+    }
+    const text = String(value).trim();
+    const parsed = decimalRational(text);
+    if (!parsed) {
+      errors.push(`${label} must be a decimal ${context.unitLabel} value`);
+      return null;
+    }
+    if (positive ? parsed.numerator <= 0n : parsed.numerator < 0n) {
+      errors.push(`${label} must be ${positive ? 'greater than zero' : 'non-negative'}`);
+      return null;
+    }
+    if (!context.ok || !context.clock) {
+      return null;
+    }
+    const numerator = parsed.numerator * context.clock.num;
+    const denominator = parsed.denominator * context.unitScale * context.clock.den;
+    const cycles = roundDivide(numerator, denominator);
+    if (positive && cycles <= 0n) {
+      errors.push(`${label} rounds to 0 cycles at ${context.clockText}`);
+      return null;
+    }
+    return cycles;
+  }
+
   function validateTimeline() {
     const errors = [];
     const channels = [];
     const channelById = new Map();
     const bits = new Map();
     let ownedMask = 0n;
+    const timeContext = timelineTimeContext(errors);
 
     if (timelineChannels.length === 0) {
       errors.push('Add at least one channel');
@@ -1050,8 +1277,8 @@ const char *app_js = R"JS((() => {
         errors.push('Pulse references a missing channel');
         continue;
       }
-      const start = parseCycleCount(pulse.start, `${channel.name} start`, errors, false);
-      const duration = parseCycleCount(pulse.duration, `${channel.name} duration`, errors, true);
+      const start = parseTimelineCount(pulse.start, `${channel.name} start`, errors, false, timeContext);
+      const duration = parseTimelineCount(pulse.duration, `${channel.name} duration`, errors, true, timeContext);
       if (start === null || duration === null) {
         continue;
       }
@@ -1074,7 +1301,7 @@ const char *app_js = R"JS((() => {
       }
     }
 
-    return { errors, channels, pulses, ownedMask };
+    return { errors, channels, pulses, ownedMask, timeContext };
   }
 
   function compileTimeline() {
@@ -1140,6 +1367,7 @@ const char *app_js = R"JS((() => {
   }
 
   function renderTimelinePreview() {
+    updateTimelineUnitUi();
     const compiled = compileTimeline();
     timelinePreview.textContent = '';
     if (!compiled.ok) {
@@ -1160,7 +1388,7 @@ const char *app_js = R"JS((() => {
     const previewLimited = totalCycles > BigInt(Number.MAX_SAFE_INTEGER);
 
     appendSvgText(timelinePreview, plotX, 22, '0 cycles', { fill: '#94a3b8' });
-    appendSvgText(timelinePreview, plotX + plotW - 100, 22, `${totalCycles.toString()} cycles`, { fill: '#94a3b8' });
+    appendSvgText(timelinePreview, plotX + plotW - 170, 22, formatTimelineDuration(totalCycles, compiled.parsed.timeContext), { fill: '#94a3b8' });
     for (let i = 0; i < compiled.parsed.channels.length; ++i) {
       const channel = compiled.parsed.channels[i];
       const y = plotY + i * 42;
@@ -1172,8 +1400,10 @@ const char *app_js = R"JS((() => {
         timelinePreview.appendChild(svgElement('rect', { x, y: y - 4, width, height: 22, rx: 4, fill: channel.color, opacity: 0.85 }));
       }
     }
-    timelineSummary.textContent = `records=${compiled.records.length} total_cycles=${compiled.totalCycles.toString()} owned_mask=${hexBigInt(compiled.parsed.ownedMask)} baseline=${hexBigInt(compiled.baseline)}`;
-    setTimelineState(previewLimited ? 'Timeline is valid; preview is approximate because the cycle range is very large.' : 'Timeline is valid. Generate sequence text when ready.', false);
+    const context = compiled.parsed.timeContext;
+    const unitSummary = context.unit === 'cycles' ? 'unit=cycles' : `unit=${context.unitLabel} clock=${formatClockHz(context.clock)}`;
+    timelineSummary.textContent = `records=${compiled.records.length} total=${formatTimelineDuration(compiled.totalCycles, context)} owned_mask=${hexBigInt(compiled.parsed.ownedMask)} baseline=${hexBigInt(compiled.baseline)} ${unitSummary}`;
+    setTimelineState(previewLimited ? 'Timeline is valid; preview is approximate because the cycle range is very large.' : `Timeline is valid in ${context.unitLabel}. Generate sequence text when ready.`, false);
   }
 
   function renderTimelineTables() {
@@ -1204,7 +1434,7 @@ const char *app_js = R"JS((() => {
     streamTextarea.value = compiled.records.map((record) => `d ${record.count.toString()} ${hexBigInt(record.value)}`).join('\n') + '\n';
     streamTextarea.dispatchEvent(new Event('input', { bubbles: true }));
     renderTimelinePreview();
-    setTimelineState(`Generated ${compiled.records.length} sequence records from ${compiled.parsed.pulses.length} pulses.`, false);
+    setTimelineState(`Generated ${compiled.records.length} sequence records from ${compiled.parsed.pulses.length} pulses using ${compiled.parsed.timeContext.unitLabel}.`, false);
   }
 
   function setFormDirty(form, dirty, stateElement, tagElement, cleanText, dirtyText) {
@@ -1418,6 +1648,10 @@ const char *app_js = R"JS((() => {
 
   timelineGenerateButton.addEventListener('click', () => {
     generateTimelineSequence();
+  });
+
+  timelineTimeUnitSelect.addEventListener('change', () => {
+    renderTimelineTables();
   });
 
   loadTimelineExample();
