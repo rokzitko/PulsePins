@@ -101,6 +101,7 @@ _pulsepins_pphelloworld_opts=""
 _pulsepins_pptool_opts=""
 _pulsepins_ppmstest_opts=""
 _pulsepins_ppdmatest_opts=""
+_pulsepins_pllcalc_opts=""
 
 _pulsepins_all_commands="
 pptool
@@ -122,6 +123,7 @@ ppread
 ppplay
 ppvcd
 pphelloworld
+pllcalc
 "
 
 _pulsepins_cmd_opts() {
@@ -145,6 +147,7 @@ _pulsepins_cmd_opts() {
     ppmstest) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_ppmstest_opts")" ;;
     ppdmatest) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_ppdmatest_opts")" ;;
     pptool) printf '%s\n' "$(_pulsepins_join_opts "$_pulsepins_pptool_opts")" ;;
+    pllcalc) printf '%s\n' "$_pulsepins_pllcalc_opts" ;;
     *) printf '%s\n' "" ;;
   esac
 }
@@ -185,3 +188,4 @@ _pulsepins_complete() {
 complete -F _pulsepins_complete pptool
 complete -F _pulsepins_complete pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout
 complete -F _pulsepins_complete ppaux ppcounter ppts ppgpsdo pptemp ppfreq ppread ppplay ppvcd pphelloworld
+complete -F _pulsepins_complete pllcalc

@@ -86,7 +86,7 @@ The page exposes these main sections:
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
 
-The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard current PLL profile, the current value is still surfaced in the menu so the browser state remains accurate.
+The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard current PLL profile, the current value is still surfaced in the menu so the browser state remains accurate. Non-preset frequency strings are accepted and resolved with the same strict Cyclone V calculator as [`pllcalc`](pllcalc.md).
 
 Applying clock settings reruns the same hardware reset/bring-up path used by **Reset hardware**, then remeasures all four clocks and returns the updated snapshot. The displayed frequencies are therefore measurement snapshots, not live-polled readbacks. If startup used no explicit source request or a raw `-clk` selector, that current source is shown read-only until the user explicitly applies a managed `int_clk` or `ext_clk` choice.
 
@@ -148,7 +148,7 @@ Values shown in the browser are rendered in hexadecimal by default. Input fields
 Version 1 keeps the API small:
 
 * `GET /api/status` returns JSON status for AUX, trigger state, trigger-combiner settings, active streamer qout state, combiner state, and recent action/error text
-* `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with managed `source` (`int_clk` or `ext_clk`), `core_profile`, and `int_profile`; malformed requests or invalid profile strings return HTTP `400`, while valid requests rerun reset/bring-up and then remeasure all clocks
+* `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with managed `source` (`int_clk` or `ext_clk`), `core_profile`, and `int_profile`; malformed requests or invalid preset/raw/frequency profile strings return HTTP `400`, while valid requests rerun reset/bring-up and then remeasure all clocks
 * `POST /api/clocking/measure` reruns the frequency-meter measurement path without changing tracked clock settings
 * `POST /api/trigger` expects an `application/x-www-form-urlencoded` body with `mode`, `invert_result`, `invert_int`, `invert_ext`, `invert_misc`, `mask_int`, `mask_ext`, and `mask_misc`
 * `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `override_enabled` and `override_value`

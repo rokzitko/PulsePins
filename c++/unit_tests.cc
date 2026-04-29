@@ -24,6 +24,8 @@
 #include "PMODDA3.hh"
 #include "SPI.hh"
 #include "options.hh"
+#include "pll_calc.hh"
+#include "pll_rules.hh"
 #include "ppwebgui_frontend.hh"
 #include "ppwebgui_http.hh"
 #include "ppwebgui_service_api.hh"
@@ -948,6 +950,42 @@ TEST_CASE("resolve_int_pll_options captures profile and tuning") {
   CHECK(*opts.charge_pump == 3);
   REQUIRE(opts.bandwidth.has_value());
   CHECK(*opts.bandwidth == 6);
+}
+
+TEST_CASE("pll calculator finds strict exact 66 MHz solution") {
+  auto params = pllcalc::calculate("66M");
+
+  REQUIRE(params.has_value());
+  CHECK(params->n == 5);
+  CHECK(params->m == 99);
+  CHECK(params->c == 15);
+  CHECK(params->actual_hz == doctest::Approx(66.0e6));
+  CHECK(params->pfd_hz >= pllcalc::pfd_min_hz);
+  CHECK(params->pfd_hz <= pllcalc::pfd_max_hz);
+  CHECK(params->vco_hz >= pllcalc::vco_min_hz);
+  CHECK(params->vco_hz <= pllcalc::vco_max_hz);
+}
+
+TEST_CASE("pll calculator rejects unreachable strict low frequency") {
+  CHECK(!pllcalc::calculate("10k").has_value());
+}
+
+TEST_CASE("pll profile resolution preserves presets and raw strings") {
+  auto preset = pllcalc::resolve_profile("100M", applyReplacement("100M", pll_rules));
+  CHECK(preset.config == "5,20,2");
+  CHECK(!preset.calculated.has_value());
+
+  auto raw = pllcalc::resolve_profile("7,33,11", applyReplacement("7,33,11", pll_rules));
+  CHECK(raw.config == "7,33,11");
+  CHECK(!raw.calculated.has_value());
+}
+
+TEST_CASE("pll profile resolution calculates unknown frequency strings") {
+  auto resolved = pllcalc::resolve_profile("66M", applyReplacement("66M", pll_rules));
+
+  CHECK(resolved.config == "5,99,15");
+  REQUIRE(resolved.calculated.has_value());
+  CHECK(resolved.calculated->actual_hz == doctest::Approx(66.0e6));
 }
 
 TEST_CASE("resolve_trigger_options captures mode invert and mask fields") {

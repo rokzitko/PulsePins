@@ -24,7 +24,7 @@ The most important host-side layers are:
 * `fpga.hh` - top-level ownership of memory maps, PLL helpers, trigger monitors, and GPIO-backed control paths
 * `startup.hh` - common process bootstrap and default FPGA startup policy
 * `host_runtime.hh` - shared bootstrap/runtime object used by the main host-side executables
-* `options.hh`, `pll_rules.hh` - typed option resolution and symbolic PLL presets shared by multiple tools
+* `options.hh`, `pll_rules.hh`, `pll_calc.hh` - typed option resolution, symbolic PLL presets, and strict calculated PLL profiles shared by multiple tools
 * `pptool_streaming.cc`, `pptool_measurement.cc` - user-facing command implementations
 * `ppworkflow.hh` - shared streaming workflow used by commands that send sequences, arm/force triggers, and optionally validate readback
 * `elements.hh`, `sequence.hh` - host-side representation of pulse programs and trigger programs

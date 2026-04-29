@@ -16,6 +16,7 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 - `ppwebgui_frontend.hh` - small pure-value boundary types shared by the non-hardware ppwebgui layers
 - `ppwebgui_config.cc` - pure runtime/config resolution from `InputParser`
 - `ppwebgui_bootstrap.cc` - fatal-signal installation and startup URL reporting
+- `pll_calc.hh` and `pllcalc.cc` - strict Cyclone V integer-PLL parameter calculation and the standalone calculator tool
 - `pptool_commands.hh` - catalog of supported `pp...` command handlers
 - `pptool_streaming.cc` - commands that primarily drive the streamer datapath
 - `pptool_measurement.cc` - commands for readback, counters, timestamps, temperature, and frequency measurement
@@ -101,7 +102,7 @@ If you want to customize or extend the host software, the usual starting points 
 - change common streamer execution behavior: update `send_and_trig(...)` in `ppworkflow.hh`
 - change how sequences reach hardware: update `streamer_fifo.hh`, `streamer_dma.hh`, and `basic_multi_dma.hh`
 - change default startup behavior: update `apply_fpga_startup_policy(...)` in `startup.hh`
-- change clock-selection or PLL option semantics: update `options.hh` and `pll_rules.hh`
+- change clock-selection or PLL option semantics: update `options.hh`, `pll_rules.hh`, and `pll_calc.hh`
 - expose a new hardware block: add a typed wrapper header, then call it from a command handler or higher-level API
 
 The project aims to keep high-level interfaces stable, so the preferred pattern is to extend behind existing command names and wrapper types rather than renaming public entry points.

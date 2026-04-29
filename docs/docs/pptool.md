@@ -3,7 +3,7 @@
 ``pptool`` is a single executable for performing a range of tasks. Several symbolic links point to the same
 executable. The exact functionality depends on the executable called.
 
-The network-facing services are provided by separate standalone executables, not by ``pptool`` symlinks. Today those are ``ppscpi`` and ``ppwebgui``.
+The network-facing services and helper calculators are provided by separate standalone executables, not by ``pptool`` symlinks. Today those are ``ppscpi``, ``ppwebgui``, and ``pllcalc``.
 
 ## Dispatch model
 
@@ -36,6 +36,7 @@ Broadly, the commands fall into these groups:
 * measurement/readback - `ppread`, `ppcounter`, `ppts`, `ppfreq`, `pptemp`, `ppgpsdo`
 * onboarding/smoke test - `pphelloworld`
 * remote-control servers - `ppscpi`, `ppwebgui`
+* standalone clock helper - `pllcalc`
 
 Many streaming-oriented commands share the same lower-level execution path in `ppworkflow.hh`, which handles sequence transmission, trigger control, optional readback verification, completion checks, FIFO accounting, and CRC comparison.
 
@@ -70,10 +71,11 @@ This keeps the high-level user interface stable while letting the internal imple
 * [ppvcd](ppvcd.md) - VCD compatibility alias for `ppplay`
 * [pphelloworld](pphelloworld.md)
 
-Related non-symlink tool:
+Related non-symlink tools:
 
 * [ppscpi](ppscpi.md)
 * [ppwebgui](ppwebgui.md)
+* [pllcalc](pllcalc.md)
 
 See also:
 

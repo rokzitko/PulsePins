@@ -83,9 +83,9 @@ else
   CXXFLAGS += -I..
 endif
 
-# Main host-tools build. `pptool`, `ppscpi`, and `ppwebgui` are cross-compiled for the board, while
+# Main host-tools build. `pptool`, `ppscpi`, `ppwebgui`, and `pllcalc` are cross-compiled for the board, while
 # `unit_tests` is intentionally built with the host compiler for fast syntax/API checking.
-build: pptool ppscpi ppwebgui unit_tests
+build: pptool ppscpi ppwebgui pllcalc unit_tests
 
 # Whitespace policy check for project-owned C++ sources.
 lint-whitespace:
@@ -114,7 +114,7 @@ $(LUA_DIR)/%.o: $(LUA_DIR)/%.c
 	$(CC) $(CROSSCFLAGS) $(CFLAGS) -c $< -o $@
 
 # Targets that run on DE10 board
-TARGETS = pptool ppscpi ppwebgui
+TARGETS = pptool ppscpi ppwebgui pllcalc
 
 # Multi-call command entry points created as symlinks to `pptool` on the target.
 SYMLINKS = pptest ppmstest ppdmatest ppfg ppreset pptrig ppdelay ppqout ppaux ppcounter ppts \
@@ -137,6 +137,9 @@ PPWEBGUI_OBJS = ppwebgui_main.o ppwebgui_app.o ppwebgui_server.o ppwebgui_servic
 
 ppwebgui: $(PPWEBGUI_OBJS)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB)
+
+pllcalc: pllcalc.o
+	$(CXX) $(LDFLAGS)   $< -o $@ $(FSLIB)
 
 HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h) $(HPSFILE)
 
@@ -180,6 +183,9 @@ ppwebgui_bootstrap.o : ppwebgui_bootstrap.cc $(HEADERS)
 	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_app.o : ppwebgui_app.cc $(HEADERS)
+	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
+
+pllcalc.o : pllcalc.cc $(HEADERS)
 	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_server.o : ppwebgui_server.cc $(HEADERS)

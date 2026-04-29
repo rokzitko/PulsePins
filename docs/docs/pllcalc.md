@@ -1,0 +1,29 @@
+# pllcalc
+
+`pllcalc` computes integer Cyclone V PLL parameters for the PulsePins 50 MHz reference clock without touching the FPGA hardware.
+
+## Usage
+
+```bash
+pllcalc 66M
+```
+
+The frequency argument may use the usual frequency suffixes such as `Hz`, `kHz`, `MHz`, and `GHz`. Bare `M`, `k`, and `G` suffixes are also accepted for convenience, so `66M` means 66 MHz.
+
+The command prints the requested frequency, the computed `N,M,C` triplet, the actual output frequency, `fPFD`, `fVCO`, and the residual error.
+
+## Constraints
+
+Calculated settings follow the Cyclone V integer-PLL limits used by the project:
+
+* `fPFD` must be between 5 MHz and 325 MHz
+* `fVCO` must be between 600 MHz and 1600 MHz for the DE10-Nano `-I7` speed grade
+* generated `N`, `M`, and `C` values must be programmable by the current PLL reconfiguration helper
+
+If no strict solution exists, `pllcalc` exits nonzero and does not print a substitute unsafe configuration.
+
+## CLI PLL Options
+
+The normal `-core_pll` and `-int_pll` options first preserve existing preset names from `c++/pll_rules.hh` and raw `N,M,C` strings. If the value is neither a preset nor raw parameters, it is parsed as a requested frequency and the same strict calculator is used.
+
+When runtime calculation is used, the tool prints a warning and the calculated parameters to standard output before programming the PLL.

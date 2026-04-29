@@ -10,6 +10,7 @@
 
 #include "freq_meter.hh"
 #include "parser.hh"
+#include "pll_calc.hh"
 #include "pll_rules.hh"
 #include "ppworkflow.hh"
 #include "startup.hh"
@@ -67,43 +68,19 @@ PllOptions pll_options_from_state(const ClockPllState &state) {
 }
 
 void validate_pll_profile_string(const std::string &profile, const char *label) {
-  const auto resolved = applyReplacement(profile, pll_rules);
-  if (resolved.empty()) {
-    return;
+  try {
+    (void)pllcalc::resolve_profile(profile, applyReplacement(profile, pll_rules));
   }
-
-  std::istringstream iss(resolved);
-  int n = 0;
-  int m = 0;
-  int c = 0;
-  char comma1 = '\0';
-  char comma2 = '\0';
-  if (!(iss >> n >> comma1 >> m >> comma2 >> c) || comma1 != ',' || comma2 != ',') {
-    throw std::runtime_error(std::string("Invalid ") + label + " profile: '" + profile + "'");
-  }
-  iss >> std::ws;
-  if (!iss.eof()) {
+  catch (const std::exception &) {
     throw std::runtime_error(std::string("Invalid ") + label + " profile: '" + profile + "'");
   }
 }
 
 void validate_requested_pll_profile_string(const std::string &profile, const char *label) {
-  const auto resolved = applyReplacement(profile, pll_rules);
-  if (resolved.empty()) {
-    return;
+  try {
+    (void)pllcalc::resolve_profile(profile, applyReplacement(profile, pll_rules));
   }
-
-  std::istringstream iss(resolved);
-  int n = 0;
-  int m = 0;
-  int c = 0;
-  char comma1 = '\0';
-  char comma2 = '\0';
-  if (!(iss >> n >> comma1 >> m >> comma2 >> c) || comma1 != ',' || comma2 != ',') {
-    throw WebGuiBadRequest(std::string("Invalid ") + label + " profile: '" + profile + "'");
-  }
-  iss >> std::ws;
-  if (!iss.eof()) {
+  catch (const std::exception &) {
     throw WebGuiBadRequest(std::string("Invalid ") + label + " profile: '" + profile + "'");
   }
 }

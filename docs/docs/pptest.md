@@ -25,10 +25,10 @@ Command line switches:
 * ``-timeout``: controls readback wait bounds during ``-check`` and ``-read``; if omitted, the shared workflow uses a conservative 2s timeout both for the first readback element and for later idle gaps. Use a positive value for idle-gap timeout, a negative value for absolute timeout from start, or ``-timeout 0`` to disable timeout protection.
 * ``-dump-converted``: dump out the sequence of elements after converting elements with non-trivial update modes to simple BITLOAD elements
 * ``-i``: initial value to be presented on the output ports before the sequence begins to stream out
-* ``-core_pll``: configure the core/control-side PLL using a preset name or raw ``N,M,C`` string
+* ``-core_pll``: configure the core/control-side PLL using a preset name, raw ``N,M,C`` string, or calculated frequency string
 * ``-core_pll_charge_pump``: set the core PLL charge pump parameter
 * ``-core_pll_bandwidth``: set the core PLL bandwidth parameter
-* ``-int_pll``: configure the internal candidate streamer-clock PLL using a preset name or raw ``N,M,C`` string
+* ``-int_pll``: configure the internal candidate streamer-clock PLL using a preset name, raw ``N,M,C`` string, or calculated frequency string
 * ``-int_pll_charge_pump``: set the internal PLL charge pump parameter
 * ``-int_pll_bandwidth``: set the internal PLL bandwidth parameter
 
@@ -58,8 +58,8 @@ frequencies are 100 MHz for both `core_clk` and `int_clk`. The two host-side PLL
 * ``-core_pll`` / ``-core_pll_charge_pump`` / ``-core_pll_bandwidth`` for `core_clk`
 * ``-int_pll`` / ``-int_pll_charge_pump`` / ``-int_pll_bandwidth`` for `int_clk`
 
-Each PLL profile may be given either as a raw ``N,M,C`` string or as one of the symbolic presets from
-``c++/pll_rules.hh``. The current preset set is:
+Each PLL profile may be given as a raw ``N,M,C`` string, as one of the symbolic presets from
+``c++/pll_rules.hh``, or as a frequency string such as ``66M``. Existing presets are preserved exactly. If a value is neither a preset nor raw parameters, the runtime uses the same strict Cyclone V calculator as [`pllcalc`](pllcalc.md), prints a warning with the calculated parameters, and then programs the PLL. The current preset set is:
 
 * ``100M``
 * ``80M``

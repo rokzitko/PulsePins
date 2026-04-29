@@ -64,7 +64,7 @@ The ARM-side software lives in `c++/`.
 
 Key targets in `c++/Makefile`:
 
-* `build` - build `pptool`, `ppscpi`, `ppwebgui`, and `unit_tests`
+* `build` - build `pptool`, `ppscpi`, `ppwebgui`, `pllcalc`, and `unit_tests`
 * `copy` - copy the executables to the target host and create the usual symlinks to `pptool`
 * `copy_sources` - copy source files for on-target rebuilds
 * `copy_img` / `copy_sources_img` - stage executables or sources into the image tree
@@ -77,7 +77,7 @@ The build expects:
 
 By default the build is cross-compiling for ARM, but the sources are also structured so they can be copied to the board and built there.
 
-`ppwebgui` is a standalone executable like `ppscpi`, not a `pptool` symlink mode. It is built by `make -C c++ ppwebgui` and is included in the normal `build` and `copy` targets.
+`ppwebgui` and `pllcalc` are standalone executables like `ppscpi`, not `pptool` symlink modes. They are included in the normal `build` and `copy` targets.
 
 The C++ side also participates in clock configuration. The `FPGA` wrapper and PLL helper classes can reconfigure the
 internal PLLs and switch the active streamer clock source, so clocking should be thought of as a hardware/software

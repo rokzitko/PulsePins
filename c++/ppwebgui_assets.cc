@@ -218,7 +218,7 @@ const char *index_html = R"HTML(<!doctype html>
           <button id="clocking-measure-button" type="button" class="secondary-button">Remeasure clocks</button>
         </div>
       </form>
-      <div class="meta">Profile menus expose the standard `pll_rules.hh` presets. If `ppwebgui` starts from a nonstandard current profile, that exact value is shown so the UI stays honest. If startup used an unmanaged/raw source selector, the current source stays read-only until you explicitly apply `int_clk` or `ext_clk` here. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
+      <div class="meta">Profile menus expose the standard `pll_rules.hh` presets. Non-preset frequency strings are resolved with the same strict calculator as `pllcalc`. If `ppwebgui` starts from a nonstandard current profile, that exact value is shown so the UI stays honest. If startup used an unmanaged/raw source selector, the current source stays read-only until you explicitly apply `int_clk` or `ext_clk` here. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
       <div class="settings-grid">
         <div class="setting"><div class="label">ext_clk</div><div id="clocking-ext-hz" class="mono"></div></div>
         <div class="setting"><div class="label">int_clk</div><div id="clocking-int-hz" class="mono"></div></div>

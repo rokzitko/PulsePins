@@ -14,11 +14,28 @@
 #include <iostream>
 
 #include "pll.hh"
+#include "pll_calc.hh"
 #include "pll_rules.hh"
 #include "parser.hh"
 #include "options.hh"
 
 constexpr int pll_delay = 2*1000;  // 2ms delay for things to settle (docs say 500us is worst case)
+
+inline pllcalc::PllProfileResolution resolve_pll_profile_config(const std::string &profile) {
+  return pllcalc::resolve_profile(profile, applyReplacement(profile, pll_rules));
+}
+
+inline void report_calculated_pll_profile(const char *label,
+                                          const std::string &profile,
+                                          const pllcalc::PllParameters &params) {
+  std::cout << "WARNING: " << label << " PLL profile '" << profile
+            << "' is not a preset; calculated strict Cyclone V parameters N,M,C="
+            << params.config_string()
+            << " actual=" << pllcalc::format_frequency_hz(params.actual_hz)
+            << " fPFD=" << pllcalc::format_frequency_hz(params.pfd_hz)
+            << " fVCO=" << pllcalc::format_frequency_hz(params.vco_hz)
+            << std::endl;
+}
 
 class pll_core_clk {
 public:
@@ -29,7 +46,10 @@ public:
 
   // Program the core clock PLL using the resolved preset/raw string plus optional fine-tuning.
   void set_core_clk(const PllOptions &opts, const Verbosity &v) {
-    core_clk.set_from_string(applyReplacement(opts.profile, pll_rules));
+    const auto resolved = resolve_pll_profile_config(opts.profile);
+    if (resolved.calculated)
+      report_calculated_pll_profile("core_clk", opts.profile, *resolved.calculated);
+    core_clk.set_from_string(resolved.config);
     if (opts.charge_pump)
       core_clk.set_charge_pump(*opts.charge_pump);
     if (opts.bandwidth)
@@ -51,7 +71,10 @@ public:
 
   // Program the internal candidate streamer clock PLL.
   void set_int_clk(const PllOptions &opts, const Verbosity &v) {
-    int_clk.set_from_string(applyReplacement(opts.profile, pll_rules));
+    const auto resolved = resolve_pll_profile_config(opts.profile);
+    if (resolved.calculated)
+      report_calculated_pll_profile("int_clk", opts.profile, *resolved.calculated);
+    int_clk.set_from_string(resolved.config);
     if (opts.charge_pump)
       int_clk.set_charge_pump(*opts.charge_pump);
     if (opts.bandwidth)
