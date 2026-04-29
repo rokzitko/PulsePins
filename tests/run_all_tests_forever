@@ -3,17 +3,31 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Rok Zitko
 
+my $save_report_files = 1;
+
+while (@ARGV) {
+    my $arg = shift @ARGV;
+    if ($arg eq '-no-report-files') {
+        $save_report_files = 0;
+    } else {
+        die "Unknown argument: $arg\n";
+    }
+}
+
 # This will generate a lot of output.
 # Use a RAM-based storage mount point, not the SD card!
 my $logdir = "/var/volatile";
 (-d $logdir && -w $logdir) or die "$logdir not writable.";
 
-system "rm $logdir/report.*"; # clean up first!
+system "rm $logdir/report.*" if $save_report_files; # clean up first!
 
 open (O, ">report");
 
 for ($i = 1 ; ; $i++) {
-    system("bash", "-o", "pipefail", "-c", "run_all_tests 2>&1 | tee $logdir/report.run_$i");
+    my $cmd = $save_report_files
+        ? "run_all_tests 2>&1 | tee $logdir/report.run_$i"
+        : "run_all_tests 2>&1";
+    system("bash", "-o", "pipefail", "-c", $cmd);
     my $rc = $? >> 8;   # extract exit code
     last if $rc != 0;   # stop if not zero
     chomp($time = `date`);
