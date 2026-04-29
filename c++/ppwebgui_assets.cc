@@ -330,6 +330,48 @@ const char *index_html = R"HTML(<!doctype html>
     </section>
 
     <section class="panel">
+      <div class="panel-heading">
+        <h2>Timeline Composer</h2>
+        <span class="state-tag neutral-tag">browser only</span>
+      </div>
+      <div class="panel-note">Build a simple pulse timeline in raw clock cycles, then generate ordinary PulsePins sequence text for the stream form below. Final output is still restored by ppwebgui from the current tracked qout.</div>
+      <div id="timeline-state" class="form-state">Edit channels and pulses, then generate sequence text.</div>
+
+      <div class="subpanel">
+        <div class="panel-heading">
+          <h3>Channels</h3>
+          <button id="timeline-add-channel" type="button" class="secondary-button">Add channel</button>
+        </div>
+        <div class="table-wrap">
+          <table class="timeline-table">
+            <thead><tr><th>Name</th><th>Output bit</th><th>Color</th><th></th></tr></thead>
+            <tbody id="timeline-channel-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="subpanel">
+        <div class="panel-heading">
+          <h3>Pulses</h3>
+          <button id="timeline-add-pulse" type="button" class="secondary-button">Add pulse</button>
+        </div>
+        <div class="table-wrap">
+          <table class="timeline-table">
+            <thead><tr><th>Channel</th><th>Start cycle</th><th>Duration cycles</th><th></th></tr></thead>
+            <tbody id="timeline-pulse-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="timeline-actions">
+        <button id="timeline-generate" type="button">Generate sequence text</button>
+        <button id="timeline-load-example" type="button" class="secondary-button">Load example</button>
+      </div>
+      <div id="timeline-summary" class="meta mono"></div>
+      <svg id="timeline-preview" class="timeline-preview" viewBox="0 0 900 180" role="img" aria-label="Timeline preview"></svg>
+    </section>
+
+    <section class="panel">
       <h2>Sequence</h2>
       <div class="panel-note">Start streaming resets hardware first and appends the tracked idle qout as the final output.</div>
       <form id="stream-form" class="sequence-form">
@@ -429,6 +471,13 @@ body {
 
 .ports-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.timeline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .settings-grid {
@@ -537,6 +586,43 @@ button:disabled {
   margin-bottom: 0.35rem;
 }
 
+.table-wrap {
+  overflow-x: auto;
+}
+
+.timeline-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.timeline-table th, .timeline-table td {
+  padding: 0.35rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.timeline-table th {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.timeline-table input, .timeline-table select {
+  min-width: 7rem;
+}
+
+.timeline-table .narrow-input {
+  min-width: 4.5rem;
+}
+
+.timeline-preview {
+  width: 100%;
+  min-height: 180px;
+  background: #020617;
+  border: 1px solid #334155;
+  border-radius: 8px;
+}
+
 .meta-row {
   display: flex;
   gap: 1rem;
@@ -639,6 +725,16 @@ const char *app_js = R"JS((() => {
   const qoutForm = document.getElementById('qout-form');
   const combinerForm = document.getElementById('combiner-form');
   const streamForm = document.getElementById('stream-form');
+  const streamTextarea = streamForm.querySelector('[name="sequence_text"]');
+  const timelineChannelBody = document.getElementById('timeline-channel-body');
+  const timelinePulseBody = document.getElementById('timeline-pulse-body');
+  const timelineAddChannelButton = document.getElementById('timeline-add-channel');
+  const timelineAddPulseButton = document.getElementById('timeline-add-pulse');
+  const timelineGenerateButton = document.getElementById('timeline-generate');
+  const timelineLoadExampleButton = document.getElementById('timeline-load-example');
+  const timelineState = document.getElementById('timeline-state');
+  const timelineSummary = document.getElementById('timeline-summary');
+  const timelinePreview = document.getElementById('timeline-preview');
   const clockingSourceSelect = document.getElementById('clocking-source-select');
   const clockingCoreProfileSelect = document.getElementById('clocking-core-profile-select');
   const clockingIntProfileSelect = document.getElementById('clocking-int-profile-select');
@@ -668,6 +764,11 @@ const char *app_js = R"JS((() => {
   let qoutDirty = false;
   let combinerDirty = false;
   let lastStatus = null;
+  let timelineNextChannelId = 1;
+  let timelineNextPulseId = 1;
+  let timelineChannels = [];
+  let timelinePulses = [];
+  const timelinePalette = ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#f43f5e', '#facc15', '#14b8a6', '#fb7185'];
 
   function formatHex(value, width = 8) {
     const normalized = Number(value) >>> 0;
@@ -714,6 +815,396 @@ const char *app_js = R"JS((() => {
     setBusy(qoutForm, busy);
     setBusy(combinerForm, busy);
     setBusy(streamForm, busy);
+    for (const button of [timelineAddChannelButton, timelineAddPulseButton, timelineGenerateButton, timelineLoadExampleButton]) {
+      button.disabled = busy;
+    }
+  }
+
+  function compareBigInt(a, b) {
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+
+  function trackedQoutBigInt() {
+    if (!lastStatus || !lastStatus.streamer) {
+      return null;
+    }
+    const value = lastStatus.streamer.qout_streamer;
+    try {
+      if (typeof value === 'string') {
+        return BigInt(value);
+      }
+      return BigInt(Number(value) >>> 0);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function hexBigInt(value) {
+    return `0x${value.toString(16)}`;
+  }
+
+  function setTimelineState(message, isError = false) {
+    timelineState.textContent = message;
+    timelineState.classList.toggle('local-edit', isError);
+  }
+
+  function svgElement(tag, attrs = {}) {
+    const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [name, value] of Object.entries(attrs)) {
+      element.setAttribute(name, value);
+    }
+    return element;
+  }
+
+  function appendSvgText(parent, x, y, text, attrs = {}) {
+    const element = svgElement('text', { x, y, fill: '#cbd5e1', 'font-size': '12', ...attrs });
+    element.textContent = text;
+    parent.appendChild(element);
+  }
+
+  function nextTimelineColor() {
+    return timelinePalette[timelineChannels.length % timelinePalette.length];
+  }
+
+  function addTimelineChannel(name = `CH${timelineNextChannelId}`, bit = timelineChannels.length, color = nextTimelineColor()) {
+    timelineChannels.push({ id: `ch${timelineNextChannelId++}`, name, bit: String(bit), color });
+  }
+
+  function addTimelinePulse(channelId = '', start = 0, duration = 10) {
+    const selectedChannel = channelId || (timelineChannels[0] ? timelineChannels[0].id : '');
+    timelinePulses.push({ id: `pulse${timelineNextPulseId++}`, channelId: selectedChannel, start: String(start), duration: String(duration) });
+  }
+
+  function makeDeleteButton(label, onClick) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary-button';
+    button.textContent = label;
+    button.addEventListener('click', onClick);
+    return button;
+  }
+
+  function renderTimelineChannelRows() {
+    timelineChannelBody.textContent = '';
+    for (const channel of timelineChannels) {
+      const row = document.createElement('tr');
+
+      const nameCell = document.createElement('td');
+      const nameInput = document.createElement('input');
+      nameInput.value = channel.name;
+      nameInput.addEventListener('input', () => {
+        channel.name = nameInput.value;
+        renderTimelinePulseRows();
+        renderTimelinePreview();
+      });
+      nameCell.appendChild(nameInput);
+      row.appendChild(nameCell);
+
+      const bitCell = document.createElement('td');
+      const bitInput = document.createElement('input');
+      bitInput.className = 'narrow-input';
+      bitInput.inputMode = 'numeric';
+      bitInput.value = channel.bit;
+      bitInput.addEventListener('input', () => {
+        channel.bit = bitInput.value;
+        renderTimelinePreview();
+      });
+      bitCell.appendChild(bitInput);
+      row.appendChild(bitCell);
+
+      const colorCell = document.createElement('td');
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.className = 'narrow-input';
+      colorInput.value = channel.color;
+      colorInput.addEventListener('input', () => {
+        channel.color = colorInput.value;
+        renderTimelinePreview();
+      });
+      colorCell.appendChild(colorInput);
+      row.appendChild(colorCell);
+
+      const deleteCell = document.createElement('td');
+      deleteCell.appendChild(makeDeleteButton('Delete', () => {
+        timelineChannels = timelineChannels.filter((candidate) => candidate.id !== channel.id);
+        timelinePulses = timelinePulses.filter((pulse) => pulse.channelId !== channel.id);
+        renderTimelineTables();
+      }));
+      row.appendChild(deleteCell);
+
+      timelineChannelBody.appendChild(row);
+    }
+  }
+
+  function renderTimelinePulseRows() {
+    timelinePulseBody.textContent = '';
+    for (const pulse of timelinePulses) {
+      const row = document.createElement('tr');
+
+      const channelCell = document.createElement('td');
+      const channelSelect = document.createElement('select');
+      for (const channel of timelineChannels) {
+        const option = document.createElement('option');
+        option.value = channel.id;
+        option.textContent = `${channel.name || channel.id} [bit ${channel.bit}]`;
+        channelSelect.appendChild(option);
+      }
+      channelSelect.value = pulse.channelId;
+      channelSelect.addEventListener('change', () => {
+        pulse.channelId = channelSelect.value;
+        renderTimelinePreview();
+      });
+      channelCell.appendChild(channelSelect);
+      row.appendChild(channelCell);
+
+      const startCell = document.createElement('td');
+      const startInput = document.createElement('input');
+      startInput.inputMode = 'numeric';
+      startInput.value = pulse.start;
+      startInput.addEventListener('input', () => {
+        pulse.start = startInput.value;
+        renderTimelinePreview();
+      });
+      startCell.appendChild(startInput);
+      row.appendChild(startCell);
+
+      const durationCell = document.createElement('td');
+      const durationInput = document.createElement('input');
+      durationInput.inputMode = 'numeric';
+      durationInput.value = pulse.duration;
+      durationInput.addEventListener('input', () => {
+        pulse.duration = durationInput.value;
+        renderTimelinePreview();
+      });
+      durationCell.appendChild(durationInput);
+      row.appendChild(durationCell);
+
+      const deleteCell = document.createElement('td');
+      deleteCell.appendChild(makeDeleteButton('Delete', () => {
+        timelinePulses = timelinePulses.filter((candidate) => candidate.id !== pulse.id);
+        renderTimelineTables();
+      }));
+      row.appendChild(deleteCell);
+
+      timelinePulseBody.appendChild(row);
+    }
+  }
+
+  function parseCycleCount(value, label, errors, positive) {
+    const text = String(value).trim();
+    if (!/^-?\d+$/.test(text)) {
+      errors.push(`${label} must be an integer cycle count`);
+      return null;
+    }
+    const parsed = BigInt(text);
+    if (positive ? parsed <= 0n : parsed < 0n) {
+      errors.push(`${label} must be ${positive ? 'greater than zero' : 'non-negative'}`);
+      return null;
+    }
+    return parsed;
+  }
+
+  function validateTimeline() {
+    const errors = [];
+    const channels = [];
+    const channelById = new Map();
+    const bits = new Map();
+    let ownedMask = 0n;
+
+    if (timelineChannels.length === 0) {
+      errors.push('Add at least one channel');
+    }
+    for (const channel of timelineChannels) {
+      const name = channel.name.trim();
+      if (!name) {
+        errors.push('Channel name must not be empty');
+      }
+      const bitText = String(channel.bit).trim();
+      if (!/^\d+$/.test(bitText)) {
+        errors.push(`Channel ${name || channel.id} bit must be an integer in 0..31`);
+        continue;
+      }
+      const bit = Number(bitText);
+      if (!Number.isInteger(bit) || bit < 0 || bit > 31) {
+        errors.push(`Channel ${name || channel.id} bit must be in 0..31`);
+        continue;
+      }
+      if (bits.has(bit)) {
+        errors.push(`Output bit ${bit} is assigned to both ${bits.get(bit)} and ${name || channel.id}`);
+        continue;
+      }
+      bits.set(bit, name || channel.id);
+      const parsed = { id: channel.id, name: name || channel.id, bit, color: channel.color };
+      channels.push(parsed);
+      channelById.set(channel.id, parsed);
+      ownedMask |= 1n << BigInt(bit);
+    }
+
+    if (timelinePulses.length === 0) {
+      errors.push('Add at least one pulse');
+    }
+    const pulses = [];
+    for (const pulse of timelinePulses) {
+      const channel = channelById.get(pulse.channelId);
+      if (!channel) {
+        errors.push('Pulse references a missing channel');
+        continue;
+      }
+      const start = parseCycleCount(pulse.start, `${channel.name} start`, errors, false);
+      const duration = parseCycleCount(pulse.duration, `${channel.name} duration`, errors, true);
+      if (start === null || duration === null) {
+        continue;
+      }
+      pulses.push({ id: pulse.id, channel, start, duration, end: start + duration });
+    }
+
+    const pulsesByChannel = new Map();
+    for (const pulse of pulses) {
+      if (!pulsesByChannel.has(pulse.channel.id)) {
+        pulsesByChannel.set(pulse.channel.id, []);
+      }
+      pulsesByChannel.get(pulse.channel.id).push(pulse);
+    }
+    for (const entries of pulsesByChannel.values()) {
+      entries.sort((a, b) => compareBigInt(a.start, b.start));
+      for (let i = 1; i < entries.length; ++i) {
+        if (entries[i].start < entries[i - 1].end) {
+          errors.push(`${entries[i].channel.name} pulses overlap at cycle ${entries[i].start.toString()}`);
+        }
+      }
+    }
+
+    return { errors, channels, pulses, ownedMask };
+  }
+
+  function compileTimeline() {
+    const parsed = validateTimeline();
+    if (parsed.errors.length) {
+      return { ok: false, errors: parsed.errors, parsed };
+    }
+    const trackedQout = trackedQoutBigInt();
+    if (trackedQout === null) {
+      return { ok: false, errors: ['Waiting for ppwebgui status before compiling timeline'], parsed };
+    }
+
+    const events = new Map();
+    const cycleKeys = new Set(['0']);
+    const ensureEvent = (cycle) => {
+      const key = cycle.toString();
+      if (!events.has(key)) {
+        events.set(key, { setMask: 0n, clearMask: 0n });
+      }
+      cycleKeys.add(key);
+      return events.get(key);
+    };
+
+    for (const pulse of parsed.pulses) {
+      const bitMask = 1n << BigInt(pulse.channel.bit);
+      ensureEvent(pulse.start).setMask |= bitMask;
+      ensureEvent(pulse.end).clearMask |= bitMask;
+    }
+
+    const cycles = Array.from(cycleKeys, (key) => BigInt(key)).sort(compareBigInt);
+    const baseline = trackedQout & ~parsed.ownedMask;
+    let activeMask = 0n;
+    const records = [];
+    for (let i = 0; i + 1 < cycles.length; ++i) {
+      const cycle = cycles[i];
+      const event = events.get(cycle.toString());
+      if (event) {
+        activeMask &= ~event.clearMask;
+        activeMask |= event.setMask;
+      }
+      const count = cycles[i + 1] - cycle;
+      if (count <= 0n) {
+        continue;
+      }
+      const value = baseline | activeMask;
+      const previous = records[records.length - 1];
+      if (previous && previous.value === value) {
+        previous.count += count;
+      } else {
+        records.push({ count, value });
+      }
+    }
+
+    return { ok: true, parsed, records, totalCycles: cycles[cycles.length - 1], baseline };
+  }
+
+  function timelineRatio(cycle, totalCycles) {
+    if (totalCycles <= BigInt(Number.MAX_SAFE_INTEGER)) {
+      return Number(cycle) / Math.max(1, Number(totalCycles));
+    }
+    const scale = 1000000n;
+    return Number((cycle * scale) / totalCycles) / Number(scale);
+  }
+
+  function renderTimelinePreview() {
+    const compiled = compileTimeline();
+    timelinePreview.textContent = '';
+    if (!compiled.ok) {
+      timelineSummary.textContent = '';
+      setTimelineState(compiled.errors.join('; '), true);
+      timelinePreview.setAttribute('viewBox', '0 0 900 180');
+      appendSvgText(timelinePreview, 24, 42, 'Timeline has validation errors', { fill: '#fca5a5', 'font-size': '16' });
+      return;
+    }
+
+    const height = Math.max(140, 54 + compiled.parsed.channels.length * 42);
+    timelinePreview.setAttribute('viewBox', `0 0 900 ${height}`);
+    timelinePreview.appendChild(svgElement('rect', { x: 0, y: 0, width: 900, height, fill: '#020617' }));
+    const plotX = 150;
+    const plotY = 34;
+    const plotW = 720;
+    const totalCycles = compiled.totalCycles;
+    const previewLimited = totalCycles > BigInt(Number.MAX_SAFE_INTEGER);
+
+    appendSvgText(timelinePreview, plotX, 22, '0 cycles', { fill: '#94a3b8' });
+    appendSvgText(timelinePreview, plotX + plotW - 100, 22, `${totalCycles.toString()} cycles`, { fill: '#94a3b8' });
+    for (let i = 0; i < compiled.parsed.channels.length; ++i) {
+      const channel = compiled.parsed.channels[i];
+      const y = plotY + i * 42;
+      appendSvgText(timelinePreview, 18, y + 16, `${channel.name} [${channel.bit}]`, { fill: channel.color });
+      timelinePreview.appendChild(svgElement('line', { x1: plotX, y1: y + 10, x2: plotX + plotW, y2: y + 10, stroke: '#334155', 'stroke-width': 2 }));
+      for (const pulse of compiled.parsed.pulses.filter((candidate) => candidate.channel.id === channel.id)) {
+        const x = plotX + timelineRatio(pulse.start, totalCycles) * plotW;
+        const width = Math.max(1, timelineRatio(pulse.duration, totalCycles) * plotW);
+        timelinePreview.appendChild(svgElement('rect', { x, y: y - 4, width, height: 22, rx: 4, fill: channel.color, opacity: 0.85 }));
+      }
+    }
+    timelineSummary.textContent = `records=${compiled.records.length} total_cycles=${compiled.totalCycles.toString()} owned_mask=${hexBigInt(compiled.parsed.ownedMask)} baseline=${hexBigInt(compiled.baseline)}`;
+    setTimelineState(previewLimited ? 'Timeline is valid; preview is approximate because the cycle range is very large.' : 'Timeline is valid. Generate sequence text when ready.', false);
+  }
+
+  function renderTimelineTables() {
+    renderTimelineChannelRows();
+    renderTimelinePulseRows();
+    renderTimelinePreview();
+  }
+
+  function loadTimelineExample() {
+    timelineChannels = [];
+    timelinePulses = [];
+    addTimelineChannel('Laser', 0, '#38bdf8');
+    addTimelineChannel('RF', 1, '#f97316');
+    addTimelineChannel('Camera', 2, '#a78bfa');
+    addTimelinePulse(timelineChannels[0].id, 100, 50);
+    addTimelinePulse(timelineChannels[1].id, 200, 75);
+    addTimelinePulse(timelineChannels[2].id, 90, 250);
+    renderTimelineTables();
+  }
+
+  function generateTimelineSequence() {
+    const compiled = compileTimeline();
+    if (!compiled.ok) {
+      setTimelineState(compiled.errors.join('; '), true);
+      renderTimelinePreview();
+      return;
+    }
+    streamTextarea.value = compiled.records.map((record) => `d ${record.count.toString()} ${hexBigInt(record.value)}`).join('\n') + '\n';
+    streamTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    renderTimelinePreview();
+    setTimelineState(`Generated ${compiled.records.length} sequence records from ${compiled.parsed.pulses.length} pulses.`, false);
   }
 
   function setFormDirty(form, dirty, stateElement, tagElement, cleanText, dirtyText) {
@@ -885,6 +1376,7 @@ const char *app_js = R"JS((() => {
     populateTrigger(status, options.forceTrigger === true);
     populateQout(status, options.forceQout === true);
     populateCombiner(status, options.forceCombiner === true);
+    renderTimelinePreview();
     pollMs = status.poll_ms || 100;
   }
 
@@ -906,6 +1398,29 @@ const char *app_js = R"JS((() => {
   attachDirtyHandlers(triggerForm, setTriggerDirty);
   attachDirtyHandlers(qoutForm, setQoutDirty);
   attachDirtyHandlers(combinerForm, setCombinerDirty);
+
+  timelineAddChannelButton.addEventListener('click', () => {
+    addTimelineChannel();
+    renderTimelineTables();
+  });
+
+  timelineAddPulseButton.addEventListener('click', () => {
+    if (timelineChannels.length === 0) {
+      addTimelineChannel();
+    }
+    addTimelinePulse();
+    renderTimelineTables();
+  });
+
+  timelineLoadExampleButton.addEventListener('click', () => {
+    loadTimelineExample();
+  });
+
+  timelineGenerateButton.addEventListener('click', () => {
+    generateTimelineSequence();
+  });
+
+  loadTimelineExample();
 
   clockingRevertButton.addEventListener('click', () => {
     if (!lastStatus) return;
@@ -1033,7 +1548,7 @@ const char *app_js = R"JS((() => {
   streamForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const body = new URLSearchParams();
-    body.set('sequence_text', streamForm.querySelector('[name="sequence_text"]').value);
+    body.set('sequence_text', streamTextarea.value);
     if (streamForm.querySelector('[name="force_trigger"]').checked) {
       body.set('force_trigger', '1');
     }
