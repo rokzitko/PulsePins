@@ -230,6 +230,32 @@ What it does:
 
 This workflow is the best first step for notebook integration. It avoids installing Jupyter on the board and keeps plotting, parameter sweeps, and data analysis on the host computer.
 
+For named-channel pulse construction, use `Timeline`:
+
+```python
+from pulsepins import PulsePins, Timeline
+
+timeline = Timeline(unit="us", clock_hz=100_000_000)
+timeline.channel("laser", bit=0)
+timeline.channel("camera", bit=1)
+timeline.pulse("laser", start=10, duration=5)
+timeline.pulse("camera", start=20, duration=10)
+
+with PulsePins("de10nano") as pp:
+    pp.reset()
+    pp.load(timeline, force_trigger=True)
+    pp.stream()
+```
+
+Two runnable Timeline examples are included:
+
+```bash
+PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg
+PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
+```
+
+`timeline_preview.py` is hardware-free: it prints the generated text sequence and can write an SVG preview. `timeline_stream.py` uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering.
+
 See also: `ppscpi.md` and `python.md`.
 
 ### Choosing the right kind of example

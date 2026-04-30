@@ -33,6 +33,34 @@ with PulsePins("de10nano") as pp:
 
 The client exposes `idn()`, `reset()`, `clear_status()`, `load_sequence(...)`, `check(...)`, `check_enabled()`, `stream()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
 
+The same package also includes a dependency-free `Timeline` builder for simple named-channel pulse programs:
+
+```python
+from pulsepins import PulsePins, Timeline
+
+timeline = Timeline(unit="us", clock_hz=100_000_000)
+timeline.channel("laser", bit=0)
+timeline.channel("camera", bit=1)
+timeline.pulse("laser", start=10, duration=5)
+timeline.pulse("camera", start=20, duration=10)
+
+with PulsePins("de10nano") as pp:
+    pp.reset()
+    pp.load(timeline, force_trigger=True)
+    pp.stream()
+
+timeline
+```
+
+In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns the generated PulsePins text sequence for inspection or manual editing. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
+
+Runnable examples:
+
+```bash
+PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg
+PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
+```
+
 ## Board-native bindings
 
 PulsePins uses [nanobind](https://nanobind.readthedocs.io/en/latest/) to provide Python bindings for the underlying C++ interface.

@@ -10,6 +10,7 @@ from .scpi import (
     PulsePinsError,
     PulsePinsProtocolError,
 )
+from .timeline import Timeline, TimelineError
 
 __all__ = [
     "PulsePins",
@@ -17,4 +18,6 @@ __all__ = [
     "PulsePinsConnectionError",
     "PulsePinsError",
     "PulsePinsProtocolError",
+    "Timeline",
+    "TimelineError",
 ]

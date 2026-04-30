@@ -93,6 +93,32 @@ with PulsePins("de10nano") as pp:
 
 If `SEQ` or `STREAM` returns an error response, the Python client drains `SYST:ERR?` and raises `PulsePinsCommandError` with the queued server-side diagnostic text.
 
+For notebook-oriented pulse construction, the same package provides `Timeline`:
+
+```python
+from pulsepins import PulsePins, Timeline
+
+timeline = Timeline(unit="us", clock_hz=100_000_000)
+timeline.channel("laser", bit=0)
+timeline.channel("camera", bit=1)
+timeline.pulse("laser", start=10, duration=5)
+timeline.pulse("camera", start=20, duration=10)
+
+with PulsePins("de10nano") as pp:
+    pp.reset()
+    pp.load(timeline, force_trigger=True)
+    pp.stream()
+```
+
+`Timeline.to_sequence(...)` returns the generated text sequence, and notebooks render a lightweight SVG preview when the timeline object is evaluated.
+
+The same workflow is available as runnable examples:
+
+```bash
+PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg
+PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
+```
+
 ### Notes
 
 * `STREAM` uses the same send/trigger path as the local tools, including optional readback verification.

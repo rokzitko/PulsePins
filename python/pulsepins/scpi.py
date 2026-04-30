@@ -123,14 +123,30 @@ class PulsePins:
         """Clear SCPI status and the error queue."""
         self.send("*CLS")
 
-    def load_sequence(self, text: str) -> None:
+    def load(self, sequence, **sequence_options) -> None:
+        """Alias for ``load_sequence(...)``."""
+        self.load_sequence(sequence, **sequence_options)
+
+    def load_sequence(self, sequence, **sequence_options) -> None:
         """Parse and store a PulsePins text sequence in the remote session.
 
         ``ppscpi`` is line-oriented, while PulsePins sequence text is usually
         written over multiple lines. The payload is therefore normalized to a
-        single whitespace-separated line before sending ``SEQ ...``.
+        single whitespace-separated line before sending ``SEQ ...``. Objects
+        with a ``to_sequence()`` method, such as ``Timeline``, are accepted too.
+        Extra keyword arguments are passed to ``to_sequence(...)``.
         """
-        payload = " ".join(text.split())
+        if isinstance(sequence, str):
+            if sequence_options:
+                raise TypeError("sequence options require an object with to_sequence()")
+        else:
+            to_sequence = getattr(sequence, "to_sequence", None)
+            if to_sequence is None:
+                raise TypeError("sequence must be text or provide to_sequence()")
+            sequence = to_sequence(**sequence_options)
+        if not isinstance(sequence, str):
+            raise TypeError("to_sequence() must return text")
+        payload = " ".join(sequence.split())
         command = "SEQ" if not payload else "SEQ " + payload
         response = self.query(command)
         self._expect_response("SEQ", response, "LOADED")

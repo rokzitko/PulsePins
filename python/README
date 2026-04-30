@@ -11,6 +11,9 @@ the Python bindings is not currently supported.
 
 The `pulsepins` SCPI client does not need a build step. From a checkout, use
 `PYTHONPATH=/path/to/PulsePins/python` and connect to a board running `ppscpi`.
+It also includes a dependency-free `Timeline` builder that can generate PulsePins text sequences
+and render SVG previews in notebooks.
+See `examples/timeline_preview.py` and `examples/timeline_stream.py` for small runnable workflows.
 
 On the DE10-Nano, do the following:
 

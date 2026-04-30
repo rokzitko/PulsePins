@@ -6,7 +6,7 @@ import threading
 
 import pytest
 
-from pulsepins import PulsePins, PulsePinsCommandError, PulsePinsProtocolError
+from pulsepins import PulsePins, PulsePinsCommandError, PulsePinsProtocolError, Timeline
 
 
 class FakeScpiServer(socketserver.ThreadingTCPServer):
@@ -103,6 +103,17 @@ def test_load_sequence_flattens_multiline_text(scpi_server):
 
     assert "SEQ d 10 0xff d 5 0x00 f" in scpi_server.commands
     assert "STREAM" in scpi_server.commands
+
+
+def test_load_sequence_accepts_timeline(scpi_server):
+    timeline = Timeline()
+    timeline.channel("q0", 0)
+    timeline.pulse("q0", 0, 5)
+
+    with make_client(scpi_server) as pp:
+        pp.load(timeline, force_trigger=True)
+
+    assert "SEQ d 5 0x1 f" in scpi_server.commands
 
 
 def test_load_sequence_error_includes_error_queue(scpi_server):

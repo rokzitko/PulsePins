@@ -31,7 +31,7 @@ CC = gcc$(GCC_SUFFIX)
 
 .PHONY: build test test-host clean copy_sources copy_misc copy_sources_img
 
-PYTEST_FILES=test.py test_scpi_client.py
+PYTEST_FILES=test.py test_scpi_client.py test_timeline.py
 
 # Configure and build the nanobind extension modules.
 build:
@@ -57,7 +57,7 @@ PY_PACKAGE=pulsepins
 PY_PACKAGE_FILES=$(wildcard $(PY_PACKAGE)/*.py)
 PY_EXAMPLE_DIR=examples
 PY_EXAMPLE_FILES=$(wildcard $(PY_EXAMPLE_DIR)/*.py)
-MISCFILES=CMakeLists.txt Makefile pytest.ini test.py test_scpi_client.py
+MISCFILES=CMakeLists.txt Makefile pytest.ini test.py test_scpi_client.py test_timeline.py
 copy_sources:
 	ssh $(TARGETHOST) mkdir -p $(PYDIR) $(PYDIR)/$(PY_PACKAGE) $(PYDIR)/$(PY_EXAMPLE_DIR)
 	scp $(SOURCES) $(MISCFILES) @$(TARGETHOST):$(PYDIR)
