@@ -108,3 +108,58 @@ def test_timeline_imports_browser_csv_without_header():
 def test_timeline_import_rejects_channel_bit_conflict():
     with pytest.raises(TimelineError, match="different bit"):
         Timeline.from_csv("channel,bit,start,duration\nq,0,0,1\nq,1,2,1\n")
+
+
+def test_timeline_exports_browser_draft_json():
+    tl = Timeline(unit="us", clock_hz=100_000_000)
+    tl.channel("laser", 0, color="#ff0000")
+    tl.pulse("laser", start=10, duration=5)
+
+    draft = tl.to_draft()
+    assert draft["format"] == "pulsepins.timeline"
+    assert draft["version"] == 1
+    assert draft["time_unit"] == "us"
+    assert draft["channels"] == [
+        {"name": "laser", "bit": 0, "color": "#ff0000"}
+    ]
+    assert draft["pulses"] == [
+        {"channel_index": 0, "start": "10", "duration": "5"}
+    ]
+    assert '"format": "pulsepins.timeline"' in tl.to_draft_json()
+
+
+def test_timeline_imports_browser_draft_json():
+    tl = Timeline.from_draft_json(
+        """
+        {
+          "format": "pulsepins.timeline",
+          "version": 1,
+          "time_unit": "us",
+          "channels": [
+            {"name": "laser", "bit": "0", "color": "#ff0000"},
+            {"name": "camera", "bit": "1", "color": "#00ff00"}
+          ],
+          "pulses": [
+            {"channel_index": 0, "start": "10", "duration": "5"},
+            {"channel_index": 1, "start": "20", "duration": "10"}
+          ]
+        }
+        """,
+        clock_hz=100_000_000,
+    )
+
+    assert tl.unit == "us"
+    assert tl.channels == (("laser", 0), ("camera", 1))
+    assert tl.channel_colors == (("laser", "#ff0000"), ("camera", "#00ff00"))
+    assert tl.pulses == (("laser", 1000, 500), ("camera", 2000, 1000))
+
+
+def test_timeline_import_draft_rejects_bad_channel_index():
+    with pytest.raises(TimelineError, match="outside the channel list"):
+        Timeline.from_draft(
+            {
+                "time_unit": "cycles",
+                "channels": [{"name": "q0", "bit": 0}],
+                "pulses": [{"channel_index": 1, "start": 0, "duration": 1}],
+            }
+        )

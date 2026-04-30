@@ -51,12 +51,12 @@ with PulsePins("de10nano") as pp:
 timeline
 ```
 
-In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns the generated PulsePins text sequence for inspection or manual editing. `Timeline.to_csv()` and `Timeline.from_csv(...)` use the same `channel,bit,start,duration,color` pulse-table CSV format as the browser Timeline Composer. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
+In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns the generated PulsePins text sequence for inspection or manual editing. `Timeline.to_csv()` / `Timeline.from_csv(...)` use the same `channel,bit,start,duration,color` pulse-table CSV format as the browser Timeline Composer. `Timeline.to_draft_json()` / `Timeline.from_draft_json(...)` use the browser draft JSON format. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
 
 Runnable examples:
 
 ```bash
-PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv
+PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json
 PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
 PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
 ```

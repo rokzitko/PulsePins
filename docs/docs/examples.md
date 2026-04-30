@@ -249,12 +249,12 @@ with PulsePins("de10nano") as pp:
 Two runnable Timeline examples are included:
 
 ```bash
-PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv
+PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json
 PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
 PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
 ```
 
-`timeline_preview.py` is hardware-free: it prints the generated text sequence and can write SVG plus browser-compatible CSV previews. `timeline_stream.py` uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. `timeline_sweep.py` shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop.
+`timeline_preview.py` is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, and browser-compatible draft JSON previews. `timeline_stream.py` uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. `timeline_sweep.py` shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop.
 
 See also: `ppscpi.md` and `python.md`.
 

@@ -5,6 +5,7 @@
 
 import csv
 import io
+import json
 from dataclasses import dataclass
 from fractions import Fraction
 from html import escape
@@ -188,6 +189,98 @@ class Timeline:
                 ]
             )
         return output.getvalue()
+
+    def to_draft(self) -> dict:
+        """Return a browser Timeline Composer draft dictionary."""
+        channel_index = {name: index for index, name in enumerate(self._channels)}
+        return {
+            "format": "pulsepins.timeline",
+            "version": 1,
+            "time_unit": self.unit,
+            "channels": [
+                {
+                    "name": channel.name,
+                    "bit": channel.bit,
+                    "color": channel.color,
+                }
+                for channel in self._channels.values()
+            ],
+            "pulses": [
+                {
+                    "channel_index": channel_index[pulse.channel],
+                    "start": self._cycles_to_unit_text(pulse.start),
+                    "duration": self._cycles_to_unit_text(pulse.duration),
+                }
+                for pulse in self._pulses
+            ],
+        }
+
+    def to_draft_json(self, indent: Optional[int] = 2) -> str:
+        """Export a browser Timeline Composer draft JSON string."""
+        return json.dumps(self.to_draft(), indent=indent) + "\n"
+
+    @classmethod
+    def from_draft_json(
+        cls,
+        text: str,
+        clock_hz: Optional[float] = None,
+        width: int = 32,
+        initial_value: int = 0,
+    ):
+        """Import browser Timeline Composer draft JSON text."""
+        try:
+            draft = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise TimelineError("Draft JSON is invalid") from exc
+        return cls.from_draft(
+            draft, clock_hz=clock_hz, width=width, initial_value=initial_value
+        )
+
+    @classmethod
+    def from_draft(
+        cls,
+        draft,
+        clock_hz: Optional[float] = None,
+        width: int = 32,
+        initial_value: int = 0,
+    ):
+        """Import a browser Timeline Composer draft dictionary."""
+        if not isinstance(draft, dict):
+            raise TimelineError("Draft must be a JSON object")
+        unit = str(draft.get("time_unit", draft.get("unit", "cycles")))
+        channels = draft.get("channels")
+        pulses = draft.get("pulses")
+        if not isinstance(channels, list):
+            raise TimelineError("Draft channels must be an array")
+        if not isinstance(pulses, list):
+            raise TimelineError("Draft pulses must be an array")
+
+        timeline = cls(unit=unit, clock_hz=clock_hz, width=width, initial_value=initial_value)
+        for index, channel in enumerate(channels):
+            if not isinstance(channel, dict):
+                raise TimelineError("Channel {} must be an object".format(index))
+            name = str(channel.get("name", "CH{}".format(index + 1)))
+            try:
+                bit = int(str(channel.get("bit", index)), 0)
+            except ValueError as exc:
+                raise TimelineError("Channel {} has an invalid bit".format(index)) from exc
+            color = str(channel.get("color", ""))
+            timeline.channel(name, bit, color=color)
+
+        for index, pulse in enumerate(pulses):
+            if not isinstance(pulse, dict):
+                raise TimelineError("Pulse {} must be an object".format(index))
+            raw_channel_index = pulse.get("channel_index", pulse.get("channel"))
+            channel_index = cls._draft_index(raw_channel_index, "Pulse {} channel_index".format(index))
+            if channel_index >= len(timeline._channels):
+                raise TimelineError(
+                    "Pulse {} channel_index is outside the channel list".format(index)
+                )
+            channel_name = list(timeline._channels)[channel_index]
+            start = str(pulse.get("start", "0"))
+            duration = str(pulse.get("duration", "10"))
+            timeline.pulse(channel_name, start=start, duration=duration)
+        return timeline
 
     @classmethod
     def from_csv(
@@ -388,6 +481,13 @@ class Timeline:
     @staticmethod
     def _csv_cell(row, index: int) -> str:
         return row[index].strip() if 0 <= index < len(row) else ""
+
+    @staticmethod
+    def _draft_index(value, label: str) -> int:
+        text = str(value).strip()
+        if not text.isdigit():
+            raise TimelineError("{} must be a non-negative integer".format(label))
+        return int(text)
 
     @staticmethod
     def _as_fraction(value, name: str) -> Fraction:
