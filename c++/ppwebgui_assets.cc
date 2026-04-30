@@ -827,6 +827,7 @@ const char *app_js = R"JS((() => {
   let timelineChannels = [];
   let timelinePulses = [];
   let timelinePreviewGeometry = null;
+  let timelineHoverElements = [];
   const timelinePalette = ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#f43f5e', '#facc15', '#14b8a6', '#fb7185'];
   const timelineTimeUnits = {
     cycles: { label: 'cycles', scale: null },
@@ -1451,26 +1452,85 @@ const char *app_js = R"JS((() => {
     };
   }
 
-  function addPulseFromTimelinePreview(event) {
+  function timelinePreviewTarget(event) {
     const geometry = timelinePreviewGeometry;
     if (!geometry || !geometry.channels.length || hardwareBusy) {
-      return;
+      return null;
     }
     const point = timelineSvgPoint(event);
     if (!point || point.x < geometry.plotX || point.x > geometry.plotX + geometry.plotW) {
-      return;
+      return null;
     }
     const channelIndex = Math.floor((point.y - (geometry.plotY - 16)) / geometry.rowH);
     if (channelIndex < 0 || channelIndex >= geometry.channels.length) {
-      return;
+      return null;
     }
     const startCycle = timelineCycleFromX(point.x, geometry);
-    const start = timelineInputFromCycles(startCycle, geometry.context);
-    const duration = timelineClickDurationInput.value.trim() || '10';
-    addTimelinePulse(geometry.channels[channelIndex].id, start, duration);
+    return {
+      geometry,
+      point,
+      channelIndex,
+      channel: geometry.channels[channelIndex],
+      startCycle,
+      start: timelineInputFromCycles(startCycle, geometry.context),
+      duration: timelineClickDurationInput.value.trim() || '10',
+    };
+  }
+
+  function clearTimelineHover() {
+    for (const element of timelineHoverElements) {
+      element.remove();
+    }
+    timelineHoverElements = [];
+    timelinePreview.style.cursor = '';
+  }
+
+  function appendTimelineHover(element) {
+    element.setAttribute('pointer-events', 'none');
+    timelineHoverElements.push(element);
+    timelinePreview.appendChild(element);
+  }
+
+  function previewDurationCycles(target) {
+    const errors = [];
+    return parseTimelineCount(target.duration, 'Preview click duration', errors, true, target.geometry.context);
+  }
+
+  function renderTimelineHover(event) {
+    clearTimelineHover();
+    const target = timelinePreviewTarget(event);
+    if (!target) {
+      return;
+    }
+    const { geometry, channelIndex, channel, startCycle } = target;
+    const y = geometry.plotY + channelIndex * geometry.rowH;
+    appendTimelineHover(svgElement('rect', { x: geometry.plotX, y: y - 14, width: geometry.plotW, height: 34, rx: 6, fill: channel.color, opacity: 0.14 }));
+    appendTimelineHover(svgElement('line', { x1: target.point.x, y1: y - 14, x2: target.point.x, y2: y + 20, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
+    const durationCycles = previewDurationCycles(target);
+    if (durationCycles === null) {
+      timelinePreview.style.cursor = 'not-allowed';
+      return;
+    }
+    const x = geometry.plotX + timelineRatio(startCycle, geometry.totalCycles) * geometry.plotW;
+    const remaining = Math.max(1, geometry.plotX + geometry.plotW - x);
+    const width = Math.min(remaining, Math.max(1, timelineRatio(durationCycles, geometry.totalCycles) * geometry.plotW));
+    appendTimelineHover(svgElement('rect', { x, y: y - 4, width, height: 22, rx: 4, fill: channel.color, opacity: 0.35, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
+    timelinePreview.style.cursor = 'crosshair';
+  }
+
+  function addPulseFromTimelinePreview(event) {
+    const target = timelinePreviewTarget(event);
+    if (!target) {
+      return;
+    }
+    if (previewDurationCycles(target) === null) {
+      setTimelineState(`Preview click duration is invalid for ${target.geometry.context.unitLabel}.`, true);
+      return;
+    }
+    addTimelinePulse(target.channel.id, target.start, target.duration);
     renderTimelineTables();
     if (compileTimeline().ok) {
-      setTimelineState(`Added ${duration} ${geometry.context.unitLabel} pulse on ${geometry.channels[channelIndex].name} at ${start} ${geometry.context.unitLabel}.`, false);
+      setTimelineState(`Added ${target.duration} ${target.geometry.context.unitLabel} pulse on ${target.channel.name} at ${target.start} ${target.geometry.context.unitLabel}.`, false);
     }
   }
 
@@ -1478,6 +1538,8 @@ const char *app_js = R"JS((() => {
     updateTimelineUnitUi();
     const compiled = compileTimeline();
     timelinePreview.textContent = '';
+    timelineHoverElements = [];
+    timelinePreview.style.cursor = '';
     if (!compiled.ok) {
       timelineSummary.textContent = '';
       timelinePreviewGeometry = null;
@@ -2023,6 +2085,14 @@ const char *app_js = R"JS((() => {
 
   timelinePreview.addEventListener('click', (event) => {
     addPulseFromTimelinePreview(event);
+  });
+
+  timelinePreview.addEventListener('mousemove', (event) => {
+    renderTimelineHover(event);
+  });
+
+  timelinePreview.addEventListener('mouseleave', () => {
+    clearTimelineHover();
   });
 
   timelineTimeUnitSelect.addEventListener('change', () => {
