@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pulsepins-host"
+version = "0.1.0"
+description = "Pure-Python host-side PulsePins helpers for ppscpi and notebooks"
+readme = "README"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+  { name = "Rok Zitko" },
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
+
+[tool.setuptools]
+packages = ["pulsepins"]
+
+[project.scripts]
+pulsepins-ppscpi-check = "pulsepins.cli:ppscpi_check_main"
+pulsepins-ppscpi-hello = "pulsepins.cli:ppscpi_hello_main"
+pulsepins-timeline-preview = "pulsepins.cli:timeline_preview_main"
+pulsepins-timeline-stream = "pulsepins.cli:timeline_stream_main"
+pulsepins-timeline-sweep = "pulsepins.cli:timeline_sweep_main"

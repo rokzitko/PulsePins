@@ -51,6 +51,8 @@ class FakeScpiHandler(socketserver.StreamRequestHandler):
                     self._write("FAILURE")
                 else:
                     self._write("SUCCESS")
+            elif line == "TEST1":
+                self._write("SUCCESS")
             elif line == "SYST:ERR?":
                 if self.server.errors:
                     self._write('100, "{}"'.format(self.server.errors.pop(0)))
@@ -147,6 +149,13 @@ def test_stream_failure_includes_error_queue(scpi_server):
 
     assert "STREAM returned 'FAILURE'" in str(excinfo.value)
     assert "STREAM failed with rc=1" in str(excinfo.value)
+
+
+def test_test1_runs_builtin_self_test(scpi_server):
+    with make_client(scpi_server) as pp:
+        assert pp.test1() == "SUCCESS"
+
+    assert "TEST1" in scpi_server.commands
 
 
 def test_rejects_oversize_sequence_line_before_send(scpi_server):

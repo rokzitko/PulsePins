@@ -9,11 +9,19 @@ PulsePins has two Python-facing surfaces:
 
 The host-side client lives in `python/pulsepins/` and has no dependency beyond the Python standard library. It is the recommended Python entry point for notebooks running on a laptop or workstation while the DE10-Nano runs `ppscpi`.
 
-From a repository checkout:
+From a repository checkout, either set `PYTHONPATH`:
 
 ```bash
 export PYTHONPATH=/path/to/PulsePins/python
 ```
+
+or install the pure-Python host package in editable mode:
+
+```bash
+python3 -m pip install -e /path/to/PulsePins/python
+```
+
+The editable install also provides small example commands: `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Use `pulsepins-ppscpi-check --self-test` when you want the connectivity check to also run the built-in `TEST1` hardware smoke path.
 
 Minimal example:
 
@@ -31,7 +39,7 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-The client exposes `idn()`, `reset()`, `clear_status()`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
+The client exposes `idn()`, `reset()`, `clear_status()`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
 
 The same package also includes a dependency-free `Timeline` builder for simple named-channel pulse programs:
 
@@ -51,14 +59,23 @@ with PulsePins("de10nano") as pp:
 timeline
 ```
 
-In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns the generated PulsePins text sequence for inspection or manual editing. `Timeline.to_csv()` / `Timeline.from_csv(...)` use the same `channel,bit,start,duration,color` pulse-table CSV format as the browser Timeline Composer. `Timeline.to_draft_json()` / `Timeline.from_draft_json(...)` use the browser draft JSON format. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
+In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns the generated PulsePins text sequence for inspection or manual editing. `Timeline.to_csv()` / `Timeline.from_csv(...)` use the same `channel,bit,start,duration,color` pulse-table CSV format as the browser Timeline Composer. `Timeline.to_draft_json()` / `Timeline.from_draft_json(...)` use the browser draft JSON format. `Timeline.to_vcd(...)` exports a scalar VCD trace for waveform viewers. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
 
 Runnable examples:
 
 ```bash
-PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json
+PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
 PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
 PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
+```
+
+After `python3 -m pip install -e python`, the same workflows can be run as:
+
+```bash
+pulsepins-ppscpi-check de10nano --self-test
+pulsepins-timeline-preview --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
+pulsepins-timeline-stream de10nano --print-sequence
+pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ```
 
 ## Board-native bindings

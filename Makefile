@@ -40,7 +40,7 @@ dev-check:
 	$(MAKE) -C docs site
 	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python build
 	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python test-host
-	python3 -m py_compile python/test.py python/test_scpi_client.py python/test_timeline.py python/pptool.py python/pulsepins/*.py python/examples/*.py tests/test2.py
+	python3 -m py_compile python/test.py python/test_cli.py python/test_scpi_client.py python/test_timeline.py python/pptool.py python/pulsepins/*.py python/examples/*.py tests/test2.py
 
 ${SOPC}: ${QSYSIN} ${IPSOURCE} $(wildcard *_hw.tcl)
 	${QSYS} --synthesis=VERILOG ${QSYSIN} 2>&1 | tee build-log-qsys

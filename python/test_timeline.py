@@ -163,3 +163,26 @@ def test_timeline_import_draft_rejects_bad_channel_index():
                 "pulses": [{"channel_index": 1, "start": 0, "duration": 1}],
             }
         )
+
+
+def test_timeline_exports_scalar_vcd():
+    tl = Timeline()
+    tl.channel("laser", 0)
+    tl.channel("camera", 1)
+    tl.pulse("laser", 0, 5)
+    tl.pulse("camera", 3, 5)
+
+    vcd = tl.to_vcd(timescale="10ns")
+    assert "$timescale 10ns $end" in vcd
+    assert "$var wire 1 ! laser[0] $end" in vcd
+    assert "$var wire 1 \" camera[1] $end" in vcd
+    assert "#0\n1!\n0\"" in vcd
+    assert "#3\n1!\n1\"" in vcd
+    assert "#5\n0!\n1\"" in vcd
+    assert "#8\n0!\n0\"" in vcd
+
+
+def test_timeline_vcd_rejects_bad_tick_scale():
+    tl = Timeline()
+    with pytest.raises(TimelineError, match="ticks_per_cycle must be positive"):
+        tl.to_vcd(ticks_per_cycle=0)

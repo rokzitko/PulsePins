@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Rok Zitko
+
+import pulsepins.cli as cli
+
+
+def test_timeline_preview_cli_writes_sidecar_files(tmp_path, capsys):
+    svg_path = tmp_path / "timeline.svg"
+    csv_path = tmp_path / "timeline.csv"
+    draft_path = tmp_path / "timeline.json"
+    vcd_path = tmp_path / "timeline.vcd"
+
+    cli.timeline_preview_main(
+        [
+            "--svg",
+            str(svg_path),
+            "--csv",
+            str(csv_path),
+            "--draft",
+            str(draft_path),
+            "--vcd",
+            str(vcd_path),
+        ]
+    )
+
+    output = capsys.readouterr().out
+    assert "d 1000 0x4" in output
+    assert svg_path.read_text(encoding="utf-8").startswith(
+        '<svg xmlns="http://www.w3.org/2000/svg"'
+    )
+    assert csv_path.read_text(encoding="utf-8").startswith(
+        "channel,bit,start,duration,color\n"
+    )
+    assert '"format": "pulsepins.timeline"' in draft_path.read_text(
+        encoding="utf-8"
+    )
+    assert "$timescale 10ns $end" in vcd_path.read_text(encoding="utf-8")
+
+
+def test_timeline_sweep_cli_dry_run(capsys):
+    cli.timeline_sweep_main(["--dry-run", "--delays-us", "0", "5"])
+
+    output = capsys.readouterr().out
+    assert "# camera delay: 0.0 us" in output
+    assert "# camera delay: 5.0 us" in output
+    assert output.count("f\n") == 2
+
+
+def test_ppscpi_check_cli_reports_identity(monkeypatch, capsys):
+    calls = []
+
+    class FakePulsePins:
+        def __init__(self, host, port=5025):
+            calls.append((host, port))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def idn(self):
+            return "PulsePins,TEST"
+
+        def check_enabled(self):
+            return True
+
+        def errors(self):
+            return []
+
+        def test1(self):
+            return "SUCCESS"
+
+    monkeypatch.setattr(cli, "PulsePins", FakePulsePins)
+    cli.ppscpi_check_main(["board.local", "--port", "1234", "--self-test"])
+
+    assert calls == [("board.local", 1234)]
+    output = capsys.readouterr().out
+    assert "PulsePins,TEST" in output
+    assert "CHECK ON" in output
+    assert "No SCPI errors" in output
+    assert "TEST1 SUCCESS" in output

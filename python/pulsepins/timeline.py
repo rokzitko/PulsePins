@@ -402,6 +402,57 @@ class Timeline:
         parts.append("</svg>")
         return "".join(parts)
 
+    def to_vcd(self, timescale: str = "1ns", ticks_per_cycle: int = 1) -> str:
+        """Export defined timeline channels as a simple scalar VCD trace.
+
+        By default VCD timestamps use one tick per PulsePins cycle. For a
+        100 MHz streamer clock, pass ``timescale="10ns"`` and keep
+        ``ticks_per_cycle=1`` to make VCD time match wall-clock time.
+        """
+        if not isinstance(timescale, str) or not timescale.strip():
+            raise TimelineError("timescale must be a non-empty string")
+        if not isinstance(ticks_per_cycle, int) or isinstance(ticks_per_cycle, bool):
+            raise TimelineError("ticks_per_cycle must be an integer")
+        if ticks_per_cycle <= 0:
+            raise TimelineError("ticks_per_cycle must be positive")
+        self._validate_overlaps()
+
+        channel_items = list(self._channels.values())
+        ids = [self._vcd_identifier(index) for index in range(len(channel_items))]
+        lines = [
+            "$timescale {} $end".format(timescale.strip()),
+            "$scope module pulsepins $end",
+        ]
+        for channel, identifier in zip(channel_items, ids):
+            lines.append(
+                "$var wire 1 {} {} $end".format(identifier, self._vcd_name(channel))
+            )
+        lines.extend(["$upscope $end", "$enddefinitions $end"])
+
+        def emit_values(value: int) -> None:
+            for channel, identifier in zip(channel_items, ids):
+                bit = 1 if (value & (1 << channel.bit)) else 0
+                lines.append("{}{}".format(bit, identifier))
+
+        previous_value = None
+        current_cycle = 0
+        for duration, value in self.records():
+            if value != previous_value:
+                lines.append("#{}".format(current_cycle * ticks_per_cycle))
+                emit_values(value)
+                previous_value = value
+            current_cycle += duration
+
+        if previous_value is None:
+            lines.append("#0")
+            emit_values(self.initial_value & ~self._channel_mask())
+        else:
+            final_value = self.initial_value & ~self._channel_mask()
+            if final_value != previous_value:
+                lines.append("#{}".format(current_cycle * ticks_per_cycle))
+                emit_values(final_value)
+        return "\n".join(lines) + "\n"
+
     def _repr_svg_(self) -> str:
         return self.to_svg()
 
@@ -488,6 +539,22 @@ class Timeline:
         if not text.isdigit():
             raise TimelineError("{} must be a non-negative integer".format(label))
         return int(text)
+
+    @staticmethod
+    def _vcd_identifier(index: int) -> str:
+        alphabet = [chr(code) for code in range(33, 127)]
+        base = len(alphabet)
+        index += 1
+        chars = []
+        while index:
+            index, remainder = divmod(index - 1, base)
+            chars.append(alphabet[remainder])
+        return "".join(chars)
+
+    @staticmethod
+    def _vcd_name(channel: _Channel) -> str:
+        name = "{}[{}]".format(channel.name, channel.bit)
+        return "".join(ch if ch.isalnum() or ch in "_[]" else "_" for ch in name)
 
     @staticmethod
     def _as_fraction(value, name: str) -> Fraction:

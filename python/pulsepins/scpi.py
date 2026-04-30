@@ -177,6 +177,12 @@ class PulsePins:
         self._expect_response("STREAM", response, "SUCCESS")
         return response
 
+    def test1(self) -> str:
+        """Run the built-in ``ppscpi`` short self-test and return ``SUCCESS``."""
+        response = self.query("TEST1")
+        self._expect_response("TEST1", response, "SUCCESS")
+        return response
+
     def run(self, sequence, check: Optional[bool] = None, **sequence_options) -> str:
         """Load and stream a sequence in one call.
 

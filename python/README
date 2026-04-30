@@ -9,10 +9,15 @@ The Python extension modules are intended to be built on the DE10-Nano board its
 Host-side Python builds are useful for import/syntax/API testing, but true cross-compilation of
 the Python bindings is not currently supported.
 
-The `pulsepins` SCPI client does not need a build step. From a checkout, use
-`PYTHONPATH=/path/to/PulsePins/python` and connect to a board running `ppscpi`.
+The `pulsepins` SCPI client does not need a build step. From a checkout, either use
+`PYTHONPATH=/path/to/PulsePins/python` or install the host-side package in editable mode:
+
+python3 -m pip install -e /path/to/PulsePins/python
+
+Then connect to a board running `ppscpi`.
+The editable install provides `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep` commands. Use `pulsepins-ppscpi-check --self-test` to also run the built-in `TEST1` path.
 It also includes a dependency-free `Timeline` builder that can generate PulsePins text sequences,
-round-trip browser-compatible Timeline CSV/draft JSON, and render SVG previews in notebooks.
+round-trip browser-compatible Timeline CSV/draft JSON, export VCD previews, and render SVG previews in notebooks.
 See `examples/timeline_preview.py` and `examples/timeline_stream.py` for small runnable workflows.
 `examples/timeline_sweep.py` shows a simple host-side parameter sweep.
 

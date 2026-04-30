@@ -71,6 +71,14 @@ The lightweight host-side Python client lives in `python/pulsepins/` and uses on
 export PYTHONPATH=/path/to/PulsePins/python
 ```
 
+For notebooks, an editable host-side install is often more convenient:
+
+```bash
+python3 -m pip install -e /path/to/PulsePins/python
+```
+
+That install also provides example commands such as `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Add `--self-test` to `pulsepins-ppscpi-check` to run the built-in `TEST1` hardware smoke path after connecting.
+
 Then a notebook or script can drive the board with:
 
 ```python
@@ -109,14 +117,23 @@ with PulsePins("de10nano") as pp:
     pp.run(timeline, force_trigger=True)
 ```
 
-`Timeline.to_sequence(...)` returns the generated text sequence, `Timeline.to_csv()` writes browser-compatible Timeline CSV, `Timeline.to_draft_json()` writes browser-compatible draft JSON, and notebooks render a lightweight SVG preview when the timeline object is evaluated.
+`Timeline.to_sequence(...)` returns the generated text sequence, `Timeline.to_csv()` writes browser-compatible Timeline CSV, `Timeline.to_draft_json()` writes browser-compatible draft JSON, `Timeline.to_vcd(...)` writes a scalar waveform trace, and notebooks render a lightweight SVG preview when the timeline object is evaluated.
 
 The same workflow is available as runnable examples:
 
 ```bash
-PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json
+PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
 PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
 PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
+```
+
+With the editable install, use the installed command names instead:
+
+```bash
+pulsepins-ppscpi-check de10nano --self-test
+pulsepins-timeline-preview --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
+pulsepins-timeline-stream de10nano --print-sequence
+pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ```
 
 ### Notes
