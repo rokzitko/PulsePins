@@ -1626,6 +1626,23 @@ const char *app_js = R"JS((() => {
     setTimelineState(removed ? 'Deleted selected pulse.' : 'Selected pulse was already gone.', false);
   }
 
+  function clearTimelineSelection() {
+    if (!timelineSelectedPulseId) {
+      return;
+    }
+    timelineSelectedPulseId = null;
+    renderTimelinePreview();
+    setTimelineState('Cleared selected pulse.', false);
+  }
+
+  function keyboardInputTarget(element) {
+    if (!element) {
+      return false;
+    }
+    const tag = element.tagName;
+    return element.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  }
+
   function timelineDragCandidate(event) {
     const drag = timelineDrag;
     if (!drag) {
@@ -2324,6 +2341,19 @@ const char *app_js = R"JS((() => {
 
   window.addEventListener('mouseup', (event) => {
     finishTimelinePreviewDrag(event);
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (keyboardInputTarget(document.activeElement)) {
+      return;
+    }
+    if ((event.key === 'Delete' || event.key === 'Backspace') && timelineSelectedPulseId) {
+      event.preventDefault();
+      deleteSelectedTimelinePulse();
+    } else if (event.key === 'Escape' && timelineSelectedPulseId) {
+      event.preventDefault();
+      clearTimelineSelection();
+    }
   });
 
   timelineTimeUnitSelect.addEventListener('change', () => {
