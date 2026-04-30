@@ -39,6 +39,8 @@ class FakeScpiHandler(socketserver.StreamRequestHandler):
                 self.server.check = False
             elif line == "CHECK?":
                 self._write("TRUE" if self.server.check else "FALSE")
+            elif line == "CLOCK:STREAMER?":
+                self._write("100000000")
             elif line.startswith("SEQ"):
                 if "BAD" in line:
                     self.server.errors.append("Execution error: bad sequence")
@@ -156,6 +158,20 @@ def test_test1_runs_builtin_self_test(scpi_server):
         assert pp.test1() == "SUCCESS"
 
     assert "TEST1" in scpi_server.commands
+
+
+def test_streamer_clock_hz_query(scpi_server):
+    with make_client(scpi_server) as pp:
+        assert pp.streamer_clock_hz() == 100_000_000.0
+
+
+def test_timeline_factory_uses_board_clock_for_absolute_units(scpi_server):
+    with make_client(scpi_server) as pp:
+        timeline = pp.timeline(unit="us")
+
+    assert timeline.unit == "us"
+    assert timeline.clock_hz == 100_000_000.0
+    assert "CLOCK:STREAMER?" in scpi_server.commands
 
 
 def test_rejects_oversize_sequence_line_before_send(scpi_server):

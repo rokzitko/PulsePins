@@ -4,6 +4,7 @@
 // SCPI server entry point for controlling PulsePins over Ethernet.
 
 #include <iostream>
+#include <iomanip>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -116,6 +117,13 @@ private:
       if (error_queue_.empty()) return std::string("0, \"No error\"");
       auto e = error_queue_.front(); error_queue_.pop_front();
       return "100, \"" + e + "\"";
+    });
+    // CLOCK:STREAMER?
+    add_node({"CLOCk","STREamer"}, {}, [this]() {
+      auto lock = fpga.acquire_lock();
+      std::ostringstream out;
+      out << std::setprecision(17) << fpga.streamer_freq();
+      return out.str();
     });
     // test1 (as in pptest)
     add_node({"TEST1"},

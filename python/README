@@ -15,11 +15,50 @@ The `pulsepins` SCPI client does not need a build step. From a checkout, either 
 python3 -m pip install -e /path/to/PulsePins/python
 
 Then connect to a board running `ppscpi`.
-The editable install provides `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep` commands. Use `pulsepins-ppscpi-check --self-test` to also run the built-in `TEST1` path.
+The editable install provides `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-notebook-workflow`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep` commands. Use `pulsepins-ppscpi-check --self-test` to also run the built-in `TEST1` path.
 It also includes a dependency-free `Timeline` builder that can generate PulsePins text sequences,
 round-trip browser-compatible Timeline CSV/draft JSON, export VCD previews, and render SVG previews in notebooks.
 See `examples/timeline_preview.py` and `examples/timeline_stream.py` for small runnable workflows.
 `examples/timeline_sweep.py` shows a simple host-side parameter sweep.
+
+Host-side board test from a checkout:
+
+1. If you use a virtual environment, activate it before installing or running the commands. For example:
+
+   source .pyenv/bin/activate
+
+   Conda users should activate their environment instead, for example:
+
+   conda activate pulsepins
+
+2. Install the host-side package in editable mode:
+
+   python3 -m pip install -e ./python
+
+3. Make sure the board is running `ppscpi`, then check connectivity:
+
+   pulsepins-ppscpi-check de10nano
+
+4. To also run the built-in `TEST1` hardware smoke path:
+
+   pulsepins-ppscpi-check de10nano --self-test
+
+5. To run the notebook-style workflow without touching hardware:
+
+   pulsepins-notebook-workflow --output-dir /tmp/pulsepins-previews
+
+6. To run the notebook-style workflow against the board:
+
+   pulsepins-notebook-workflow de10nano --output-dir /tmp/pulsepins-live --run
+
+If `pulsepins-ppscpi-check` is not found after installation, the active environment may be wrong or the pip script directory may not be in `PATH`. Activate the intended virtualenv/conda environment, or add the user script directory:
+
+export PATH="$HOME/.local/bin:$PATH"
+
+Without installing, run the examples directly from the checkout:
+
+PYTHONPATH=python python3 python/examples/ppscpi_check.py de10nano --self-test
+PYTHONPATH=python python3 python/examples/notebook_workflow.py de10nano --output-dir /tmp/pulsepins-live --run
 
 On the DE10-Nano, do the following:
 

@@ -48,6 +48,7 @@ PulsePins-specific commands:
 * `SEQ <data>` - parse and load a sequence from textual representation, including `f`, `final`, and control-flow records supported by `parse_sequence_from_stream(...)`
 * `CHECK <bool>` - enable or disable readback checking during `STREAM`
 * `CHECK?` - query the current check setting
+* `CLOCK:STREAMER?` - query the measured streamer clock frequency in Hz
 * `STREAM` - send the currently loaded sequence and trigger execution
 * `DISCONNECT` - close the current client session; the `ppscpi` server keeps running
 * `TERMINATE` - stop the `ppscpi` server process
@@ -77,7 +78,7 @@ For notebooks, an editable host-side install is often more convenient:
 python3 -m pip install -e /path/to/PulsePins/python
 ```
 
-That install also provides example commands such as `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Add `--self-test` to `pulsepins-ppscpi-check` to run the built-in `TEST1` hardware smoke path after connecting.
+That install also provides example commands such as `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-notebook-workflow`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Add `--self-test` to `pulsepins-ppscpi-check` to run the built-in `TEST1` hardware smoke path after connecting.
 
 Then a notebook or script can drive the board with:
 
@@ -86,6 +87,7 @@ from pulsepins import PulsePins
 
 with PulsePins("de10nano") as pp:
     print(pp.idn())
+    print(pp.streamer_clock_hz())
     pp.reset()
     pp.load_sequence("""
     d 10 0xff
@@ -104,15 +106,14 @@ If `SEQ` or `STREAM` returns an error response, the Python client drains `SYST:E
 For notebook-oriented pulse construction, the same package provides `Timeline`:
 
 ```python
-from pulsepins import PulsePins, Timeline
-
-timeline = Timeline(unit="us", clock_hz=100_000_000)
-timeline.channel("laser", bit=0)
-timeline.channel("camera", bit=1)
-timeline.pulse("laser", start=10, duration=5)
-timeline.pulse("camera", start=20, duration=10)
+from pulsepins import PulsePins
 
 with PulsePins("de10nano") as pp:
+    timeline = pp.timeline(unit="us")
+    timeline.channel("laser", bit=0)
+    timeline.channel("camera", bit=1)
+    timeline.pulse("laser", start=10, duration=5)
+    timeline.pulse("camera", start=20, duration=10)
     pp.reset()
     pp.run(timeline, force_trigger=True)
 ```
@@ -131,6 +132,7 @@ With the editable install, use the installed command names instead:
 
 ```bash
 pulsepins-ppscpi-check de10nano --self-test
+pulsepins-notebook-workflow de10nano --output-dir previews --run
 pulsepins-timeline-preview --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
 pulsepins-timeline-stream de10nano --print-sequence
 pulsepins-timeline-sweep de10nano --delays-us 0 5 10

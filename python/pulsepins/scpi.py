@@ -177,6 +177,31 @@ class PulsePins:
         self._expect_response("STREAM", response, "SUCCESS")
         return response
 
+    def streamer_clock_hz(self) -> float:
+        """Return the streamer clock frequency measured by ``ppscpi`` startup."""
+        response = self.query("CLOCK:STREAMER?")
+        try:
+            hz = float(response)
+        except ValueError as exc:
+            raise PulsePinsProtocolError(
+                "Unexpected CLOCK:STREAMER? response: {!r}".format(response)
+            ) from exc
+        if not hz > 0.0:
+            raise PulsePinsProtocolError(
+                "CLOCK:STREAMER? returned a non-positive frequency: {!r}".format(
+                    response
+                )
+            )
+        return hz
+
+    def timeline(self, unit: str = "cycles", **timeline_options):
+        """Create a ``Timeline``, using board clock Hz for absolute units."""
+        from .timeline import Timeline
+
+        if unit not in ("cycle", "cycles") and "clock_hz" not in timeline_options:
+            timeline_options["clock_hz"] = self.streamer_clock_hz()
+        return Timeline(unit=unit, **timeline_options)
+
     def test1(self) -> str:
         """Run the built-in ``ppscpi`` short self-test and return ``SUCCESS``."""
         response = self.query("TEST1")

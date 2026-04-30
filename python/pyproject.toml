@@ -26,6 +26,7 @@ packages = ["pulsepins"]
 [project.scripts]
 pulsepins-ppscpi-check = "pulsepins.cli:ppscpi_check_main"
 pulsepins-ppscpi-hello = "pulsepins.cli:ppscpi_hello_main"
+pulsepins-notebook-workflow = "pulsepins.cli:notebook_workflow_main"
 pulsepins-timeline-preview = "pulsepins.cli:timeline_preview_main"
 pulsepins-timeline-stream = "pulsepins.cli:timeline_stream_main"
 pulsepins-timeline-sweep = "pulsepins.cli:timeline_sweep_main"

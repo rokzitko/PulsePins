@@ -203,7 +203,7 @@ For repeated notebook work, an editable install is usually more convenient:
 python3 -m pip install -e /path/to/PulsePins/python
 ```
 
-That install provides example commands such as `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Add `--self-test` to `pulsepins-ppscpi-check` when you want to run the built-in `TEST1` smoke path too.
+That install provides example commands such as `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-notebook-workflow`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Add `--self-test` to `pulsepins-ppscpi-check` when you want to run the built-in `TEST1` smoke path too.
 
 In Python or a notebook:
 
@@ -241,15 +241,14 @@ This workflow is the best first step for notebook integration. It avoids install
 For named-channel pulse construction, use `Timeline`:
 
 ```python
-from pulsepins import PulsePins, Timeline
-
-timeline = Timeline(unit="us", clock_hz=100_000_000)
-timeline.channel("laser", bit=0)
-timeline.channel("camera", bit=1)
-timeline.pulse("laser", start=10, duration=5)
-timeline.pulse("camera", start=20, duration=10)
+from pulsepins import PulsePins
 
 with PulsePins("de10nano") as pp:
+    timeline = pp.timeline(unit="us")
+    timeline.channel("laser", bit=0)
+    timeline.channel("camera", bit=1)
+    timeline.pulse("laser", start=10, duration=5)
+    timeline.pulse("camera", start=20, duration=10)
     pp.reset()
     pp.run(timeline, force_trigger=True)
 ```
@@ -260,18 +259,20 @@ Two runnable Timeline examples are included:
 PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
 PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
 PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
+PYTHONPATH=python python3 python/examples/notebook_workflow.py --output-dir previews
 ```
 
 After `python3 -m pip install -e python`, the same commands are available without repository paths:
 
 ```bash
 pulsepins-ppscpi-check de10nano --self-test
+pulsepins-notebook-workflow de10nano --output-dir previews --run
 pulsepins-timeline-preview --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
 pulsepins-timeline-stream de10nano --print-sequence
 pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ```
 
-`timeline_preview.py` is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. `timeline_stream.py` uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. `timeline_sweep.py` shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop.
+`timeline_preview.py` is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. `timeline_stream.py` uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. `timeline_sweep.py` shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop. `notebook_workflow.py` combines install notes, clock discovery, preview export, sweep generation, and optional live streaming with `--run`.
 
 See also: `ppscpi.md` and `python.md`.
 

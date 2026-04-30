@@ -46,6 +46,24 @@ def test_timeline_sweep_cli_dry_run(capsys):
     assert output.count("f\n") == 2
 
 
+def test_notebook_workflow_cli_dry_run(tmp_path, capsys):
+    output_dir = tmp_path / "previews"
+
+    cli.notebook_workflow_main(
+        ["--output-dir", str(output_dir), "--delays-us", "0", "5"]
+    )
+
+    output = capsys.readouterr().out
+    assert "python3 -m pip install -e /path/to/PulsePins/python" in output
+    assert "# Dry run using clock_hz=100000000" in output
+    assert "# Generated sequence:" in output
+    assert "# Sweep camera delay: 5.0 us" in output
+    assert (output_dir / "timeline.svg").exists()
+    assert (output_dir / "timeline.csv").exists()
+    assert (output_dir / "timeline.json").exists()
+    assert (output_dir / "timeline.vcd").exists()
+
+
 def test_ppscpi_check_cli_reports_identity(monkeypatch, capsys):
     calls = []
 
@@ -62,6 +80,9 @@ def test_ppscpi_check_cli_reports_identity(monkeypatch, capsys):
         def idn(self):
             return "PulsePins,TEST"
 
+        def streamer_clock_hz(self):
+            return 100_000_000.0
+
         def check_enabled(self):
             return True
 
@@ -77,6 +98,7 @@ def test_ppscpi_check_cli_reports_identity(monkeypatch, capsys):
     assert calls == [("board.local", 1234)]
     output = capsys.readouterr().out
     assert "PulsePins,TEST" in output
+    assert "STREAMER_CLOCK_HZ 100000000" in output
     assert "CHECK ON" in output
     assert "No SCPI errors" in output
     assert "TEST1 SUCCESS" in output

@@ -14,7 +14,7 @@ For notebook work from a checkout, install it with:
 
 python3 -m pip install -e /path/to/PulsePins/python
 
-The installed console commands mirror the scripts in `python/examples/`.
+The installed console commands mirror the scripts in `python/examples/`, including the notebook-style `pulsepins-notebook-workflow` walkthrough.
 
 The default Python binding build uses `-O2` and omits `-g` to reduce memory pressure.
 If you need debug symbols, use `make PY_DEBUG=1` in `python/`.

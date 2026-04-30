@@ -21,7 +21,7 @@ or install the pure-Python host package in editable mode:
 python3 -m pip install -e /path/to/PulsePins/python
 ```
 
-The editable install also provides small example commands: `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Use `pulsepins-ppscpi-check --self-test` when you want the connectivity check to also run the built-in `TEST1` hardware smoke path.
+The editable install also provides small example commands: `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-notebook-workflow`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Use `pulsepins-ppscpi-check --self-test` when you want the connectivity check to also run the built-in `TEST1` hardware smoke path.
 
 Minimal example:
 
@@ -39,20 +39,19 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-The client exposes `idn()`, `reset()`, `clear_status()`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
+The client exposes `idn()`, `reset()`, `clear_status()`, `streamer_clock_hz()`, `timeline(...)`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
 
 The same package also includes a dependency-free `Timeline` builder for simple named-channel pulse programs:
 
 ```python
-from pulsepins import PulsePins, Timeline
-
-timeline = Timeline(unit="us", clock_hz=100_000_000)
-timeline.channel("laser", bit=0)
-timeline.channel("camera", bit=1)
-timeline.pulse("laser", start=10, duration=5)
-timeline.pulse("camera", start=20, duration=10)
+from pulsepins import PulsePins
 
 with PulsePins("de10nano") as pp:
+    timeline = pp.timeline(unit="us")
+    timeline.channel("laser", bit=0)
+    timeline.channel("camera", bit=1)
+    timeline.pulse("laser", start=10, duration=5)
+    timeline.pulse("camera", start=20, duration=10)
     pp.reset()
     pp.run(timeline, force_trigger=True)
 
@@ -67,12 +66,14 @@ Runnable examples:
 PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
 PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
 PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
+PYTHONPATH=python python3 python/examples/notebook_workflow.py --output-dir previews
 ```
 
 After `python3 -m pip install -e python`, the same workflows can be run as:
 
 ```bash
 pulsepins-ppscpi-check de10nano --self-test
+pulsepins-notebook-workflow de10nano --output-dir previews --run
 pulsepins-timeline-preview --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
 pulsepins-timeline-stream de10nano --print-sequence
 pulsepins-timeline-sweep de10nano --delays-us 0 5 10
