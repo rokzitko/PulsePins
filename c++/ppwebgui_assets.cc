@@ -396,6 +396,20 @@ const char *index_html = R"HTML(<!doctype html>
         </label>
       </div>
 
+      <div class="subpanel">
+        <div class="panel-heading">
+          <h3>Pulse CSV</h3>
+          <div class="timeline-actions">
+            <button id="timeline-export-csv" type="button" class="secondary-button">Export CSV</button>
+            <button id="timeline-import-csv" type="button" class="secondary-button">Import CSV</button>
+          </div>
+        </div>
+        <label>Pulse table
+          <textarea id="timeline-csv" rows="6" placeholder="channel,bit,start,duration,color"></textarea>
+        </label>
+        <div class="meta">CSV uses the currently selected pulse time unit. Import creates channels from the CSV rows.</div>
+      </div>
+
       <div id="timeline-summary" class="meta mono"></div>
       <svg id="timeline-preview" class="timeline-preview" viewBox="0 0 900 180" role="img" aria-label="Timeline preview"></svg>
     </section>
@@ -767,6 +781,9 @@ const char *app_js = R"JS((() => {
   const timelineExportDraftButton = document.getElementById('timeline-export-draft');
   const timelineImportDraftButton = document.getElementById('timeline-import-draft');
   const timelineDraftTextarea = document.getElementById('timeline-draft-json');
+  const timelineExportCsvButton = document.getElementById('timeline-export-csv');
+  const timelineImportCsvButton = document.getElementById('timeline-import-csv');
+  const timelineCsvTextarea = document.getElementById('timeline-csv');
   const timelineTimeUnitSelect = document.getElementById('timeline-time-unit');
   const timelineClockNote = document.getElementById('timeline-clock-note');
   const timelineStartHeading = document.getElementById('timeline-start-heading');
@@ -881,7 +898,7 @@ const char *app_js = R"JS((() => {
     setBusy(combinerForm, busy);
     setBusy(streamForm, busy);
     timelineTimeUnitSelect.disabled = busy;
-    for (const button of [timelineAddChannelButton, timelineAddPulseButton, timelineGenerateButton, timelineLoadExampleButton, timelineExportDraftButton, timelineImportDraftButton]) {
+    for (const button of [timelineAddChannelButton, timelineAddPulseButton, timelineGenerateButton, timelineLoadExampleButton, timelineExportDraftButton, timelineImportDraftButton, timelineExportCsvButton, timelineImportCsvButton]) {
       button.disabled = busy;
     }
   }
@@ -1549,6 +1566,149 @@ const char *app_js = R"JS((() => {
     }
   }
 
+  function csvEscape(value) {
+    const text = String(value);
+    if (/[",\r\n]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+  }
+
+  function parseCsvRows(text) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let quoted = false;
+    for (let i = 0; i < text.length; ++i) {
+      const ch = text[i];
+      if (quoted) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') {
+            field += '"';
+            ++i;
+          } else {
+            quoted = false;
+          }
+        } else {
+          field += ch;
+        }
+        continue;
+      }
+      if (ch === '"') {
+        if (field.length !== 0) {
+          throw new Error('Unexpected quote in CSV field');
+        }
+        quoted = true;
+      } else if (ch === ',') {
+        row.push(field);
+        field = '';
+      } else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i + 1] === '\n') {
+          ++i;
+        }
+        row.push(field);
+        rows.push(row);
+        row = [];
+        field = '';
+      } else {
+        field += ch;
+      }
+    }
+    if (quoted) {
+      throw new Error('Unclosed quote in CSV field');
+    }
+    if (field.length || row.length) {
+      row.push(field);
+      rows.push(row);
+    }
+    return rows.filter((candidate) => candidate.some((cell) => String(cell).trim() !== ''));
+  }
+
+  function csvHeaderMap(row) {
+    const names = row.map((cell) => String(cell).trim().toLowerCase());
+    const channel = names.indexOf('channel');
+    const start = names.indexOf('start');
+    const duration = names.indexOf('duration');
+    if (channel < 0 || start < 0 || duration < 0) {
+      return null;
+    }
+    return { channel, bit: names.indexOf('bit'), start, duration, color: names.indexOf('color') };
+  }
+
+  function csvCell(row, index) {
+    return index >= 0 && index < row.length ? String(row[index]).trim() : '';
+  }
+
+  function exportTimelineCsv() {
+    const channelById = new Map(timelineChannels.map((channel) => [channel.id, channel]));
+    const lines = [['channel', 'bit', 'start', 'duration', 'color'].map(csvEscape).join(',')];
+    for (const pulse of timelinePulses) {
+      const channel = channelById.get(pulse.channelId);
+      if (!channel) {
+        continue;
+      }
+      lines.push([channel.name, channel.bit, pulse.start, pulse.duration, channel.color].map(csvEscape).join(','));
+    }
+    timelineCsvTextarea.value = `${lines.join('\n')}\n`;
+    setTimelineState(`Exported CSV with ${timelinePulses.length} pulse rows using ${timelineTimeUnitSelect.value}.`, false);
+  }
+
+  function importTimelineCsv() {
+    const previous = {
+      nextChannelId: timelineNextChannelId,
+      nextPulseId: timelineNextPulseId,
+      channels: timelineChannels,
+      pulses: timelinePulses,
+    };
+    try {
+      const rows = parseCsvRows(timelineCsvTextarea.value);
+      if (rows.length === 0) {
+        throw new Error('CSV has no pulse rows');
+      }
+      const header = csvHeaderMap(rows[0]);
+      const firstDataRow = header ? 1 : 0;
+      const columns = header || { channel: 0, bit: 1, start: 2, duration: 3, color: 4 };
+      const importedChannels = new Map();
+
+      resetTimelineState();
+      for (let i = firstDataRow; i < rows.length; ++i) {
+        const row = rows[i];
+        const channelName = csvCell(row, columns.channel);
+        const bit = csvCell(row, columns.bit);
+        const start = csvCell(row, columns.start);
+        const duration = csvCell(row, columns.duration);
+        const color = csvCell(row, columns.color);
+        if (!channelName) {
+          throw new Error(`CSV row ${i + 1} has an empty channel`);
+        }
+        if (!bit) {
+          throw new Error(`CSV row ${i + 1} has an empty bit`);
+        }
+        if (!start) {
+          throw new Error(`CSV row ${i + 1} has an empty start`);
+        }
+        if (!duration) {
+          throw new Error(`CSV row ${i + 1} has an empty duration`);
+        }
+        const channelKey = `${channelName}\u0000${bit}`;
+        if (!importedChannels.has(channelKey)) {
+          addTimelineChannel(channelName, bit, draftColor(color, importedChannels.size));
+          importedChannels.set(channelKey, timelineChannels[timelineChannels.length - 1].id);
+        }
+        addTimelinePulse(importedChannels.get(channelKey), start, duration);
+      }
+      renderTimelineTables();
+      setTimelineState(`Imported CSV with ${timelinePulses.length} pulse rows using ${timelineTimeUnitSelect.value}.`, false);
+    } catch (error) {
+      timelineNextChannelId = previous.nextChannelId;
+      timelineNextPulseId = previous.nextPulseId;
+      timelineChannels = previous.channels;
+      timelinePulses = previous.pulses;
+      renderTimelineTables();
+      setTimelineState(`Could not import CSV: ${error.message}`, true);
+    }
+  }
+
   function generateTimelineSequence() {
     const compiled = compileTimeline();
     if (!compiled.ok) {
@@ -1781,6 +1941,14 @@ const char *app_js = R"JS((() => {
 
   timelineImportDraftButton.addEventListener('click', () => {
     importTimelineDraft();
+  });
+
+  timelineExportCsvButton.addEventListener('click', () => {
+    exportTimelineCsv();
+  });
+
+  timelineImportCsvButton.addEventListener('click', () => {
+    importTimelineCsv();
   });
 
   timelineTimeUnitSelect.addEventListener('change', () => {
