@@ -382,6 +382,20 @@ const char *index_html = R"HTML(<!doctype html>
         <button id="timeline-generate" type="button">Generate sequence text</button>
         <button id="timeline-load-example" type="button" class="secondary-button">Load example</button>
       </div>
+
+      <div class="subpanel">
+        <div class="panel-heading">
+          <h3>Draft JSON</h3>
+          <div class="timeline-actions">
+            <button id="timeline-export-draft" type="button" class="secondary-button">Export draft</button>
+            <button id="timeline-import-draft" type="button" class="secondary-button">Import draft</button>
+          </div>
+        </div>
+        <label>Timeline draft
+          <textarea id="timeline-draft-json" rows="6" placeholder="Export a timeline draft here, or paste a saved draft and import it."></textarea>
+        </label>
+      </div>
+
       <div id="timeline-summary" class="meta mono"></div>
       <svg id="timeline-preview" class="timeline-preview" viewBox="0 0 900 180" role="img" aria-label="Timeline preview"></svg>
     </section>
@@ -750,6 +764,9 @@ const char *app_js = R"JS((() => {
   const timelineState = document.getElementById('timeline-state');
   const timelineSummary = document.getElementById('timeline-summary');
   const timelinePreview = document.getElementById('timeline-preview');
+  const timelineExportDraftButton = document.getElementById('timeline-export-draft');
+  const timelineImportDraftButton = document.getElementById('timeline-import-draft');
+  const timelineDraftTextarea = document.getElementById('timeline-draft-json');
   const timelineTimeUnitSelect = document.getElementById('timeline-time-unit');
   const timelineClockNote = document.getElementById('timeline-clock-note');
   const timelineStartHeading = document.getElementById('timeline-start-heading');
@@ -864,7 +881,7 @@ const char *app_js = R"JS((() => {
     setBusy(combinerForm, busy);
     setBusy(streamForm, busy);
     timelineTimeUnitSelect.disabled = busy;
-    for (const button of [timelineAddChannelButton, timelineAddPulseButton, timelineGenerateButton, timelineLoadExampleButton]) {
+    for (const button of [timelineAddChannelButton, timelineAddPulseButton, timelineGenerateButton, timelineLoadExampleButton, timelineExportDraftButton, timelineImportDraftButton]) {
       button.disabled = busy;
     }
   }
@@ -1062,6 +1079,13 @@ const char *app_js = R"JS((() => {
 
   function nextTimelineColor() {
     return timelinePalette[timelineChannels.length % timelinePalette.length];
+  }
+
+  function resetTimelineState() {
+    timelineNextChannelId = 1;
+    timelineNextPulseId = 1;
+    timelineChannels = [];
+    timelinePulses = [];
   }
 
   function addTimelineChannel(name = `CH${timelineNextChannelId}`, bit = timelineChannels.length, color = nextTimelineColor()) {
@@ -1413,8 +1437,7 @@ const char *app_js = R"JS((() => {
   }
 
   function loadTimelineExample() {
-    timelineChannels = [];
-    timelinePulses = [];
+    resetTimelineState();
     addTimelineChannel('Laser', 0, '#38bdf8');
     addTimelineChannel('RF', 1, '#f97316');
     addTimelineChannel('Camera', 2, '#a78bfa');
@@ -1422,6 +1445,108 @@ const char *app_js = R"JS((() => {
     addTimelinePulse(timelineChannels[1].id, 200, 75);
     addTimelinePulse(timelineChannels[2].id, 90, 250);
     renderTimelineTables();
+  }
+
+  function timelineDraft() {
+    const channelIndexById = new Map();
+    timelineChannels.forEach((channel, index) => channelIndexById.set(channel.id, index));
+    return {
+      format: 'pulsepins.timeline',
+      version: 1,
+      time_unit: timelineTimeUnitSelect.value,
+      channels: timelineChannels.map((channel) => ({
+        name: channel.name,
+        bit: channel.bit,
+        color: channel.color,
+      })),
+      pulses: timelinePulses.map((pulse) => ({
+        channel_index: channelIndexById.has(pulse.channelId) ? channelIndexById.get(pulse.channelId) : -1,
+        start: pulse.start,
+        duration: pulse.duration,
+      })),
+    };
+  }
+
+  function exportTimelineDraft() {
+    timelineDraftTextarea.value = JSON.stringify(timelineDraft(), null, 2);
+    setTimelineState(`Exported draft JSON with ${timelineChannels.length} channels and ${timelinePulses.length} pulses.`, false);
+  }
+
+  function draftIndex(value, label) {
+    const text = String(value).trim();
+    if (!/^\d+$/.test(text)) {
+      throw new Error(`${label} must be a non-negative integer`);
+    }
+    const index = Number(text);
+    if (!Number.isSafeInteger(index)) {
+      throw new Error(`${label} is too large`);
+    }
+    return index;
+  }
+
+  function draftColor(value, index) {
+    const text = String(value || '');
+    return /^#[0-9a-fA-F]{6}$/.test(text) ? text : timelinePalette[index % timelinePalette.length];
+  }
+
+  function importTimelineDraft() {
+    const previous = {
+      unit: timelineTimeUnitSelect.value,
+      nextChannelId: timelineNextChannelId,
+      nextPulseId: timelineNextPulseId,
+      channels: timelineChannels,
+      pulses: timelinePulses,
+    };
+    try {
+      const draft = JSON.parse(timelineDraftTextarea.value);
+      if (!draft || typeof draft !== 'object' || Array.isArray(draft)) {
+        throw new Error('Draft must be a JSON object');
+      }
+      const unit = String(draft.time_unit || draft.unit || 'cycles');
+      if (!timelineTimeUnits[unit]) {
+        throw new Error(`Unsupported draft time unit: ${unit}`);
+      }
+      if (!Array.isArray(draft.channels)) {
+        throw new Error('Draft channels must be an array');
+      }
+      if (!Array.isArray(draft.pulses)) {
+        throw new Error('Draft pulses must be an array');
+      }
+
+      resetTimelineState();
+      timelineTimeUnitSelect.value = unit;
+      draft.channels.forEach((channel, index) => {
+        if (!channel || typeof channel !== 'object' || Array.isArray(channel)) {
+          throw new Error(`Channel ${index} must be an object`);
+        }
+        const name = channel.name === undefined ? `CH${index + 1}` : String(channel.name);
+        const bit = channel.bit === undefined ? String(index) : String(channel.bit);
+        addTimelineChannel(name, bit, draftColor(channel.color, index));
+      });
+      draft.pulses.forEach((pulse, index) => {
+        if (!pulse || typeof pulse !== 'object' || Array.isArray(pulse)) {
+          throw new Error(`Pulse ${index} must be an object`);
+        }
+        const rawChannelIndex = pulse.channel_index === undefined ? pulse.channel : pulse.channel_index;
+        const channelIndex = draftIndex(rawChannelIndex, `Pulse ${index} channel_index`);
+        if (channelIndex >= timelineChannels.length) {
+          throw new Error(`Pulse ${index} channel_index is outside the channel list`);
+        }
+        const start = pulse.start === undefined ? '0' : String(pulse.start);
+        const duration = pulse.duration === undefined ? '10' : String(pulse.duration);
+        addTimelinePulse(timelineChannels[channelIndex].id, start, duration);
+      });
+      renderTimelineTables();
+      setTimelineState(`Imported draft JSON with ${timelineChannels.length} channels and ${timelinePulses.length} pulses.`, false);
+    } catch (error) {
+      timelineTimeUnitSelect.value = previous.unit;
+      timelineNextChannelId = previous.nextChannelId;
+      timelineNextPulseId = previous.nextPulseId;
+      timelineChannels = previous.channels;
+      timelinePulses = previous.pulses;
+      renderTimelineTables();
+      setTimelineState(`Could not import draft JSON: ${error.message}`, true);
+    }
   }
 
   function generateTimelineSequence() {
@@ -1648,6 +1773,14 @@ const char *app_js = R"JS((() => {
 
   timelineGenerateButton.addEventListener('click', () => {
     generateTimelineSequence();
+  });
+
+  timelineExportDraftButton.addEventListener('click', () => {
+    exportTimelineDraft();
+  });
+
+  timelineImportDraftButton.addEventListener('click', () => {
+    importTimelineDraft();
   });
 
   timelineTimeUnitSelect.addEventListener('change', () => {
