@@ -657,6 +657,12 @@ button:disabled {
   font-weight: 600;
 }
 
+.timeline-table tr.selected-row {
+  background: rgba(56, 189, 248, 0.16);
+  outline: 1px solid #38bdf8;
+  outline-offset: -1px;
+}
+
 .timeline-table input, .timeline-table select {
   min-width: 7rem;
 }
@@ -1223,6 +1229,13 @@ const char *app_js = R"JS((() => {
     const decimalInput = timelineTimeUnitSelect.value !== 'cycles';
     for (const pulse of timelinePulses) {
       const row = document.createElement('tr');
+      row.classList.toggle('selected-row', pulse.id === timelineSelectedPulseId);
+      row.addEventListener('click', (event) => {
+        if (keyboardInputTarget(event.target) || event.target.tagName === 'BUTTON') {
+          return;
+        }
+        selectTimelinePulseById(pulse.id);
+      });
 
       const channelCell = document.createElement('td');
       const channelSelect = document.createElement('select');
@@ -1609,9 +1622,19 @@ const char *app_js = R"JS((() => {
     appendTimelineHover(svgElement('rect', { x, y: y - 4, width, height: 22, rx: 4, fill: channel.color, opacity: 0.35, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
   }
 
+  function selectTimelinePulseById(pulseId) {
+    const pulse = timelinePulses.find((candidate) => candidate.id === pulseId);
+    if (!pulse) {
+      return;
+    }
+    timelineSelectedPulseId = pulseId;
+    renderTimelineTables();
+    const channel = timelineChannels.find((candidate) => candidate.id === pulse.channelId);
+    setTimelineState(`Selected ${(channel && channel.name) || 'timeline'} pulse.`, false);
+  }
+
   function selectTimelinePulse(target) {
-    timelineSelectedPulseId = target.pulse.id;
-    renderTimelinePreview();
+    selectTimelinePulseById(target.pulse.id);
     setTimelineState(`Selected ${target.channel.name} pulse at ${formatTimelineDuration(target.pulse.start, target.geometry.context)}.`, false);
   }
 
