@@ -382,7 +382,6 @@ const char *index_html = R"HTML(<!doctype html>
       </div>
 
       <div class="timeline-actions">
-        <button id="timeline-generate" type="button">Generate sequence text</button>
         <button id="timeline-load-example" type="button" class="secondary-button">Load example</button>
       </div>
 
@@ -415,7 +414,11 @@ const char *index_html = R"HTML(<!doctype html>
 
       <div id="timeline-summary" class="meta mono"></div>
       <svg id="timeline-preview" class="timeline-preview" viewBox="0 0 900 180" role="img" aria-label="Timeline preview"></svg>
-      <div class="meta">Click a preview lane to add a pulse at that time using the preview click duration above.</div>
+      <div class="meta">Click a preview lane to add a pulse at that time, drag a lane to create a span, or click an existing pulse to select it for deletion.</div>
+      <div class="timeline-actions">
+        <button id="timeline-delete-selected" type="button" class="secondary-button" disabled>Delete selected pulse</button>
+        <button id="timeline-generate" type="button">Generate sequence text</button>
+      </div>
     </section>
 
     <section class="panel">
@@ -779,6 +782,7 @@ const char *app_js = R"JS((() => {
   const timelineAddPulseButton = document.getElementById('timeline-add-pulse');
   const timelineGenerateButton = document.getElementById('timeline-generate');
   const timelineLoadExampleButton = document.getElementById('timeline-load-example');
+  const timelineDeleteSelectedButton = document.getElementById('timeline-delete-selected');
   const timelineState = document.getElementById('timeline-state');
   const timelineSummary = document.getElementById('timeline-summary');
   const timelinePreview = document.getElementById('timeline-preview');
@@ -827,9 +831,11 @@ const char *app_js = R"JS((() => {
   let timelineChannels = [];
   let timelinePulses = [];
   let timelinePreviewGeometry = null;
-  let timelineHoverElements = [];
+  let timelineHoverLayer = null;
+  let timelineHoverSignature = '';
   let timelineDrag = null;
   let timelineSuppressPreviewClick = false;
+  let timelineSelectedPulseId = null;
   const timelinePalette = ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#f43f5e', '#facc15', '#14b8a6', '#fb7185'];
   const timelineTimeUnits = {
     cycles: { label: 'cycles', scale: null },
@@ -911,6 +917,7 @@ const char *app_js = R"JS((() => {
     for (const button of [timelineAddChannelButton, timelineAddPulseButton, timelineGenerateButton, timelineLoadExampleButton, timelineExportDraftButton, timelineImportDraftButton, timelineExportCsvButton, timelineImportCsvButton]) {
       button.disabled = busy;
     }
+    updateTimelineSelectionUi();
   }
 
   function compareBigInt(a, b) {
@@ -1109,6 +1116,10 @@ const char *app_js = R"JS((() => {
     timelineState.classList.toggle('local-edit', isError);
   }
 
+  function updateTimelineSelectionUi() {
+    timelineDeleteSelectedButton.disabled = hardwareBusy || !timelineSelectedPulseId;
+  }
+
   function svgElement(tag, attrs = {}) {
     const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
     for (const [name, value] of Object.entries(attrs)) {
@@ -1132,6 +1143,7 @@ const char *app_js = R"JS((() => {
     timelineNextPulseId = 1;
     timelineChannels = [];
     timelinePulses = [];
+    timelineSelectedPulseId = null;
   }
 
   function addTimelineChannel(name = `CH${timelineNextChannelId}`, bit = timelineChannels.length, color = nextTimelineColor()) {
@@ -1196,6 +1208,9 @@ const char *app_js = R"JS((() => {
       deleteCell.appendChild(makeDeleteButton('Delete', () => {
         timelineChannels = timelineChannels.filter((candidate) => candidate.id !== channel.id);
         timelinePulses = timelinePulses.filter((pulse) => pulse.channelId !== channel.id);
+        if (timelineSelectedPulseId && !timelinePulses.some((pulse) => pulse.id === timelineSelectedPulseId)) {
+          timelineSelectedPulseId = null;
+        }
         renderTimelineTables();
       }));
       row.appendChild(deleteCell);
@@ -1251,6 +1266,9 @@ const char *app_js = R"JS((() => {
       const deleteCell = document.createElement('td');
       deleteCell.appendChild(makeDeleteButton('Delete', () => {
         timelinePulses = timelinePulses.filter((candidate) => candidate.id !== pulse.id);
+        if (timelineSelectedPulseId === pulse.id) {
+          timelineSelectedPulseId = null;
+        }
         renderTimelineTables();
       }));
       row.appendChild(deleteCell);
@@ -1483,18 +1501,67 @@ const char *app_js = R"JS((() => {
     };
   }
 
-  function clearTimelineHover() {
-    for (const element of timelineHoverElements) {
-      element.remove();
+  function timelinePulseTarget(event) {
+    const geometry = timelinePreviewGeometry;
+    if (!geometry || !geometry.pulses || hardwareBusy) {
+      return null;
     }
-    timelineHoverElements = [];
+    const point = timelineSvgPoint(event);
+    if (!point) {
+      return null;
+    }
+    for (let i = geometry.pulses.length - 1; i >= 0; --i) {
+      const pulse = geometry.pulses[i];
+      const channel = geometry.channels[pulse.channelIndex];
+      if (!channel) {
+        continue;
+      }
+      const y = geometry.plotY + pulse.channelIndex * geometry.rowH;
+      const x = timelineXFromCycle(pulse.start, geometry);
+      const width = Math.max(1, timelineXFromCycle(pulse.end, geometry) - x);
+      if (point.x >= x && point.x <= x + width && point.y >= y - 8 && point.y <= y + 22) {
+        return { geometry, point, pulse, channel };
+      }
+    }
+    return null;
+  }
+
+  function clearTimelineHover() {
+    if (timelineHoverLayer) {
+      while (timelineHoverLayer.firstChild) {
+        timelineHoverLayer.removeChild(timelineHoverLayer.firstChild);
+      }
+    }
+    timelineHoverSignature = '';
     timelinePreview.style.cursor = '';
+  }
+
+  function beginTimelineHover(signature, cursor) {
+    if (timelineHoverSignature === signature) {
+      timelinePreview.style.cursor = cursor;
+      return false;
+    }
+    if (timelineHoverLayer) {
+      while (timelineHoverLayer.firstChild) {
+        timelineHoverLayer.removeChild(timelineHoverLayer.firstChild);
+      }
+    }
+    timelineHoverSignature = signature;
+    timelinePreview.style.cursor = cursor;
+    return true;
+  }
+
+  function timelineHoverParent() {
+    if (!timelineHoverLayer || timelineHoverLayer.parentNode !== timelinePreview) {
+      timelineHoverLayer = svgElement('g', { 'pointer-events': 'none' });
+      timelinePreview.appendChild(timelineHoverLayer);
+    }
+    return timelineHoverLayer;
   }
 
   function appendTimelineHover(element) {
     element.setAttribute('pointer-events', 'none');
-    timelineHoverElements.push(element);
-    timelinePreview.appendChild(element);
+    timelineHoverParent().appendChild(element);
   }
 
   function previewDurationCycles(target) {
@@ -1504,24 +1571,60 @@ const char *app_js = R"JS((() => {
 
   function renderTimelineHover(event) {
     clearTimelineHover();
+    const pulseTarget = timelinePulseTarget(event);
+    if (pulseTarget) {
+      const { geometry, pulse, channel } = pulseTarget;
+      if (!beginTimelineHover(`pulse:${pulse.id}`, 'pointer')) {
+        return;
+      }
+      const y = geometry.plotY + pulse.channelIndex * geometry.rowH;
+      const x = timelineXFromCycle(pulse.start, geometry);
+      const width = Math.max(1, timelineXFromCycle(pulse.end, geometry) - x);
+      appendTimelineHover(svgElement('rect', { x, y: y - 6, width, height: 26, rx: 5, fill: 'none', stroke: '#f8fafc', 'stroke-width': 2 }));
+      appendTimelineHover(svgElement('rect', { x: geometry.plotX, y: y - 14, width: geometry.plotW, height: 34, rx: 6, fill: channel.color, opacity: 0.1 }));
+      return;
+    }
     const target = timelinePreviewTarget(event);
     if (!target) {
       return;
     }
     const { geometry, channelIndex, channel, startCycle } = target;
     const y = geometry.plotY + channelIndex * geometry.rowH;
-    appendTimelineHover(svgElement('rect', { x: geometry.plotX, y: y - 14, width: geometry.plotW, height: 34, rx: 6, fill: channel.color, opacity: 0.14 }));
-    appendTimelineHover(svgElement('line', { x1: target.point.x, y1: y - 14, x2: target.point.x, y2: y + 20, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
     const durationCycles = previewDurationCycles(target);
     if (durationCycles === null) {
-      timelinePreview.style.cursor = 'not-allowed';
+      if (!beginTimelineHover(`lane:${channel.id}:${startCycle.toString()}:invalid`, 'not-allowed')) {
+        return;
+      }
+      appendTimelineHover(svgElement('rect', { x: geometry.plotX, y: y - 14, width: geometry.plotW, height: 34, rx: 6, fill: channel.color, opacity: 0.14 }));
+      appendTimelineHover(svgElement('line', { x1: target.point.x, y1: y - 14, x2: target.point.x, y2: y + 20, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
       return;
     }
     const x = timelineXFromCycle(startCycle, geometry);
     const remaining = Math.max(1, geometry.plotX + geometry.plotW - x);
     const width = Math.min(remaining, Math.max(1, timelineRatio(durationCycles, geometry.totalCycles) * geometry.plotW));
+    if (!beginTimelineHover(`lane:${channel.id}:${startCycle.toString()}:${durationCycles.toString()}`, 'crosshair')) {
+      return;
+    }
+    appendTimelineHover(svgElement('rect', { x: geometry.plotX, y: y - 14, width: geometry.plotW, height: 34, rx: 6, fill: channel.color, opacity: 0.14 }));
+    appendTimelineHover(svgElement('line', { x1: target.point.x, y1: y - 14, x2: target.point.x, y2: y + 20, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
     appendTimelineHover(svgElement('rect', { x, y: y - 4, width, height: 22, rx: 4, fill: channel.color, opacity: 0.35, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
-    timelinePreview.style.cursor = 'crosshair';
+  }
+
+  function selectTimelinePulse(target) {
+    timelineSelectedPulseId = target.pulse.id;
+    renderTimelinePreview();
+    setTimelineState(`Selected ${target.channel.name} pulse at ${formatTimelineDuration(target.pulse.start, target.geometry.context)}.`, false);
+  }
+
+  function deleteSelectedTimelinePulse() {
+    if (!timelineSelectedPulseId) {
+      return;
+    }
+    const removed = timelinePulses.find((pulse) => pulse.id === timelineSelectedPulseId);
+    timelinePulses = timelinePulses.filter((pulse) => pulse.id !== timelineSelectedPulseId);
+    timelineSelectedPulseId = null;
+    renderTimelineTables();
+    setTimelineState(removed ? 'Deleted selected pulse.' : 'Selected pulse was already gone.', false);
   }
 
   function timelineDragCandidate(event) {
@@ -1555,16 +1658,21 @@ const char *app_js = R"JS((() => {
     const y = geometry.plotY + channelIndex * geometry.rowH;
     const xStart = timelineXFromCycle(candidate.startCycle, geometry);
     const xStop = timelineXFromCycle(candidate.stopCycle, geometry);
+    if (!beginTimelineHover(`drag:${channel.id}:${candidate.startCycle.toString()}:${candidate.stopCycle.toString()}`, 'ew-resize')) {
+      return;
+    }
     appendTimelineHover(svgElement('rect', { x: geometry.plotX, y: y - 14, width: geometry.plotW, height: 34, rx: 6, fill: channel.color, opacity: 0.16 }));
     appendTimelineHover(svgElement('line', { x1: xStart, y1: y - 14, x2: xStart, y2: y + 20, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
     appendTimelineHover(svgElement('line', { x1: xStop, y1: y - 14, x2: xStop, y2: y + 20, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
     if (candidate.durationCycles > 0n) {
       appendTimelineHover(svgElement('rect', { x: xStart, y: y - 4, width: Math.max(1, xStop - xStart), height: 22, rx: 4, fill: channel.color, opacity: 0.42, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
     }
-    timelinePreview.style.cursor = 'ew-resize';
   }
 
   function startTimelinePreviewDrag(event) {
+    if (timelinePulseTarget(event)) {
+      return;
+    }
     const target = timelinePreviewTarget(event);
     if (!target || event.button !== 0) {
       return;
@@ -1598,6 +1706,11 @@ const char *app_js = R"JS((() => {
   }
 
   function addPulseFromTimelinePreview(event) {
+    const existingPulse = timelinePulseTarget(event);
+    if (existingPulse) {
+      selectTimelinePulse(existingPulse);
+      return;
+    }
     const target = timelinePreviewTarget(event);
     if (!target) {
       return;
@@ -1617,11 +1730,13 @@ const char *app_js = R"JS((() => {
     updateTimelineUnitUi();
     const compiled = compileTimeline();
     timelinePreview.textContent = '';
-    timelineHoverElements = [];
+    timelineHoverLayer = null;
+    timelineHoverSignature = '';
     timelinePreview.style.cursor = '';
     if (!compiled.ok) {
       timelineSummary.textContent = '';
       timelinePreviewGeometry = null;
+      updateTimelineSelectionUi();
       setTimelineState(compiled.errors.join('; '), true);
       timelinePreview.setAttribute('viewBox', '0 0 900 180');
       appendSvgText(timelinePreview, 24, 42, 'Timeline has validation errors', { fill: '#fca5a5', 'font-size': '16' });
@@ -1637,7 +1752,13 @@ const char *app_js = R"JS((() => {
     const rowH = 42;
     const totalCycles = compiled.totalCycles;
     const previewLimited = totalCycles > BigInt(Number.MAX_SAFE_INTEGER);
-    timelinePreviewGeometry = { plotX, plotY, plotW, rowH, totalCycles, context: compiled.parsed.timeContext, channels: compiled.parsed.channels };
+    const channelIndexById = new Map(compiled.parsed.channels.map((channel, index) => [channel.id, index]));
+    const previewPulses = compiled.parsed.pulses.map((pulse) => ({ ...pulse, channelIndex: channelIndexById.get(pulse.channel.id) }));
+    if (timelineSelectedPulseId && !previewPulses.some((pulse) => pulse.id === timelineSelectedPulseId)) {
+      timelineSelectedPulseId = null;
+    }
+    timelinePreviewGeometry = { plotX, plotY, plotW, rowH, totalCycles, context: compiled.parsed.timeContext, channels: compiled.parsed.channels, pulses: previewPulses };
+    updateTimelineSelectionUi();
 
     appendSvgText(timelinePreview, plotX, 22, '0 cycles', { fill: '#94a3b8' });
     appendSvgText(timelinePreview, plotX + plotW - 170, 22, formatTimelineDuration(totalCycles, compiled.parsed.timeContext), { fill: '#94a3b8' });
@@ -1649,7 +1770,8 @@ const char *app_js = R"JS((() => {
       for (const pulse of compiled.parsed.pulses.filter((candidate) => candidate.channel.id === channel.id)) {
         const x = plotX + timelineRatio(pulse.start, totalCycles) * plotW;
         const width = Math.max(1, timelineRatio(pulse.duration, totalCycles) * plotW);
-        timelinePreview.appendChild(svgElement('rect', { x, y: y - 4, width, height: 22, rx: 4, fill: channel.color, opacity: 0.85 }));
+        const selected = pulse.id === timelineSelectedPulseId;
+        timelinePreview.appendChild(svgElement('rect', { x, y: y - 4, width, height: 22, rx: 4, fill: channel.color, opacity: selected ? 1 : 0.85, stroke: selected ? '#f8fafc' : 'none', 'stroke-width': selected ? 2 : 0 }));
       }
     }
     const context = compiled.parsed.timeContext;
@@ -1724,6 +1846,7 @@ const char *app_js = R"JS((() => {
       nextPulseId: timelineNextPulseId,
       channels: timelineChannels,
       pulses: timelinePulses,
+      selectedPulseId: timelineSelectedPulseId,
     };
     try {
       const draft = JSON.parse(timelineDraftTextarea.value);
@@ -1772,6 +1895,7 @@ const char *app_js = R"JS((() => {
       timelineNextPulseId = previous.nextPulseId;
       timelineChannels = previous.channels;
       timelinePulses = previous.pulses;
+      timelineSelectedPulseId = previous.selectedPulseId;
       renderTimelineTables();
       setTimelineState(`Could not import draft JSON: ${error.message}`, true);
     }
@@ -1870,6 +1994,7 @@ const char *app_js = R"JS((() => {
       nextPulseId: timelineNextPulseId,
       channels: timelineChannels,
       pulses: timelinePulses,
+      selectedPulseId: timelineSelectedPulseId,
     };
     try {
       const rows = parseCsvRows(timelineCsvTextarea.value);
@@ -1915,6 +2040,7 @@ const char *app_js = R"JS((() => {
       timelineNextPulseId = previous.nextPulseId;
       timelineChannels = previous.channels;
       timelinePulses = previous.pulses;
+      timelineSelectedPulseId = previous.selectedPulseId;
       renderTimelineTables();
       setTimelineState(`Could not import CSV: ${error.message}`, true);
     }
@@ -2144,6 +2270,10 @@ const char *app_js = R"JS((() => {
 
   timelineGenerateButton.addEventListener('click', () => {
     generateTimelineSequence();
+  });
+
+  timelineDeleteSelectedButton.addEventListener('click', () => {
+    deleteSelectedTimelinePulse();
   });
 
   timelineExportDraftButton.addEventListener('click', () => {
