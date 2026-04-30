@@ -32,6 +32,12 @@ void fatal_signal_handler(int sig) {
   backtrace_symbols_fd(frames, count, STDERR_FILENO);
   _Exit(128 + sig);
 }
+#endif
+
+struct InterfaceAddress {
+  std::string name;
+  std::string address;
+};
 
 std::string socket_address_to_string(const sockaddr *addr) {
   std::array<char, INET6_ADDRSTRLEN> buf {};
@@ -52,13 +58,14 @@ std::string socket_address_to_string(const sockaddr *addr) {
   return {};
 }
 
-std::vector<std::string> discover_interface_urls(const int port) {
+std::vector<InterfaceAddress> discover_interface_addresses() {
   ifaddrs *ifa = nullptr;
   if (getifaddrs(&ifa) != 0) {
     return {};
   }
 
-  std::unordered_set<std::string> urls;
+  std::unordered_set<std::string> seen;
+  std::vector<InterfaceAddress> addresses;
   for (auto *current = ifa; current != nullptr; current = current->ifa_next) {
     if (!current->ifa_addr || !(current->ifa_flags & IFF_UP) || (current->ifa_flags & IFF_LOOPBACK)) {
       continue;
@@ -70,13 +77,15 @@ std::vector<std::string> discover_interface_urls(const int port) {
     if (address.empty()) {
       continue;
     }
-    urls.insert("http://" + address + ':' + std::to_string(port));
+    const std::string key = std::string(current->ifa_name ? current->ifa_name : "") + '\n' + address;
+    if (seen.insert(key).second) {
+      addresses.push_back({current->ifa_name ? current->ifa_name : "(unknown)", address});
+    }
   }
 
   freeifaddrs(ifa);
-  return std::vector<std::string>(urls.begin(), urls.end());
+  return addresses;
 }
-#endif
 
 } // namespace
 
@@ -96,18 +105,15 @@ void print_ppwebgui_startup_urls(const std::string &bind_ip, const int actual_po
 
   std::cout << "Listening on all interfaces." << std::endl;
 
-#ifdef PPWEBGUI_ENABLE_BACKTRACE
-  const auto urls = discover_interface_urls(actual_port);
-  if (urls.empty()) {
+  const auto addresses = discover_interface_addresses();
+  if (addresses.empty()) {
     std::cout << "Reach it using this board's current IPv4 address on port " << actual_port << '.' << std::endl;
     return;
   }
 
-  std::cout << "Reachable URLs:" << std::endl;
-  for (const auto &url : urls) {
-    std::cout << "  " << url << std::endl;
+  std::cout << "Interface IPv4 addresses:" << std::endl;
+  for (const auto &interface : addresses) {
+    std::cout << "  " << interface.name << ": " << interface.address
+              << "  http://" << interface.address << ':' << actual_port << std::endl;
   }
-#else
-  std::cout << "Reach it using this board's current IPv4 address on port " << actual_port << '.' << std::endl;
-#endif
 }

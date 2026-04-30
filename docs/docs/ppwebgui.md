@@ -36,7 +36,7 @@ ppwebgui
 
 This starts the server on all interfaces on port `4242` and prints the bound URL to standard output.
 
-When bound to `0.0.0.0`, `ppwebgui` also prints the currently discovered non-loopback IPv4 URLs so you can connect directly from another machine without looking up the address separately.
+When bound to `0.0.0.0`, `ppwebgui` also prints the currently discovered non-loopback interface names, IPv4 addresses, and matching URLs so you can connect directly from another machine without looking up the address separately.
 
 Example with an explicit port:
 
