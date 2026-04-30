@@ -3,6 +3,8 @@
 
 """Dependency-free timeline builder for host-side PulsePins workflows."""
 
+import csv
+import io
 from dataclasses import dataclass
 from fractions import Fraction
 from html import escape
@@ -17,6 +19,7 @@ class TimelineError(ValueError):
 class _Channel:
     name: str
     bit: int
+    color: str = ""
 
 
 @dataclass(frozen=True)
@@ -70,7 +73,7 @@ class Timeline:
         self._channels = {}  # type: Dict[str, _Channel]
         self._pulses = []  # type: List[_Pulse]
 
-    def channel(self, name: str, bit: int):
+    def channel(self, name: str, bit: int, color: str = ""):
         """Define a named output channel and return ``self`` for chaining."""
         if not name:
             raise TimelineError("channel name must not be empty")
@@ -86,7 +89,9 @@ class Timeline:
             )
         if any(channel.bit == bit for channel in self._channels.values()):
             raise TimelineError("channel bit {} is already in use".format(bit))
-        self._channels[name] = _Channel(name, bit)
+        if not isinstance(color, str):
+            raise TimelineError("channel color must be a string")
+        self._channels[name] = _Channel(name, bit, color)
         return self
 
     def pulse(self, channel: str, start, duration):
@@ -106,6 +111,11 @@ class Timeline:
     def channels(self) -> Tuple[Tuple[str, int], ...]:
         """Return defined channels as ``(name, bit)`` tuples."""
         return tuple((channel.name, channel.bit) for channel in self._channels.values())
+
+    @property
+    def channel_colors(self) -> Tuple[Tuple[str, str], ...]:
+        """Return channel colors as ``(name, color)`` tuples."""
+        return tuple((channel.name, channel.color) for channel in self._channels.values())
 
     @property
     def pulses(self) -> Tuple[Tuple[str, int, int], ...]:
@@ -161,6 +171,78 @@ class Timeline:
             lines.append("f")
         return "\n".join(lines) + ("\n" if lines else "")
 
+    def to_csv(self) -> str:
+        """Export pulse rows in the browser Timeline Composer CSV format."""
+        output = io.StringIO()
+        writer = csv.writer(output, lineterminator="\n")
+        writer.writerow(["channel", "bit", "start", "duration", "color"])
+        for pulse in self._pulses:
+            channel = self._channels[pulse.channel]
+            writer.writerow(
+                [
+                    channel.name,
+                    channel.bit,
+                    self._cycles_to_unit_text(pulse.start),
+                    self._cycles_to_unit_text(pulse.duration),
+                    channel.color,
+                ]
+            )
+        return output.getvalue()
+
+    @classmethod
+    def from_csv(
+        cls,
+        text: str,
+        unit: str = "cycles",
+        clock_hz: Optional[float] = None,
+        width: int = 32,
+        initial_value: int = 0,
+    ):
+        """Import browser Timeline Composer CSV text.
+
+        Header rows are optional. Without a header, columns are interpreted as
+        ``channel, bit, start, duration, color``.
+        """
+        rows = [row for row in csv.reader(io.StringIO(text)) if any(cell.strip() for cell in row)]
+        if not rows:
+            raise TimelineError("CSV has no pulse rows")
+        header = cls._csv_header_map(rows[0])
+        first_data_row = 1 if header is not None else 0
+        columns = header or {"channel": 0, "bit": 1, "start": 2, "duration": 3, "color": 4}
+
+        timeline = cls(unit=unit, clock_hz=clock_hz, width=width, initial_value=initial_value)
+        channel_bits = {}  # type: Dict[str, int]
+        for index, row in enumerate(rows[first_data_row:], start=first_data_row + 1):
+            channel_name = cls._csv_cell(row, columns["channel"])
+            bit_text = cls._csv_cell(row, columns["bit"])
+            start_text = cls._csv_cell(row, columns["start"])
+            duration_text = cls._csv_cell(row, columns["duration"])
+            color = cls._csv_cell(row, columns["color"])
+            if not channel_name:
+                raise TimelineError("CSV row {} has an empty channel".format(index))
+            if not bit_text:
+                raise TimelineError("CSV row {} has an empty bit".format(index))
+            if not start_text:
+                raise TimelineError("CSV row {} has an empty start".format(index))
+            if not duration_text:
+                raise TimelineError("CSV row {} has an empty duration".format(index))
+            try:
+                bit = int(bit_text, 0)
+            except ValueError as exc:
+                raise TimelineError("CSV row {} has an invalid bit".format(index)) from exc
+            if channel_name in channel_bits:
+                if channel_bits[channel_name] != bit:
+                    raise TimelineError(
+                        "CSV row {} reuses channel {!r} with a different bit".format(
+                            index, channel_name
+                        )
+                    )
+            else:
+                timeline.channel(channel_name, bit, color=color)
+                channel_bits[channel_name] = bit
+            timeline.pulse(channel_name, start=start_text, duration=duration_text)
+        return timeline
+
     def to_svg(self, width: int = 720, row_height: int = 28) -> str:
         """Return an SVG preview suitable for notebooks."""
         if width <= 0:
@@ -207,9 +289,10 @@ class Timeline:
                     continue
                 x = label_width + (pulse.start * plot_width / total)
                 rect_width = max(1, pulse.duration * plot_width / total)
+                fill = escape(channel.color or "#2563eb", quote=True)
                 parts.append(
-                    '<rect x="{:.3f}" y="{:.3f}" width="{:.3f}" height="{}" rx="3" fill="#2563eb"/>'.format(
-                        x, y + 4, rect_width, max(1, row_height - 8)
+                    '<rect x="{:.3f}" y="{:.3f}" width="{:.3f}" height="{}" rx="3" fill="{}"/>'.format(
+                        x, y + 4, rect_width, max(1, row_height - 8), fill
                     )
                 )
 
@@ -273,6 +356,38 @@ class Timeline:
                 )
             )
         return int(cycles)
+
+    def _cycles_to_unit_text(self, cycles: int) -> str:
+        if self._UNIT_SECONDS[self.unit] is None:
+            return str(cycles)
+        assert self.clock_hz is not None
+        value = Fraction(cycles) / (
+            self._UNIT_SECONDS[self.unit] * self._as_fraction(self.clock_hz, "clock_hz")
+        )
+        if value.denominator == 1:
+            return str(value.numerator)
+        return format(float(value), ".15g")
+
+    @staticmethod
+    def _csv_header_map(row) -> Optional[Dict[str, int]]:
+        names = [cell.strip().lower() for cell in row]
+        try:
+            channel = names.index("channel")
+            start = names.index("start")
+            duration = names.index("duration")
+        except ValueError:
+            return None
+        return {
+            "channel": channel,
+            "bit": names.index("bit") if "bit" in names else -1,
+            "start": start,
+            "duration": duration,
+            "color": names.index("color") if "color" in names else -1,
+        }
+
+    @staticmethod
+    def _csv_cell(row, index: int) -> str:
+        return row[index].strip() if 0 <= index < len(row) else ""
 
     @staticmethod
     def _as_fraction(value, name: str) -> Fraction:

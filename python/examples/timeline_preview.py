@@ -35,6 +35,11 @@ def main():
         metavar="PATH",
         help="optional path for an SVG timeline preview",
     )
+    parser.add_argument(
+        "--csv",
+        metavar="PATH",
+        help="optional path for a browser-compatible Timeline CSV file",
+    )
     args = parser.parse_args()
 
     timeline = build_timeline(args.clock_hz)
@@ -43,6 +48,9 @@ def main():
     if args.svg:
         with open(args.svg, "w", encoding="utf-8") as output:
             output.write(timeline.to_svg())
+    if args.csv:
+        with open(args.csv, "w", encoding="utf-8") as output:
+            output.write(timeline.to_csv())
 
 
 if __name__ == "__main__":
