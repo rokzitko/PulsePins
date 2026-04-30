@@ -828,6 +828,8 @@ const char *app_js = R"JS((() => {
   let timelinePulses = [];
   let timelinePreviewGeometry = null;
   let timelineHoverElements = [];
+  let timelineDrag = null;
+  let timelineSuppressPreviewClick = false;
   const timelinePalette = ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#f43f5e', '#facc15', '#14b8a6', '#fb7185'];
   const timelineTimeUnits = {
     cycles: { label: 'cycles', scale: null },
@@ -1440,6 +1442,10 @@ const char *app_js = R"JS((() => {
     return (geometry.totalCycles * BigInt(Math.round(raw * Number(scale)))) / scale;
   }
 
+  function timelineXFromCycle(cycle, geometry) {
+    return geometry.plotX + timelineRatio(cycle, geometry.totalCycles) * geometry.plotW;
+  }
+
   function timelineSvgPoint(event) {
     const rect = timelinePreview.getBoundingClientRect();
     const viewBox = timelinePreview.viewBox.baseVal;
@@ -1511,11 +1517,84 @@ const char *app_js = R"JS((() => {
       timelinePreview.style.cursor = 'not-allowed';
       return;
     }
-    const x = geometry.plotX + timelineRatio(startCycle, geometry.totalCycles) * geometry.plotW;
+    const x = timelineXFromCycle(startCycle, geometry);
     const remaining = Math.max(1, geometry.plotX + geometry.plotW - x);
     const width = Math.min(remaining, Math.max(1, timelineRatio(durationCycles, geometry.totalCycles) * geometry.plotW));
     appendTimelineHover(svgElement('rect', { x, y: y - 4, width, height: 22, rx: 4, fill: channel.color, opacity: 0.35, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
     timelinePreview.style.cursor = 'crosshair';
+  }
+
+  function timelineDragCandidate(event) {
+    const drag = timelineDrag;
+    if (!drag) {
+      return null;
+    }
+    const point = timelineSvgPoint(event) || drag.point;
+    const endCycle = timelineCycleFromX(point.x, drag.geometry);
+    const startCycle = drag.startCycle < endCycle ? drag.startCycle : endCycle;
+    const stopCycle = drag.startCycle < endCycle ? endCycle : drag.startCycle;
+    return {
+      geometry: drag.geometry,
+      channelIndex: drag.channelIndex,
+      channel: drag.channel,
+      point,
+      startCycle,
+      stopCycle,
+      durationCycles: stopCycle - startCycle,
+      movedPixels: Math.abs(point.x - drag.point.x),
+    };
+  }
+
+  function renderTimelineDrag(event) {
+    clearTimelineHover();
+    const candidate = timelineDragCandidate(event);
+    if (!candidate) {
+      return;
+    }
+    const { geometry, channelIndex, channel } = candidate;
+    const y = geometry.plotY + channelIndex * geometry.rowH;
+    const xStart = timelineXFromCycle(candidate.startCycle, geometry);
+    const xStop = timelineXFromCycle(candidate.stopCycle, geometry);
+    appendTimelineHover(svgElement('rect', { x: geometry.plotX, y: y - 14, width: geometry.plotW, height: 34, rx: 6, fill: channel.color, opacity: 0.16 }));
+    appendTimelineHover(svgElement('line', { x1: xStart, y1: y - 14, x2: xStart, y2: y + 20, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
+    appendTimelineHover(svgElement('line', { x1: xStop, y1: y - 14, x2: xStop, y2: y + 20, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
+    if (candidate.durationCycles > 0n) {
+      appendTimelineHover(svgElement('rect', { x: xStart, y: y - 4, width: Math.max(1, xStop - xStart), height: 22, rx: 4, fill: channel.color, opacity: 0.42, stroke: '#e2e8f0', 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
+    }
+    timelinePreview.style.cursor = 'ew-resize';
+  }
+
+  function startTimelinePreviewDrag(event) {
+    const target = timelinePreviewTarget(event);
+    if (!target || event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    timelineDrag = target;
+    renderTimelineDrag(event);
+  }
+
+  function finishTimelinePreviewDrag(event) {
+    if (!timelineDrag) {
+      return;
+    }
+    const candidate = timelineDragCandidate(event);
+    timelineDrag = null;
+    clearTimelineHover();
+    if (!candidate || candidate.durationCycles <= 0n || candidate.movedPixels < 3) {
+      return;
+    }
+    timelineSuppressPreviewClick = true;
+    window.setTimeout(() => {
+      timelineSuppressPreviewClick = false;
+    }, 0);
+    const start = timelineInputFromCycles(candidate.startCycle, candidate.geometry.context);
+    const duration = timelineInputFromCycles(candidate.durationCycles, candidate.geometry.context);
+    addTimelinePulse(candidate.channel.id, start, duration);
+    renderTimelineTables();
+    if (compileTimeline().ok) {
+      setTimelineState(`Dragged ${duration} ${candidate.geometry.context.unitLabel} pulse on ${candidate.channel.name} at ${start} ${candidate.geometry.context.unitLabel}.`, false);
+    }
   }
 
   function addPulseFromTimelinePreview(event) {
@@ -2084,15 +2163,38 @@ const char *app_js = R"JS((() => {
   });
 
   timelinePreview.addEventListener('click', (event) => {
+    if (timelineSuppressPreviewClick) {
+      timelineSuppressPreviewClick = false;
+      return;
+    }
     addPulseFromTimelinePreview(event);
   });
 
+  timelinePreview.addEventListener('mousedown', (event) => {
+    startTimelinePreviewDrag(event);
+  });
+
   timelinePreview.addEventListener('mousemove', (event) => {
+    if (timelineDrag) {
+      return;
+    }
     renderTimelineHover(event);
   });
 
   timelinePreview.addEventListener('mouseleave', () => {
-    clearTimelineHover();
+    if (!timelineDrag) {
+      clearTimelineHover();
+    }
+  });
+
+  window.addEventListener('mousemove', (event) => {
+    if (timelineDrag) {
+      renderTimelineDrag(event);
+    }
+  });
+
+  window.addEventListener('mouseup', (event) => {
+    finishTimelinePreviewDrag(event);
   });
 
   timelineTimeUnitSelect.addEventListener('change', () => {
