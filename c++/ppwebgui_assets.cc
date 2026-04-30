@@ -348,6 +348,9 @@ const char *index_html = R"HTML(<!doctype html>
               <option value="s">s</option>
             </select>
           </label>
+          <label>Preview click duration
+            <input id="timeline-click-duration" value="10" inputmode="numeric">
+          </label>
           <div class="setting"><div class="label">Clock used for time units</div><div id="timeline-clock-note" class="mono"></div></div>
         </div>
       </div>
@@ -412,6 +415,7 @@ const char *index_html = R"HTML(<!doctype html>
 
       <div id="timeline-summary" class="meta mono"></div>
       <svg id="timeline-preview" class="timeline-preview" viewBox="0 0 900 180" role="img" aria-label="Timeline preview"></svg>
+      <div class="meta">Click a preview lane to add a pulse at that time using the preview click duration above.</div>
     </section>
 
     <section class="panel">
@@ -785,6 +789,7 @@ const char *app_js = R"JS((() => {
   const timelineImportCsvButton = document.getElementById('timeline-import-csv');
   const timelineCsvTextarea = document.getElementById('timeline-csv');
   const timelineTimeUnitSelect = document.getElementById('timeline-time-unit');
+  const timelineClickDurationInput = document.getElementById('timeline-click-duration');
   const timelineClockNote = document.getElementById('timeline-clock-note');
   const timelineStartHeading = document.getElementById('timeline-start-heading');
   const timelineDurationHeading = document.getElementById('timeline-duration-heading');
@@ -821,6 +826,7 @@ const char *app_js = R"JS((() => {
   let timelineNextPulseId = 1;
   let timelineChannels = [];
   let timelinePulses = [];
+  let timelinePreviewGeometry = null;
   const timelinePalette = ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#f43f5e', '#facc15', '#14b8a6', '#fb7185'];
   const timelineTimeUnits = {
     cycles: { label: 'cycles', scale: null },
@@ -898,6 +904,7 @@ const char *app_js = R"JS((() => {
     setBusy(combinerForm, busy);
     setBusy(streamForm, busy);
     timelineTimeUnitSelect.disabled = busy;
+    timelineClickDurationInput.disabled = busy;
     for (const button of [timelineAddChannelButton, timelineAddPulseButton, timelineGenerateButton, timelineLoadExampleButton, timelineExportDraftButton, timelineImportDraftButton, timelineExportCsvButton, timelineImportCsvButton]) {
       button.disabled = busy;
     }
@@ -1062,8 +1069,19 @@ const char *app_js = R"JS((() => {
     const context = timelineTimeContext();
     timelineStartHeading.textContent = context.unit === 'cycles' ? 'Start cycle' : `Start (${context.unitLabel})`;
     timelineDurationHeading.textContent = context.unit === 'cycles' ? 'Duration cycles' : `Duration (${context.unitLabel})`;
+    timelineClickDurationInput.inputMode = context.unit === 'cycles' ? 'numeric' : 'decimal';
     timelineClockNote.textContent = context.clockText;
     timelineClockNote.classList.toggle('warning-text', !context.ok);
+  }
+
+  function decimalText(value) {
+    if (!Number.isFinite(value)) {
+      return '';
+    }
+    if (Math.abs(value) >= 1000000000) {
+      return value.toFixed(0);
+    }
+    return value.toFixed(9).replace(/\.?0+$/, '') || '0';
   }
 
   function formatTimelineDuration(cycles, context) {
@@ -1073,6 +1091,14 @@ const char *app_js = R"JS((() => {
     const value = Number(cycles) * Number(context.clock.den) * Number(context.unitScale) / Number(context.clock.num);
     const formatted = Number.isFinite(value) ? value.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '(too large)';
     return `${cycles.toString()} cycles (${formatted} ${context.unitLabel})`;
+  }
+
+  function timelineInputFromCycles(cycles, context) {
+    if (!context || !context.clock || !context.unitScale) {
+      return cycles.toString();
+    }
+    const value = Number(cycles) * Number(context.clock.den) * Number(context.unitScale) / Number(context.clock.num);
+    return decimalText(value);
   }
 
   function setTimelineState(message, isError = false) {
@@ -1407,12 +1433,54 @@ const char *app_js = R"JS((() => {
     return Number((cycle * scale) / totalCycles) / Number(scale);
   }
 
+  function timelineCycleFromX(x, geometry) {
+    const raw = Math.max(0, Math.min(1, (x - geometry.plotX) / geometry.plotW));
+    const scale = 1000000n;
+    return (geometry.totalCycles * BigInt(Math.round(raw * Number(scale)))) / scale;
+  }
+
+  function timelineSvgPoint(event) {
+    const rect = timelinePreview.getBoundingClientRect();
+    const viewBox = timelinePreview.viewBox.baseVal;
+    if (rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+    return {
+      x: viewBox.x + ((event.clientX - rect.left) / rect.width) * viewBox.width,
+      y: viewBox.y + ((event.clientY - rect.top) / rect.height) * viewBox.height,
+    };
+  }
+
+  function addPulseFromTimelinePreview(event) {
+    const geometry = timelinePreviewGeometry;
+    if (!geometry || !geometry.channels.length || hardwareBusy) {
+      return;
+    }
+    const point = timelineSvgPoint(event);
+    if (!point || point.x < geometry.plotX || point.x > geometry.plotX + geometry.plotW) {
+      return;
+    }
+    const channelIndex = Math.floor((point.y - (geometry.plotY - 16)) / geometry.rowH);
+    if (channelIndex < 0 || channelIndex >= geometry.channels.length) {
+      return;
+    }
+    const startCycle = timelineCycleFromX(point.x, geometry);
+    const start = timelineInputFromCycles(startCycle, geometry.context);
+    const duration = timelineClickDurationInput.value.trim() || '10';
+    addTimelinePulse(geometry.channels[channelIndex].id, start, duration);
+    renderTimelineTables();
+    if (compileTimeline().ok) {
+      setTimelineState(`Added ${duration} ${geometry.context.unitLabel} pulse on ${geometry.channels[channelIndex].name} at ${start} ${geometry.context.unitLabel}.`, false);
+    }
+  }
+
   function renderTimelinePreview() {
     updateTimelineUnitUi();
     const compiled = compileTimeline();
     timelinePreview.textContent = '';
     if (!compiled.ok) {
       timelineSummary.textContent = '';
+      timelinePreviewGeometry = null;
       setTimelineState(compiled.errors.join('; '), true);
       timelinePreview.setAttribute('viewBox', '0 0 900 180');
       appendSvgText(timelinePreview, 24, 42, 'Timeline has validation errors', { fill: '#fca5a5', 'font-size': '16' });
@@ -1425,14 +1493,16 @@ const char *app_js = R"JS((() => {
     const plotX = 150;
     const plotY = 34;
     const plotW = 720;
+    const rowH = 42;
     const totalCycles = compiled.totalCycles;
     const previewLimited = totalCycles > BigInt(Number.MAX_SAFE_INTEGER);
+    timelinePreviewGeometry = { plotX, plotY, plotW, rowH, totalCycles, context: compiled.parsed.timeContext, channels: compiled.parsed.channels };
 
     appendSvgText(timelinePreview, plotX, 22, '0 cycles', { fill: '#94a3b8' });
     appendSvgText(timelinePreview, plotX + plotW - 170, 22, formatTimelineDuration(totalCycles, compiled.parsed.timeContext), { fill: '#94a3b8' });
     for (let i = 0; i < compiled.parsed.channels.length; ++i) {
       const channel = compiled.parsed.channels[i];
-      const y = plotY + i * 42;
+      const y = plotY + i * rowH;
       appendSvgText(timelinePreview, 18, y + 16, `${channel.name} [${channel.bit}]`, { fill: channel.color });
       timelinePreview.appendChild(svgElement('line', { x1: plotX, y1: y + 10, x2: plotX + plotW, y2: y + 10, stroke: '#334155', 'stroke-width': 2 }));
       for (const pulse of compiled.parsed.pulses.filter((candidate) => candidate.channel.id === channel.id)) {
@@ -1949,6 +2019,10 @@ const char *app_js = R"JS((() => {
 
   timelineImportCsvButton.addEventListener('click', () => {
     importTimelineCsv();
+  });
+
+  timelinePreview.addEventListener('click', (event) => {
+    addPulseFromTimelinePreview(event);
   });
 
   timelineTimeUnitSelect.addEventListener('change', () => {
