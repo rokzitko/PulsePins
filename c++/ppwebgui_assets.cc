@@ -834,7 +834,6 @@ const char *app_js = R"JS((() => {
   let timelineHoverLayer = null;
   let timelineHoverSignature = '';
   let timelineDrag = null;
-  let timelineSuppressPreviewClick = false;
   let timelineSelectedPulseId = null;
   const timelinePalette = ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#f43f5e', '#facc15', '#14b8a6', '#fb7185'];
   const timelineTimeUnits = {
@@ -1519,7 +1518,7 @@ const char *app_js = R"JS((() => {
       const y = geometry.plotY + pulse.channelIndex * geometry.rowH;
       const x = timelineXFromCycle(pulse.start, geometry);
       const width = Math.max(1, timelineXFromCycle(pulse.end, geometry) - x);
-      if (point.x >= x && point.x <= x + width && point.y >= y - 8 && point.y <= y + 22) {
+      if (point.x >= x - 3 && point.x <= x + width + 3 && point.y >= y - 12 && point.y <= y + 24) {
         return { geometry, point, pulse, channel };
       }
     }
@@ -1570,7 +1569,6 @@ const char *app_js = R"JS((() => {
   }
 
   function renderTimelineHover(event) {
-    clearTimelineHover();
     const pulseTarget = timelinePulseTarget(event);
     if (pulseTarget) {
       const { geometry, pulse, channel } = pulseTarget;
@@ -1586,6 +1584,7 @@ const char *app_js = R"JS((() => {
     }
     const target = timelinePreviewTarget(event);
     if (!target) {
+      clearTimelineHover();
       return;
     }
     const { geometry, channelIndex, channel, startCycle } = target;
@@ -1649,9 +1648,9 @@ const char *app_js = R"JS((() => {
   }
 
   function renderTimelineDrag(event) {
-    clearTimelineHover();
     const candidate = timelineDragCandidate(event);
     if (!candidate) {
+      clearTimelineHover();
       return;
     }
     const { geometry, channelIndex, channel } = candidate;
@@ -1670,7 +1669,10 @@ const char *app_js = R"JS((() => {
   }
 
   function startTimelinePreviewDrag(event) {
-    if (timelinePulseTarget(event)) {
+    const pulseTarget = timelinePulseTarget(event);
+    if (pulseTarget) {
+      event.preventDefault();
+      selectTimelinePulse(pulseTarget);
       return;
     }
     const target = timelinePreviewTarget(event);
@@ -1686,22 +1688,35 @@ const char *app_js = R"JS((() => {
     if (!timelineDrag) {
       return;
     }
+    const clickedTarget = timelineDrag;
     const candidate = timelineDragCandidate(event);
     timelineDrag = null;
     clearTimelineHover();
-    if (!candidate || candidate.durationCycles <= 0n || candidate.movedPixels < 3) {
+    if (!candidate) {
       return;
     }
-    timelineSuppressPreviewClick = true;
-    window.setTimeout(() => {
-      timelineSuppressPreviewClick = false;
-    }, 0);
+    if (candidate.durationCycles <= 0n || candidate.movedPixels < 3) {
+      addPulseFromTimelineTarget(clickedTarget);
+      return;
+    }
     const start = timelineInputFromCycles(candidate.startCycle, candidate.geometry.context);
     const duration = timelineInputFromCycles(candidate.durationCycles, candidate.geometry.context);
     addTimelinePulse(candidate.channel.id, start, duration);
     renderTimelineTables();
     if (compileTimeline().ok) {
       setTimelineState(`Dragged ${duration} ${candidate.geometry.context.unitLabel} pulse on ${candidate.channel.name} at ${start} ${candidate.geometry.context.unitLabel}.`, false);
+    }
+  }
+
+  function addPulseFromTimelineTarget(target) {
+    if (previewDurationCycles(target) === null) {
+      setTimelineState(`Preview click duration is invalid for ${target.geometry.context.unitLabel}.`, true);
+      return;
+    }
+    addTimelinePulse(target.channel.id, target.start, target.duration);
+    renderTimelineTables();
+    if (compileTimeline().ok) {
+      setTimelineState(`Added ${target.duration} ${target.geometry.context.unitLabel} pulse on ${target.channel.name} at ${target.start} ${target.geometry.context.unitLabel}.`, false);
     }
   }
 
@@ -1715,15 +1730,7 @@ const char *app_js = R"JS((() => {
     if (!target) {
       return;
     }
-    if (previewDurationCycles(target) === null) {
-      setTimelineState(`Preview click duration is invalid for ${target.geometry.context.unitLabel}.`, true);
-      return;
-    }
-    addTimelinePulse(target.channel.id, target.start, target.duration);
-    renderTimelineTables();
-    if (compileTimeline().ok) {
-      setTimelineState(`Added ${target.duration} ${target.geometry.context.unitLabel} pulse on ${target.channel.name} at ${target.start} ${target.geometry.context.unitLabel}.`, false);
-    }
+    addPulseFromTimelineTarget(target);
   }
 
   function renderTimelinePreview() {
@@ -2290,14 +2297,6 @@ const char *app_js = R"JS((() => {
 
   timelineImportCsvButton.addEventListener('click', () => {
     importTimelineCsv();
-  });
-
-  timelinePreview.addEventListener('click', (event) => {
-    if (timelineSuppressPreviewClick) {
-      timelineSuppressPreviewClick = false;
-      return;
-    }
-    addPulseFromTimelinePreview(event);
   });
 
   timelinePreview.addEventListener('mousedown', (event) => {
