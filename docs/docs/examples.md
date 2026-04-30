@@ -243,8 +243,7 @@ timeline.pulse("camera", start=20, duration=10)
 
 with PulsePins("de10nano") as pp:
     pp.reset()
-    pp.load(timeline, force_trigger=True)
-    pp.stream()
+    pp.run(timeline, force_trigger=True)
 ```
 
 Two runnable Timeline examples are included:
@@ -252,9 +251,10 @@ Two runnable Timeline examples are included:
 ```bash
 PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg
 PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
+PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
 ```
 
-`timeline_preview.py` is hardware-free: it prints the generated text sequence and can write an SVG preview. `timeline_stream.py` uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering.
+`timeline_preview.py` is hardware-free: it prints the generated text sequence and can write an SVG preview. `timeline_stream.py` uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. `timeline_sweep.py` shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop.
 
 See also: `ppscpi.md` and `python.md`.
 

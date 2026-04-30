@@ -31,7 +31,7 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-The client exposes `idn()`, `reset()`, `clear_status()`, `load_sequence(...)`, `check(...)`, `check_enabled()`, `stream()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
+The client exposes `idn()`, `reset()`, `clear_status()`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
 
 The same package also includes a dependency-free `Timeline` builder for simple named-channel pulse programs:
 
@@ -46,8 +46,7 @@ timeline.pulse("camera", start=20, duration=10)
 
 with PulsePins("de10nano") as pp:
     pp.reset()
-    pp.load(timeline, force_trigger=True)
-    pp.stream()
+    pp.run(timeline, force_trigger=True)
 
 timeline
 ```
@@ -59,6 +58,7 @@ Runnable examples:
 ```bash
 PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg
 PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
+PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
 ```
 
 ## Board-native bindings

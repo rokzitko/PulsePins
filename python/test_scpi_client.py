@@ -116,6 +116,20 @@ def test_load_sequence_accepts_timeline(scpi_server):
     assert "SEQ d 5 0x1 f" in scpi_server.commands
 
 
+def test_run_loads_checks_and_streams_timeline(scpi_server):
+    timeline = Timeline()
+    timeline.channel("q0", 0)
+    timeline.pulse("q0", 0, 5)
+
+    with make_client(scpi_server) as pp:
+        assert pp.run(timeline, check=True, force_trigger=True) == "SUCCESS"
+
+    check_index = scpi_server.commands.index("CHECK ON")
+    seq_index = scpi_server.commands.index("SEQ d 5 0x1 f")
+    stream_index = scpi_server.commands.index("STREAM")
+    assert check_index < seq_index < stream_index
+
+
 def test_load_sequence_error_includes_error_queue(scpi_server):
     with make_client(scpi_server) as pp:
         with pytest.raises(PulsePinsCommandError) as excinfo:

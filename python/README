@@ -14,6 +14,7 @@ The `pulsepins` SCPI client does not need a build step. From a checkout, use
 It also includes a dependency-free `Timeline` builder that can generate PulsePins text sequences
 and render SVG previews in notebooks.
 See `examples/timeline_preview.py` and `examples/timeline_stream.py` for small runnable workflows.
+`examples/timeline_sweep.py` shows a simple host-side parameter sweep.
 
 On the DE10-Nano, do the following:
 

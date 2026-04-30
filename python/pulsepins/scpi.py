@@ -177,6 +177,17 @@ class PulsePins:
         self._expect_response("STREAM", response, "SUCCESS")
         return response
 
+    def run(self, sequence, check: Optional[bool] = None, **sequence_options) -> str:
+        """Load and stream a sequence in one call.
+
+        ``check=None`` leaves the current session readback-check setting unchanged.
+        Other keyword arguments are forwarded to ``load_sequence(...)``.
+        """
+        if check is not None:
+            self.check(check)
+        self.load_sequence(sequence, **sequence_options)
+        return self.stream()
+
     def system_error(self) -> Tuple[int, str]:
         """Query one ``SYST:ERR?`` record as ``(code, message)``."""
         return self._parse_system_error(self.query("SYST:ERR?"))
