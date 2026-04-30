@@ -61,6 +61,38 @@ PulsePins-specific commands:
 5. Send `STREAM`
 6. Query `SYST:ERR?` if needed
 
+### Host-side Python and Jupyter
+
+Jupyter should normally run on the host computer, not on the DE10-Nano. The board only needs to run `ppscpi`; the notebook talks to it over Ethernet.
+
+The lightweight host-side Python client lives in `python/pulsepins/` and uses only the Python standard library. From a checkout, make that directory importable first:
+
+```bash
+export PYTHONPATH=/path/to/PulsePins/python
+```
+
+Then a notebook or script can drive the board with:
+
+```python
+from pulsepins import PulsePins
+
+with PulsePins("de10nano") as pp:
+    print(pp.idn())
+    pp.reset()
+    pp.load_sequence("""
+    d 10 0xff
+    d 5 0x00
+    d 2 0b0101
+    f
+    """)
+    pp.check(False)
+    pp.stream()
+```
+
+`load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the current SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit. Larger notebook-generated sequences should be played through file-based tools for now, or wait for a future chunked/binary upload command.
+
+If `SEQ` or `STREAM` returns an error response, the Python client drains `SYST:ERR?` and raises `PulsePinsCommandError` with the queued server-side diagnostic text.
+
 ### Notes
 
 * `STREAM` uses the same send/trigger path as the local tools, including optional readback verification.

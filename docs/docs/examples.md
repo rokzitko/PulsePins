@@ -181,6 +181,57 @@ When to use this workflow:
 
 The exact qout wiring and module-specific notes live in `tools/spi_payload/README`.
 
+### Example 7: Drive `ppscpi` from a host-side Python notebook
+
+Goal: keep Jupyter on a laptop or workstation while controlling a DE10-Nano over Ethernet.
+
+On the board, start the SCPI server:
+
+```bash
+ppscpi
+```
+
+On the host, make the repository Python helpers importable:
+
+```bash
+export PYTHONPATH=/path/to/PulsePins/python
+```
+
+In Python or a notebook:
+
+```python
+from pulsepins import PulsePins
+
+with PulsePins("de10nano") as pp:
+    print(pp.idn())
+    pp.reset()
+    pp.load_sequence("""
+    d 10 0xff
+    d 5 0x00
+    d 2 0b0101
+    f
+    """)
+    pp.check(False)
+    pp.stream()
+```
+
+The same minimal workflow is available as `python/examples/ppscpi_hello.py`:
+
+```bash
+PYTHONPATH=python python3 python/examples/ppscpi_hello.py de10nano
+```
+
+What it does:
+
+* connects to TCP port `5025`
+* uploads a PulsePins text sequence with `SEQ ...`
+* requests forced triggering using the sequence's `f` record
+* starts playback with `STREAM`
+
+This workflow is the best first step for notebook integration. It avoids installing Jupyter on the board and keeps plotting, parameter sweeps, and data analysis on the host computer.
+
+See also: `ppscpi.md` and `python.md`.
+
 ### Choosing the right kind of example
 
 As a rule of thumb:

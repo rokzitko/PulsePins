@@ -1,5 +1,40 @@
 # Python bindings
 
+PulsePins has two Python-facing surfaces:
+
+* `pulsepins` - a pure-Python, host-side SCPI client for scripts and Jupyter notebooks talking to a board running `ppscpi`
+* `pp` / `pp_impl` - nanobind extension modules for the underlying C++ interface
+
+## Host-side SCPI client
+
+The host-side client lives in `python/pulsepins/` and has no dependency beyond the Python standard library. It is the recommended Python entry point for notebooks running on a laptop or workstation while the DE10-Nano runs `ppscpi`.
+
+From a repository checkout:
+
+```bash
+export PYTHONPATH=/path/to/PulsePins/python
+```
+
+Minimal example:
+
+```python
+from pulsepins import PulsePins
+
+with PulsePins("de10nano") as pp:
+    print(pp.idn())
+    pp.reset()
+    pp.load_sequence("""
+    d 10 0xff
+    d 5 0x00
+    f
+    """)
+    pp.stream()
+```
+
+The client exposes `idn()`, `reset()`, `clear_status()`, `load_sequence(...)`, `check(...)`, `check_enabled()`, `stream()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
+
+## Board-native bindings
+
 PulsePins uses [nanobind](https://nanobind.readthedocs.io/en/latest/) to provide Python bindings for the underlying C++ interface.
 
 The Python binding tree lives in `python/` and builds two modules:

@@ -33,6 +33,7 @@ base_hps/
 # Backup files
 *~
 *.bak
+__pycache__/
 
 compile.log
 

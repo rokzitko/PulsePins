@@ -31,6 +31,8 @@ CC = gcc$(GCC_SUFFIX)
 
 .PHONY: build test test-host clean copy_sources copy_misc copy_sources_img
 
+PYTEST_FILES=test.py test_scpi_client.py
+
 # Configure and build the nanobind extension modules.
 build:
 	mkdir -p build
@@ -39,11 +41,11 @@ build:
 
 # Python-side test entry point.
 test:
-	PYTHONPATH=./build pytest test.py
+	PYTHONPATH=.:./build pytest $(PYTEST_FILES)
 
 # Host-side CI entry point: run only the binding/API tests that do not require board-backed MMIO.
 test-host:
-	PYTHONPATH=./build pytest -m "not hardware" test.py
+	PYTHONPATH=.:./build pytest -m "not hardware" $(PYTEST_FILES)
 
 clean:
 	rm -rf build
@@ -51,18 +53,28 @@ clean:
 # Copy source files to the DE10-Nano board for native module builds.
 PYDIR=python/
 SOURCES=$(wildcard *.cc) $(wildcard *.hh) pptool.py
-MISCFILES=CMakeLists.txt Makefile pytest.ini test.py
+PY_PACKAGE=pulsepins
+PY_PACKAGE_FILES=$(wildcard $(PY_PACKAGE)/*.py)
+PY_EXAMPLE_DIR=examples
+PY_EXAMPLE_FILES=$(wildcard $(PY_EXAMPLE_DIR)/*.py)
+MISCFILES=CMakeLists.txt Makefile pytest.ini test.py test_scpi_client.py
 copy_sources:
-	ssh $(TARGETHOST) mkdir -p $(PYDIR)
+	ssh $(TARGETHOST) mkdir -p $(PYDIR) $(PYDIR)/$(PY_PACKAGE) $(PYDIR)/$(PY_EXAMPLE_DIR)
 	scp $(SOURCES) $(MISCFILES) @$(TARGETHOST):$(PYDIR)
+	scp $(PY_PACKAGE_FILES) @$(TARGETHOST):$(PYDIR)/$(PY_PACKAGE)
+	scp $(PY_EXAMPLE_FILES) @$(TARGETHOST):$(PYDIR)/$(PY_EXAMPLE_DIR)
 
 copy_misc:
-	ssh $(TARGETHOST) mkdir -p $(PYDIR)
+	ssh $(TARGETHOST) mkdir -p $(PYDIR) $(PYDIR)/$(PY_PACKAGE) $(PYDIR)/$(PY_EXAMPLE_DIR)
 	scp $(MISCFILES) @$(TARGETHOST):$(PYDIR)
+	scp $(PY_PACKAGE_FILES) @$(TARGETHOST):$(PYDIR)/$(PY_PACKAGE)
+	scp $(PY_EXAMPLE_FILES) @$(TARGETHOST):$(PYDIR)/$(PY_EXAMPLE_DIR)
 
 IMGROOT=../image/ext/home/root
 
 # Stage the same source bundle into the image tree.
 copy_sources_img:
-	mkdir -p $(IMGROOT)/$(PYDIR)
+	mkdir -p $(IMGROOT)/$(PYDIR) $(IMGROOT)/$(PYDIR)/$(PY_PACKAGE) $(IMGROOT)/$(PYDIR)/$(PY_EXAMPLE_DIR)
 	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(PYDIR)
+	cp -v $(PY_PACKAGE_FILES) $(IMGROOT)/$(PYDIR)/$(PY_PACKAGE)
+	cp -v $(PY_EXAMPLE_FILES) $(IMGROOT)/$(PYDIR)/$(PY_EXAMPLE_DIR)

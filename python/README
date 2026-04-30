@@ -1,8 +1,16 @@
-This is the supported production build path for the Python bindings.
+This directory contains two Python surfaces:
+
+* `pulsepins/` - a pure-Python SCPI client for host-side scripts and notebooks
+* `pp` / `pp_impl` - nanobind extension modules for direct board-side access
+
+This is the supported production build path for the nanobind Python bindings.
 
 The Python extension modules are intended to be built on the DE10-Nano board itself.
 Host-side Python builds are useful for import/syntax/API testing, but true cross-compilation of
 the Python bindings is not currently supported.
+
+The `pulsepins` SCPI client does not need a build step. From a checkout, use
+`PYTHONPATH=/path/to/PulsePins/python` and connect to a board running `ppscpi`.
 
 On the DE10-Nano, do the following:
 
