@@ -70,6 +70,15 @@ struct FreqMeterOptions {
   std::optional<double> correction_factor;
 };
 
+inline bool resolve_reset_FPGA(const InputParser &input) {
+  bool reset_FPGA = false; // default
+  if (envVarExists("PP_RESET_FPGA"))
+    reset_FPGA = true;
+  if (input.exists("-reset_FPGA"))
+    reset_FPGA = true;
+  return reset_FPGA;
+}
+
 inline ClockSelectionOptions resolve_clock_selection_options(const InputParser &input) {
   ClockSelectionOptions opts;
   // Later checks intentionally override earlier ones so the raw `-clk` selector remains

@@ -423,8 +423,7 @@ void WebGuiController::reset_hardware_locked(const ClockConfigState &clocking_st
                                              const TriggerConfigState &trigger_state,
                                              const CombinerRequest &combiner_state,
                                              const StreamerOverrideState &override_state) {
-  rstmgr rm;
-  rm.s2f_reset(verbosity.verbose);
+  fpga.rm.s2f_reset(verbosity.verbose);
   apply_clock_config_locked(clocking_state, true);
 
   play_streamer.set_initial_value_opts(config.streamer_options);

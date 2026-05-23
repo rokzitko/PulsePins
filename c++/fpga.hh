@@ -140,6 +140,7 @@ class FPGA {
 public:
   mm dev_lw, dev_h2f, dev_hps, dev_sysmgr, dev_fpgamgr;
   hpsled led;
+  rstmgr rm;
   MGR mgr;
   uint32_t cfg = 0; // current value on gp_out (configuration bits)
   pio_out_bits pio_cfg; // oe signal
@@ -186,7 +187,7 @@ public:
 
   ~FPGA() noexcept {
     if (v.veryverbose) {
-      std::cout << "Elapsed time (since last reset): " << elapsed.seconds() << std::endl;
+      std::cout << "Elapsed time (since last reset): " << elapsed.seconds() << "s" << std::endl;
     }
     constructed.store(false, std::memory_order_release);
   }

@@ -32,10 +32,6 @@ struct HostRuntime {
   {
     about(progname);
     bootstrap_process(verbosity, version);
-    if (!input.exists("-noreset")) {
-      rstmgr rm;
-      rm.s2f_reset();
-    }
     fpga.emplace(verbosity);
     apply_fpga_startup_policy(*fpga, input);
     freq_meter.emplace(input, *fpga);

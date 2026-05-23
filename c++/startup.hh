@@ -40,15 +40,18 @@ inline void bootstrap_process(const Verbosity &v, const int version)
 }
 
 inline void apply_fpga_startup_policy(FPGA &fpga,
+                                      const bool reset_FPGA,
                                       const ClockSelectionOptions &clock_selection,
                                       const PllOptions &core_pll,
                                       const PllOptions &int_pll)
 {
   // Order matters here:
-  //   1. choose the active streamer clock source
-  //   2. program the core and internal PLLs
-  //   3. optionally enable outputs
+  //   1. optionally reset the FPGA
+  //   2. choose the active streamer clock source
+  //   3. program the core and internal PLLs
   //   4. perform a short visible bring-up indication
+  if (reset_FPGA)
+    fpga.rm.s2f_reset();
   fpga.set_clk(clock_selection);
   fpga.pll_core.set_core_clk(core_pll, fpga.v);
   fpga.pll_int.set_int_clk(int_pll, fpga.v);
@@ -63,6 +66,7 @@ inline void apply_fpga_startup_policy(FPGA &fpga, const InputParser &input)
 {
   apply_fpga_startup_policy(
     fpga,
+    resolve_reset_FPGA(input),
     resolve_clock_selection_options(input),
     resolve_core_pll_options(input),
     resolve_int_pll_options(input));
