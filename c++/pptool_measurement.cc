@@ -43,12 +43,10 @@ std::mutex lockcout;
 #define LOCKCOUT(z) { lockcout.lock(); z; lockcout.unlock(); }
 
 struct TimestampSession {
-  rstmgr rm;
   timestamp ts;
   double timeout;
 
   TimestampSession(FPGA &fpga, const InputParser &input, const Verbosity &v) :
-    rm(),
     ts(fpga.dev_h2f,
       fpga.dev_lw,
       FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
@@ -56,7 +54,6 @@ struct TimestampSession {
       PIO_CFG_BASE),
     timeout(parse_double(input, "-timeout", "0"))
   {
-    rm.s2f_reset();
     if (input.exists("-pps_in"))
       ts.sel_pps_in();
     if (input.exists("-pps_xtal"))

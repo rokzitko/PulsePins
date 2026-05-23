@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2025 Rok Zitko
+// Copyright (c) 2025, 2026 Rok Zitko
 
 // Configure verbosity level of the tool
 
@@ -8,7 +8,7 @@
 #include "parser.hh"
 
 struct Verbosity {
-  bool verbose = true;        // enable by default; use -quiet to disable
+  bool verbose = true;        // enabled by default; use -quiet to disable
   bool veryverbose = false;   // use -veryverbose to enable
   bool verbosecheck = false;  // use -verbosecheck to enable
 };
