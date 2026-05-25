@@ -78,6 +78,7 @@ private:
   void apply_trigger_config_locked(const TriggerConfigState &state);
 
   FPGA &fpga;
+	bool perform_FPGA_s2f_reset = false;
   const WebGuiRuntimeConfig &config;
   const Verbosity &verbosity;
   qout qout_ctrl;
