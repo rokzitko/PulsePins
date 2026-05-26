@@ -113,7 +113,7 @@ public:
     return s;
   }
 
-  void gpio_write(uint32_t x) {
+  void gpio_write(const uint32_t x) {
     gpout.write(x);
   }
 
@@ -140,6 +140,7 @@ class FPGA {
 public:
   mm dev_lw, dev_h2f, dev_hps, dev_sysmgr, dev_fpgamgr;
   hpsled led;
+  bool dark_mode = false; // disable all status LEDs
   rstmgr rm;
   MGR mgr;
   uint32_t cfg = 0; // current value on gp_out (configuration bits)
@@ -240,6 +241,24 @@ public:
       sel_clk(val);
       rm.s2f_release_reset();
     }
+  }
+
+  void led_en(const bool en = true) {
+    constexpr int LED_EN_BIT = 3;
+    if (en)
+      BITMASK_CLEAR(cfg, 1 << LED_EN_BIT); // led_en
+    else
+      BITMASK_SET(cfg, 1 << LED_EN_BIT); // dark mode
+    mgr.gpio_write(cfg);
+  }
+
+  void status_en(const bool en = true) {
+    constexpr int STATUS_EN_BIT = 4;
+    if (en)
+      BITMASK_CLEAR(cfg, 1 << STATUS_EN_BIT); // status_en
+    else
+      BITMASK_SET(cfg, 1 << STATUS_EN_BIT);
+    mgr.gpio_write(cfg);
   }
 
   void sel_clk(uint32_t sel) {

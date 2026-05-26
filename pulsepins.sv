@@ -640,7 +640,14 @@ assign gp_in[31:7] = 0;
 // Clock source switching
 assign sel_clk = gp_out[1:0]; // bits [0:1] control clock source
 assign clk_ena = 'b1;
-//assign clk_ena = gp_out[2];   // note: on power-up, clock is disabled
+
+parameter int LED_EN_BIT = 3;
+parameter int STATUS_EN_BIT = 4;
+
+logic led_en; // heartbeat & activity & on-board LEDs
+assign led_en = ~gp_out[LED_EN_BIT];
+logic status_en; // status output
+assign status_en = ~gp_out[STATUS_EN_BIT];
 
 logic oe; // output enable
 assign oe = pio_cfg[`CFG_OE];
@@ -689,14 +696,14 @@ assign freq_meter_0_conduit_end_reset = reset;            // reset in the ref_cl
 // Onboard LEDs on DE10-Nano
 // Recall: LEDs are not inverted, they show signals as they are.
 // LED[0] is the one closest to the Ethernet port.
-assign LED[0] = streamer_trigger_armed;
-assign LED[1] = streamer_trigger_activated;
-assign LED[2] = streamer_done;
-assign LED[3] = streamer_buffer_error;
-assign LED[4] = streamer_trigger_in[0];
-assign LED[5] = streamer_trigger_in[1];
-assign LED[6] = activity;
-assign LED[7] = heartbeat;
+assign LED[0] = led_en && streamer_trigger_armed;
+assign LED[1] = led_en && streamer_trigger_activated;
+assign LED[2] = led_en && streamer_done;
+assign LED[3] = led_en && streamer_buffer_error;
+assign LED[4] = led_en && streamer_trigger_in[0];
+assign LED[5] = led_en && streamer_trigger_in[1];
+assign LED[6] = led_en && activity;
+assign LED[7] = led_en && heartbeat;
 
 // Physical output path.
 //
@@ -807,14 +814,14 @@ assign GPI0GPIO2 = streamer_clk;                     // streamer clock, D2 (red)
 // GPI0GPIO[3] <-> streamer_qout_valid;              // valid/enable signal, D3 (orange)
 
 // monitoring
-assign GPI0GPIO4 = activity;                         // activity (on when data is streamed out)
-assign GPI0GPIO5 = heartbeat;                        // pulses when FPGA is programmed
+assign GPI0GPIO4 = led_en && activity;               // activity (on when data is streamed out)
+assign GPI0GPIO5 = led_en && heartbeat;              // pulses when FPGA is programmed
 
 // streaming and trigger status [OUTPUTS] (green)
-assign GPI0GPIO6 = streamer_trigger_armed;           // D8~d0 (black)
-assign GPI0GPIO7 = streamer_trigger_activated;       // D9~d1 (brown)
-assign GPI0GPIO8 = streamer_done;                    // D10~d2 (red)
-assign GPI0GPIO9 = streamer_buffer_error;            // D11~d3 (buffer_error)
+assign GPI0GPIO6 = status_en && streamer_trigger_armed;           // D8~d0 (black)
+assign GPI0GPIO7 = status_en && streamer_trigger_activated;       // D9~d1 (brown)
+assign GPI0GPIO8 = status_en && streamer_done;                    // D10~d2 (red)
+assign GPI0GPIO9 = status_en && streamer_buffer_error;            // D11~d3 (buffer_error)
 
 // trigger control [INPUTS]
 logic ext_trigger_enable, ext_trigger_force, ext_trigger_reset;

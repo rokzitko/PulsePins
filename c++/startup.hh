@@ -41,6 +41,7 @@ inline void bootstrap_process(const Verbosity &v, const int version)
 
 inline void apply_fpga_startup_policy(FPGA &fpga,
                                       const bool reset_FPGA,
+                                      const bool dark_mode,
                                       const ClockSelectionOptions &clock_selection,
                                       const PllOptions &core_pll,
                                       const PllOptions &int_pll)
@@ -52,10 +53,16 @@ inline void apply_fpga_startup_policy(FPGA &fpga,
   //   4. perform a short visible bring-up indication
   if (reset_FPGA)
     fpga.rm.s2f_reset();
+  fpga.dark_mode = dark_mode;
+  if (fpga.dark_mode) {
+    fpga.led_en(false);
+    fpga.status_en(false);
+  }
   fpga.set_clk(clock_selection);
   fpga.pll_core.set_core_clk(core_pll, fpga.v);
   fpga.pll_int.set_int_clk(int_pll, fpga.v);
-  fpga.blink_led();
+  if (!fpga.dark_mode)
+    fpga.blink_led();
   if (fpga.v.veryverbose) {
     fpga.mgr.status();
     fpga.status();
@@ -67,6 +74,7 @@ inline void apply_fpga_startup_policy(FPGA &fpga, const InputParser &input)
   apply_fpga_startup_policy(
     fpga,
     resolve_reset_FPGA(input),
+    resolve_dark_mode(input),
     resolve_clock_selection_options(input),
     resolve_core_pll_options(input),
     resolve_int_pll_options(input));

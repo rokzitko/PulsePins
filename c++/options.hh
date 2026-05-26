@@ -79,6 +79,15 @@ inline bool resolve_reset_FPGA(const InputParser &input) {
   return reset_FPGA;
 }
 
+inline bool resolve_dark_mode(const InputParser &input) {
+  bool dark_mode = false; // default
+  if (envVarExists("PP_DARK_MODE"))
+    dark_mode = true;
+  if (input.exists("-dark_mode"))
+    dark_mode = true;
+  return dark_mode;
+}
+
 inline ClockSelectionOptions resolve_clock_selection_options(const InputParser &input) {
   ClockSelectionOptions opts;
   // Later checks intentionally override earlier ones so the raw `-clk` selector remains
