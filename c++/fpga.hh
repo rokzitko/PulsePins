@@ -344,14 +344,14 @@ public:
   }
 
   void set_streamer_clk(const double hz) {
-    if (hz < 0.0)
-      throw std::runtime_error("Streamer clock frequency should be a positive quantity.");
+    if (!std::isfinite(hz) || hz <= 0.0)
+      throw std::runtime_error("Streamer clock frequency should be a finite positive quantity.");
     streamer_clk = hz;
   }
 
   // Streaming clock frequency [Hz], as measured by the frequency meter.
   double streamer_freq() const {
-    if (streamer_clk < 0.0)
+    if (!std::isfinite(streamer_clk) || streamer_clk <= 0.0)
       throw std::runtime_error("Streamer clock not measured yet.");
     return streamer_clk;
   }
