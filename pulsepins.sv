@@ -192,6 +192,28 @@ localparam integer STREAMER_CLK_FREQ_HZ = 100_000_000;
 
 logic ext_clk_pll_locked;
 logic clean_clk;
+
+localparam logic [2:0] CLOCK_MODE_INTERNAL       = 3'd0;
+localparam logic [2:0] CLOCK_MODE_EXTERNAL       = 3'd1;
+localparam logic [2:0] CLOCK_MODE_EXTERNAL_CLEAN = 3'd2;
+localparam logic [2:0] CLOCK_MODE_SELECT         = 3'd3;
+localparam logic [2:0] CLOCK_MODE_SELECT_CLEAN   = 3'd4;
+localparam logic [2:0] CLOCK_MODE_INVALID        = 3'd7;
+
+`ifdef INTERNAL_CLK
+localparam logic [2:0] CLOCK_MODE_READBACK = CLOCK_MODE_INTERNAL;
+`elsif EXTERNAL_CLK
+localparam logic [2:0] CLOCK_MODE_READBACK = CLOCK_MODE_EXTERNAL;
+`elsif EXTERNAL_CLK_CLEAN
+localparam logic [2:0] CLOCK_MODE_READBACK = CLOCK_MODE_EXTERNAL_CLEAN;
+`elsif SELECT_CLK
+localparam logic [2:0] CLOCK_MODE_READBACK = CLOCK_MODE_SELECT;
+`elsif SELECT_CLK_CLEAN
+localparam logic [2:0] CLOCK_MODE_READBACK = CLOCK_MODE_SELECT_CLEAN;
+`else
+localparam logic [2:0] CLOCK_MODE_READBACK = CLOCK_MODE_INVALID;
+`endif
+
 // Simple external-clock cleanup PLL.
 // This is not a separate user-facing clock domain; it is only a cleaned candidate source for
 // `streamer_clk` in the external-clock-clean modes.
@@ -622,8 +644,9 @@ base_hps u0 (
 );
 
 // FPGA->HPS status summary used by host-side startup/debug code.
-// This exports PLL lock, reset-release state, and runtime activity into the direct HPS GPIO
-// register space so software can reason about top-level clocking and reset behavior.
+// This exports PLL lock, reset-release state, runtime activity, and the synthesized clock
+// build mode into the direct HPS GPIO register space so software can reason about top-level
+// clocking and reset behavior.
 assign gp_in[0] = core_clk_pll_locked;
 assign gp_in[1] = int_clk_pll_locked;
 `ifdef EXTERNAL_CLK_CLEAN
@@ -635,7 +658,8 @@ assign gp_in[3] = core_clk_pll_ready;
 assign gp_in[4] = sys_reset_hold;
 assign gp_in[5] = activity;
 assign gp_in[6] = reset_out;
-assign gp_in[31:7] = 0;
+assign gp_in[9:7] = CLOCK_MODE_READBACK;
+assign gp_in[31:10] = 0;
 
 // Clock source switching
 assign sel_clk = gp_out[1:0]; // bits [0:1] control clock source

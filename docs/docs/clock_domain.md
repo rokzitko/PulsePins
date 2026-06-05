@@ -42,6 +42,17 @@
 | `SELECT_CLK` | `int_clk` or `EXT_CLKp` | `altclkctrl` |
 | `SELECT_CLK_CLEAN` | `int_clk` or `clean_clk` | `altclkctrl` |
 
+The synthesized build mode is exported to software through `gp_in[9:7]`:
+
+| `gp_in[9:7]` | Build define |
+| ------------ | ------------ |
+| `0` | `INTERNAL_CLK` |
+| `1` | `EXTERNAL_CLK` |
+| `2` | `EXTERNAL_CLK_CLEAN` |
+| `3` | `SELECT_CLK` |
+| `4` | `SELECT_CLK_CLEAN` |
+| `7` | invalid/no clock-mode define |
+
 Clock-select control at top level:
 
 - `sel_clk = gp_out[1:0]`

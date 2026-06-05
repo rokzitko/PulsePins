@@ -198,9 +198,33 @@ public:
   FPGA(FPGA&&)                 = delete;
   FPGA& operator=(FPGA&&)      = delete;
 
+  static constexpr uint32_t CLOCK_MODE_READBACK_SHIFT = 7;
+  static constexpr uint32_t CLOCK_MODE_READBACK_MASK = 0x7;
+
+  static uint32_t clock_mode_readback_from_status(const uint32_t s) {
+    return (s >> CLOCK_MODE_READBACK_SHIFT) & CLOCK_MODE_READBACK_MASK;
+  }
+
+  static const char *clock_mode_readback_name(const uint32_t mode) {
+    switch (mode) {
+    case 0: return "INTERNAL_CLK";
+    case 1: return "EXTERNAL_CLK";
+    case 2: return "EXTERNAL_CLK_CLEAN";
+    case 3: return "SELECT_CLK";
+    case 4: return "SELECT_CLK_CLEAN";
+    case 7: return "INVALID";
+    default: return "UNKNOWN";
+    }
+  }
+
+  uint32_t clock_mode_readback() const {
+    return clock_mode_readback_from_status(mgr.gpio_read());
+  }
+
   uint32_t status() const {
     auto s = mgr.gpio_read();
     if (v.verbose) {
+      const auto clock_mode = clock_mode_readback_from_status(s);
       std::cout << "gpio in=0x" << std::hex << s << " ";
       if (s & (1 << 0)) std::cout << "[core_clk pll locked] ";
       if (s & (1 << 1)) std::cout << "[int_clk pll locked] ";
@@ -209,7 +233,8 @@ public:
       if (s & (1 << 4)) std::cout << "[sys reset hold] ";
       if (s & (1 << 5)) std::cout << "[activity] ";
       if (s & (1 << 6)) std::cout << "[reset altera] ";
-      if (s & (1 << 7)) std::cout << "[reset ai] ";
+      std::cout << "[clock mode " << clock_mode_readback_name(clock_mode)
+                << "=" << clock_mode << "] ";
       std::cout << std::endl;
     }
     return s;
