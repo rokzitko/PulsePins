@@ -10,7 +10,9 @@ Successful completion is reported by printing the message ``SUCCESS``.
 One can run the tests continuously using ``run_all_tests_forever`` to perform intensive
 stress testing. The main report is written in the current directory as `report`, and per-test
 logs are collected under `/var/volatile` for inspection. Pass `-no-report-files` to avoid
-writing the accumulating `/var/volatile/report.run_N` files during long burn-in runs.
+writing the accumulating `/var/volatile/report.run_N` files during long burn-in runs. Reports
+include a header with the `pptest` version and bitstream timestamp lines captured at the start
+of the run.
 
 ## Wiring up for testing
 

@@ -21,11 +21,34 @@ my $logdir = "/var/volatile";
 
 system "rm $logdir/report.*" if $save_report_files; # clean up first!
 
+sub get_pptest_report_header {
+    my $output = `pptest 0 2>&1`;
+    my $version = "Version unavailable";
+    my $bitstream_timestamp = "Bitstream timestamp: unavailable";
+    for my $line (split /\n/, $output) {
+        if ($line =~ /^Version /) {
+            $version = $line;
+        }
+        if ($line =~ /^Bitstream timestamp: /) {
+            $bitstream_timestamp = $line;
+        }
+    }
+    return "# run_all_tests_forever report\n# $version\n# $bitstream_timestamp\n\n";
+}
+
+my $report_header = get_pptest_report_header();
+
 open (O, ">report");
+print O $report_header;
 
 for ($i = 1 ; ; $i++) {
+    if ($save_report_files) {
+        open(my $R, ">$logdir/report.run_$i") or die "Could not write $logdir/report.run_$i: $!";
+        print $R $report_header;
+        close($R);
+    }
     my $cmd = $save_report_files
-        ? "run_all_tests 2>&1 | tee $logdir/report.run_$i"
+        ? "run_all_tests 2>&1 | tee -a $logdir/report.run_$i"
         : "run_all_tests 2>&1";
     system("bash", "-o", "pipefail", "-c", $cmd);
     my $rc = $? >> 8;   # extract exit code
