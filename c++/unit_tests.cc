@@ -24,6 +24,7 @@
 #include "PMODDA3.hh"
 #include "SPI.hh"
 #include "options.hh"
+#include "ppfg.hh"
 #include "pll_calc.hh"
 #include "pll_rules.hh"
 #include "ppwebgui_frontend.hh"
@@ -234,6 +235,19 @@ TEST_CASE("packet_stats uses completed packets for averages") {
 TEST_CASE("chars_to_uint32 preserves high-bit bytes") {
   const char bytes[4] = {char(0x80), char(0xFF), char(0x01), char(0x02)};
   CHECK(chars_to_uint32(bytes) == 0x80FF0102u);
+}
+
+TEST_CASE("servo_pwm_params returns duty in percent") {
+  const auto [freq_min, duty_min] = servo_pwm_params(0.0);
+  const auto [freq_mid, duty_mid] = servo_pwm_params(90.0);
+  const auto [freq_max, duty_max] = servo_pwm_params(180.0);
+
+  CHECK(freq_min == doctest::Approx(50.0));
+  CHECK(freq_mid == doctest::Approx(50.0));
+  CHECK(freq_max == doctest::Approx(50.0));
+  CHECK(duty_min == doctest::Approx(5.0));
+  CHECK(duty_mid == doctest::Approx(7.5));
+  CHECK(duty_max == doctest::Approx(10.0));
 }
 
 TEST_CASE("strobe class") {

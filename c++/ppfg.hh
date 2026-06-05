@@ -144,8 +144,8 @@ inline std::pair<double, double> servo_pwm_params(double angle,
   double t = (angle - angle_min) / (angle_max - angle_min);
   double pulse_width = pulse_min + t * (pulse_max - pulse_min);
 
-  // Duty cycle = pulse / period
-  double duty_cycle = pulse_width / period;
+  // Duty cycle as percent, matching calc_pos_neg() and the -duty option.
+  double duty_cycle = 100.0 * pulse_width / period;
 
   return {frequency, duty_cycle};
 }
