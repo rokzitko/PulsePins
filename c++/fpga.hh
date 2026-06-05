@@ -155,7 +155,7 @@ public:
   pll_core_clk pll_core;
   pll_int_clk pll_int;
 
-  FPGA(const Verbosity &_v) :
+  FPGA(const Verbosity &_v, const int expected_version) :
     dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE, "lw"),
     dev_h2f(HPSFPGA_OFST, H2F_RANGE, "h2f"),
     dev_hps(HPS_REGS_OFST, HPS_REGS_RANGE, "hps"),
@@ -171,6 +171,7 @@ public:
     pll_core(dev_lw, "pll_core"),
     pll_int(dev_lw, "pll_int")
     {
+      check_version(expected_version);
       // The host software assumes one coherent owner of the memory maps and top-level
       // control bits, so creating multiple `FPGA` instances is treated as a logic error.
       bool expected = false;
@@ -197,6 +198,21 @@ public:
   FPGA& operator=(const FPGA&) = delete;
   FPGA(FPGA&&)                 = delete;
   FPGA& operator=(FPGA&&)      = delete;
+
+  void check_version(const int expected_version, const bool verbose = false) {
+    if (SYSID_QSYS_0_ID != tidbit)
+      throw std::runtime_error("Host build expects a different FPGA design ID.");
+    if (SYSID_QSYS_1_ID != expected_version)
+      throw std::runtime_error("Host build expects a different FPGA version ID.");
+
+    sysid id(dev_lw,   SYSID_BASE,        SYSID_ID,        verbose, "id");
+    sysid id0(dev_lw,  SYSID_QSYS_0_BASE, SYSID_QSYS_0_ID, verbose, "id0");
+    sysid id1(dev_lw,  SYSID_QSYS_1_BASE, SYSID_QSYS_1_ID, verbose, "id1");
+    sysid id2(dev_h2f, SYSID_H2F_BASE,    SYSID_H2F_ID,    verbose, "id2");
+    // These tests also ensure that we can communicate on both lw and h2f buses.
+
+    std::cout << "Bitstream timestamp: " << id.get_timestamp_string() << std::endl;
+  }
 
   static constexpr uint32_t CLOCK_MODE_READBACK_SHIFT = 7;
   static constexpr uint32_t CLOCK_MODE_READBACK_MASK = 0x7;

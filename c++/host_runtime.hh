@@ -22,6 +22,7 @@ struct HostRuntime {
   std::string progname;
   InputParser input;
   Verbosity verbosity;
+  std::optional<RealtimeScheduler> realtime_scheduler;
   std::optional<FPGA> fpga;
   std::optional<pp_freq_meter> freq_meter;
 
@@ -31,8 +32,8 @@ struct HostRuntime {
     verbosity(set_verbosity(input))
   {
     about(progname);
-    bootstrap_process(verbosity, version);
-    fpga.emplace(verbosity);
+    realtime_scheduler.emplace(enable_realtime_process_mode(verbosity));
+    fpga.emplace(verbosity, version);
     apply_fpga_startup_policy(*fpga, input);
     freq_meter.emplace(input, *fpga);
     freq_meter->report();

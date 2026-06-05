@@ -4,7 +4,7 @@
 // Common process-startup helpers for PulsePins host executables.
 //
 // This header centralizes the runtime policy shared by `pptool`-style programs:
-//   - process-level bootstrap such as version checks, meory lock, real-time scheduler setup
+//   - process-level setup such as memory lock and realtime scheduler setup
 //   - FPGA startup policy such as clock-source selection and PLL programming
 //
 // Architectural overview lives in `c++/README.md`, `docs/docs/cpp.md`, and
@@ -18,15 +18,13 @@
 #include <sys/mman.h>
 
 #include "options.hh"
-#include "ppmisc.hh"
 #include "realtime.hh"
 #include "fpga.hh"
 
-inline void bootstrap_process(const Verbosity &v, const int version)
+inline RealtimeScheduler enable_realtime_process_mode(const Verbosity &v)
 {
-  // Process bootstrap is intentionally separated from FPGA startup so future tools can
+  // Realtime process setup is intentionally separated from FPGA startup so future tools can
   // reuse one policy without necessarily applying the other.
-  check_version(version);
   // lock the entire virtual address space into physical RAM, preventing the operating
   // system from swapping those pages out to disk.
   if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0)
@@ -37,6 +35,7 @@ inline void bootstrap_process(const Verbosity &v, const int version)
   RealtimeScheduler rt;
   if (v.veryverbose)
     std::cout << "Scheduler: " << rt.report() << std::endl;
+  return rt;
 }
 
 inline void apply_fpga_startup_policy(FPGA &fpga,
