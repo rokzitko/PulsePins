@@ -50,9 +50,9 @@ public:
   }
 
   freq_meter(const mm &dev, const address_map::H2fRegion base, const bool _verbose = false) :
-    lctl(dev.get_addr(base.base, 0), "fm/ctl"),
-    lgate_len(dev.get_addr(base.base, 4), "fm/gate_len"),
-    ln_ch(dev.get_addr(base.base, 8), "fm/n_ch"),
+    lctl(dev, base.base, 0, "fm/ctl"),
+    lgate_len(dev, base.base, 4, "fm/gate_len"),
+    ln_ch(dev, base.base, 8, "fm/n_ch"),
     verbose(_verbose)
   {
     n_ch = ln_ch.read();
@@ -63,7 +63,7 @@ public:
     set_gate_len(default_gate_len);
     lresult.reserve(n_ch);
     for (int i = 0; i < n_ch; i++)
-      lresult.emplace_back(loc(dev.get_addr(base.base, 0x10 + 4*i), "fm/result_" + std::to_string(i)));
+      lresult.emplace_back(dev, base.base, 0x10 + 4*i, "fm/result_" + std::to_string(i));
   }
 
   // Reprogram the measurement window and restart accumulation.

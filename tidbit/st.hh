@@ -18,8 +18,8 @@ class st_read
            const std::uintptr_t base,
            const bool _reset = false,
            std::string name = "st_read"s) :
-     lcontrol(dev.get_addr(base), name + "/control"),
-     lstatus(dev.get_addr(base),  name + "/status")
+     lcontrol(dev, base, name + "/control"),
+     lstatus(dev, base, name + "/status")
      {
        if (_reset) reset();
      }
@@ -64,8 +64,8 @@ class st_write
    st_write(const mm &dev,
             const std::uintptr_t base,
             std::string name = "st_write"s) :
-     lcontrol(dev.get_addr(base), name + "/control"),
-     lstatus(dev.get_addr(base),  name + "/status") {}
+     lcontrol(dev, base, name + "/control"),
+     lstatus(dev, base, name + "/status") {}
 
    void reset_fifo() {
      lcontrol.write(1); // assert reset_fifo

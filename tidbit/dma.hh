@@ -35,13 +35,13 @@ public:
          const std::uintptr_t descriptor_base,
          const bool _verbose = true,
          std::string name = "dma"s) :
-     dma_csr_status(dev.get_addr(csr_base),           name + "/csr_status"),
-     dma_csr_control(dev.get_addr(csr_base, 0x04),    name + "/csr_control"),
-     dma_csr_fill_level(dev.get_addr(csr_base, 0x08), name + "/csr_fill_level"),
-     d_src_addr(dev.get_addr(descriptor_base, 0x00),  name + "/src_addr"),
-     d_dest_addr(dev.get_addr(descriptor_base, 0x04), name + "/dest_addr"),
-     d_length(dev.get_addr(descriptor_base, 0x08),    name + "/length"),
-     d_control(dev.get_addr(descriptor_base, 0x0C),   name + "/control"),
+     dma_csr_status(dev, csr_base, name + "/csr_status"),
+     dma_csr_control(dev, csr_base, 0x04, name + "/csr_control"),
+     dma_csr_fill_level(dev, csr_base, 0x08, name + "/csr_fill_level"),
+     d_src_addr(dev, descriptor_base, 0x00, name + "/src_addr"),
+     d_dest_addr(dev, descriptor_base, 0x04, name + "/dest_addr"),
+     d_length(dev, descriptor_base, 0x08, name + "/length"),
+     d_control(dev, descriptor_base, 0x0C, name + "/control"),
      verbose(_verbose) {}
 
    std::string status_string() {

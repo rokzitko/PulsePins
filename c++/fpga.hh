@@ -75,9 +75,9 @@ private:
 
 public:
   MGR(mm &dev_fpgamgr, const Verbosity &_v) :
-    stat(dev_fpgamgr.get_addr(ALT_FPGAMGR_BASE, ALT_FPGAMGR_STAT_OFST), "stat"),
-    gpin(dev_fpgamgr.get_addr(ALT_FPGAMGR_BASE, ALT_FPGAMGR_GPI_OFST), "gpin"),
-    gpout(dev_fpgamgr.get_addr(ALT_FPGAMGR_BASE, ALT_FPGAMGR_GPO_OFST), "gpout"),
+    stat(dev_fpgamgr, ALT_FPGAMGR_BASE, ALT_FPGAMGR_STAT_OFST, "stat"),
+    gpin(dev_fpgamgr, ALT_FPGAMGR_BASE, ALT_FPGAMGR_GPI_OFST, "gpin"),
+    gpout(dev_fpgamgr, ALT_FPGAMGR_BASE, ALT_FPGAMGR_GPO_OFST, "gpout"),
     v(_v)
     {}
 

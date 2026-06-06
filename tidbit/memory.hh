@@ -76,6 +76,8 @@ class loc
          << " base=0x" << std::hex << base << std::endl;
 #endif
      }
+   loc(const mm &dev, std::uintptr_t ptr_base, std::string _name = "");
+   loc(const mm &dev, std::uintptr_t ptr_base, std::uintptr_t shift, std::string _name = "");
    inline void write(const uint32_t val, const uint32_t offset = 0) const noexcept {
      if (debug)
        try {
@@ -168,6 +170,12 @@ class mm
      close(fd);
    }
 };
+
+inline loc::loc(const mm &dev, std::uintptr_t ptr_base, std::string _name) :
+  loc(dev.get_addr(ptr_base), _name) {}
+
+inline loc::loc(const mm &dev, std::uintptr_t ptr_base, std::uintptr_t shift, std::string _name) :
+  loc(dev.get_addr(ptr_base, shift), _name) {}
 
 class on_chip_memory {
  private:

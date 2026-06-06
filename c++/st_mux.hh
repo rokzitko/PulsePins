@@ -25,11 +25,11 @@ private:
 
 public:
    st_mux(const mm &dev, const Verbosity &_v, const address_map::H2fRegion base, std::string name = "st_mux"s) :
-    lchannel(dev.get_addr(base.base, 0), name + "/channel"),
-    ctr1_l(dev.get_addr(base.base, 0),   name + "/ctr1_l"),
-    ctr1_h(dev.get_addr(base.base, 4),   name + "/ctr1_h"),
-    ctr2_l(dev.get_addr(base.base, 8),   name + "/ctr2_l"),
-    ctr2_h(dev.get_addr(base.base, 12),  name + "/ctr2_h"),
+    lchannel(dev, base.base, 0, name + "/channel"),
+    ctr1_l(dev, base.base, 0,   name + "/ctr1_l"),
+    ctr1_h(dev, base.base, 4,   name + "/ctr1_h"),
+    ctr2_l(dev, base.base, 8,   name + "/ctr2_l"),
+    ctr2_h(dev, base.base, 12,  name + "/ctr2_h"),
     v(_v) {}
 
   // Switch between the two upstream Avalon-ST sources.
