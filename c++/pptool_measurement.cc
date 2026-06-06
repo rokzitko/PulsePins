@@ -40,7 +40,6 @@
 #include "ppworkflow.hh"
 
 std::mutex lockcout;
-#define LOCKCOUT(z) { lockcout.lock(); z; lockcout.unlock(); }
 
 struct TimestampSession {
   timestamp ts;
@@ -156,8 +155,10 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
     const long long nr = parse_uint64(input, "-nr", "0");
     for (ctr = 0; nr == 0 || ctr < nr; ctr++) {
       current = read();
-      if (silent_after < 0 || ctr < silent_after)
-        LOCKCOUT( std::cout << format_with_dispatch(fmt, d) << std::endl; )
+      if (silent_after < 0 || ctr < silent_after) {
+        std::lock_guard<std::mutex> lock(lockcout);
+        std::cout << format_with_dispatch(fmt, d) << std::endl;
+      }
       previous = current;
     }
   } catch (const std::runtime_error &e) {
@@ -288,11 +289,12 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
   Averager<double> av(avg, [&pid, &convert, &dac, vref, gain](double avgDelta) {
     const auto control = pid.update(avgDelta);
     const double vout = convert.y(control);
-    lockcout.lock();
-    std::cout << "avgDelta=" << avgDelta <<
-      " control=" << std::setprecision(6) << control <<
-      " vout=" << std::setprecision(6) << vout << std::endl;
-    lockcout.unlock();
+    {
+      std::lock_guard<std::mutex> lock(lockcout);
+      std::cout << "avgDelta=" << avgDelta <<
+        " control=" << std::setprecision(6) << control <<
+        " vout=" << std::setprecision(6) << vout << std::endl;
+    }
     dac.set_voltage(vout, vref, gain);
   });
   ZipAggregator<uint64_t, uint64_t> agg
@@ -301,10 +303,9 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
         const int64_t diff = int64_t(b)-int64_t(a);
         const int64_t Delta = (cnt > 0 ? diff_prev-diff : 0);
         if (cnt < very_silent_after) {
-          lockcout.lock();
+          std::lock_guard<std::mutex> lock(lockcout);
           std::cout << "pair: A=" << std::dec << a << "  B=" << b << "  diff=" << diff <<
             "  Delta=" << Delta << std::endl;
-          lockcout.unlock();
         }
         if (cnt > 0 && abs(Delta) < reject) {
           const int64_t clippedDelta = (abs(Delta) < clip ? Delta : clip*sgn(Delta));
