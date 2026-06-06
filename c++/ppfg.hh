@@ -33,9 +33,11 @@ inline std::pair<uint64_t, uint64_t> calc_pos_neg(const double period_req,
                                                   const double duty,
                                                   const double output_clk = default_output_clk)
 {
-  if (period_req < 0.0)
-    throw std::runtime_error("Period/frequency must be a positive quantity.");
-  if (duty < 0.0 || duty > 100.0)
+  if (!std::isfinite(period_req) || period_req <= 0.0)
+    throw std::runtime_error("Period/frequency must be a finite positive quantity.");
+  if (!std::isfinite(output_clk) || output_clk <= 0.0)
+    throw std::runtime_error("Output clock frequency must be a finite positive quantity.");
+  if (!std::isfinite(duty) || duty < 0.0 || duty > 100.0)
     throw std::runtime_error("Duty cycle must be a value between 0 and 100 (percent).");
   const double output_clk_period = 1.0/output_clk;
   uint64_t nr = round(period_req/output_clk_period);
@@ -52,7 +54,8 @@ inline std::pair<uint64_t, uint64_t> calc_pos_neg(const double period_req,
     nr_neg = 1;
     nr_pos = nr_pos-1;
   }
-  assert(nr_pos > 0 && nr_neg > 0);
+  if (nr_pos == 0 || nr_neg == 0)
+    throw std::runtime_error("Duty cycle produced an invalid pulse split.");
   if (nr_pos > std::numeric_limits<count_t>::max())
     throw std::runtime_error("Number of periods too large for the bit-width of the counter (nr_pos).");
   if (nr_neg > std::numeric_limits<count_t>::max())

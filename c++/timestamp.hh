@@ -15,7 +15,6 @@
 #include <chrono>
 #include <exception>
 
-#include <cassert>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -102,7 +101,8 @@ public:
 
     // Route one of the predefined timestamp sources to the auxiliary capture path.
     void selA(const int i) {
-    assert(0 <= i && i <= 7);
+    if (i < 0 || i > 7)
+      throw std::out_of_range("timestamp::selA selector must be in range 0..7");
     pio_cfg.clear((1 << 2) + (1 << 3) + (1 << 4));
     pio_cfg.set(i << 2);
   }

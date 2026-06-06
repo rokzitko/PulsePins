@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <cassert>
 #include <cstdint> // integer types, uint32_t, etc.
 #include <iostream>
 #include <optional>
@@ -53,6 +52,8 @@ public:
 
   // Materialize one element into the SDRAM staging buffer at logical position `i`.
   void write_element(const int i, const el &e) {
+    if (i < 0)
+      throw std::out_of_range("DMA buffer element index must be non-negative");
     size_t pos = (BYTES_TOTAL/4)*i; // in units of words (32-bits, 4-bytes); BYTES_TOTAL is the total size of an element in bytes
     if (4*pos + BYTES_TOTAL <= max_size) { // still fits in buffer
       auto py = sdram.get_ptr(pos*4);
@@ -75,7 +76,8 @@ public:
     for(const auto &e : elements)
       write_element(i++, e);
     const size_t size = BYTES_TOTAL*i;
-    assert(size <= max_size);
+    if (size > max_size)
+      throw std::runtime_error("DMA buffer size exceeds configured staging buffer size.");
     return size; // return the size of the data in bytes
   }
 
@@ -93,11 +95,14 @@ public:
         auto pv = sdram.get_ptr(pos*4);
         if (*(value_t*)pv != e.value()) return false;
         pos++;
+      } else {
+        throw std::runtime_error("DMA buffer verification exceeds configured staging buffer size.");
       }
     }
-      assert(4 * pos <= max_size);
-      return true;
-    }
+    if (4 * pos > max_size)
+      throw std::runtime_error("DMA buffer verification exceeds configured staging buffer size.");
+    return true;
+  }
 
   void report() {
     std::cout << "DMA " << status_string() << std::endl;

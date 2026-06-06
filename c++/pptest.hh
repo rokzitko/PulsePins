@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <exception>
@@ -216,7 +215,8 @@ public:
 
     auto c = parse_count(input, "-c", "1");
     auto vmax = parse_value(input, "-v", "3");
-    assert(vmax <= POSITIONS); // nr. positions in the fast memory (0 is allowed)
+    if (vmax > POSITIONS)
+      throw std::runtime_error("pptest 10: -v exceeds the number of fast-memory positions");
     for (value_t v = 0; v < vmax; v++)
       elements.push_back(el(c, v).store(v)); // store at position v, ranging from 0 to vmax-1
 

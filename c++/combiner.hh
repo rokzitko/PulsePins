@@ -11,10 +11,10 @@
 #pragma once
 
 #include <bitset>
-#include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 #include "tidbit.hh"
@@ -116,6 +116,11 @@ private:
   Value c; // cfg
   const int NR = 4;
 
+  void validate_port_index(const int n, const char *operation) const {
+    if (n < 0 || n > NR)
+      throw std::out_of_range(std::string(operation) + ": port index must be in range 0.." + std::to_string(NR));
+  }
+
 public:
   combiner(const mm &dev, const std::uintptr_t base, std::string name = "combiner"s) :
     lcfg(dev.get_addr(base,    C_CFG*4),    name + "/cfg"),
@@ -162,7 +167,7 @@ public:
 
   // Invert selected bits. `n=0` targets the output, `1..4` target inputs.
   void invert(const int n, const Value v) {
-    assert(n >= 0 && n <= NR);
+    validate_port_index(n, "invert");
     if (n == 0)
       inverto.write(v);
     if (n == 1)
@@ -176,7 +181,7 @@ public:
   }
 
   Value get_invert(const int n) {
-    assert(n >= 0 && n <= NR);
+    validate_port_index(n, "get_invert");
     if (n == 0)
       return inverto.read();
     if (n == 1)
@@ -192,7 +197,7 @@ public:
 
   // Mask selected bits. Ones pass through; zeros suppress that bit position.
   void mask(const int n, const Value v) {
-    assert(n >= 0 && n <= NR);
+    validate_port_index(n, "mask");
     if (n == 0)
       masko.write(v);
     if (n == 1)
@@ -206,7 +211,7 @@ public:
   }
 
   Value get_mask(const int n) {
-    assert(n >= 0 && n <= NR);
+    validate_port_index(n, "get_mask");
     if (n == 0)
       return masko.read();
     if (n == 1)
@@ -222,7 +227,7 @@ public:
 
   // Store an override value without enabling it yet.
   void value(const int n, const Value v) {
-    assert(n >= 0 && n <= NR);
+    validate_port_index(n, "value");
     if (n == 0)
       valueo.write(v);
     if (n == 1)
@@ -236,7 +241,7 @@ public:
   }
 
   Value get_value(const int n) {
-    assert(n >= 0 && n <= NR);
+    validate_port_index(n, "get_value");
     if (n == 0)
       return valueo.read();
     if (n == 1)
@@ -299,7 +304,7 @@ public:
 
   // call to force() sets up the value and enables the force mode on the chosen bit
   void force(const int n, const Value v) {
-    assert(n >= 0 && n <= NR);
+    validate_port_index(n, "force");
     if (n == 0)
       valueo.write(v); // write first
     if (n == 1)
@@ -314,7 +319,7 @@ public:
   }
 
   Value get_force(const int n) {
-    assert(n >= 0 && n <= NR);
+    validate_port_index(n, "get_force");
     if (n == 0) {
       cfg(c & ~(1ULL << B_RBo)); // rb bit clear: false = get forced value
       return valueo.read();
