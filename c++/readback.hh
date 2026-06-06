@@ -25,7 +25,7 @@
 #include "stall_timeout.hh"
 #include "streamer.hh"
 
-class ReadbackException : std::exception {
+class ReadbackException : public std::exception {
   std::string msg;
 public:
   ReadbackException(const std::string &_msg) : msg(_msg) {}
