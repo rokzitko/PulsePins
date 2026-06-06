@@ -139,6 +139,14 @@ struct ThrowingTransport {
   }
 };
 
+struct CountingTransport {
+  int send_calls = 0;
+  void report() {}
+  void send_sequence(const Sequence &) {
+    send_calls++;
+  }
+};
+
 TEST_CASE("counter class") {
   count_t c = 10;
   Counter c1(c);
@@ -1269,6 +1277,18 @@ TEST_CASE("transmit_sequence_checked maps transport timeout to RC_TIMEOUT") {
 
   CHECK(rc == RC_TIMEOUT);
   CHECK(contains(out.str(), "synthetic transport timeout"));
+}
+
+TEST_CASE("transmit_sequence rejects oversized sequences before writes") {
+  CountingTransport transport;
+  FakeTransportControl control;
+  Sequence seq;
+  Verbosity verbosity;
+  for (size_t i = 0; i <= max_size; i++)
+    seq.push_back(el(1, 0));
+
+  CHECK_THROWS_AS(transmit_sequence(transport, control, seq, verbosity), std::runtime_error);
+  CHECK(transport.send_calls == 0);
 }
 
 TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {

@@ -129,7 +129,8 @@ inline void transmit_sequence(Transport &tr,
   if (v.veryverbose)
     tr.report();
   if (elements.size() > max_size)
-    std::cout << red << "Sequence will not fit in buffers. size=" << elements.size() << " max_size=" << max_size << rst << std::endl;
+    throw std::runtime_error("Sequence will not fit in buffers. size=" + std::to_string(elements.size()) +
+                             " max_size=" + std::to_string(max_size));
   tr.send_sequence(elements);
   sc.status_report();
   if (v.veryverbose)
