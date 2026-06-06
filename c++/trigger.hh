@@ -13,6 +13,7 @@
 #include <iostream>
 #include <bitset>
 
+#include "address_map.hh"
 #include "fpga.hh"
 #include "combiner.hh"
 #include "parser.hh"
@@ -27,7 +28,7 @@ public:
 
   trigger(const TriggerOptions &opts, const FPGA &_fpga) :
     fpga(_fpga),
-    ct(fpga.dev_h2f, COMBINER_TRIG_BASE) { set(opts); }
+    ct(fpga.dev_h2f, address_map::h2f::combiner_trig) { set(opts); }
 
   trigger(const InputParser &input, const FPGA &_fpga) :
     trigger(resolve_trigger_options(input), _fpga) {}

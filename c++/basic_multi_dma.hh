@@ -20,6 +20,7 @@
 
 #include "tidbit.hh"
 
+#include "address_map.hh"
 #include "fpga.hh"
 #include "options.hh"
 #include "streamer.hh"
@@ -35,9 +36,9 @@ public:
 
   basic_streamer(const StreamerOptions &opts,
                   FPGA &_fpga,
-                  const std::uintptr_t fifo_base,
-                  const std::uintptr_t fifo_csr_base,
-                  const std::uintptr_t st_if_base,
+                  const address_map::H2fRegion fifo_base,
+                  const address_map::H2fRegion fifo_csr_base,
+                  const address_map::H2fRegion st_if_base,
                   std::string name = "streamer") :
     fpga(_fpga),
     fifo(fpga.dev_h2f, fifo_base, fifo_csr_base, name),
@@ -48,15 +49,15 @@ public:
           std::cout << blue << "stop_on_buffer_error enabled." << rst << std::endl;
       }
       if (fpga.v.veryverbose)
-        std::cout << "basic_streamer[0x" << std::hex << fifo_base << ",0x" << fifo_csr_base
-        << ",0x"<< st_if_base << "]" << std::endl;
+        std::cout << "basic_streamer[0x" << std::hex << fifo_base.base << ",0x" << fifo_csr_base.base
+        << ",0x"<< st_if_base.base << "]" << std::endl;
     }
 
   basic_streamer(const InputParser &input,
                   FPGA &_fpga,
-                  const std::uintptr_t fifo_base = FIFO_1_IN_BASE,
-                  const std::uintptr_t fifo_csr_base = FIFO_1_IN_CSR_BASE,
-                  const std::uintptr_t st_if_base = ST_INTERFACE_1_BASE,
+                  const address_map::H2fRegion fifo_base = address_map::h2f::fifo_1_in,
+                  const address_map::H2fRegion fifo_csr_base = address_map::h2f::fifo_1_in_csr,
+                  const address_map::H2fRegion st_if_base = address_map::h2f::st_interface_1,
                   std::string name = "streamer"s) :
     basic_streamer(resolve_streamer_options(input), _fpga, fifo_base, fifo_csr_base, st_if_base, name) {}
 
@@ -81,8 +82,8 @@ public:
 
   streamer(const StreamerOptions &opts,
             FPGA &_fpga,
-            const std::uintptr_t st_mux_base = ST_MUX_1_BASE) :
-    basic_streamer(opts, _fpga, FIFO_1_IN_BASE, FIFO_1_IN_CSR_BASE, ST_INTERFACE_1_BASE),
+            const address_map::H2fRegion st_mux_base = address_map::h2f::st_mux_1) :
+    basic_streamer(opts, _fpga, address_map::h2f::fifo_1_in, address_map::h2f::fifo_1_in_csr, address_map::h2f::st_interface_1),
     fpga (_fpga),
     mux(fpga.dev_h2f, fpga.v, st_mux_base) {
       // Bring-up order matters:
@@ -96,7 +97,7 @@ public:
 
   streamer(const InputParser &input,
             FPGA &_fpga,
-            const std::uintptr_t st_mux_base = ST_MUX_1_BASE) :
+            const address_map::H2fRegion st_mux_base = address_map::h2f::st_mux_1) :
     streamer(resolve_streamer_options(input), _fpga, st_mux_base) {}
 
   ~streamer() {
@@ -117,7 +118,7 @@ public:
 
   dma_streamer(const StreamerOptions &opts, FPGA &_fpga) :
     streamer(opts, _fpga),
-    dma(fpga.dev_h2f, MSGDMA_1_CSR_BASE, MSGDMA_1_DESCRIPTOR_SLAVE_BASE, dma_base, dma_size, fpga.v) {
+    dma(fpga.dev_h2f, address_map::h2f::msgdma_1_csr, address_map::h2f::msgdma_1_descriptor_slave, dma_base, dma_size, fpga.v) {
       // The underlying streamer bring-up comes from `streamer`; this constructor only needs
       // to redirect the ST mux so the DMA engine becomes the active producer.
       mux.channel(2);
@@ -139,10 +140,10 @@ public:
                 const StreamerOptions &s4_opts,
                 FPGA &_fpga) :
     fpga(_fpga),
-    s1(s1_opts, fpga, FIFO_1_IN_BASE, FIFO_1_IN_CSR_BASE, ST_INTERFACE_1_BASE, "streamer1"),
-    s2(s2_opts, fpga, FIFO_2_IN_BASE, FIFO_2_IN_CSR_BASE, ST_INTERFACE_2_BASE, "streamer2"),
-    s3(s3_opts, fpga, FIFO_3_IN_BASE, FIFO_3_IN_CSR_BASE, ST_INTERFACE_3_BASE, "streamer3"),
-    s4(s4_opts, fpga, FIFO_4_IN_BASE, FIFO_4_IN_CSR_BASE, ST_INTERFACE_4_BASE, "streamer4")
+    s1(s1_opts, fpga, address_map::h2f::fifo_1_in, address_map::h2f::fifo_1_in_csr, address_map::h2f::st_interface_1, "streamer1"),
+    s2(s2_opts, fpga, address_map::h2f::fifo_2_in, address_map::h2f::fifo_2_in_csr, address_map::h2f::st_interface_2, "streamer2"),
+    s3(s3_opts, fpga, address_map::h2f::fifo_3_in, address_map::h2f::fifo_3_in_csr, address_map::h2f::st_interface_3, "streamer3"),
+    s4(s4_opts, fpga, address_map::h2f::fifo_4_in, address_map::h2f::fifo_4_in_csr, address_map::h2f::st_interface_4, "streamer4")
     {
       // Each core is configured independently, but outputs are enabled once globally.
       // Initial values are set before each per-core reset for the same reason as in the

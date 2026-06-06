@@ -17,6 +17,7 @@
 #include <unistd.h> // usleep
 
 #include "tidbit.hh"
+#include "address_map.hh"
 #include "delay.hh"
 #include "fifo.hh"
 #include "dma.hh"
@@ -38,12 +39,12 @@ public:
   const Verbosity &v;
 
   streamer_dma(const mm &dev,
-                const std::uintptr_t csr_base,
-                const std::uintptr_t descriptor_base,
+                const address_map::H2fRegion csr_base,
+                const address_map::H2fRegion descriptor_base,
                 const std::uintptr_t ram_addr,
                 const size_t _max_size,
                 const Verbosity &_v) :
-    c_dma(dev, csr_base, descriptor_base, _v.veryverbose),
+    c_dma(dev, csr_base.base, descriptor_base.base, _v.veryverbose),
     max_size(_max_size),
     sdram(ram_addr, max_size),
     v(_v) {

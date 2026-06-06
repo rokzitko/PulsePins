@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "pptool_commands.hh"
+#include "address_map.hh"
 #include "ppmisc.hh"
 #include "pptest.hh"
 
@@ -61,7 +62,7 @@ int ppmstest(FPGA &fpga, const InputParser &input, const Verbosity &v)
     multistreamer s(input, fpga);
     qout q(input, v, fpga);
     readback rb(input, fpga);
-    trigger_int trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE);
+    trigger_int trig_int(fpga.dev_lw, address_map::lw::pio_trig_int);
     mstests t(s, q, rb, trig_int, input, v);
     rc = t.run(test);
   }
@@ -236,7 +237,7 @@ int pptrig(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   streamer s(input, fpga);
   trigger tr(input, fpga);
-  trigger_int trig_int(fpga.dev_lw, PIO_TRIG_INT_BASE, false);
+  trigger_int trig_int(fpga.dev_lw, address_map::lw::pio_trig_int, false);
   auto p = parse_uint32(input, "-pio", "0");
   trig_int.write(p);
   if (v.veryverbose) {
@@ -375,7 +376,7 @@ int ppaux(FPGA &fpga,
           const InputParser &input,
           [[maybe_unused]] const Verbosity &v)
 {
-  pio_in pio_aux(fpga.dev_lw, PIO_AUX_BASE);
+  pio_in pio_aux(fpga.dev_lw, address_map::lw::pio_aux.base);
   const auto nr = parse_uint64(input, "-nr", "0");
   const auto wait = parse_double(input, "-wait", "0.5");
   const auto mode = input.get_string("-mode", "hex:bin:dec");

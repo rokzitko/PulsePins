@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "address_map.hh"
 #include "bitops.hh"
 #include "misc.hh"
 #include "pio.hh"
@@ -25,10 +26,10 @@ constexpr uint32_t set_masked(uint32_t x, uint32_t mask, uint32_t value) noexcep
 class trigger_int : public pio_out {
 public:
   trigger_int(mm &dev,
-              uintptr_t base = PIO_TRIG_INT_BASE,
+              const address_map::LwRegion base = address_map::lw::pio_trig_int,
               bool clear_at_startup = true,
               std::string name = "trigger_int"s) :
-     pio_out(dev, base, name) {
+     pio_out(dev, base.base, name) {
        if (clear_at_startup)
          write(0);
      }

@@ -17,6 +17,7 @@
 #include <unistd.h> // usleep
 
 #include "tidbit.hh"
+#include "address_map.hh"
 #include "delay.hh"
 #include "fifo.hh"
 #include "dma.hh"
@@ -86,8 +87,8 @@ private:
   }
 
 public:
-  streamer_fifo(const mm &dev, const std::uintptr_t base, const std::uintptr_t in_csr_base, std::string name = "streamer_fifo") :
-    fifo(dev, base, in_csr_base, name) {}
+  streamer_fifo(const mm &dev, const address_map::H2fRegion base, const address_map::H2fRegion in_csr_base, std::string name = "streamer_fifo") :
+    fifo(dev, base.base, in_csr_base.base, name) {}
 
   // Send one host-side element object.
   void out(const el &e, const bool dump = false) {

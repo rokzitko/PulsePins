@@ -11,13 +11,14 @@
 
 #include <iostream>
 
+#include "address_map.hh"
 #include "fpga.hh"
 #include "combiner.hh"
 #include "parser.hh"
 
 class combiner_qout : public combiner {
 public:
-  combiner_qout(const mm &dev, const std::uintptr_t base, std::string name = "combiner_qout"s) :
+  combiner_qout(const mm &dev, const address_map::H2fRegion base, std::string name = "combiner_qout"s) :
     combiner::combiner(dev, base, name) {}
 };
 
@@ -33,7 +34,7 @@ public:
   qout(const Verbosity &_v, FPGA &_fpga) :
     fpga(_fpga),
     verb(_v),
-    cq(fpga.dev_h2f, COMBINER_QOUT_BASE) {}
+    cq(fpga.dev_h2f, address_map::h2f::combiner_qout) {}
 
   qout(const InputParser &input, const Verbosity &_v, FPGA &_fpga) :
     qout(_v, _fpga)

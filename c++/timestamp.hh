@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "address_map.hh"
 #include "fifo.hh"
 #include "pio.hh"
 
@@ -78,12 +79,12 @@ private:
 public:
   timestamp(mm &dev_h2f,
             mm &dev_lw,
-            const std::uintptr_t base, const std::uintptr_t in_csr_base,
-            const std::uintptr_t baseA, const std::uintptr_t in_csr_baseA,
-            const std::uintptr_t pio_cfg_base) :
-    ff(dev_h2f, base, in_csr_base),
-    ffA(dev_h2f, baseA, in_csr_baseA),
-    pio_cfg(dev_lw, pio_cfg_base)
+            const address_map::H2fRegion base, const address_map::H2fRegion in_csr_base,
+            const address_map::H2fRegion baseA, const address_map::H2fRegion in_csr_baseA,
+            const address_map::LwRegion pio_cfg_base) :
+    ff(dev_h2f, base.base, in_csr_base.base),
+    ffA(dev_h2f, baseA.base, in_csr_baseA.base),
+    pio_cfg(dev_lw, pio_cfg_base.base)
     {
       clear_fifo();
       clear_fifoA();

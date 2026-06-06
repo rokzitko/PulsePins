@@ -19,6 +19,7 @@
 #include <string>
 
 #include "colors.hh"
+#include "address_map.hh"
 #include "delay.hh"
 #include "fpga.hh"
 #include "options.hh"
@@ -113,17 +114,17 @@ private:
 public:
   readback(FPGA &_fpga,
             const mm &dev,
-            const std::uintptr_t base,
-            const std::uintptr_t csr_base,
-            const std::uintptr_t control_base,
+            const address_map::H2fRegion base,
+            const address_map::H2fRegion csr_base,
+            const address_map::H2fRegion control_base,
             std::string name = "readback"s) :
     fpga(_fpga),
-    f(dev, base, csr_base, name),
-    lcontrol(dev.get_addr(control_base),    name + "/control"),    // w
-    lmode(dev.get_addr(control_base, 4),    name + "/mode"),    // w
-    lstatus(dev.get_addr(control_base),     name + "/status"),     // r
-    lcounter(dev.get_addr(control_base, 4), name + "/counter"), // r
-    lcrc32(dev.get_addr(control_base, 8),   name + "/crc32"),   // r
+    f(dev, base.base, csr_base.base, name),
+    lcontrol(dev.get_addr(control_base.base),    name + "/control"),    // w
+    lmode(dev.get_addr(control_base.base, 4),    name + "/mode"),    // w
+    lstatus(dev.get_addr(control_base.base),     name + "/status"),     // r
+    lcounter(dev.get_addr(control_base.base, 4), name + "/counter"), // r
+    lcrc32(dev.get_addr(control_base.base, 8),   name + "/crc32"),   // r
     v(fpga.v)
     {
       reset();
@@ -131,7 +132,10 @@ public:
 
   readback(const ReadbackOptions &opts,
             FPGA &_fpga) :
-    readback(_fpga, _fpga.dev_h2f, FIFO_RL_OUT_BASE, FIFO_RL_IN_CSR_BASE, RL_ENCODER_IF_BASE) {
+    readback(_fpga, _fpga.dev_h2f,
+             address_map::h2f::fifo_rl_out,
+             address_map::h2f::fifo_rl_in_csr,
+             address_map::h2f::rl_encoder_if) {
       mode(opts.mode);
     }
 

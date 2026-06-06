@@ -58,6 +58,7 @@
 static_assert(ALT_FPGAMGR_BASE == ALT_FPGAMGR_OFST);
 
 #include "tidbit.hh"
+#include "address_map.hh"
 #include "memory.hh"
 #include "verbosity.hh"
 #include "trigger_int.hh"
@@ -127,8 +128,8 @@ private:
   pio_in p;
 
 public:
-  Elapsed(mm &dev, const std::uintptr_t base, std::string name = "elapsed"s) :
-    p(dev, base, name) {}
+  Elapsed(mm &dev, const address_map::LwRegion base, std::string name = "elapsed"s) :
+    p(dev, base.base, name) {}
 
   uint32_t seconds() {
     return p.read();
@@ -163,11 +164,11 @@ public:
     dev_fpgamgr(ALT_FPGAMGR_BASE, ALT_FPGAMGR_RANGE, "fpgamgr"),
     led(dev_hps),
     mgr(dev_fpgamgr, _v),
-    pio_cfg(dev_lw, PIO_CFG_BASE, "pio_cfg"),
-    elapsed(dev_lw, PIO_ELAPSED_BASE, "elapsed"),
+    pio_cfg(dev_lw, address_map::lw::pio_cfg.base, "pio_cfg"),
+    elapsed(dev_lw, address_map::lw::pio_elapsed, "elapsed"),
     v(_v),
-    trig_int(dev_lw, PIO_TRIG_INT_BASE, "trig_int"),
-    trig_ext(dev_lw, PIO_TRIG_MONITOR_BASE, "trig_ext"),
+    trig_int(dev_lw, address_map::lw::pio_trig_int, true, "trig_int"),
+    trig_ext(dev_lw, address_map::lw::pio_trig_monitor, "trig_ext"),
     pll_core(dev_lw, "pll_core"),
     pll_int(dev_lw, "pll_int")
     {
@@ -205,10 +206,10 @@ public:
     if (SYSID_QSYS_1_ID != expected_version)
       throw std::runtime_error("Host build expects a different FPGA version ID.");
 
-    sysid id(dev_lw,   SYSID_BASE,        SYSID_ID,        verbose, "id");
-    sysid id0(dev_lw,  SYSID_QSYS_0_BASE, SYSID_QSYS_0_ID, verbose, "id0");
-    sysid id1(dev_lw,  SYSID_QSYS_1_BASE, SYSID_QSYS_1_ID, verbose, "id1");
-    sysid id2(dev_h2f, SYSID_H2F_BASE,    SYSID_H2F_ID,    verbose, "id2");
+    sysid id(dev_lw,   address_map::lw::sysid.base,        SYSID_ID,        verbose, "id");
+    sysid id0(dev_lw,  address_map::lw::sysid_qsys_0.base, SYSID_QSYS_0_ID, verbose, "id0");
+    sysid id1(dev_lw,  address_map::lw::sysid_qsys_1.base, SYSID_QSYS_1_ID, verbose, "id1");
+    sysid id2(dev_h2f, address_map::h2f::sysid_h2f.base,   SYSID_H2F_ID,    verbose, "id2");
     // These tests also ensure that we can communicate on both lw and h2f buses.
 
     std::cout << "Bitstream timestamp: " << id.get_timestamp_string() << std::endl;

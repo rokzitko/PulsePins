@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "address_map.hh"
 #include "freq_meter.hh"
 #include "parser.hh"
 #include "pll_calc.hh"
@@ -207,7 +208,7 @@ WebGuiController::WebGuiController(FPGA &fpga_, const WebGuiRuntimeConfig &confi
   trigger_ctrl(config.trigger_options, fpga),
   readback_path(config.readback_options, fpga),
   counters(fpga),
-  pio_aux(fpga.dev_lw, PIO_AUX_BASE),
+  pio_aux(fpga.dev_lw, address_map::lw::pio_aux.base),
   comb(qout_ctrl.cq),
   trig_comb(trigger_ctrl.ct) {
   snapshot.poll_ms = config.poll_ms;

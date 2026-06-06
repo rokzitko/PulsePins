@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "tidbit.hh"
+#include "address_map.hh"
 #include "fpga.hh"
 #include "colors.hh"
 #include "sequence.hh"
@@ -335,21 +336,21 @@ public:
   crosscorrelation cc;
 
   counter(FPGA &_fpga,
-          const std::uintptr_t base = COUNTER_Q_BASE,
+          const address_map::H2fRegion base = address_map::h2f::counter_q,
           std::string name = "counter"s) :
     fpga(_fpga),
     dev(fpga.dev_h2f),
-    linstr(dev.get_addr(base, 1*4),       name + "/instr"),
-    lpart(dev.get_addr(base, 2*4),        name + "/part"),
-    laddr(dev.get_addr(base, 3*4),        name + "/addr"),
-    lsel0(dev.get_addr(base, 4*4),        name + "/sel0"),
-    lsel1(dev.get_addr(base, 5*4),        name + "/sel1"),
-    lsel2(dev.get_addr(base, 6*4),        name + "/sel2"),
-    lctrl(dev.get_addr(base, 7*4),        name + "/ctrl"),
-    lresult(dev.get_addr(base, 0*4),      name + "/result"),
-    loverflow_bc(dev.get_addr(base, 1*4), name + "/overflow_bc"),
-    loverflow_pc(dev.get_addr(base, 2*4), name + "/overflow_pc"),
-    ltcready(dev.get_addr(base, 3*4),     name + "/tcready"),
+    linstr(dev.get_addr(base.base, 1*4),       name + "/instr"),
+    lpart(dev.get_addr(base.base, 2*4),        name + "/part"),
+    laddr(dev.get_addr(base.base, 3*4),        name + "/addr"),
+    lsel0(dev.get_addr(base.base, 4*4),        name + "/sel0"),
+    lsel1(dev.get_addr(base.base, 5*4),        name + "/sel1"),
+    lsel2(dev.get_addr(base.base, 6*4),        name + "/sel2"),
+    lctrl(dev.get_addr(base.base, 7*4),        name + "/ctrl"),
+    lresult(dev.get_addr(base.base, 0*4),      name + "/result"),
+    loverflow_bc(dev.get_addr(base.base, 1*4), name + "/overflow_bc"),
+    loverflow_pc(dev.get_addr(base.base, 2*4), name + "/overflow_pc"),
+    ltcready(dev.get_addr(base.base, 3*4),     name + "/tcready"),
     bc(readfnc([&](uint32_t part, uint32_t addr) { return read(1, part, addr); })),
     rc(readfnc([&](uint32_t part, uint32_t addr) { return read(2, part, addr); })),
     ps(readfnc([&](uint32_t part, uint32_t addr) { return read(5, part, addr); })),
@@ -364,7 +365,7 @@ public:
 
   counter([[maybe_unused]] const InputParser &input,
           FPGA &_fpga,
-          const std::uintptr_t base = COUNTER_Q_BASE,
+          const address_map::H2fRegion base = address_map::h2f::counter_q,
           std::string name = "counter"s) :
     counter(_fpga, base, std::move(name)) {}
 

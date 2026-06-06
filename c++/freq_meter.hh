@@ -18,6 +18,7 @@
 #include <cmath>
 #include <algorithm>
 #include "tidbit.hh"
+#include "address_map.hh"
 #include "freqfmt.hh"
 #include "fpga.hh"
 #include "options.hh"
@@ -48,10 +49,10 @@ public:
     return static_cast<useconds_t>(std::max<long long>(1, wait_us));
   }
 
-  freq_meter(const mm &dev, const std::uintptr_t base, const bool _verbose = false) :
-    lctl(dev.get_addr(base, 0), "fm/ctl"),
-    lgate_len(dev.get_addr(base, 4), "fm/gate_len"),
-    ln_ch(dev.get_addr(base, 8), "fm/n_ch"),
+  freq_meter(const mm &dev, const address_map::H2fRegion base, const bool _verbose = false) :
+    lctl(dev.get_addr(base.base, 0), "fm/ctl"),
+    lgate_len(dev.get_addr(base.base, 4), "fm/gate_len"),
+    ln_ch(dev.get_addr(base.base, 8), "fm/n_ch"),
     verbose(_verbose)
   {
     n_ch = ln_ch.read();
@@ -62,7 +63,7 @@ public:
     set_gate_len(default_gate_len);
     lresult.reserve(n_ch);
     for (int i = 0; i < n_ch; i++)
-      lresult.emplace_back(loc(dev.get_addr(base, 0x10 + 4*i), "fm/result_" + std::to_string(i)));
+      lresult.emplace_back(loc(dev.get_addr(base.base, 0x10 + 4*i), "fm/result_" + std::to_string(i)));
   }
 
   // Reprogram the measurement window and restart accumulation.
@@ -134,7 +135,7 @@ public:
   // If `wait` is true, block until the first post-configuration measurement is valid.
   pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait, const bool verbose) :
     fpga(_fpga),
-    meter(fpga.dev_h2f, FREQ_METER_0_BASE, verbose) {
+    meter(fpga.dev_h2f, address_map::h2f::freq_meter_0, verbose) {
     if (opts.correction_factor)
       meter.set_correction_factor(*opts.correction_factor);
     if (meter.get_n_ch() != 4)

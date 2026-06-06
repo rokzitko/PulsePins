@@ -13,6 +13,7 @@
 #include <string>
 #include <iostream>
 
+#include "address_map.hh"
 #include "pll.hh"
 #include "pll_calc.hh"
 #include "pll_rules.hh"
@@ -42,7 +43,7 @@ public:
   pll core_clk;
 
   pll_core_clk(mm &dev_lw, std::string name = "pll_core"s) :
-    core_clk(dev_lw, PLL_RECONFIG_CORE_CLK_BASE, name) {}
+    core_clk(dev_lw, address_map::lw::pll_reconfig_core_clk.base, name) {}
 
   // Program the core clock PLL using the resolved preset/raw string plus optional fine-tuning.
   void set_core_clk(const PllOptions &opts, const Verbosity &v) {
@@ -67,7 +68,7 @@ public:
   pll int_clk;
 
   pll_int_clk(mm &dev_lw, std::string name = "pll_int"s) :
-    int_clk(dev_lw, PLL_RECONFIG_INT_CLK_BASE, name) {}
+    int_clk(dev_lw, address_map::lw::pll_reconfig_int_clk.base, name) {}
 
   // Program the internal candidate streamer clock PLL.
   void set_int_clk(const PllOptions &opts, const Verbosity &v) {

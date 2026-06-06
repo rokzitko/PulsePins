@@ -21,6 +21,7 @@
 #include <utility>
 
 #include "pptool_commands.hh"
+#include "address_map.hh"
 #include "counter.hh"
 #include "timestamp.hh"
 #include "format_with_dispatch.hh"
@@ -48,9 +49,9 @@ struct TimestampSession {
   TimestampSession(FPGA &fpga, const InputParser &input, const Verbosity &v) :
     ts(fpga.dev_h2f,
       fpga.dev_lw,
-      FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_IN_CSR_BASE,
-      FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_IN_CSR_BASE,
-      PIO_CFG_BASE),
+      address_map::h2f::fifo_ts_pps_out, address_map::h2f::fifo_ts_pps_in_csr,
+      address_map::h2f::fifo_ts_siga_out, address_map::h2f::fifo_ts_siga_in_csr,
+      address_map::lw::pio_cfg),
     timeout(parse_double(input, "-timeout", "0"))
   {
     if (input.exists("-pps_in"))

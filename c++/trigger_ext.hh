@@ -12,13 +12,14 @@
 #include <cstdint>
 #include <iostream>
 
+#include "address_map.hh"
 #include "config.h"
 #include "pio.hh"
 
 class trigger_ext : public pio_in {
 public:
-  trigger_ext(mm &dev, uintptr_t base, std::string name = "trigger_ext") :
-    pio_in(dev, base, name) {}
+  trigger_ext(mm &dev, const address_map::LwRegion base, std::string name = "trigger_ext") :
+    pio_in(dev, base.base, name) {}
 
   // Print a decoded view of the current trigger input word and control flags.
   void status() {
