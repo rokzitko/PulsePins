@@ -69,13 +69,18 @@ inline std::pair<uint64_t, uint64_t> calc_pos_neg(const double period_req,
 
 inline uint64_t calc_delay(const double delay, const double output_clk = default_output_clk)
 {
+  if (!std::isfinite(delay) || delay < 0.0)
+    throw std::runtime_error("Delay must be a finite non-negative quantity.");
+  if (!std::isfinite(output_clk) || output_clk <= 0.0)
+    throw std::runtime_error("Output clock frequency must be a finite positive quantity.");
   const double output_clk_period = 1.0/output_clk;
-  uint64_t nr_delay = round(delay/output_clk_period);
+  const double nr_delay_d = round(delay/output_clk_period);
+  if (!std::isfinite(nr_delay_d) || nr_delay_d < 0.0 || nr_delay_d > std::numeric_limits<count_t>::max())
+    throw std::runtime_error("Number of periods too large for the bit-width of the counter (nr_delay).");
+  const uint64_t nr_delay = static_cast<uint64_t>(nr_delay_d);
   double delay_resulting = nr_delay*output_clk_period;
   std::cout << "delay (requested)=" << pretty_time(delay) << " (resulting)="
     << pretty_time(delay_resulting) << " nr_delay=" << std::dec << nr_delay << std::endl;
-  if (nr_delay > std::numeric_limits<count_t>::max())
-    throw std::runtime_error("Number of periods too large for the bit-width of the counter (nr_delay).");
   return nr_delay;
 }
 

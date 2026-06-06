@@ -70,7 +70,7 @@ inline std::pair<uint64_t, std::string> split_timescale_value(std::string value)
     ++i;
   if (i == 0 || i == value.size())
     throw std::runtime_error("Invalid VCD timescale: " + value);
-  const auto multiplier = std::stoull(value.substr(0, i));
+  const auto multiplier = parse_strict_uint64(value.substr(0, i), "VCD timescale multiplier");
   return {multiplier, lower_ascii(value.substr(i))};
 }
 
@@ -92,7 +92,7 @@ inline VcdTimescale parse_timescale(std::string_view text) {
     multiplier = parsed.first;
     unit = parsed.second;
   } else if (tok.size() == 2) {
-    multiplier = std::stoull(tok[0]);
+    multiplier = parse_strict_uint64(tok[0], "VCD timescale multiplier");
     unit = lower_ascii(tok[1]);
   } else {
     throw std::runtime_error("Invalid VCD timescale: " + std::string(text));

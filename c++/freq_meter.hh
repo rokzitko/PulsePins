@@ -17,6 +17,8 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <limits>
+#include <stdexcept>
 #include "tidbit.hh"
 #include "address_map.hh"
 #include "freqfmt.hh"
@@ -42,6 +44,17 @@ private:
 public:
   static Ticks normalize_gate_len(const Ticks requested_gate_len) {
     return std::max<Ticks>(1, requested_gate_len);
+  }
+
+  static Ticks gate_len_from_time(const double t, const double cnt_clk_freq_hz) {
+    if (!std::isfinite(t) || t <= 0.0)
+      throw std::runtime_error("freq_meter: gate time must be finite and positive");
+    if (!std::isfinite(cnt_clk_freq_hz) || cnt_clk_freq_hz <= 0.0)
+      throw std::runtime_error("freq_meter: counter clock frequency must be finite and positive");
+    const double gate_len_d = t * cnt_clk_freq_hz;
+    if (!std::isfinite(gate_len_d) || gate_len_d > std::numeric_limits<Ticks>::max())
+      throw std::runtime_error("freq_meter: gate time exceeds gate length range");
+    return normalize_gate_len(static_cast<Ticks>(gate_len_d));
   }
 
   static useconds_t gate_wait_time_us(const Ticks current_gate_len, const double cnt_clk_freq_hz) {
@@ -84,7 +97,7 @@ public:
 
   // Convenience wrapper around `set_gate_len`, using seconds instead of raw cycles.
   void set_gate_time(double t) { // t in seconds
-    set_gate_len(t*nominal_cnt_clk_freq);
+    set_gate_len(gate_len_from_time(t, nominal_cnt_clk_freq));
   }
 
   // Read the raw per-gate edge count for channel `i`.

@@ -180,7 +180,7 @@ inline uint64_t parse_uint64(const InputParser &input, const std::string s, cons
 }
 
 inline double parse_double(const InputParser &input, const std::string s, const std::string def) {
-  return std::stod(input.get_string(s, def));
+  return parse_strict_finite_double(input.get_string(s, def), s);
 }
 
 // Returns a hexadecimal and binary representation of uint32_t 'a'
@@ -353,16 +353,11 @@ inline std::optional<double> envDouble(std::string_view name)
 {
   const char* s = std::getenv(name.data());
   if (!s) return std::nullopt;
-
-  errno = 0;
-  char* end = nullptr;
-  double v = std::strtod(s, &end);
-
-  if (end == s) return std::nullopt;              // no conversion
-  if (*end != '\0') return std::nullopt;          // trailing junk
-  if (errno == ERANGE) return std::nullopt;       // overflow/undeerflow
-  if (!std::isfinite(v)) return std::nullopt;     // optional policy
-  return v;
+  try {
+    return parse_strict_finite_double(s, std::string(name));
+  } catch (const std::exception &) {
+    return std::nullopt;
+  }
 }
 
 inline std::optional<long long> envInt(std::string_view name, int base = 10)
@@ -519,10 +514,9 @@ inline double parse_time(const std::string& input) {
   if (number.empty())
     throw std::invalid_argument("parse_time: missing number in '" + input + "'");
 
-  char* endptr = nullptr;
-  double value = std::strtod(number.c_str(), &endptr);
-  if (endptr == number.c_str())
-    throw std::invalid_argument("parse_time: invalid number in '" + input + "'");
+  double value = parse_strict_finite_double(number, "time value");
+  if (value < 0.0)
+    throw std::invalid_argument("parse_time: negative value in '" + input + "'");
 
   if (unit.empty()) return value; // default seconds
 
@@ -532,7 +526,10 @@ inline double parse_time(const std::string& input) {
   auto it = factors.find(unit);
   if (it == factors.end())
     throw std::invalid_argument("parse_time: unknown unit '" + unit + "'");
-  return value * it->second;
+  const double scaled = value * it->second;
+  if (!std::isfinite(scaled))
+    throw std::invalid_argument("parse_time: value out of range in '" + input + "'");
+  return scaled;
 }
 
 inline double parse_time(const InputParser &input, std::string s, std::string def) {
@@ -559,10 +556,9 @@ inline double parse_frequency(const std::string& input) {
   if (number.empty())
     throw std::invalid_argument("parse_frequency: missing number in '" + input + "'");
 
-  char* endptr = nullptr;
-  double value = std::strtod(number.c_str(), &endptr);
-  if (endptr == number.c_str())
-    throw std::invalid_argument("parse_frequency: invalid number in '" + input + "'");
+  double value = parse_strict_finite_double(number, "frequency value");
+  if (value < 0.0)
+    throw std::invalid_argument("parse_frequency: negative value in '" + input + "'");
 
   if (unit.empty()) return value; // default Hz
 
@@ -573,7 +569,10 @@ inline double parse_frequency(const std::string& input) {
   auto it = factors.find(unit);
   if (it == factors.end())
     throw std::invalid_argument("parse_frequency: unknown unit '" + unit + "'");
-  return value * it->second;
+  const double scaled = value * it->second;
+  if (!std::isfinite(scaled))
+    throw std::invalid_argument("parse_frequency: value out of range in '" + input + "'");
+  return scaled;
 }
 
 inline double parse_frequency(const InputParser &input, std::string s, std::string def) {

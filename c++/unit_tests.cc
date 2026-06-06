@@ -192,6 +192,58 @@ TEST_CASE("parse_uint helpers reject malformed input") {
   CHECK_THROWS_AS(parse_uint64_t("-1"), std::runtime_error);
 }
 
+TEST_CASE("strict numeric helpers reject partial and non-finite doubles") {
+  CHECK(parse_strict_finite_double(" 1.25 ", "test") == doctest::Approx(1.25));
+  CHECK_THROWS_AS(parse_strict_finite_double("1.25abc", "test"), std::runtime_error);
+  CHECK_THROWS_AS(parse_strict_finite_double("nan", "test"), std::runtime_error);
+  CHECK_THROWS_AS(parse_strict_finite_double("inf", "test"), std::runtime_error);
+  CHECK_THROWS_AS(parse_strict_finite_double("1e9999", "test"), std::runtime_error);
+}
+
+TEST_CASE("InputParser numeric getters are strict") {
+  CHECK(make_input({"-d", "-1.5"}).get_double("-d", 0.0) == doctest::Approx(-1.5));
+  CHECK(make_input({"-u", "0b1010"}).get_uint32("-u", 0) == 10);
+  CHECK(make_input({"-u", "1_000"}).get_uint64("-u", 0) == 1000);
+
+  CHECK_THROWS_AS(make_input({"-d", "1x"}).get_double("-d", 0.0), std::runtime_error);
+  CHECK_THROWS_AS(make_input({"-d", "nan"}).get_double("-d", 0.0), std::runtime_error);
+  CHECK_THROWS_AS(make_input({"-u", "12x"}).get_uint32("-u", 0), std::runtime_error);
+  CHECK_THROWS_AS(make_input({"-u", "-1"}).get_uint64("-u", 0), std::runtime_error);
+  CHECK_THROWS_AS(make_input({"-u", "4294967296"}).get_uint32("-u", 0), std::runtime_error);
+}
+
+TEST_CASE("time and frequency parsers are strict and finite") {
+  CHECK(parse_time("10ms") == doctest::Approx(0.010));
+  CHECK(parse_time("1.5 s") == doctest::Approx(1.5));
+  CHECK(parse_frequency("10MHz") == doctest::Approx(10.0e6));
+  CHECK(parse_frequency("100kHz") == doctest::Approx(100.0e3));
+
+  CHECK_THROWS_AS(parse_time("1msjunk"), std::invalid_argument);
+  CHECK_THROWS_AS(parse_time("nan s"), std::invalid_argument);
+  CHECK_THROWS_AS(parse_time("-1s"), std::invalid_argument);
+  CHECK_THROWS_AS(parse_time("1e9999s"), std::runtime_error);
+  CHECK_THROWS_AS(parse_frequency("1Hzjunk"), std::invalid_argument);
+  CHECK_THROWS_AS(parse_frequency("nanHz"), std::invalid_argument);
+  CHECK_THROWS_AS(parse_frequency("-1Hz"), std::invalid_argument);
+  CHECK_THROWS_AS(parse_frequency("1e9999Hz"), std::runtime_error);
+}
+
+TEST_CASE("timing to hardware count conversions validate ranges") {
+  CHECK(calc_delay(10e-9, 100e6) == 1);
+  CHECK(freq_meter::gate_len_from_time(0.01, 50e6) == 500000);
+
+  CHECK_THROWS_AS(calc_delay(-1.0, 100e6), std::runtime_error);
+  CHECK_THROWS_AS(calc_delay(std::numeric_limits<double>::quiet_NaN(), 100e6), std::runtime_error);
+  CHECK_THROWS_AS(calc_delay(1.0, 0.0), std::runtime_error);
+  CHECK_THROWS_AS(calc_delay(double(std::numeric_limits<count_t>::max()) / 100e6 + 1.0, 100e6), std::runtime_error);
+
+  CHECK_THROWS_AS(freq_meter::gate_len_from_time(0.0, 50e6), std::runtime_error);
+  CHECK_THROWS_AS(freq_meter::gate_len_from_time(-1.0, 50e6), std::runtime_error);
+  CHECK_THROWS_AS(freq_meter::gate_len_from_time(std::numeric_limits<double>::infinity(), 50e6), std::runtime_error);
+  CHECK_THROWS_AS(freq_meter::gate_len_from_time(1.0, 0.0), std::runtime_error);
+  CHECK_THROWS_AS(freq_meter::gate_len_from_time(double(std::numeric_limits<uint32_t>::max()) / 50e6 + 1.0, 50e6), std::runtime_error);
+}
+
 TEST_CASE("InputParser reports missing arguments and handles first_arg_int safely") {
   const auto missing = make_input({"-port"});
   CHECK_THROWS_AS(missing.get_string("-port", "4242"), std::runtime_error);
@@ -205,6 +257,9 @@ TEST_CASE("InputParser reports missing arguments and handles first_arg_int safel
 
   const auto non_numeric = make_input({"abc"});
   CHECK_FALSE(non_numeric.first_arg_int().has_value());
+
+  const auto partial_numeric = make_input({"123abc"});
+  CHECK_FALSE(partial_numeric.first_arg_int().has_value());
 }
 
 TEST_CASE("read_stable_u64 retries across a rollover") {

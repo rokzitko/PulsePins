@@ -95,9 +95,13 @@ inline std::optional<double> parse_frequency_hz(const std::string &profile) {
     return std::nullopt;
   }
 
-  char *endptr = nullptr;
-  const double value = std::strtod(number.c_str(), &endptr);
-  if (endptr == number.c_str() || *endptr != '\0' || value <= 0.0) {
+  double value = 0.0;
+  try {
+    value = parse_strict_finite_double(number, "frequency value");
+  } catch (const std::exception &) {
+    return std::nullopt;
+  }
+  if (value <= 0.0) {
     return std::nullopt;
   }
 
