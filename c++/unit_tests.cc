@@ -1090,6 +1090,7 @@ TEST_CASE("resolve_sequence_file_format rejects ambiguous filename") {
 
 TEST_CASE("validate_sequence_file_options enforces VCD-only options") {
   CHECK_NOTHROW(validate_sequence_file_options(make_input({"-target", "outs", "-scale", "10"}), SequenceFileFormat::vcd));
+  CHECK_THROWS_AS(validate_sequence_file_options(make_input({"-scale", "0"}), SequenceFileFormat::vcd), std::runtime_error);
   CHECK_THROWS_AS(validate_sequence_file_options(make_input({"-target", "outs"}), SequenceFileFormat::text), std::runtime_error);
   CHECK_THROWS_AS(validate_sequence_file_options(make_input({"-scale", "10"}), SequenceFileFormat::text), std::runtime_error);
 }
@@ -1332,6 +1333,11 @@ TEST_CASE("VCD parser") {
   CHECK(v[4].count == 33);
   CHECK(v[5].value == 0);
   CHECK(v[5].count == 500);
+}
+
+TEST_CASE("VCD parser rejects zero scale factor") {
+  std::istringstream vcd("$var reg 1 ! outs $end\n$enddefinitions $end\n#0\n0!\n");
+  CHECK_THROWS_AS(parseVcdUpdates(vcd, "outs", 0), std::runtime_error);
 }
 
 TEST_CASE("write_VCD exports simple BitLoad waveform") {

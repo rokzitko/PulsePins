@@ -63,6 +63,10 @@ inline T checked_narrow(uint64_t x, const char* what, const std::string& context
 }
 
 inline count_t parse_timestamp(std::string_view t, uint32_t scale_factor) {
+  if (scale_factor == 0) {
+    throw std::runtime_error("VCD scale factor must be greater than zero");
+  }
+
   const std::string s(t);
   const char* p = s.c_str();
   if (*p != '#') {

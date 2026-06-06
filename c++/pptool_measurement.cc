@@ -408,7 +408,7 @@ std::pair<Sequence, bool> load_sequence_from_file(const InputParser &input,
       try {
         Sequence seq;
         const std::string target_name = input.get_string("-target", "outs");
-        const auto scale_factor = input.get_uint32("-scale", 10);
+        const auto scale_factor = parse_vcd_scale_factor(input);
         seq.load_VCD(filename, target_name, scale_factor);
         const bool force_now = input.exists("-force") ? force_trigger : do_not_force_trigger;
         return {seq, force_now};

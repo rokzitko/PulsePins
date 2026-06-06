@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -54,6 +55,14 @@ inline SequenceFileFormat resolve_sequence_file_format(const InputParser &input,
   return infer_sequence_file_format_from_filename(filename);
 }
 
+inline uint32_t parse_vcd_scale_factor(const InputParser &input)
+{
+  const auto scale_factor = input.get_uint32("-scale", 10);
+  if (scale_factor == 0)
+    throw std::runtime_error("Option -scale must be greater than zero");
+  return scale_factor;
+}
+
 inline void validate_sequence_file_options(const InputParser &input,
                                           const SequenceFileFormat format)
 {
@@ -63,4 +72,6 @@ inline void validate_sequence_file_options(const InputParser &input,
     if (input.exists("-scale"))
       throw std::runtime_error("Option -scale is only valid for VCD input");
   }
+  if (format == SequenceFileFormat::vcd)
+    (void)parse_vcd_scale_factor(input);
 }

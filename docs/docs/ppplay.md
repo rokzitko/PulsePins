@@ -24,7 +24,7 @@ Shared playback options such as `-check`, `-read`, `-timeout`, `-t`, and `-dont_
 ## VCD-specific options
 
 * `-target NAME`: VCD signal name to convert; defaults to `outs`
-* `-scale N`: output period in ns for each VCD time unit; defaults to `10`
+* `-scale N`: output period in ns for each VCD time unit; must be greater than zero; defaults to `10`
 
 These options are only valid for VCD input.
 
