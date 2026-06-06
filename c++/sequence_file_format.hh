@@ -11,6 +11,7 @@
 #include <string>
 
 #include "parser.hh"
+#include "vcd_parser.hh"
 
 enum class SequenceFileFormat {
   vcd,
@@ -57,7 +58,7 @@ inline SequenceFileFormat resolve_sequence_file_format(const InputParser &input,
 
 inline uint32_t parse_vcd_scale_factor(const InputParser &input)
 {
-  const auto scale_factor = input.get_uint32("-scale", 10);
+  const auto scale_factor = input.get_uint32("-scale", default_vcd_scale_factor);
   if (scale_factor == 0)
     throw std::runtime_error("Option -scale must be greater than zero");
   return scale_factor;

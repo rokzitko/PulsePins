@@ -1476,6 +1476,27 @@ TEST_CASE("VCD parser rejects zero scale factor") {
   CHECK_THROWS_AS(parseVcdUpdates(vcd, "outs", 0), std::runtime_error);
 }
 
+TEST_CASE("VCD parser applies timescale before default scale factor") {
+  std::istringstream vcd(
+    "$timescale 10ns $end\n"
+    "$var reg 32 ! outs [31:0] $end\n"
+    "$enddefinitions $end\n"
+    "#0\n"
+    "b1 !\n"
+    "#3\n"
+    "b10 !\n");
+
+  auto v = parseVcdUpdates(vcd);
+
+  REQUIRE(v.size() == 3);
+  CHECK(v[0].value == 1);
+  CHECK(v[0].count == 0);
+  CHECK(v[1].value == 2);
+  CHECK(v[1].count == 3);
+  CHECK(v[2].value == 0);
+  CHECK(v[2].count == 3);
+}
+
 TEST_CASE("write_VCD exports simple BitLoad waveform") {
   Sequence seq;
   seq.push_back(el(3, 0x1));
@@ -1485,6 +1506,7 @@ TEST_CASE("write_VCD exports simple BitLoad waveform") {
   seq.write_VCD(out);
   const std::string vcd = out.str();
 
+  CHECK(contains(vcd, "$timescale 10ns $end"));
   CHECK(contains(vcd, "$scope module pulsepins $end"));
   CHECK(contains(vcd, "$var reg 32 ! outs [31:0] $end"));
   CHECK(contains(vcd, "#0\n"));
@@ -1580,6 +1602,22 @@ TEST_CASE("BitLoad sequence VCD round-trips through load_VCD") {
 
   Sequence roundtrip;
   roundtrip.load_VCD(filename, "outs", 1);
+
+  CHECK(compare(roundtrip, seq));
+  std::remove(filename.c_str());
+}
+
+TEST_CASE("BitLoad sequence VCD round-trips through CLI-equivalent defaults") {
+  Sequence seq;
+  seq.push_back(el(3, 0x1));
+  seq.push_back(el(2, 0x3));
+  seq.push_back(el(4, 0x0));
+
+  const std::string filename = "unit_tests_output_roundtrip_defaults.vcd";
+  seq.write_VCD_file(filename);
+
+  Sequence roundtrip;
+  roundtrip.load_VCD(filename);
 
   CHECK(compare(roundtrip, seq));
   std::remove(filename.c_str());

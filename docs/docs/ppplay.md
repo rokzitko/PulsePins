@@ -24,7 +24,7 @@ Shared playback options such as `-check`, `-read`, `-timeout`, `-t`, `-random_fi
 ## VCD-specific options
 
 * `-target NAME`: VCD signal name to convert; defaults to `outs`
-* `-scale N`: output period in ns for each VCD time unit; must be greater than zero; defaults to `10`
+* `-scale N`: PulsePins output period in ns; VCD `$timescale` is parsed before timestamps are divided by this value. It must be greater than zero and defaults to `10`.
 
 These options are only valid for VCD input.
 

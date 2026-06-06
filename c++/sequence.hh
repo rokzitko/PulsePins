@@ -222,7 +222,7 @@ public:
 
     // Build a sequence from a VCD signal trace. Consecutive samples become run-length
     // encoded elements targeting `target_name`.
-    void load_VCD(const std::string filename, const std::string target_name = "outs", const uint32_t scale_factor = 10) {
+    void load_VCD(const std::string filename, const std::string target_name = "outs", const uint32_t scale_factor = default_vcd_scale_factor) {
     std::ifstream F(filename);
     auto l = parseVcdUpdates(F, target_name, scale_factor);
     for (size_t i = 0; i < l.size()-1; i++) {
@@ -233,7 +233,7 @@ public:
 
   void write_VCD(std::ostream &f,
                 const std::string &target_name = "outs",
-                const std::string &timescale = "1ns") const {
+                const std::string &timescale = default_vcd_timescale) const {
     Sequence s;
     value_t current_value = 0;
     for (const auto &e : *this) {
@@ -294,7 +294,7 @@ public:
 
   void write_VCD_file(const std::string &filename,
                       const std::string &target_name = "outs",
-                      const std::string &timescale = "1ns") const {
+                      const std::string &timescale = default_vcd_timescale) const {
     std::ofstream f(filename);
     if (!f)
       throw std::runtime_error("Could not open VCD output file: " + filename);

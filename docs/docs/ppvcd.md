@@ -5,6 +5,8 @@
 It preserves the traditional PulsePins workflow of loading a VCD waveform and replaying it through
 the streamer hardware, but the canonical general-purpose tool is now `ppplay`.
 
+VCD import parses `$timescale`; `-scale` is the PulsePins output period in ns and defaults to `10`.
+
 Equivalent usage:
 
 ```bash
