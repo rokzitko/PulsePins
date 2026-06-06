@@ -313,7 +313,7 @@ StreamResult WebGuiController::stream_text_sequence(StreamLaunchRequest request)
     std::stringstream sequence_stream(request.sequence_text);
     auto [sequence, parsed_force_trigger] = parse_sequence_from_stream(sequence_stream);
     if (explicit_final_output(sequence)) {
-      throw WebGuiBadRequest("Sequence already contains an explicit final output; omit -t or remove the final record");
+      throw WebGuiBadRequest("Sequence already contains an explicit final output; browser playback supplies its own final output");
     }
     const bool force_trigger_request = request.force_trigger_override.value_or(parsed_force_trigger);
 

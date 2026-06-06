@@ -142,6 +142,7 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 
 * `STREAM` uses the same send/trigger path as the local tools, including optional readback verification.
 * `SEQ` stores the parsed sequence in memory; nothing is transmitted to the streamer until `STREAM` is issued.
+* If the loaded sequence does not end with `final V` and the server was not started with `-t`, `-random_final`, or `PP_RANDOM_FINAL`, `STREAM` appends a no-modify final terminator so outputs remain at the last sequence value. The `f` record only requests forced triggering.
 * Repeated `STREAM` commands reuse the stored sequence exactly as parsed; the cached session sequence is not rewritten by readback checking or final-output preparation.
 * Before each hardware-touching run (`TEST1` and `STREAM`), `ppscpi` resets the streamer core, readback encoder, and counters so repeated commands in the same process/session start from a clean hardware state.
 * If `TEST1` or `STREAM` returns `FAILURE`, `ppscpi` also pushes an execution-error record into `SYST:ERR?` with the aggregated PulsePins return-code bits so remote clients can distinguish timeout, readback, CRC, buffer, and overflow failures.

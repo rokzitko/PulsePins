@@ -1,0 +1,26 @@
+#!/bin/bash
+source defs.sh
+
+# Random final-output coverage. These commands are copied from existing test* scripts
+# and add -random_final only to cases without an explicit terminal value.
+
+pptest 1 -check -random_final
+
+pptest 2 -c 10 -v 42 -check -random_final
+pptest 2 -c 1 -v 42 -check -random_final
+pptest 2 -c 0 -v 42 -check -random_final
+
+pptest 3 -c 1 -v0 2 -v 4 -check -random_final
+
+pptest 4 -c 120_000 -v 10 -check -random_final
+pptest 4 -c 120_000 -v 100 -rnd -check -random_final
+
+pptest 5 -c 10 -check -random_final
+
+pptest 6 -c 10 -check -dump-converted -random_final
+
+pptest 8 -c 2 -v 200 -check -dump-converted -random_final
+
+pptest 10 -v 2 -c 2 -repetitions 1 -nr_replays 1 -check -random_final
+
+pptest 42 -f sequence.simple -check -random_final

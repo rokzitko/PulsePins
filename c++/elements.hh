@@ -330,6 +330,13 @@ public:
   // Sequence terminator
   el(value_t _v = default_final_value)
       : el(TERMINATE, 1, _v, counter_kind_t::plain, value_kind_t::plain) {}
+  static el final_with_value(const Value &_vv) {
+    return el(static_cast<control_t>(TERMINATE | _vv.mode_bits()),
+              1,
+              _vv.value(),
+              counter_kind_t::plain,
+              _vv.kind());
+  }
   // Regular element
   el(count_t _c, value_t _v)
       : el(BITLOAD, _c, _v, counter_kind_t::plain, value_kind_t::bitload) {};
@@ -406,7 +413,7 @@ public:
       case el_type::prng:
         return el(control, count, 0, counter_kind_t::plain, value_kind_t::plain);
       case el_type::final:
-        return el(control, 1, value, counter_kind_t::plain, value_kind_t::plain);
+        return el(control, 1, value, counter_kind_t::plain, value_kind_from_mode_bits(control));
       case el_type::regular:
         return regular_from_control(control, count, value);
     }
@@ -565,6 +572,8 @@ public:
           << " 0x" << std::hex << int(trigger_pattern())
           << " 0x" << std::hex << int(trigger_mask());
     } else if (is_final()) {
+      if (mode() != BITLOAD)
+        throw std::runtime_error("Text sequence writer does not support non-BITLOAD final elements");
       out << "final 0x" << std::hex << value();
     } else if (is_replay()) {
       out << "r"

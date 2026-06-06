@@ -94,23 +94,71 @@ inline std::optional<value_t> explicit_final_output(const Sequence &elements)
   return std::nullopt;
 }
 
-inline value_t append_final_output(Sequence &elements, const InputParser &input)
+inline bool random_final_requested(const InputParser &input)
 {
-  if (const auto explicit_final = explicit_final_output(elements)) {
-    if (input.exists("-t"))
-      throw std::runtime_error("Sequence already contains an explicit final output; omit -t or remove the final record");
-    return *explicit_final;
-  }
-  const value_t final = input.exists("-t") ? parse_value(input, "-t", "0") : random_value();
-  elements.push_back(el(final));
-  return final;
+  return input.exists("-random_final") || envVarExists("PP_RANDOM_FINAL");
 }
 
-inline std::pair<Sequence, value_t> prepare_sequence_for_streaming(const Sequence &elements,
-                                                                   const InputParser &input)
+inline el no_modify_final_output()
+{
+  return el::final_with_value(BitOr(0));
+}
+
+inline std::optional<value_t> infer_sequence_final_output(const Sequence &elements, value_t initial_value)
+{
+  value_t current = initial_value;
+  for (const auto &e : elements) {
+    if (e.is_regular()) {
+      if (e.count() != 0)
+        current = e.updated_value(current);
+    } else if (e.is_trigger()) {
+      continue;
+    } else if (e.is_final()) {
+      return e.updated_value(current);
+    } else {
+      return std::nullopt;
+    }
+  }
+  return current;
+}
+
+inline std::optional<value_t> append_final_output(Sequence &elements,
+                                                 const InputParser &input,
+                                                 const value_t initial_value = 0)
+{
+  const bool use_t = input.exists("-t");
+  const bool use_random = random_final_requested(input);
+  if (use_t && use_random)
+    throw std::runtime_error("Specify only one final output policy: -t, -random_final, or PP_RANDOM_FINAL");
+
+  if (explicit_final_output(elements)) {
+    if (use_t || use_random)
+      throw std::runtime_error("Sequence already contains an explicit final output; omit -t/-random_final/PP_RANDOM_FINAL or remove the final record");
+    return infer_sequence_final_output(elements, initial_value);
+  }
+
+  if (use_t) {
+    const value_t final = parse_value(input, "-t", "0");
+    elements.push_back(el(final));
+    return final;
+  }
+
+  if (use_random) {
+    const value_t final = random_value();
+    elements.push_back(el(final));
+    return final;
+  }
+
+  elements.push_back(no_modify_final_output());
+  return infer_sequence_final_output(elements, initial_value);
+}
+
+inline std::pair<Sequence, std::optional<value_t>> prepare_sequence_for_streaming(const Sequence &elements,
+                                                                                  const InputParser &input,
+                                                                                  const value_t initial_value = 0)
 {
   Sequence prepared = elements;
-  const value_t final = append_final_output(prepared, input);
+  const auto final = append_final_output(prepared, input, initial_value);
   return {prepared, final};
 }
 
@@ -238,7 +286,7 @@ inline void run_readback_dump_phase(readback &rb,
 inline int run_post_execution_checks(streamer_control &sc,
                                     readback &rb,
                                     counter &ctr,
-                                    const value_t final,
+                                    const std::optional<value_t> final,
                                     const bool rb_failure,
                                     const bool force_trigger,
                                     const InputParser &input,
@@ -255,13 +303,15 @@ inline int run_post_execution_checks(streamer_control &sc,
   }
   sleep_1ms();
   value_t final_qout = sc.get_qout();
-  const bool match = final_qout == final;
+  const bool match = final && final_qout == *final;
   std::cout << "send_and_trig(): Final qout=" << hex8(final_qout) << " [" << dec13(final_qout) << "]";
-  if (match) {
+  if (!final) {
+    std::cout << " not checked (expected value not inferred)" << std::endl;
+  } else if (match) {
     std::cout << " OK" << std::endl;
   } else {
     if (!(envVarExists("PP_IGNORE_QOUT_FINAL") || input.exists("-pp_ignore_qout_final"))) {
-      std::cout << red << " Mismatch: expecting " << hex8(final) << rst << std::endl;
+      std::cout << red << " Mismatch: expecting " << hex8(*final) << rst << std::endl;
       rc |= RC_ERROR_CHECK;
     }
   }
@@ -328,7 +378,7 @@ inline int send_and_trig(Transport &tr,
   //   form before comparison.
   // - the return code accumulates multiple error bits instead of stopping at first failure.
   int rc = RC_OK;
-  auto [working_elements, final] = prepare_sequence_for_streaming(elements, input);
+  auto [working_elements, final] = prepare_sequence_for_streaming(elements, input, sc.get_qout_streamer());
   dump_sequence(working_elements, v);
   rc |= transmit_sequence_checked(tr, sc, working_elements, v);
   if (rc & RC_TIMEOUT)

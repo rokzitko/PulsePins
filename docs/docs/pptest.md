@@ -21,6 +21,7 @@ Command line switches:
 * ``-p``: trigger pattern
 * ``-m``: trigger mask
 * ``-t``: final data value
+* ``-random_final``: append a random final data value instead of the default no-modify final terminator
 * ``-check``: perform verification using the read-back method
 * ``-timeout``: controls readback wait bounds during ``-check`` and ``-read``; if omitted, the shared workflow uses a conservative 2s timeout both for the first readback element and for later idle gaps. Use a positive value for idle-gap timeout, a negative value for absolute timeout from start, or ``-timeout 0`` to disable timeout protection.
 * ``-dump-converted``: dump out the sequence of elements after converting elements with non-trivial update modes to simple BITLOAD elements
@@ -39,6 +40,8 @@ Tests return code 0 if successful. Non-zero error indicates an error. The follow
 * bit 6: timeout while waiting for transport queueing, readback, DMA setup, or streamer completion
 
 Finite playback runs also have an internal streamer-completion timeout: if the streamer does not report `done` within 10 s, the tools report `timed out waiting for streamer completion (10 s internal limit)` and skip the usual post-completion checks.
+
+If neither ``-t`` nor an explicit ``final V`` sequence record is provided, the shared playback path appends a no-modify final terminator. The outputs therefore remain at the last value produced by the sequence. Set ``-random_final`` or the environment variable ``PP_RANDOM_FINAL`` to request the old randomized final-value test behavior explicitly. ``-t``, ``-random_final``/``PP_RANDOM_FINAL``, and an authored ``final V`` record are mutually exclusive final-output policies.
 
 ### Integer parameter parsing
 
@@ -86,8 +89,8 @@ Each PLL profile may be given as a raw ``N,M,C`` string, as one of the symbolic 
 
 ### Test 1
 
-Empty sequence (i.e., terminator element only). This can be used for testing the final data value setting using the
-``-t`` switch.
+Empty sequence (i.e., terminator element only). This can be used for testing final data value setting using the
+``-t`` switch, or randomized final values using ``-random_final``/``PP_RANDOM_FINAL``.
 
 ### Test 2
 
@@ -229,7 +232,7 @@ Triggers and execution flags:
 
 * ``t P M``: final trigger element
 * ``tn P M``: non-final trigger element
-* ``f``: request forced triggering instead of arm-and-wait
+* ``f``: request forced triggering instead of arm-and-wait; it does not select the final output value
 
 Preprocessor and control-flow elements:
 
@@ -239,7 +242,7 @@ Preprocessor and control-flow elements:
 * ``pr C``: emit pseudo-random values for ``C`` cycles
 * ``final V``: explicit final terminator with output value ``V``
 
-If a tool or workflow already controls the final output value through ``-t``, do not also include ``final V`` in the sequence text. The shared execution path rejects both sources of final-output policy at the same time.
+If a tool or workflow already controls the final output value through ``-t`` or ``-random_final``/``PP_RANDOM_FINAL``, do not also include ``final V`` in the sequence text. The shared execution path rejects multiple final-output policies at the same time. If no final-output policy is provided, playback appends a no-modify final terminator so the outputs remain at the last sequence value.
 
 The ``store`` wrapper accepts any regular-element token in place of ``OP``: ``d``, ``dn``, ``s``, ``c``, ``x``, ``n``, ``a``, ``o``, ``xr``, ``xn``, ``sl``, or ``sr``.
 

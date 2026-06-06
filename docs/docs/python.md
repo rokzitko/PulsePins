@@ -39,6 +39,8 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
+The `f` line requests forced triggering; it does not choose the final output value. If no `final ...` line is present, `STREAM` appends a no-modify final terminator and leaves the outputs at the last sequence value.
+
 The client exposes `idn()`, `reset()`, `clear_status()`, `streamer_clock_hz()`, `timeline(...)`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
 
 The same package also includes a dependency-free `Timeline` builder for simple named-channel pulse programs:

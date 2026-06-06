@@ -8,13 +8,16 @@
 
 #include <fstream>
 #include <chrono>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <cstdio>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <utility>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "include/doctest.h"
@@ -71,6 +74,27 @@ struct ScopedStreamCapture {
 InputParser make_input(std::initializer_list<std::string> args) {
   return InputParser(std::vector<std::string>(args));
 }
+
+struct ScopedEnvVar {
+  std::string name;
+  std::optional<std::string> old_value;
+
+  ScopedEnvVar(std::string name_, std::optional<std::string> value) : name(std::move(name_)) {
+    if (const auto *old = std::getenv(name.c_str()))
+      old_value = old;
+    if (value)
+      setenv(name.c_str(), value->c_str(), 1);
+    else
+      unsetenv(name.c_str());
+  }
+
+  ~ScopedEnvVar() {
+    if (old_value)
+      setenv(name.c_str(), old_value->c_str(), 1);
+    else
+      unsetenv(name.c_str());
+  }
+};
 
 std::pair<Sequence, bool> roundtrip_binary(const Sequence &seq, const bool force_trigger = false) {
   std::ostringstream out(std::ios::binary);
@@ -825,6 +849,9 @@ TEST_CASE("sequence_record serializes element kinds") {
   CHECK(el(Retrig{}).sequence_record() == "rt");
   CHECK(el(PseudoRandom{}, 11).sequence_record() == "pr 11");
   CHECK(el(0x42).sequence_record() == "final 0x42");
+  CHECK_THROWS_WITH_AS(el::final_with_value(BitOr(0)).sequence_record(),
+                       "Text sequence writer does not support non-BITLOAD final elements",
+                       std::runtime_error);
 }
 
 TEST_CASE("convert_to_BitLoad") {
@@ -1104,57 +1131,146 @@ TEST_CASE("validate_sequence_file_options enforces VCD-only options") {
 }
 
 TEST_CASE("append_final_output appends explicit final terminator") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
   Sequence seq;
   seq.push_back(el(3, 0x12));
 
   auto final = append_final_output(seq, make_input({"-t", "0x34"}));
 
-  CHECK(final == 0x34);
+  REQUIRE(final);
+  CHECK(*final == 0x34);
   REQUIRE(seq.size() == 2);
   CHECK(seq.back() == el(0x34));
 }
 
-TEST_CASE("append_final_output appends final element when -t is absent") {
+TEST_CASE("append_final_output appends no-modify final when final policy is absent") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
+  Sequence seq;
+  seq.push_back(el(3, BitSet(0x12)));
+
+  auto final = append_final_output(seq, make_input({}), 0x40);
+
+  REQUIRE(final);
+  CHECK(*final == 0x52);
+  REQUIRE(seq.size() == 2);
+  CHECK(seq.back().is_final());
+  CHECK(seq.back().control() == (TERMINATE | BITOR));
+  CHECK(seq.back().value() == 0);
+}
+
+TEST_CASE("append_final_output ignores zero-count updates when inferring no-modify final") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
+  Sequence seq;
+  seq.push_back(el(0, 0x2a));
+
+  auto final = append_final_output(seq, make_input({}), 0);
+
+  REQUIRE(final);
+  CHECK(*final == 0);
+  REQUIRE(seq.size() == 2);
+  CHECK(seq.back().control() == (TERMINATE | BITOR));
+}
+
+TEST_CASE("append_final_output infers final from last nonzero-count update") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
+  Sequence seq;
+  seq.push_back(el(0, 0x2a));
+  seq.push_back(el(1, 0x11));
+
+  auto final = append_final_output(seq, make_input({}), 0);
+
+  REQUIRE(final);
+  CHECK(*final == 0x11);
+  REQUIRE(seq.size() == 3);
+  CHECK(seq.back().control() == (TERMINATE | BITOR));
+}
+
+TEST_CASE("append_final_output appends random final when requested by option") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+
+  auto final = append_final_output(seq, make_input({"-random_final"}));
+
+  REQUIRE(final);
+  REQUIRE(seq.size() == 2);
+  CHECK(seq.back().is_final());
+  CHECK(seq.back().control() == TERMINATE);
+  CHECK(seq.back().value() == *final);
+}
+
+TEST_CASE("append_final_output appends random final when requested by environment") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", "1");
   Sequence seq;
   seq.push_back(el(3, 0x12));
 
   auto final = append_final_output(seq, make_input({}));
 
+  REQUIRE(final);
   REQUIRE(seq.size() == 2);
   CHECK(seq.back().is_final());
-  CHECK(seq.back().value() == final);
+  CHECK(seq.back().control() == TERMINATE);
+  CHECK(seq.back().value() == *final);
 }
 
 TEST_CASE("append_final_output reuses authored final terminator") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
   Sequence seq;
   seq.push_back(el(3, 0x12));
   seq.push_back(el(0x34));
 
   auto final = append_final_output(seq, make_input({}));
 
-  CHECK(final == 0x34);
+  REQUIRE(final);
+  CHECK(*final == 0x34);
   REQUIRE(seq.size() == 2);
   CHECK(seq.back() == el(0x34));
 }
 
 TEST_CASE("append_final_output rejects -t when sequence already has final terminator") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
   Sequence seq;
   seq.push_back(el(3, 0x12));
   seq.push_back(el(0x34));
 
   CHECK_THROWS_WITH_AS(
     append_final_output(seq, make_input({"-t", "0x56"})),
-    "Sequence already contains an explicit final output; omit -t or remove the final record",
+    "Sequence already contains an explicit final output; omit -t/-random_final/PP_RANDOM_FINAL or remove the final record",
+    std::runtime_error);
+}
+
+TEST_CASE("append_final_output rejects random final when sequence already has final terminator") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  seq.push_back(el(0x34));
+
+  CHECK_THROWS_WITH_AS(
+    append_final_output(seq, make_input({"-random_final"})),
+    "Sequence already contains an explicit final output; omit -t/-random_final/PP_RANDOM_FINAL or remove the final record",
+    std::runtime_error);
+}
+
+TEST_CASE("append_final_output rejects conflicting final policies") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+
+  CHECK_THROWS_WITH_AS(
+    append_final_output(seq, make_input({"-t", "0x56", "-random_final"})),
+    "Specify only one final output policy: -t, -random_final, or PP_RANDOM_FINAL",
     std::runtime_error);
 }
 
 TEST_CASE("prepare_sequence_for_streaming keeps caller sequence unchanged") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
   Sequence seq;
   seq.push_back(el(3, 0x12));
 
   auto [prepared, final] = prepare_sequence_for_streaming(seq, make_input({"-t", "0x34"}));
 
-  CHECK(final == 0x34);
+  REQUIRE(final);
+  CHECK(*final == 0x34);
   REQUIRE(seq.size() == 1);
   CHECK(seq.back() == el(3, 0x12));
   REQUIRE(prepared.size() == 2);
@@ -1295,7 +1411,7 @@ TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {
   ScopedStreamCapture capture(std::cerr);
   FakeWebGuiService service;
   service.stream_hook = [](StreamLaunchRequest) -> StreamResult {
-    throw WebGuiBadRequest("Sequence already contains an explicit final output; omit -t or remove the final record");
+    throw WebGuiBadRequest("Sequence already contains an explicit final output; browser playback supplies its own final output");
   };
 
   ScopedTestWebGuiServer server(service);
@@ -1311,8 +1427,8 @@ TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {
   CHECK(res->status == httplib::StatusCode::BadRequest_400);
   CHECK(contains(res->body, "explicit final output"));
   CHECK(service.stream_calls == 1);
-  CHECK(service.last_error == "Sequence already contains an explicit final output; omit -t or remove the final record");
-  CHECK(contains(capture.str(), "ppwebgui: HTTP 400 error: Sequence already contains an explicit final output; omit -t or remove the final record"));
+  CHECK(service.last_error == "Sequence already contains an explicit final output; browser playback supplies its own final output");
+  CHECK(contains(capture.str(), "ppwebgui: HTTP 400 error: Sequence already contains an explicit final output; browser playback supplies its own final output"));
 }
 
 TEST_CASE("ppwebgui routes reject malformed clock requests before calling the service") {
@@ -1516,6 +1632,18 @@ TEST_CASE("binary round-trip preserves regular element semantics") {
     expected_prev = expected;
     actual_prev = actual;
   }
+}
+
+TEST_CASE("binary round-trip preserves final update mode") {
+  Sequence seq;
+  seq.push_back(el::final_with_value(BitOr(0)));
+
+  auto [roundtrip, force_trigger] = roundtrip_binary(seq);
+
+  CHECK(!force_trigger);
+  REQUIRE(roundtrip.size() == 1);
+  CHECK(roundtrip[0] == seq[0]);
+  CHECK(roundtrip[0].updated_value(0x1234) == 0x1234);
 }
 
 TEST_CASE("binary round-trips mixed sequence exactly") {

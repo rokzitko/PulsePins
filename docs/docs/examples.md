@@ -234,6 +234,7 @@ What it does:
 * connects to TCP port `5025`
 * uploads a PulsePins text sequence with `SEQ ...`
 * requests forced triggering using the sequence's `f` record
+* leaves the outputs at the last sequence value because no explicit `final ...` record is supplied
 * starts playback with `STREAM`
 
 This workflow is the best first step for notebook integration. It avoids installing Jupyter on the board and keeps plotting, parameter sweeps, and data analysis on the host computer.
