@@ -141,7 +141,7 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
 {
   // Shared timestamp-printing loop used by both `ppts` and `ppgpsdo`.
   // `silent_after` lets a caller keep collecting data after the initial bring-up logs stop.
-  long long ctr = 0; // keep this signed, because of silent_after (than can be negative)
+  uint64_t ctr = 0;
   uint64_t current = 0;
   uint64_t previous = 0;
   FormatDispatch d;
@@ -153,10 +153,10 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
   d['D'] = [&ctr, &current, &previous](std::string_view t) { return setw_l(ctr ? "diff=" + with_underscores(current-previous) : "", t); };
   std::string fmt = "%4l  %t  ctr=%10c  ts=%15s  %15D";
   try {
-    const long long nr = parse_uint64(input, "-nr", "0");
+    const auto nr = parse_uint64(input, "-nr", "0");
     for (ctr = 0; nr == 0 || ctr < nr; ctr++) {
       current = read();
-      if (silent_after < 0 || ctr < silent_after) {
+      if (silent_after < 0 || ctr < static_cast<uint64_t>(silent_after)) {
         std::lock_guard<std::mutex> lock(lockcout);
         std::cout << format_with_dispatch(fmt, d) << std::endl;
       }
@@ -385,7 +385,7 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
     auto gate_len = parse_uint32(input, "-gate_len", "500000");
     fm.meter.set_gate_len(gate_len);
   }
-  long long ctr;
+  uint64_t ctr;
   FormatDispatch d;
   d['t'] = [](std::string_view) { return timestamp_iso8601_utc_ms(); };
   d['c'] = [&ctr](std::string_view t) { return setw_l(with_underscores(ctr), t); };
@@ -393,7 +393,7 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
   d['i'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(1), t); };
   d['s'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(2), t); };
   std::string fmt = "%t %e";
-  const long long nr = parse_uint64(input, "-nr", "0");
+  const auto nr = parse_uint64(input, "-nr", "0");
   for (ctr = 0; nr == 0 || ctr < nr; ctr++) {
     fm.meter.wait_one_gate_time();
     std::cout << format_with_dispatch(fmt, d) << std::endl;
