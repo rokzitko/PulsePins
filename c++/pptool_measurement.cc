@@ -392,7 +392,7 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
   d['s'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(2), t); };
   std::string fmt = "%t %e";
   const long long nr = parse_uint64(input, "-nr", "0");
-  for (ctr = 0; ctr <= nr || nr == 0; ctr++) {
+  for (ctr = 0; nr == 0 || ctr < nr; ctr++) {
     fm.meter.wait_one_gate_time();
     std::cout << format_with_dispatch(fmt, d) << std::endl;
   }
