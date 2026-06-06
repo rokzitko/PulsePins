@@ -17,6 +17,8 @@
 #include "verbosity.hh"
 #include "misc.hh"
 
+static_assert(address_map::contains(address_map::h2f::st_mux_1, 12));
+
 class st_mux {
 private:
   loc lchannel;

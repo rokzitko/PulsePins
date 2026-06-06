@@ -20,6 +20,9 @@
 #include "parser.hh"
 #include "options.hh"
 
+static_assert(address_map::contains(address_map::lw::pll_reconfig_core_clk, 0b001011*4));
+static_assert(address_map::contains(address_map::lw::pll_reconfig_int_clk, 0b001011*4));
+
 constexpr int pll_delay = 2*1000;  // 2ms delay for things to settle (docs say 500us is worst case)
 
 inline pllcalc::PllProfileResolution resolve_pll_profile_config(const std::string &profile) {

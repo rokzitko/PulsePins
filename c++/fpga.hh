@@ -136,6 +136,13 @@ public:
   }
 };
 
+static_assert(address_map::contains(address_map::lw::sysid, 4));
+static_assert(address_map::contains(address_map::lw::sysid_qsys_0, 4));
+static_assert(address_map::contains(address_map::lw::sysid_qsys_1, 4));
+static_assert(address_map::contains(address_map::h2f::sysid_h2f, 4));
+static_assert(address_map::contains(address_map::lw::pio_cfg, 0x04*5));
+static_assert(address_map::contains(address_map::lw::pio_elapsed, edgecapture_offset));
+
 // Top-level FPGA resource owner used by host-side tools.
 class FPGA {
 public:

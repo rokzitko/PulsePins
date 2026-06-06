@@ -16,6 +16,8 @@
 #include "config.h"
 #include "pio.hh"
 
+static_assert(address_map::contains(address_map::lw::pio_trig_monitor, edgecapture_offset));
+
 class trigger_ext : public pio_in {
 public:
   trigger_ext(mm &dev, const address_map::LwRegion base, std::string name = "trigger_ext") :

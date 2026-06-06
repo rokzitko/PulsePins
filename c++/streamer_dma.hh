@@ -29,6 +29,9 @@
 #include "elements.hh"
 #include "sequence.hh"
 
+static_assert(address_map::contains(address_map::h2f::msgdma_1_csr, 0x08));
+static_assert(address_map::contains(address_map::h2f::msgdma_1_descriptor_slave, 0x0C));
+
 // DMA transport wrapper for one streamer input path.
 class streamer_dma : private c_dma
 {

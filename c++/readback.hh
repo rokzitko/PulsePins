@@ -26,6 +26,8 @@
 #include "stall_timeout.hh"
 #include "streamer.hh"
 
+static_assert(address_map::contains(address_map::h2f::rl_encoder_if, 8));
+
 class ReadbackException : public std::exception {
   std::string msg;
 public:

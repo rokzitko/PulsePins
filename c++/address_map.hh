@@ -21,6 +21,14 @@ struct LwRegion {
   std::uintptr_t span;
 };
 
+constexpr bool contains(H2fRegion region, std::uintptr_t offset, std::uintptr_t bytes = sizeof(std::uint32_t)) noexcept {
+  return offset <= region.span && bytes <= region.span - offset;
+}
+
+constexpr bool contains(LwRegion region, std::uintptr_t offset, std::uintptr_t bytes = sizeof(std::uint32_t)) noexcept {
+  return offset <= region.span && bytes <= region.span - offset;
+}
+
 namespace h2f {
 
 inline constexpr H2fRegion rl_encoder_if {RL_ENCODER_IF_BASE, RL_ENCODER_IF_SPAN};

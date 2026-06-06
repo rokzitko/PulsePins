@@ -15,6 +15,8 @@
 #include "pio.hh"
 #include "config.h"
 
+static_assert(address_map::contains(address_map::lw::pio_trig_int, 0));
+
 constexpr uint32_t set_low8(uint32_t x, uint8_t b) noexcept {
       return (x & 0xFFFFFF00u) | static_cast<uint32_t>(b);
 }

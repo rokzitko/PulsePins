@@ -33,7 +33,7 @@ BUILD ?= RELEASE
 
 ifeq ($(BUILD),DEBUG)
  OPTIMFLAGS = -g -O3 -Wall -Wextra -fno-omit-frame-pointer -fno-inline \
-  -DPPWEBGUI_ENABLE_BACKTRACE
+  -DPPWEBGUI_ENABLE_BACKTRACE -DPP_DEBUG_LOC_BOUNDS
  LINKFLAGS = -g -rdynamic
  # For low-level troubleshooting:
  # DEBUG_FPGA_IO enables tracing out of all memory-mapped I/O to FPGA.

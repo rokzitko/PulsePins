@@ -10,8 +10,11 @@
 #include <sstream>
 #include <exception>
 #include <cassert>
+#include <cstdint>
+#include <cstdlib>
 #include <cstdio>
 #include <fcntl.h>
+#include <stdexcept>
 #include <sys/mman.h>
 #include <unistd.h> // close
 
@@ -66,6 +69,13 @@ class loc
    std::uintptr_t base;
    bool debug = default_loc_debug;
    std::string name;
+#ifdef PP_DEBUG_LOC_BOUNDS
+   bool bounds_check_enabled = false;
+   std::uintptr_t bounds_size = 0;
+
+   void set_bounds(const mm &dev, std::uintptr_t ptr_base, std::uintptr_t shift) noexcept;
+   void check_bounds(const char *operation, uint32_t offset) const noexcept;
+#endif
  public:
    loc(std::uintptr_t _base, [[maybe_unused]] std::string _name = "") :
      base(_base),
@@ -79,6 +89,9 @@ class loc
    loc(const mm &dev, std::uintptr_t ptr_base, std::string _name = "");
    loc(const mm &dev, std::uintptr_t ptr_base, std::uintptr_t shift, std::string _name = "");
    inline void write(const uint32_t val, const uint32_t offset = 0) const noexcept {
+#ifdef PP_DEBUG_LOC_BOUNDS
+     check_bounds("write", offset);
+#endif
      if (debug)
        try {
          std::cout << "write " << name
@@ -89,6 +102,9 @@ class loc
      *(volatile uint32_t *)(base + offset) = val; // volatile prevents the compiler from optimizing away the call
    }
    inline uint32_t read(const uint32_t offset = 0) const noexcept {
+#ifdef PP_DEBUG_LOC_BOUNDS
+     check_bounds("read", offset);
+#endif
      const auto val = *(volatile uint32_t *)(base + offset); // volatile prevents the compiler from optimizing away the call
      if (debug)
        try {
@@ -159,11 +175,36 @@ class mm
    auto get_addr(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const noexcept {
      return virtual_base + ((ptr_base + shift) & mask);
    }
+   bool contains(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0, std::uintptr_t bytes = sizeof(uint32_t)) const noexcept {
+     auto offset = ptr_base;
+     if (ptr_base >= base && ptr_base - base < span)
+       offset = ptr_base - base;
+     if (shift > UINTPTR_MAX - offset)
+       return false;
+     offset += shift;
+     return offset <= span && bytes <= span - offset;
+   }
+   auto checked_addr(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0, std::uintptr_t bytes = sizeof(uint32_t)) const {
+     if (!contains(ptr_base, shift, bytes)) {
+       std::ostringstream ss;
+       ss << "mm::checked_addr outside mapped span: map_base=0x" << std::hex << base
+          << " span=0x" << span
+          << " ptr_base=0x" << ptr_base
+          << " shift=0x" << shift
+          << " bytes=0x" << bytes;
+       throw std::out_of_range(ss.str());
+     }
+     auto offset = ptr_base;
+     if (ptr_base >= base && ptr_base - base < span)
+       offset = ptr_base - base;
+     offset += shift;
+     return virtual_base + offset;
+   }
    auto get_ptr(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const noexcept {
      return (void*)get_addr(ptr_base, shift);
    }
-   auto get_loc(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const noexcept {
-     return loc(get_addr(ptr_base, shift));
+   auto get_loc(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const {
+     return loc(*this, ptr_base, shift);
    }
    ~mm() {
      munmap((void*)virtual_base, span); // ignore return value
@@ -172,10 +213,52 @@ class mm
 };
 
 inline loc::loc(const mm &dev, std::uintptr_t ptr_base, std::string _name) :
-  loc(dev.get_addr(ptr_base), _name) {}
+  loc(dev.checked_addr(ptr_base), _name) {
+#ifdef PP_DEBUG_LOC_BOUNDS
+  set_bounds(dev, ptr_base, 0);
+#endif
+}
 
 inline loc::loc(const mm &dev, std::uintptr_t ptr_base, std::uintptr_t shift, std::string _name) :
-  loc(dev.get_addr(ptr_base, shift), _name) {}
+  loc(dev.checked_addr(ptr_base, shift), _name) {
+#ifdef PP_DEBUG_LOC_BOUNDS
+  set_bounds(dev, ptr_base, shift);
+#endif
+}
+
+#ifdef PP_DEBUG_LOC_BOUNDS
+inline void loc::set_bounds(const mm &dev, std::uintptr_t ptr_base, std::uintptr_t shift) noexcept {
+  const auto map_base = dev.get_base();
+  const auto map_span = dev.get_span();
+  auto offset = ptr_base;
+  if (ptr_base >= map_base && ptr_base - map_base < map_span)
+    offset = ptr_base - map_base;
+  if (shift > UINTPTR_MAX - offset)
+    offset = map_span + 1;
+  else
+    offset += shift;
+  bounds_check_enabled = true;
+  bounds_size = offset <= map_span ? map_span - offset : 0;
+}
+
+inline void loc::check_bounds(const char *operation, uint32_t offset) const noexcept {
+  if (!bounds_check_enabled)
+    return;
+  constexpr std::uintptr_t access_size = sizeof(uint32_t);
+  const std::uintptr_t access_offset = offset;
+  if (access_offset <= bounds_size && access_size <= bounds_size - access_offset)
+    return;
+  std::fprintf(stderr,
+               "loc bounds check failed: %s %s base=0x%jx offset=0x%jx bytes=%ju remaining=%ju\n",
+               operation,
+               name.c_str(),
+               static_cast<uintmax_t>(base),
+               static_cast<uintmax_t>(access_offset),
+               static_cast<uintmax_t>(access_size),
+               static_cast<uintmax_t>(bounds_size));
+  std::abort();
+}
+#endif
 
 class on_chip_memory {
  private:

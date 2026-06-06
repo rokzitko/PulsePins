@@ -32,6 +32,11 @@
 #include "definitions.hh"
 #include "colors.hh"
 
+static_assert(address_map::contains(address_map::h2f::st_interface_1, OUTPUT_FIFO_CTR_OUT_H*4));
+static_assert(address_map::contains(address_map::h2f::st_interface_2, OUTPUT_FIFO_CTR_OUT_H*4));
+static_assert(address_map::contains(address_map::h2f::st_interface_3, OUTPUT_FIFO_CTR_OUT_H*4));
+static_assert(address_map::contains(address_map::h2f::st_interface_4, OUTPUT_FIFO_CTR_OUT_H*4));
+
 inline constexpr uint64_t default_streamer_completion_timeout_ms = 10'000;
 inline constexpr const char *streamer_completion_timeout_text =
   "timed out waiting for streamer completion (10 s internal limit)";

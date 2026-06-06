@@ -30,6 +30,8 @@
 
 #define COUNTER_AC
 
+static_assert(address_map::contains(address_map::h2f::counter_q, 7*4));
+
 using readfnc = std::function<uint32_t(uint32_t, uint32_t)>;
 
 class basic_counter {

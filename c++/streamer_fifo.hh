@@ -30,6 +30,15 @@
 #include "sequence.hh"
 #include "stall_timeout.hh"
 
+static_assert(address_map::contains(address_map::h2f::fifo_1_in, 0));
+static_assert(address_map::contains(address_map::h2f::fifo_1_in_csr, fifo_event_shift));
+static_assert(address_map::contains(address_map::h2f::fifo_2_in, 0));
+static_assert(address_map::contains(address_map::h2f::fifo_2_in_csr, fifo_event_shift));
+static_assert(address_map::contains(address_map::h2f::fifo_3_in, 0));
+static_assert(address_map::contains(address_map::h2f::fifo_3_in_csr, fifo_event_shift));
+static_assert(address_map::contains(address_map::h2f::fifo_4_in, 0));
+static_assert(address_map::contains(address_map::h2f::fifo_4_in_csr, fifo_event_shift));
+
 // FIFO transport wrapper for one streamer input path.
 class streamer_fifo : private fifo
 {

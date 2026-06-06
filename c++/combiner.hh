@@ -77,6 +77,9 @@ constexpr port_t C_VALUE2 = 0b1101;
 constexpr port_t C_VALUE3 = 0b1110;
 constexpr port_t C_VALUE4 = 0b1111;
 
+static_assert(address_map::contains(address_map::h2f::combiner_trig, C_VALUE4*4));
+static_assert(address_map::contains(address_map::h2f::combiner_qout, C_VALUE4*4));
+
 // config port bits
 constexpr int B_FORCEo = 16;
 constexpr int B_FORCE1 = 17;

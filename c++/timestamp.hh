@@ -35,6 +35,12 @@ constexpr int TS_SEL_STREAMER_TRIGGER_ACTIVATED = 0;
 constexpr int CFG_TS_SEL_PPS = 1;
 constexpr int CFG_TS_SEL_SIGA_MUX_OFFSET = 2;
 
+static_assert(address_map::contains(address_map::h2f::fifo_ts_pps_out, 0));
+static_assert(address_map::contains(address_map::h2f::fifo_ts_pps_in_csr, fifo_event_shift));
+static_assert(address_map::contains(address_map::h2f::fifo_ts_siga_out, 0));
+static_assert(address_map::contains(address_map::h2f::fifo_ts_siga_in_csr, fifo_event_shift));
+static_assert(address_map::contains(address_map::lw::pio_cfg, 0x04*5));
+
 inline std::string sel_str(int sel)
 {
   switch (sel) {

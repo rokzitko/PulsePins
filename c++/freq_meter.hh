@@ -23,6 +23,8 @@
 #include "fpga.hh"
 #include "options.hh"
 
+static_assert(address_map::contains(address_map::h2f::freq_meter_0, 0x10 + 4*3));
+
 class freq_meter {
 private:
   using Ticks = uint32_t; // width of all counters (incl. gate length)
