@@ -389,6 +389,8 @@ inline int send_and_trig(Transport &tr,
   bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout_policy, rc);
   run_readback_dump_phase(rb, input, v, timeout_policy);
 
+  // -dont_wait deliberately skips post-execution cleanup; armed/forced trigger
+  // state may remain active until reset, reconfiguration, or explicit deactivation.
   if (input.exists("-dont_wait"))
     return rc;
 

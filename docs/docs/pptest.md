@@ -24,6 +24,7 @@ Command line switches:
 * ``-random_final``: append a random final data value instead of the default no-modify final terminator
 * ``-check``: perform verification using the read-back method
 * ``-timeout``: controls readback wait bounds during ``-check`` and ``-read``; if omitted, the shared workflow uses a conservative 2s timeout both for the first readback element and for later idle gaps. Use a positive value for idle-gap timeout, a negative value for absolute timeout from start, or ``-timeout 0`` to disable timeout protection.
+* ``-dont_wait``: return after queueing the sequence, activating or arming the trigger, and completing any requested readback phase. This skips the normal wait and post-run cleanup, so forced or armed trigger state may remain active until reset, reconfiguration, or explicit deactivation.
 * ``-dump-converted``: dump out the sequence of elements after converting elements with non-trivial update modes to simple BITLOAD elements
 * ``-i``: initial value to be presented on the output ports before the sequence begins to stream out
 * ``-core_pll``: configure the core/control-side PLL using a preset name, raw ``N,M,C`` string, or calculated frequency string
@@ -117,7 +118,8 @@ Bitwise update mode test on a short sequence.
 
 Initial value test. Defaults to 4, use ``-iv`` to override. The switch ``-ns`` furthermore adds an initial no-strobe
 element with the same value. This can be used in combination with ``-timeout`` and ``-dont_wait`` to perform a self-test
-of the initial value setting.
+of the initial value setting; remember that ``-dont_wait`` intentionally leaves normal post-run cleanup to a later reset,
+reconfiguration, or explicit deactivation.
 
 ### Test 8
 
