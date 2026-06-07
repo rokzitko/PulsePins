@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 #include "config.h"
@@ -36,8 +37,11 @@ struct PllOptions {
   std::optional<uint32_t> bandwidth;
 };
 
+inline constexpr uint32_t readback_mode_strobe_weird_clock = 0;
+inline constexpr uint32_t readback_mode_valid_clk = 1;
+
 struct ReadbackOptions {
-  uint32_t mode = 1;
+  uint32_t mode = readback_mode_valid_clk;
 };
 
 enum class TriggerModeOption {
@@ -125,8 +129,12 @@ inline PllOptions resolve_int_pll_options(const InputParser &input) {
 
 inline ReadbackOptions resolve_readback_options(const InputParser &input) {
   ReadbackOptions opts;
-  const std::string rbmode = if_nonempty_or(get_env("PP_RBMODE"), "1");
-  opts.mode = parse_uint32(input, "-rbmode", rbmode);
+  if (envVarExists("PP_RBMODE") || input.exists("-rbmode")) {
+    const std::string rbmode = if_nonempty_or(get_env("PP_RBMODE"), "1");
+    opts.mode = parse_uint32(input, "-rbmode", rbmode);
+    if (opts.mode != readback_mode_valid_clk)
+      throw std::runtime_error("readback strobe mode is not available in this build; only -rbmode 1 (valid/clk) is supported");
+  }
   return opts;
 }
 

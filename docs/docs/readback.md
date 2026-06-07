@@ -31,11 +31,13 @@ Inputs:
   * `qin`: observed data word, usually connected to streamer `qout`
   * `qin_valid`: sampled-data validity qualifier
   * `qin_clk`: sampled-data clock
-  * `qin_strobe`: optional strobe-based sampling qualifier for the alternate mode
+  * `qin_strobe`: strobe signal retained for the dormant `WEIRD_CLOCK` alternate mode
 
 Important behavior:
 
 * equal consecutive samples are merged into one run-length element
+* normal builds sample `qin` on `qin_clk` while `qin_valid` is asserted
+* the older strobe-clocked mode is hidden unless the RTL is explicitly built with `WEIRD_CLOCK`
 * when validity drops, the pending run is flushed so the final observed state is not lost
 * overflow latches high if software is not draining the encoded FIFO fast enough
 
@@ -44,7 +46,7 @@ Important behavior:
 `rl_encoder_if.sv` provides:
 
 * Avalon-ST output carrying encoded readback elements
-* Avalon-MM control/status for reset, mode selection, FIFO-empty state, overflow, observed pulse count, and CRC32
+* Avalon-MM control/status for reset, active-mode status, FIFO-empty state, overflow, observed pulse count, and CRC32
 
 The pulse counter and CRC are computed in the sampled-input domain, which lets software compare transport-level integrity against the transmitted reference stream.
 

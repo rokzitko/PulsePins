@@ -35,7 +35,7 @@ always @(posedge clk) begin
   );
 end
 
-rl_encoder dut(.clk, .reset, .data, .valid, .data_clk, .mode(1));
+rl_encoder dut(.clk, .reset, .data, .valid, .data_clk, .mode(1'b1));
 
 initial begin
   data <= 32'b0;

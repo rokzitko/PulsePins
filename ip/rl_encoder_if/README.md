@@ -13,7 +13,7 @@ This directory contains the RTL used to observe `qout` activity, compress it bac
 The readback path is the mirror image of the streamer datapath:
 
 1. sampled output symbols arrive on `qin`
-2. valid/strobe policy determines when a new sample should be counted
+2. normal builds sample valid input words on `qin_clk`; the strobe-clocked policy is dormant behind `WEIRD_CLOCK`
 3. `rl_encoder.sv` groups consecutive equal values into `{count, value}` runs
 4. a dual-clock FIFO decouples the sampled input domain from software-side reads
 5. `rl_encoder_if.sv` exports the captured runs as Avalon-ST data and adds status/control registers
@@ -29,7 +29,7 @@ This subsystem is mainly used for:
 `rl_encoder_if.sv` exposes:
 
 - Avalon-ST output carrying encoded `{control=0, counter, data}` elements
-- Avalon-MM control/status registers for reset, mode selection, pulse count, FIFO-empty state, overflow, and CRC32
+- Avalon-MM control/status registers for reset, active-mode status, pulse count, FIFO-empty state, overflow, and CRC32
 
 The wrapper also maintains a pulse counter and CRC in the sampled-input domain so software can compare the observed stream against the transmitted reference.
 

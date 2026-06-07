@@ -2,5 +2,5 @@
 rm -rf work
 rm -f SUCCESS
 vlib work
-vlog -sv tb2.sv  ../rl_encoder.sv
+vlog -sv tb2.sv ../rl_encoder.sv ../../misc/sync.sv
 vsim -L altera_mf -L lpm -c -do "run -all" tb

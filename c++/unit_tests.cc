@@ -1115,6 +1115,12 @@ TEST_CASE("resolve_trigger_options captures mode invert and mask fields") {
   CHECK(opts.mask_misc == std::optional<uint32_t>(7));
 }
 
+TEST_CASE("resolve_readback_options hides unsupported strobe mode") {
+  CHECK(resolve_readback_options(make_input({})).mode == readback_mode_valid_clk);
+  CHECK(resolve_readback_options(make_input({"-rbmode", "1"})).mode == readback_mode_valid_clk);
+  CHECK_THROWS_AS(resolve_readback_options(make_input({"-rbmode", "0"})), std::runtime_error);
+}
+
 TEST_CASE("resolve_streamer_options reports explicit initial value") {
   SUBCASE("default") {
     auto opts = resolve_streamer_options(make_input({}));

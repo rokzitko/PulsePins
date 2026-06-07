@@ -37,7 +37,7 @@ input wire qin_clk
 logic rdreq;         // Avalon-ST dequeue handshake
 logic empty;         // 1 if the FIFO buffer is empty
 logic reset_counter; // reset rl_encoder; clears the FIFO
-logic mode;          // 0 = valid, 1 = strobe [only works if WEIRD_CLOCK is defined]
+logic mode;          // 1 = valid/qin_clk; 0 = dormant strobe mode behind WEIRD_CLOCK
 
 logic [cfg::WIDTH_DATA+cfg::WIDTH_COUNTER-1:0] j;
 logic overflow;
@@ -70,6 +70,8 @@ logic input_clk;
 logic is_valid;
 
 `ifdef WEIRD_CLOCK
+  // Optional strobe-clocked readback mode. Normal builds keep this hidden because
+  // qin_clk/valid sampling is the only supported mode.
   assign input_clk = mode ? qin_clk : qin_strobe;
   assign is_valid = (mode == 1 && qin_valid) || (mode == 0);
 `else
@@ -105,6 +107,7 @@ crc32 crc32_inst (
 always_ff @(posedge clk) begin
   if (reset) begin
     reset_counter <= 0;
+    mode <= 1'b1;
   end else if (avs_s0_write) begin
     // The control interface is intentionally small: reset and mode select are the only writable knobs.
     unique case (avs_s0_address)

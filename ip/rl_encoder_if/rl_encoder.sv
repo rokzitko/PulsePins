@@ -21,7 +21,7 @@ module rl_encoder
  input  wire clk,   // clock for reading RLE elecments from the FIFO buffer
  input  wire reset, // reset in clk clock domain
 
- input  wire mode,  // 1 = use data_clk; 0 = use strobe pulses for clocking in data
+ input  wire mode,  // WEIRD_CLOCK only: 1 = valid/data_clk, 0 = valid/strobe; otherwise ignored
 
  input  wire [width_data-1:0] data,
  input  wire                  valid,  // must be asserted for valid data even when strobe is used (mode=0)
@@ -38,6 +38,7 @@ module rl_encoder
 
   logic input_clk;
   `ifdef WEIRD_CLOCK
+     // Dormant alternate mode: strobe becomes the sampled-input clock when mode=0.
      assign input_clk = mode ? data_clk : (valid ? strobe : ~data_clk);
   `else
      assign input_clk = data_clk;
@@ -60,9 +61,10 @@ module rl_encoder
   localparam logic [width_counter-1:0] ONE       = {{(width_counter-1){1'b0}}, 1'b1};
   localparam logic [width_counter-1:0] MAX_COUNT = {width_counter{1'b1}};
 
-  // Sample-event definition preserved from the original meaning:
+  // Sample-event definition preserved for the optional WEIRD_CLOCK mode:
   // mode=1   -> sample whenever valid=1 (data_clk domain)
-  // mode=0   -> sample when strobe & valid (clk domain)
+  // mode=0   -> sample when strobe & valid (strobe-clocked domain)
+  // normal build -> only valid/data_clk sampling is active
   `ifdef WEIRD_CLOCK
      wire sample_event = mode ? valid : (valid & strobe);
   `else

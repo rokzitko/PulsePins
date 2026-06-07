@@ -4,6 +4,8 @@
 `ifndef RL_CONFIG_VH
 `define RL_CONFIG_VH
 
+// Enable the dormant strobe-clocked readback mode. Normal builds leave this
+// disabled and sample qin with qin_clk when qin_valid is asserted.
 //`define WEIRD_CLOCK
 
 package cfg;

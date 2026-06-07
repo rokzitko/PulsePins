@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <iostream>
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 #include "colors.hh"
@@ -182,11 +183,14 @@ public:
     clear_fifo();
   }
 
-    // Select the readback sampling mode. The mode meanings come from the RTL wrapper.
+    // Normal bitstreams support only valid/qin_clk sampling. The strobe-clocked
+    // mode is dormant in RTL behind WEIRD_CLOCK, so reject attempts to select it.
     void mode(const uint32_t m) {
+    if (m != readback_mode_valid_clk)
+      throw std::runtime_error("readback strobe mode requires a WEIRD_CLOCK RTL build");
     if (v.veryverbose)
-      F << "Readback: setting mode=" << m << " " << (m == 1 ? "{valid/clk}" : "{strobe}") << std::endl;
-    lmode.write(m);
+      F << "Readback: setting mode=" << readback_mode_valid_clk << " {valid/clk}" << std::endl;
+    lmode.write(readback_mode_valid_clk);
   }
 
   port_t get_crc32() {
@@ -200,7 +204,7 @@ public:
     std::cout << "Readback status: ";
     if (s & 1) std::cout << yellow << "{empty} " << rst;;
     if (s & 2) std::cout << red << "{reset} " << rst;
-    std::cout << (s & 4 ? "{mode=strobe} " : "{mode=clk/valid} ");
+    std::cout << (s & 4 ? "{mode=valid/clk} " : "{mode=valid/clk,strobe-disabled} ");
     if (s & 8) std::cout << red << "{overflow} " << rst;
     std::cout << " counter=" << std::dec << c;
     std::cout << " CRC=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32 << std::endl;
