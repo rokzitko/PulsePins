@@ -77,7 +77,12 @@ void bind_counter_bindings(nb::module_ &m) {
     .def("__repr__", &crosscorrelation::str);
 
   nb::class_<counter>(m, "counter")
-    .def(nb::init<const InputParser &, FPGA &, const std::uintptr_t>(),
+    .def("__init__", [](counter *self,
+                         const InputParser &input,
+                         FPGA &fpga,
+                         const std::uintptr_t base) {
+           new (self) counter(input, fpga, pp_bind_h2f_region(base));
+         },
          "input"_a, "fpga"_a, "base"_a = COUNTER_Q_BASE,
          nb::keep_alive<1, 3>())
     .def("read", &counter::read, "instr"_a, "part"_a, "addr"_a)

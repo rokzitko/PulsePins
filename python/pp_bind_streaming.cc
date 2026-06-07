@@ -17,7 +17,14 @@ using namespace nb::literals;
 
 void bind_streaming(nb::module_ &m) {
   nb::class_<streamer_control>(m, "streamer_control")
-    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
+    .def("__init__", [](streamer_control *self,
+                         const mm &dev,
+                         const std::uintptr_t base) {
+           new (self) streamer_control(dev, pp_bind_h2f_region(base));
+         },
+         "dev"_a,
+         "base"_a,
+         nb::keep_alive<1, 2>())
     .def("status", &streamer_control::status)
     .def("get_control", &streamer_control::get_control)
     .def("get_overflow", &streamer_control::get_overflow)
@@ -74,7 +81,26 @@ void bind_streaming(nb::module_ &m) {
     .def("read_in_chunks", &c_dma::read_in_chunks);
 
   nb::class_<streamer_dma, c_dma>(m, "streamer_dma")
-    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t, size_t, const Verbosity &>(),
+    .def("__init__", [](streamer_dma *self,
+                         const mm &dev,
+                         const std::uintptr_t csr_base,
+                         const std::uintptr_t descriptor_base,
+                         const std::uintptr_t ram_addr,
+                         const size_t max_size,
+                         const Verbosity &v) {
+           new (self) streamer_dma(dev,
+                                   pp_bind_h2f_region(csr_base),
+                                   pp_bind_h2f_region(descriptor_base),
+                                   ram_addr,
+                                   max_size,
+                                   v);
+         },
+         "dev"_a,
+         "csr_base"_a,
+         "descriptor_base"_a,
+         "ram_addr"_a,
+         "max_size"_a,
+         "verbosity"_a,
          nb::keep_alive<1, 2>(),
          nb::keep_alive<1, 7>())
     .def("write_element", &streamer_dma::write_element)
@@ -85,14 +111,41 @@ void bind_streaming(nb::module_ &m) {
     .def("send_sequence", &streamer_dma::send_sequence);
 
   nb::class_<streamer_fifo, fifo>(m, "streamer_fifo")
-    .def(nb::init<mm &, std::uintptr_t, std::uintptr_t>(), nb::keep_alive<1, 2>())
+    .def("__init__", [](streamer_fifo *self,
+                         const mm &dev,
+                         const std::uintptr_t base,
+                         const std::uintptr_t in_csr_base) {
+           new (self) streamer_fifo(dev,
+                                    pp_bind_h2f_region(base),
+                                    pp_bind_h2f_region(in_csr_base));
+         },
+         "dev"_a,
+         "base"_a,
+         "in_csr_base"_a,
+         nb::keep_alive<1, 2>())
     .def("out", &streamer_fifo::out)
     .def("check_fill_status", &streamer_fifo::check_fill_status)
     .def("report", &streamer_fifo::report)
     .def("send_sequence", &streamer_fifo::send_sequence);
 
   nb::class_<readback>(m, "readback")
-    .def(nb::init<FPGA &, mm &, std::uintptr_t, std::uintptr_t, std::uintptr_t>(),
+    .def("__init__", [](readback *self,
+                         FPGA &fpga,
+                         const mm &dev,
+                         const std::uintptr_t base,
+                         const std::uintptr_t csr_base,
+                         const std::uintptr_t control_base) {
+           new (self) readback(fpga,
+                               dev,
+                               pp_bind_h2f_region(base),
+                               pp_bind_h2f_region(csr_base),
+                               pp_bind_h2f_region(control_base));
+         },
+         "fpga"_a,
+         "dev"_a,
+         "base"_a,
+         "csr_base"_a,
+         "control_base"_a,
          nb::keep_alive<1, 2>(),
          nb::keep_alive<1, 3>())
     .def("check_fill_status", &readback::check_fill_status)
@@ -107,12 +160,37 @@ void bind_streaming(nb::module_ &m) {
     .def("check", static_cast<bool (readback::*)(Sequence, const double)>(&readback::check));
 
   nb::class_<basic_streamer>(m, "basic_streamer")
-    .def(nb::init<const InputParser &, FPGA &, const std::uintptr_t, const std::uintptr_t, const std::uintptr_t>(),
+    .def("__init__", [](basic_streamer *self,
+                         const InputParser &input,
+                         FPGA &fpga,
+                         const std::uintptr_t fifo_base,
+                         const std::uintptr_t fifo_csr_base,
+                         const std::uintptr_t st_if_base) {
+           new (self) basic_streamer(input,
+                                     fpga,
+                                     pp_bind_h2f_region(fifo_base),
+                                     pp_bind_h2f_region(fifo_csr_base),
+                                     pp_bind_h2f_region(st_if_base));
+         },
+         "input"_a,
+         "fpga"_a,
+         "fifo_base"_a,
+         "fifo_csr_base"_a,
+         "st_if_base"_a,
          nb::keep_alive<1, 3>())
     .def("set_initial_value", &basic_streamer::set_initial_value);
 
   nb::class_<streamer, basic_streamer>(m, "streamer")
-    .def(nb::init<const InputParser &, FPGA &, const std::uintptr_t>(), nb::keep_alive<1, 3>());
+    .def("__init__", [](streamer *self,
+                         const InputParser &input,
+                         FPGA &fpga,
+                         const std::uintptr_t st_mux_base) {
+           new (self) streamer(input, fpga, pp_bind_h2f_region(st_mux_base));
+         },
+         "input"_a,
+         "fpga"_a,
+         "st_mux_base"_a = ST_MUX_1_BASE,
+         nb::keep_alive<1, 3>());
 
   nb::class_<dma_streamer, streamer>(m, "dma_streamer")
     .def(nb::init<const InputParser &, FPGA &>(), nb::keep_alive<1, 3>());

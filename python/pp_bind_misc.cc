@@ -16,9 +16,6 @@
 using namespace nb::literals;
 
 void bind_misc(nb::module_ &m) {
-  m.def("check_firmware", []() { check_version(version); });
-  m.def("check_version", &check_version);
-
   nb::class_<Verbosity>(m, "Verbosity")
     .def(nb::init<>())
     .def_rw("verbose", &Verbosity::verbose)
@@ -156,6 +153,7 @@ void bind_misc(nb::module_ &m) {
   m.attr("TRIG_CTRL_RESET") = TRIG_CTRL_RESET;
 
   m.attr("default_final_value") = default_final_value;
+  m.attr("version") = version;
   m.attr("force_trigger") = true;
   m.attr("do_not_force_trigger") = false;
 }

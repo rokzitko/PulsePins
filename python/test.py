@@ -618,8 +618,8 @@ def test_sc_gate_status_helpers_smoke(dev_h2f):
    sc.gate_status_string_from_x(0)
 
 @pytest.mark.hardware
-def test_check_firmware():
-   pp.check_firmware()
+def test_check_firmware(fpga):
+   fpga.check_version()
 
 @pytest.mark.hardware
 def test_mm(dev_lw):

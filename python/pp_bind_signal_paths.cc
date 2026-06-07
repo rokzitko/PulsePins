@@ -16,7 +16,14 @@ using namespace nb::literals;
 
 void bind_signal_paths(nb::module_ &m) {
   nb::class_<combiner>(m, "combiner")
-    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
+    .def("__init__", [](combiner *self,
+                         const mm &dev,
+                         const std::uintptr_t base) {
+           new (self) combiner(dev, pp_bind_h2f_region(base));
+         },
+         "dev"_a,
+         "base"_a,
+         nb::keep_alive<1, 2>())
     .def("mode", &combiner::mode)
     .def("get_mode", &combiner::get_mode)
     .def("cfg", &combiner::cfg)
@@ -50,7 +57,14 @@ void bind_signal_paths(nb::module_ &m) {
     .value("XOR", trig_mode::XOR);
 
   nb::class_<combiner_trig, combiner>(m, "combiner_trig")
-    .def(nb::init<mm &, std::uintptr_t>(), nb::keep_alive<1, 2>())
+    .def("__init__", [](combiner_trig *self,
+                         const mm &dev,
+                         const std::uintptr_t base) {
+           new (self) combiner_trig(dev, pp_bind_h2f_region(base));
+         },
+         "dev"_a,
+         "base"_a,
+         nb::keep_alive<1, 2>())
     .def("mode", &combiner::mode)
     .def("invert_int", &combiner_trig::invert_int)
     .def("invert_ext", &combiner_trig::invert_ext)
@@ -78,7 +92,14 @@ void bind_signal_paths(nb::module_ &m) {
     .export_values();
 
   nb::class_<combiner_qout, combiner>(m, "combiner_qout")
-    .def(nb::init<const mm &, const std::uintptr_t>(), nb::keep_alive<1, 2>());
+    .def("__init__", [](combiner_qout *self,
+                         const mm &dev,
+                         const std::uintptr_t base) {
+           new (self) combiner_qout(dev, pp_bind_h2f_region(base));
+         },
+         "dev"_a,
+         "base"_a,
+         nb::keep_alive<1, 2>());
 
   nb::class_<qout>(m, "qout")
     .def(nb::init<const InputParser &, const Verbosity &, FPGA &>(),
@@ -95,7 +116,15 @@ void bind_signal_paths(nb::module_ &m) {
         "mode"_a, "y1"_a, "y2"_a, "y3"_a, "y4"_a);
 
   nb::class_<st_mux>(m, "StMux")
-    .def(nb::init<const mm &, const Verbosity &, const std::uintptr_t>(),
+    .def("__init__", [](st_mux *self,
+                         const mm &dev,
+                         const Verbosity &v,
+                         const std::uintptr_t base) {
+           new (self) st_mux(dev, v, pp_bind_h2f_region(base));
+         },
+         "dev"_a,
+         "verbosity"_a,
+         "base"_a,
          nb::keep_alive<1, 2>(),
          nb::keep_alive<1, 3>())
     .def("channel", &st_mux::channel, "ch"_a)
@@ -108,6 +137,13 @@ void bind_signal_paths(nb::module_ &m) {
     .def("set", &trigger::set, "input"_a);
 
   nb::class_<trigger_ext, pio_in>(m, "trigger_ext")
-    .def(nb::init<mm &, uintptr_t>(), nb::keep_alive<1, 2>())
+    .def("__init__", [](trigger_ext *self,
+                         mm &dev,
+                         const std::uintptr_t base) {
+           new (self) trigger_ext(dev, pp_bind_lw_region(base));
+         },
+         "dev"_a,
+         "base"_a,
+         nb::keep_alive<1, 2>())
     .def("status", &trigger_ext::status);
 }

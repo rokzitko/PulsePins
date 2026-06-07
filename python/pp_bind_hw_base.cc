@@ -10,6 +10,7 @@
 #include "fpga.hh"
 #include "freq_meter.hh"
 #include "pll_clk.hh"
+#include "ppversion.hh"
 #include "tidbit.hh"
 
 using namespace nb::literals;
@@ -43,13 +44,28 @@ void bind_hw_base(nb::module_ &m) {
     .def("off", &hpsled::off);
 
   nb::class_<FPGA>(m, "FPGA")
-    .def(nb::init<const Verbosity &>(), nb::keep_alive<1, 2>())
+    .def(nb::init<const Verbosity &, const int>(),
+         "verbosity"_a,
+         "expected_version"_a = version,
+         nb::keep_alive<1, 2>())
+    .def("check_version", &FPGA::check_version,
+         "expected_version"_a = version,
+         "verbose"_a = false)
     .def("status", &FPGA::status)
     .def("set_streamer_clk", &FPGA::set_streamer_clk)
     .def("output_enable", &FPGA::output_enable);
 
   nb::class_<freq_meter>(m, "freq_meter")
-    .def(nb::init<mm &, const std::uintptr_t, bool>(), nb::keep_alive<1, 2>());
+    .def("__init__", [](freq_meter *self,
+                         const mm &dev,
+                         const std::uintptr_t base,
+                         const bool verbose) {
+           new (self) freq_meter(dev, pp_bind_h2f_region(base), verbose);
+         },
+         "dev"_a,
+         "base"_a,
+         "verbose"_a = false,
+         nb::keep_alive<1, 2>());
 
   nb::class_<pp_freq_meter>(m, "pp_freq_meter")
     .def(nb::init<InputParser &, FPGA &, const bool>(), nb::keep_alive<1, 3>())
