@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <deque>
+#include <exception>
 #include <functional>
 #include <iostream>
 #include <mutex>
@@ -30,7 +31,7 @@ public:
     ZipAggregator& operator=(const ZipAggregator&) = delete;
 
     ~ZipAggregator() {
-        stop(/*drain=*/true);
+        try { stop(/*drain=*/true); } catch (...) { }
     }
 
     // Blocks if A-queue is full (backpressure).
@@ -59,16 +60,31 @@ public:
     // Stop the worker. If drain==true, process all remaining *pairs* before exiting.
     // Unpaired leftovers (extra A without B, or vice versa) remain unprocessed.
     void stop(bool drain) {
+        bool notify = false;
         {
             std::lock_guard<std::mutex> lk(m_);
-            if (stopping_) return;
-            stopping_ = true;
-            drain_ = drain;
+            if (!stopping_) {
+                stopping_ = true;
+                drain_ = drain;
+                notify = true;
+            }
         }
-        cv_not_empty_.notify_all();
-        cv_not_full_a_.notify_all();
-        cv_not_full_b_.notify_all();
+        if (notify) {
+            cv_not_empty_.notify_all();
+            cv_not_full_a_.notify_all();
+            cv_not_full_b_.notify_all();
+        }
         if (worker_.joinable()) worker_.join();
+    }
+
+    void rethrow_if_failed() {
+        std::exception_ptr failure;
+        {
+            std::lock_guard<std::mutex> lk(m_);
+            failure = failure_;
+        }
+        if (failure)
+            std::rethrow_exception(failure);
     }
 
 private:
@@ -96,7 +112,20 @@ private:
 
             // Run task outside the lock.
             lk.unlock();
-            task_(a, b);
+            try {
+                task_(a, b);
+            } catch (...) {
+                lk.lock();
+                if (!failure_)
+                    failure_ = std::current_exception();
+                stopping_ = true;
+                drain_ = false;
+                lk.unlock();
+                cv_not_empty_.notify_all();
+                cv_not_full_a_.notify_all();
+                cv_not_full_b_.notify_all();
+                return;
+            }
             lk.lock();
         }
     }
@@ -114,6 +143,7 @@ private:
 
     bool stopping_ = false;
     bool drain_ = true;
+    std::exception_ptr failure_;
 
     std::thread worker_;
 };

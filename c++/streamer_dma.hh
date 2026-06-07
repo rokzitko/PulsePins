@@ -12,6 +12,7 @@
 #include <cstdint> // integer types, uint32_t, etc.
 #include <iostream>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unistd.h> // usleep
@@ -85,23 +86,49 @@ public:
     return size; // return the size of the data in bytes
   }
 
+  template <typename T>
+  [[noreturn]] void throw_verify_mismatch(const size_t element_index,
+                                          const char *field,
+                                          const size_t byte_offset,
+                                          const T expected,
+                                          const T actual) const {
+    std::ostringstream ss;
+    ss << "DMA buffer mismatch at element " << std::dec << element_index
+       << " field " << field
+       << " byte_offset=" << byte_offset
+       << ": expected=0x" << std::hex << static_cast<uint64_t>(expected)
+       << " actual=0x" << static_cast<uint64_t>(actual);
+    throw std::runtime_error(ss.str());
+  }
+
   // Re-read the SDRAM staging buffer and check that it matches the source sequence.
   bool verify(const Sequence &elements) {
     size_t pos = 0; // in units of words (32-bits, 4-bytes)
+    size_t element_index = 0;
     for(const auto &e : elements) {
       if (4*pos + BYTES_TOTAL <= max_size) { // still fits in buffer
+        const size_t control_offset = pos*4;
         auto py = sdram.get_ptr(pos*4);
-        if (*(control_t*)py != e.control()) return false;
+        const auto actual_control = *(control_t*)py;
+        if (actual_control != e.control())
+          throw_verify_mismatch(element_index, "control", control_offset, e.control(), actual_control);
         pos++;
+        const size_t count_offset = pos*4;
         auto pc = sdram.get_ptr(pos*4);
-        if (*(count_t*)pc != e.count()) return false;
+        const auto actual_count = *(count_t*)pc;
+        if (actual_count != e.count())
+          throw_verify_mismatch(element_index, "count", count_offset, e.count(), actual_count);
         pos++;
+        const size_t value_offset = pos*4;
         auto pv = sdram.get_ptr(pos*4);
-        if (*(value_t*)pv != e.value()) return false;
+        const auto actual_value = *(value_t*)pv;
+        if (actual_value != e.value())
+          throw_verify_mismatch(element_index, "value", value_offset, e.value(), actual_value);
         pos++;
       } else {
         throw std::runtime_error("DMA buffer verification exceeds configured staging buffer size.");
       }
+      element_index++;
     }
     if (4 * pos > max_size)
       throw std::runtime_error("DMA buffer verification exceeds configured staging buffer size.");
@@ -155,8 +182,8 @@ public:
   // End-to-end helper: prepare, optionally verify, then transfer.
   void send_sequence(const Sequence &elements, const bool verify_buffer = true) {
     const size_t size = prepare(elements);
-    if (verify_buffer && verify(elements) == false)
-      throw std::runtime_error("DMA buffer mismatch.");
+    if (verify_buffer)
+      verify(elements);
     transfer(size);
   }
 };

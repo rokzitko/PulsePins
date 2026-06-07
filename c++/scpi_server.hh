@@ -339,6 +339,11 @@ protected:
                     } catch (...) {
                         std::cerr << "SCPI session start error: unhandled non-standard exception" << std::endl;
                     }
+                } else {
+                    if (ec == asio::error::operation_aborted) {
+                        return;
+                    }
+                    std::cerr << "SCPI accept error: " << ec.message() << std::endl;
                 }
                 accept();
             });

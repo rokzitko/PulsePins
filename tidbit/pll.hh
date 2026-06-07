@@ -175,7 +175,8 @@ class pll {
    }
    // Current (requested) PLL frequency
    double get_freq(const int ch = 0, const double input_clk = 50*1000*1000.0) {
-     assert(0 <= ch && ch <= 1);
+     if (ch < 0 || ch > 1)
+       throw std::out_of_range("PLL output channel must be 0 or 1");
      const int n = convert(N.read());
      const int m = convert(M.read());
      const int c = convert(ch == 0 ? C0.read() : C1.read());

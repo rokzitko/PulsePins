@@ -45,17 +45,19 @@ std::string parse_bind_ip(const InputParser &input) {
 }
 
 int parse_bind_port(const InputParser &input) {
-  const auto port = std::stoi(input.get_string("-port", "4242"));
-  if (port < 0 || port > 65535) {
-    throw std::runtime_error("-port must be in range 0..65535");
+  const auto raw = input.get_string("-port", "4242");
+  const auto port = parse_uint32_t(raw);
+  if (port > 65535) {
+    throw std::runtime_error("-port must be in range 0..65535: " + raw);
   }
-  return port;
+  return static_cast<int>(port);
 }
 
 unsigned parse_poll_ms(const InputParser &input) {
-  const auto poll_ms = std::stoi(input.get_string("-poll_ms", "100"));
-  if (poll_ms <= 0) {
-    throw std::runtime_error("-poll_ms must be greater than zero");
+  const auto raw = input.get_string("-poll_ms", "100");
+  const auto poll_ms = parse_uint32_t(raw);
+  if (poll_ms == 0) {
+    throw std::runtime_error("-poll_ms must be greater than zero: " + raw);
   }
   return static_cast<unsigned>(poll_ms);
 }

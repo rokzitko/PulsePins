@@ -108,7 +108,13 @@ static void read_lines_from_stream(int fd, const std::atomic<bool>& stop_flag,
       }
       std::string line = buf.substr(pos, nl - pos);
       if (!line.empty() && line.back() == '\r') line.pop_back(); // handle CRLF
-      on_line(line);
+      try {
+        on_line(line);
+      } catch (const std::exception &e) {
+        std::cerr << "LineServer handler error: " << e.what() << std::endl;
+      } catch (...) {
+        std::cerr << "LineServer handler error: unhandled non-standard exception" << std::endl;
+      }
       pos = nl + 1;
     }
   }
@@ -139,7 +145,13 @@ static void read_lines_from_udp(int fd, const std::atomic<bool>& stop_flag,
       std::string line = payload.substr(start, nl - start);
       if (!line.empty() && line.back() == '\r') line.pop_back();
       if (!line.empty() || nl < payload.size()) { // allow empty lines if they are explicit
-        on_line(line);
+        try {
+          on_line(line);
+        } catch (const std::exception &e) {
+          std::cerr << "LineServer handler error: " << e.what() << std::endl;
+        } catch (...) {
+          std::cerr << "LineServer handler error: unhandled non-standard exception" << std::endl;
+        }
       }
       if (nl == payload.size()) break;
       start = nl + 1;
@@ -170,15 +182,7 @@ public:
 
   void stop() {
     stop_flag_.store(true, std::memory_order_relaxed);
-    // Best-effort unblock: close fds if open.
-    // Note: closing from another thread is the common POSIX approach to unblock recv/accept.
-    int fd = listen_fd_.exchange(-1);
-    if (fd >= 0) {
-      ::shutdown(fd, SHUT_RDWR);
-      ::close(fd);
-    }
-    int cfd = client_fd_.exchange(-1);
-    if (cfd >= 0) ::close(cfd);
+    close_open_fds();
     if (thread_.joinable()) thread_.join();
   }
 
@@ -203,6 +207,17 @@ private:
     if (startup && !startup->delivered.exchange(true)) {
       startup->ready.set_exception(eptr);
     }
+  }
+
+  void close_open_fds() noexcept {
+    // Best-effort unblock: closing from another thread is the common POSIX approach to unblock recv/accept.
+    int fd = listen_fd_.exchange(-1);
+    if (fd >= 0) {
+      ::shutdown(fd, SHUT_RDWR);
+      ::close(fd);
+    }
+    int cfd = client_fd_.exchange(-1);
+    if (cfd >= 0) ::close(cfd);
   }
 
   void run(const std::shared_ptr<StartupSignal> &startup) {
@@ -241,8 +256,13 @@ private:
       }
     } catch (const std::exception& e) {
       signal_startup_failure(startup, std::current_exception());
+      close_open_fds();
       // In real code, route this to your logging system.
       std::cerr << "LineServer error: " << e.what() << "\n";
+    } catch (...) {
+      signal_startup_failure(startup, std::current_exception());
+      close_open_fds();
+      std::cerr << "LineServer error: unhandled non-standard exception\n";
     }
     std::cout << "LineServer terminating." << std::endl;
   }

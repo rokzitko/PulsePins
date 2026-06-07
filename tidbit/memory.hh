@@ -10,11 +10,14 @@
 #include <sstream>
 #include <exception>
 #include <cassert>
+#include <cerrno>
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <cstring>
 #include <fcntl.h>
 #include <stdexcept>
+#include <system_error>
 #include <sys/mman.h>
 #include <unistd.h> // close
 
@@ -38,7 +41,11 @@ protected:
    size_t size;
 public:
    ram_block(const std::uintptr_t _addr, const size_t _size, bool verbose = false, std::ostream &f = std::cerr) : addr(_addr), size(_size) {
-     assert(size < de10nano_maxram);
+     if (size >= de10nano_maxram) {
+       std::ostringstream ss;
+       ss << "ram_block size exceeds DE10-Nano RAM: size=" << size << " max=" << de10nano_maxram;
+       throw std::out_of_range(ss.str());
+     }
      if (verbose)
        f << "size=" << std::dec << size << std::endl;
    }
@@ -133,6 +140,12 @@ class loc
 class mm
 {
  private:
+   static std::uintptr_t checked_span(std::uintptr_t span) {
+     if (span < 1)
+       throw std::invalid_argument("mm span must be at least one byte");
+     return span;
+   }
+
    std::uintptr_t base;
    std::uintptr_t span;
    std::uintptr_t mask;
@@ -144,16 +157,18 @@ class mm
       [[maybe_unused]] std::string name = ""s
      ) :
      base(_base),
-     span(_span),
-     mask(_span-1)
+     span(checked_span(_span)),
+     mask(span-1)
    {
-     assert(_span >= 1);
      if ((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
-       throw std::runtime_error("Could not open /dev/mem");
+       throw std::system_error(errno, std::generic_category(), "open(/dev/mem) failed");
      auto res = mmap(NULL, span, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base);
      if (res == MAP_FAILED) {
+       const int mmap_errno = errno;
        close(fd);
-       throw std::system_error(errno, std::generic_category(), "mmap failed");
+       std::ostringstream ss;
+       ss << "mmap(/dev/mem) failed: base=0x" << std::hex << base << " span=0x" << span;
+       throw std::system_error(mmap_errno, std::generic_category(), ss.str());
      }
      virtual_base = (std::uintptr_t)res;
 #ifdef DEBUG_CONSTR
@@ -211,8 +226,10 @@ class mm
    mm(mm&&) = delete;
    mm& operator=(mm&&) = delete;
    ~mm() {
-     munmap((void*)virtual_base, span); // ignore return value
-     close(fd);
+     if (munmap((void*)virtual_base, span) != 0)
+       std::cerr << "Warning: munmap failed: " << std::strerror(errno) << std::endl;
+     if (close(fd) != 0)
+       std::cerr << "Warning: close(/dev/mem) failed: " << std::strerror(errno) << std::endl;
    }
 };
 

@@ -87,15 +87,22 @@ public:
     return oss.str();
   }
 
-  static void emit_quiet_error_placeholder(const Args& args, std::ostream& out, std::ostream& err) {
+  static void emit_quiet_error_placeholder(const Args& args, std::ostream& out, std::ostream& err, const std::string &detail = "") {
     if (args.csv) {
       out << now_iso_utc_seconds() << ",NaN";
       if (args.fahrenheit) out << ",NaN";
       out << "\n";
       out.flush();
+      if (!detail.empty()) {
+        err << now_iso_utc_seconds() << "  ERROR: I2C read failed: " << detail << "\n";
+        err.flush();
+      }
     } else {
       const std::string prefix = args.timestamp ? (now_iso_utc_seconds() + "  ") : "";
-      err << prefix << "ERROR: I2C read failed\n";
+      err << prefix << "ERROR: I2C read failed";
+      if (!detail.empty())
+        err << ": " << detail;
+      err << "\n";
       err.flush();
     }
   }

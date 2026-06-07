@@ -14,6 +14,9 @@
 #include <string>
 #include <string_view>
 
+#ifndef CPPHTTPLIB_FORM_URL_ENCODED_PAYLOAD_MAX_LENGTH
+#define CPPHTTPLIB_FORM_URL_ENCODED_PAYLOAD_MAX_LENGTH (64 * 1024)
+#endif
 #include "httplib.h"
 #include "misc.hh"
 #include "ppwebgui_frontend.hh"

@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE 700
 #include <fcntl.h> /* open */
+#include <errno.h> /* errno */
 #include <stdint.h> /* uint64_t  */
 #include <stdio.h> /* printf */
 #include <stdlib.h> /* size_t */
@@ -32,10 +33,10 @@ int pagemap_get_entry(PagemapEntry *entry, int pagemap_fd, uintptr_t vaddr)
     while (nread < sizeof(data)) {
         ret = pread(pagemap_fd, &data, sizeof(data) - nread,
                 vpn * sizeof(data) + nread);
-        nread += ret;
         if (ret <= 0) {
             return 1;
         }
+        nread += ret;
     }
     entry->pfn = data & (((uint64_t)1 << 55) - 1);
     entry->soft_dirty = (data >> 55) & 1;
@@ -64,9 +65,19 @@ int virt_to_phys_user(uintptr_t *paddr, pid_t pid, uintptr_t vaddr)
     }
     PagemapEntry entry;
     if (pagemap_get_entry(&entry, pagemap_fd, vaddr)) {
+        int saved_errno = errno;
+        close(pagemap_fd);
+        errno = saved_errno;
         return 1;
     }
-    close(pagemap_fd);
+    if (!entry.present || entry.swapped) {
+        close(pagemap_fd);
+        errno = EFAULT;
+        return 1;
+    }
     *paddr = (entry.pfn * sysconf(_SC_PAGE_SIZE)) + (vaddr % sysconf(_SC_PAGE_SIZE));
+    if (close(pagemap_fd) != 0) {
+        return 1;
+    }
     return 0;
 }

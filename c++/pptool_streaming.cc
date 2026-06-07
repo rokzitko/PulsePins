@@ -391,8 +391,11 @@ int ppaux(FPGA &fpga,
   const bool ctr = input.exists("-ctr");
   const bool ts = input.exists("-ts");
   std::ofstream F;
-  if (file != "")
+  if (file != "") {
     F.open(file);
+    if (!F)
+      throw std::runtime_error("Could not open AUX output file: " + file);
+  }
   for (uint64_t cnt = 1; nr == 0 || cnt <= nr; cnt++) {
     const aux_t x = pio_aux.read();
     auto s = output_formatter(x, mode);
@@ -400,11 +403,19 @@ int ppaux(FPGA &fpga,
       s = std::to_string(cnt) + " " + s;
     if (ts)
       s = timestamp_iso8601_utc_ms() + " " + s;
-    if (file != "")
+    if (file != "") {
       F << s << '\n';
-    else
+      if (!F)
+        throw std::runtime_error("Failed writing AUX output file: " + file);
+    } else {
       std::cout << s << std::endl;
+    }
     sleep(wait);
+  }
+  if (file != "") {
+    F.close();
+    if (!F)
+      throw std::runtime_error("Failed closing AUX output file: " + file);
   }
   return RC_OK;
 }

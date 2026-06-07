@@ -224,6 +224,8 @@ public:
     // encoded elements targeting `target_name`.
     void load_VCD(const std::string filename, const std::string target_name = "outs", const uint32_t scale_factor = default_vcd_scale_factor) {
     std::ifstream F(filename);
+    if (!F)
+      throw std::runtime_error("Could not open VCD input file: " + filename);
     auto l = parseVcdUpdates(F, target_name, scale_factor);
     for (size_t i = 0; i < l.size()-1; i++) {
       Counter c = l[i+1].count-l[i].count;
@@ -299,6 +301,9 @@ public:
     if (!f)
       throw std::runtime_error("Could not open VCD output file: " + filename);
     write_VCD(f, target_name, timescale);
+    f.close();
+    if (!f)
+      throw std::runtime_error("Failed writing VCD output file: " + filename);
   }
 
   void write_binary(std::ostream &f, const bool force_trigger = false) const {
@@ -317,6 +322,9 @@ public:
     if (!f)
       throw std::runtime_error("Could not open binary sequence output file: " + filename);
     write_binary(f, force_trigger);
+    f.close();
+    if (!f)
+      throw std::runtime_error("Failed writing binary sequence output file: " + filename);
   }
 
   static std::pair<Sequence, bool> read_binary(std::istream &f) {
@@ -378,6 +386,9 @@ inline void write_sequence_to_file(const Sequence &sequence,
   if (!f)
     throw std::runtime_error("Could not open sequence output file: " + filename);
   write_sequence_to_stream(sequence, f, force_trigger);
+  f.close();
+  if (!f)
+    throw std::runtime_error("Failed writing sequence output file: " + filename);
 }
 
 inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)

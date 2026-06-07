@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <exception>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -42,6 +43,25 @@
 #include "ppworkflow.hh"
 
 std::mutex lockcout;
+
+std::string exception_message(const std::exception_ptr &eptr) {
+  if (!eptr)
+    return "";
+  try {
+    std::rethrow_exception(eptr);
+  } catch (const std::exception &e) {
+    return e.what();
+  } catch (...) {
+    return "unknown non-standard exception";
+  }
+}
+
+int timestamp_reader_rc(const std::exception_ptr &eptr) {
+  if (!eptr)
+    return RC_OK;
+  const auto msg = exception_message(eptr);
+  return msg.find("Timeout") != std::string::npos ? RC_TIMEOUT : RC_EXCEPTION;
+}
 
 struct TimestampSession {
   timestamp ts;
@@ -138,7 +158,11 @@ int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-void ts_reader(const InputParser &input, std::string label, std::function<uint64_t()> read, long long silent_after = -1)
+void ts_reader(const InputParser &input,
+               std::string label,
+               std::function<uint64_t()> read,
+               long long silent_after = -1,
+               std::exception_ptr *failure = nullptr)
 {
   // Shared timestamp-printing loop used by both `ppts` and `ppgpsdo`.
   // `silent_after` lets a caller keep collecting data after the initial bring-up logs stop.
@@ -163,8 +187,12 @@ void ts_reader(const InputParser &input, std::string label, std::function<uint64
       }
       previous = current;
     }
-  } catch (const std::runtime_error &e) {
-    std::cout << "Exception: " << e.what() << std::endl;
+  } catch (...) {
+    const auto eptr = std::current_exception();
+    if (failure)
+      *failure = eptr;
+    std::lock_guard<std::mutex> lock(lockcout);
+    std::cerr << label << " timestamp reader failed: " << exception_message(eptr) << std::endl;
   }
 }
 
@@ -175,15 +203,17 @@ int ppts(FPGA &fpga, const InputParser &input, const Verbosity &v)
   TimestampSession session(fpga, input, v);
   const bool read_pps = !input.exists("-nopps");
   std::thread ts_pps;
+  std::exception_ptr pps_failure;
   if (read_pps)
-    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&session](){ return session.ts.read_with_timeout(session.timeout); }, -1);
+    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&session](){ return session.ts.read_with_timeout(session.timeout); }, -1, &pps_failure);
   const bool read_sigA = input.exists("-sigA");
   std::thread ts_sigA;
+  std::exception_ptr sigA_failure;
   if (read_sigA)
-    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session](){ return session.ts.readA_with_timeout(session.timeout); }, -1);
+    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session](){ return session.ts.readA_with_timeout(session.timeout); }, -1, &sigA_failure);
   if (read_pps) ts_pps.join();
   if (read_sigA) ts_sigA.join();
-  return RC_OK;
+  return timestamp_reader_rc(pps_failure) | timestamp_reader_rc(sigA_failure);
 }
 
 template <typename T> int sgn(T val) {
@@ -324,6 +354,8 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
     if (stop_requested.compare_exchange_strong(expected, true))
       agg.stop(false);
   };
+  std::exception_ptr pps_failure;
+  std::exception_ptr sigA_failure;
   auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&session, &agg, &stop_requested, &request_stop](){
     if (stop_requested.load())
       throw std::runtime_error("timestamp aggregation stopped");
@@ -336,7 +368,7 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
       request_stop();
       throw;
     }
-  }, silent_after);
+  }, silent_after, &pps_failure);
   auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session, &agg, &stop_requested, &request_stop](){
     if (stop_requested.load())
       throw std::runtime_error("timestamp aggregation stopped");
@@ -349,10 +381,19 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
       request_stop();
       throw;
     }
-  }, silent_after);
+  }, silent_after, &sigA_failure);
   ts_pps.join();
   ts_sigA.join();
-  return RC_OK;
+  agg.stop(true);
+  std::exception_ptr aggregation_failure;
+  try {
+    agg.rethrow_if_failed();
+  } catch (...) {
+    aggregation_failure = std::current_exception();
+    std::lock_guard<std::mutex> lock(lockcout);
+    std::cerr << "GPSDO aggregation failed: " << exception_message(aggregation_failure) << std::endl;
+  }
+  return timestamp_reader_rc(pps_failure) | timestamp_reader_rc(sigA_failure) | timestamp_reader_rc(aggregation_failure);
 }
 
 int pptemp(FPGA &, const InputParser &, const Verbosity &)
@@ -370,7 +411,7 @@ int pptemp(FPGA &, const InputParser &, const Verbosity &)
       std::cout.flush();
     } catch (const std::system_error& e) {
       if (args.quiet_errors) {
-        MCP9808::emit_quiet_error_placeholder(args, std::cout, std::cerr);
+        MCP9808::emit_quiet_error_placeholder(args, std::cout, std::cerr, e.what());
       } else {
         throw;
       }
@@ -511,8 +552,8 @@ int ppvcd(FPGA &fpga, const InputParser &input, const Verbosity &v)
   try {
     const std::string filename = input.get_string("-file", "");
     if (filename == "") {
-      std::cout << "Specify filename using -file." << std::endl;
-      return 0;
+      std::cerr << "Missing required -file argument." << std::endl;
+      return RC_INVALID_ARG;
     }
     const auto format = resolve_sequence_file_format(input, filename, SequenceFileFormat::vcd);
     if (format != SequenceFileFormat::vcd)

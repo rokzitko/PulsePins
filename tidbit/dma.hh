@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <bitset>
+#include <stdexcept>
 #include <string>
 
 #include "stall_timeout.hh"
@@ -16,6 +17,8 @@
 
 class c_dma {
 protected:
+   static constexpr uint32_t dma_status_error_mask = (1U << 7) | (1U << 8);
+
    loc dma_csr_status, dma_csr_control, dma_csr_fill_level; // control
    loc d_src_addr, d_dest_addr, d_length, d_control; // descriptors
    const bool verbose;
@@ -83,6 +86,12 @@ public:
      if (verbose)
        std::cout << status_string() << std::endl;
      return status;
+   }
+
+   void throw_if_error_status(const char *context) {
+     const uint32_t s = dma_csr_status.read();
+     if (s & dma_status_error_mask)
+       throw std::runtime_error(std::string(context) + " failed: " + status_string());
    }
 
    uint16_t write_fill() {
@@ -153,6 +162,7 @@ public:
         s = status();
        cnt++;
      }
+     throw_if_error_status("DMA transfer");
    }
 
    void initiate_transfer() {

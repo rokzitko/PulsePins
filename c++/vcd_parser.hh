@@ -314,6 +314,11 @@ inline std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view
     }
   }
 
+  if (target_id.empty())
+    throw std::runtime_error("VCD target not found: " + std::string(target_name));
+  if (updates.empty())
+    throw std::runtime_error("VCD target has no value updates: " + std::string(target_name));
+
   updates.push_back(VcdUpdate{0, current_time}); // add end event
 
   return updates;

@@ -688,6 +688,7 @@ public:
       break;
     default:
       std::cerr << "Unknown test " << test << std::endl;
+      rc = RC_INVALID_ARG;
       break;
     }
     return rc;
