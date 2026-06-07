@@ -211,6 +211,7 @@ test: unit_tests
 
 clean:
 	rm -rf $(TARGETS) unit_tests *.a *.o $(HOST_CHECK_DIR) *~
+	$(MAKE) -C third_party clean
 
 # Copy the built executables to a live board and recreate the usual `pptool` symlink family.
 copy: $(TARGETS)
