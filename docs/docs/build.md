@@ -147,6 +147,8 @@ The top-level `copy_all_img` target populates `image/ext/home/root/` with:
 
 The image workflow expects an external base image and additional binary assets that are not stored in this repository.
 
+Use `IMAGE_ROOT=/path/to/image make copy_all_img` to stage into a different image tree. `IMGROOT` remains the home-root staging path and defaults to `$(IMAGE_ROOT)/ext/home/root`.
+
 ### Recommended workflows
 
 Hardware + software build:

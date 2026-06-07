@@ -72,7 +72,7 @@ copy_misc:
 	scp $(PY_PACKAGE_FILES) $(SCP_TARGET):$(PYDIR)/$(PY_PACKAGE)
 	scp $(PY_EXAMPLE_FILES) $(SCP_TARGET):$(PYDIR)/$(PY_EXAMPLE_DIR)
 
-IMGROOT=../image/ext/home/root
+IMGROOT ?= ../image/ext/home/root
 
 # Stage the same source bundle into the image tree.
 copy_sources_img:

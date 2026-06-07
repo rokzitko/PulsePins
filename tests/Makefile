@@ -11,7 +11,7 @@ copy:
 	scp $(LIST1) $(SCP_TARGET):
 	scp $(LIST2) $(SCP_TARGET):tests/
 
-IMGROOT=../image/ext/home/root
+IMGROOT ?= ../image/ext/home/root
 
 copy_img:
 	mkdir -p $(IMGROOT)/tests

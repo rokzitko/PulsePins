@@ -205,10 +205,11 @@ copy: $(TARGETS)
 	scp $(TARGETS) $(SCP_TARGET):
 	ssh $(SCP_TARGET) 'for L in $(SYMLINKS); do ln -sf pptool $$L; done'
 
-IMGROOT=../image/ext/home/root
+IMGROOT ?= ../image/ext/home/root
 
 # Stage the same executables into the image tree.
 copy_img: $(TARGETS)
+	mkdir -p $(IMGROOT)
 	cp -v $(TARGETS) $(IMGROOT)
 	cd $(IMGROOT) && for L in $(SYMLINKS); do ln -sf pptool $$L; done
 
@@ -232,13 +233,12 @@ copy_sources: ../hps_0.h
 
 # Stage the same source bundle into the image tree for image-based rebuild workflows.
 copy_sources_img: ../hps_0.h
-	mkdir -p $(IMGROOT)/$(CPPDIR)
+	mkdir -p $(IMGROOT)/$(CPPDIR) $(IMGROOT)/$(CPPDIR)/third_party
 	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(CPPDIR)
 	cp -v ../hps_0.h $(IMGROOT)
 	$(MAKE) -C third_party/lua clean
-	mkdir -p $(CPPDIR)/third_party
 	cp -r third_party/lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party
-	ln -fs $(CPPDIR)/third_party/lua-5.5.0 $(CPPDIR)/third_party/lua
+	ln -sfn lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party/lua
 	cp -r third_party/asio $(IMGROOT)/$(CPPDIR)/third_party
 	cp third_party/httplib.h $(IMGROOT)/$(CPPDIR)/third_party
 	cp -r include/ $(IMGROOT)/$(CPPDIR)

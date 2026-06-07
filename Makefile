@@ -20,7 +20,10 @@ QSYSIN=base_hps.qsys
 SOPC=base_hps.sopcinfo
 QPF=$(abspath ${PREFIX}.qpf)
 HPS=hps_0.h
-IMGROOT=image/ext/home/root
+IMAGE_ROOT ?= image
+IMGROOT ?= ${IMAGE_ROOT}/ext/home/root
+IMAGE_ROOT_ABS = $(abspath ${IMAGE_ROOT})
+IMGROOT_ABS = $(abspath ${IMGROOT})
 
 SOURCE=$(wildcard *.sv) $(wildcard ../IP/*.v) $(wildcard ../IP/*.sv)
 IPSOURCE=$(wildcard ip/*/*.v) $(wildcard ip/*/*.vh) $(wildcard ip/*/*.sv)
@@ -77,7 +80,8 @@ copy_boot: ${RBF}
 
 # Stage only the FPGA runtime image into the image tree.
 copy_img: ${RBF}
-	scp ${RBF} ${IMGROOT}/${PREFIX}.rbf
+	mkdir -p ${IMGROOT}
+	cp -v ${RBF} ${IMGROOT}/${PREFIX}.rbf
 
 # Do not check for dependences, force copying the current file
 forcecopy:
@@ -97,12 +101,12 @@ copy_all: copy
 
 # Stage the same runtime bundle into the image tree instead of pushing it to a board.
 copy_all_img: copy_img
-	$(MAKE) -C c++ copy_img
-	$(MAKE) -C c++ copy_sources_img
-	$(MAKE) -C python copy_sources_img
-	$(MAKE) -C tests copy_img
-	$(MAKE) -C I2C copy_img
-	$(MAKE) -C contrib/completions copy_img
+	$(MAKE) -C c++ IMGROOT=$(IMGROOT_ABS) copy_img
+	$(MAKE) -C c++ IMGROOT=$(IMGROOT_ABS) copy_sources_img
+	$(MAKE) -C python IMGROOT=$(IMGROOT_ABS) copy_sources_img
+	$(MAKE) -C tests IMGROOT=$(IMGROOT_ABS) copy_img
+	$(MAKE) -C I2C IMGROOT=$(IMGROOT_ABS) copy_img
+	$(MAKE) -C contrib/completions IMGROOT=$(IMAGE_ROOT_ABS) copy_img
 
 copy_all_image: copy_all_img
 

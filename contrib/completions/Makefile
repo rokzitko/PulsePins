@@ -4,7 +4,7 @@ SCP_TARGET ?= $(TARGETHOST)
 SOURCE = pulsepins.bash
 TARGET_DIR = /etc/profile.d
 TARGET_FILE = $(TARGET_DIR)/pulsepins-completion.sh
-IMGROOT = ../../image
+IMGROOT ?= ../../image
 IMG_TARGET_DIR = $(IMGROOT)/etc/profile.d
 IMG_TARGET_FILE = $(IMG_TARGET_DIR)/pulsepins-completion.sh
 
