@@ -276,16 +276,20 @@ PulsePins uses:
 | --------------- | ------------ |
 | primary clock | `FPGA_CLK1_50` at 20 ns |
 | primary clock | `EXT_CLKp` at 100 ns |
+| HPS peripheral clocks | `HPS_I2C1_SCLK` and `HPS_USB_CLKOUT` declared for hard-HPS clock status |
 | derived clocks | `derive_pll_clocks` |
 | clock uncertainty | `derive_clock_uncertainty` |
 | generated clock | `STREAMER_FROM_INT` on `altclkctrl` output |
 | generated clock | `STREAMER_FROM_CLEAN` on `altclkctrl` output |
 | exclusivity | `set_clock_groups -logically_exclusive` between internal and external streamer-mux clocks |
+| CDC domain groups | `set_clock_groups -asynchronous` between core/control, reference/gate, internal-streamer, and clean/external-streamer domains |
 
 ### False paths
 
 | False-path target | Reason |
 | ----------------- | ------ |
+| board/user/HPS peripheral input ports | no FPGA-owned external setup/hold contract |
+| board/user/HPS peripheral output ports | no FPGA-owned external setup/hold contract |
 | `u_clkctrl|auto_generated|sd2|clkselect[0/1]` | clock-select control path |
 | `*pll_reconfig*` | PLL reconfiguration control path |
 
@@ -296,14 +300,18 @@ The current SDC covers:
 - primary clock declaration
 - automatic PLL-derived clock inference
 - streamer-clock mux output modeling with self-checking post-map TimeQuest pin names
+- asynchronous CDC grouping between the independently controlled clock domains used by control, reference/gate, internal streamer, and clean/external streamer logic
+- explicit false-path treatment for board/user/HPS peripheral ports that do not have an FPGA-owned external timing contract
 - exclusion of mux-select and PLL-reconfiguration control paths from ordinary timing analysis
 
-The current SDC does not enumerate every CDC boundary in:
+The async clock groups are timing exceptions only. They do not make a crossing safe; RTL must still use an appropriate CDC structure or a documented software-stable protocol.
 
-- counter subsystem
-- timestamp subsystem
-- frequency-meter internal crossings
-- utility logic under `ip/misc/`
+Current examples covered by those groups include:
+
+- dual-clock streamer FIFOs and reset/control crossings
+- counter latch-then-read paths between `d_clk` snapshots and Avalon readout
+- frequency-meter Gray-counter synchronizers
+- combiner software configuration feeding registered streamer-domain output logic
 
 ### Specific SDC observations
 
@@ -313,6 +321,8 @@ The current SDC does not enumerate every CDC boundary in:
 | raw external mux case | not modeled by the active `SELECT_CLK_CLEAN` generated-clock definitions |
 | cleaned external mux case | modeled as `STREAMER_FROM_CLEAN` from the external-cleaning PLL output |
 | mux exclusivity | internal and external streamer sources are declared logically exclusive |
+| CDC clock grouping | core/control, reference/gate, internal-streamer, and clean/external-streamer clock domains are declared asynchronous |
+| board/user/HPS peripheral ports | external port timing is excepted; internal post-buffer and pre-output-buffer logic remains timed |
 | control-path timing | clock-select and PLL-reconfiguration paths are marked false |
 
 If the top-level clock tree changes, `pulsepins.sdc` must be reviewed together with the RTL.
