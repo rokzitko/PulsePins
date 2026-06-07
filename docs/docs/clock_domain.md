@@ -342,7 +342,7 @@ Changes that trigger SDC review:
 - check `streamer_clk` behavior under both internal and external source selection
 - check whether software timing uses measured `streamer_clk` or a nominal assumption
 - check whether `pulsepins.sdc` still matches the top-level clock tree
-- run `python3 scripts/check_quartus_timing.py` after a Quartus build and resolve reported SDC, unconstrained-path, or negative-slack failures
+- run `make timing-check` after a Quartus build and resolve reported SDC, unconstrained-path, or negative-slack failures
 
 ## Summary table
 

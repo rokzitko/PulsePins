@@ -9,6 +9,7 @@ TARGETHOST ?= de10nano
 
 # Quartus command location. Override in `Makefile.local` if the toolchain lives elsewhere.
 QDIR ?= ${HOME}/intelFPGA_lite/21.1/quartus/bin/
+CHECK_QUARTUS_TIMING ?= 1
 
 RM=rm -vf
 QSYS=time qsys-generate
@@ -26,7 +27,7 @@ IPSOURCE=$(wildcard ip/*/*.v) $(wildcard ip/*/*.vh) $(wildcard ip/*/*.sv)
 # Optional local overrides
 -include Makefile.local
 
-.PHONY: c++ board-smoke dev-check
+.PHONY: c++ board-smoke dev-check timing-check timing-sdc-check
 # Full hardware + host-software build. This is the main project build entry point.
 all: ${HPS} ${SOF} ${RBF} c++
 
@@ -42,11 +43,20 @@ dev-check:
 	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python test-host
 	python3 -m py_compile python/test.py python/test_cli.py python/test_scpi_client.py python/test_timeline.py python/pptool.py python/pulsepins/*.py python/examples/*.py tests/test2.py
 
+timing-check:
+	python3 scripts/check_quartus_timing.py --root .
+
+timing-sdc-check:
+	python3 scripts/check_quartus_timing.py --root . --sdc-only
+
 ${SOPC}: ${QSYSIN} ${IPSOURCE} $(wildcard *_hw.tcl)
 	${QSYS} --synthesis=VERILOG ${QSYSIN} 2>&1 | tee build-log-qsys
 
-${SOF}: ${SOPC} ${SOURCE} ${PREFIX}.qsf
+${SOF}: ${SOPC} ${SOURCE} ${PREFIX}.qsf ${PREFIX}.sdc scripts/check_quartus_timing.py
 	${QSH} --flow compile ${QPF} 2>&1 | tee build-log-compile
+ifeq ($(CHECK_QUARTUS_TIMING),1)
+	python3 scripts/check_quartus_timing.py --root .
+endif
 	sha256sum ${SOF} >sha256.${SOF}
 
 ${HPS}: ${SOPC}

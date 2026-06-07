@@ -11,13 +11,16 @@ Running `make` at the repository root performs these steps:
 1. Generate `base_hps.sopcinfo` from `base_hps.qsys`
 2. Generate the HPS header `hps_0.h`
 3. Compile the Quartus project into `pulsepins.sof`
-4. Convert the SOF bitstream into `pulsepins.rbf`
-5. Build the ARM-side C++ programs in `c++/`
+4. Run the Quartus timing/report checker
+5. Convert the SOF bitstream into `pulsepins.rbf`
+6. Build the ARM-side C++ programs in `c++/`
 
 Relevant targets in `Makefile`:
 
 * `all` - full hardware + C++ build
 * `dev-check` - consolidated host-side sanity pass
+* `timing-check` - parse existing Quartus reports and enforce timing signoff checks
+* `timing-sdc-check` - parse existing Quartus reports and check only project SDC handling
 * `board-smoke` - fast manual live-board smoke pass against current local artifacts
 * `copy` - copy `pulsepins.rbf` to the target host
 * `copy_boot` - copy the RBF to the boot partition path
@@ -52,15 +55,13 @@ Important outputs:
 * `pulsepins.sof` - SRAM programming image
 * `pulsepins.rbf` - raw binary file used for boot/runtime deployment
 
-`QDIR` can be overridden to point to a local Quartus installation, and `Makefile.local` can provide local overrides without changing the tracked build file.
+`QDIR` can be overridden to point to a local Quartus installation, and `Makefile.local` can provide local overrides without changing the tracked build file. The top-level FPGA build runs `scripts/check_quartus_timing.py` after Quartus compilation by default. Use `make CHECK_QUARTUS_TIMING=0` only for local/debug builds where timing signoff should be skipped deliberately.
 
 Clocking is a central part of the hardware build. The current design uses PLL-generated `core_clk` and `int_clk`, a
 selectable `streamer_clk` path, and explicit top-level timing constraints in `pulsepins.sdc`. For the detailed clocking
 model and software-side clock control, see `clock_domain.md`.
 
-After a Quartus build, run `python3 scripts/check_quartus_timing.py` from the repository root. The checker parses the
-Quartus reports and fails on ignored project SDC constraints, missing streamer generated clocks, PLL clock cross-check
-warnings, unconstrained paths, or negative timing slack.
+After a Quartus build, run `make timing-check` from the repository root to re-check existing reports without rebuilding. The checker parses the Quartus reports and fails on ignored project SDC constraints, missing streamer generated clocks, PLL clock cross-check warnings, unconstrained paths, or negative timing slack. Use `make timing-sdc-check` for the narrower project-SDC-only check.
 
 ### C++ build
 
