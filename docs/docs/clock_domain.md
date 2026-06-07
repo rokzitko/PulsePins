@@ -174,6 +174,7 @@ Current CDC facts:
 - `reset_all` is synchronized into `d_clk`
 - `latch_all` is synchronized into `d_clk`
 - live counter updates happen in `d_clk`
+- time-counter selected input levels are synchronized into `clk` before edge detection
 - readout happens from the control side after latching
 
 ### Timestamp subsystem

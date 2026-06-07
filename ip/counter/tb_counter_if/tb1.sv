@@ -125,7 +125,7 @@ initial begin
   assert(dut.latch_all == 1) else $fatal;
 
   #4;
-  assert(dut.bc.latch == 1);
+  assert(dut.bc.d_latch == 1);
 
   avs_s0_writedata <= 0; // latch_all off
   avs_s0_write <= 1;

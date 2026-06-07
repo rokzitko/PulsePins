@@ -132,6 +132,21 @@ packet_stats ps (
   .overflow(overflow_ps)
 );
 
+// Timing capture samples selected data-domain levels in `clk`, so synchronize the
+// levels before deriving start/stop pulses.
+(* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED" *)
+logic [1:0] d_timing_sync1, d_timing_sync;
+
+always_ff @(posedge clk) begin
+  if (reset) begin
+    d_timing_sync1 <= '0;
+    d_timing_sync <= '0;
+  end else begin
+    d_timing_sync1 <= { d2, d1 };
+    d_timing_sync <= d_timing_sync1;
+  end
+end
+
 logic d1_prev, d2_prev;
 
 always_ff @(posedge clk) begin
@@ -139,8 +154,8 @@ always_ff @(posedge clk) begin
     d1_prev <= 0;
     d2_prev <= 0;
   end else begin
-    d1_prev <= d1;
-    d2_prev <= d2;
+    d1_prev <= d_timing_sync[0];
+    d2_prev <= d_timing_sync[1];
   end
 end
 
@@ -154,10 +169,10 @@ always @(posedge clk) begin
     start_async2 <= 0;
     stop_async2 <= 0;
   end else begin
-    start_async1 <= d1 && !d1_prev;
-    stop_async1 <= !d1 && d1_prev;
-    start_async2 <= d2 && !d2_prev;
-    stop_async2 <= !d2 && d2_prev;
+    start_async1 <= d_timing_sync[0] && !d1_prev;
+    stop_async1 <= !d_timing_sync[0] && d1_prev;
+    start_async2 <= d_timing_sync[1] && !d2_prev;
+    stop_async2 <= !d_timing_sync[1] && d2_prev;
   end
 end
 

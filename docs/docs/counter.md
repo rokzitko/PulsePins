@@ -53,7 +53,7 @@ The interface also supports three channel selectors:
 * `sel0` - main single-bit channel used by `basic_counter`, `runs_counter`, `packet_stats`, `seq_counter`, and `autocorrelation`
 * `sel1`, `sel2` - second pair of selected channels used for two-input measurements such as `crosscorrelation` and asynchronous timing capture
 
-For timing measurements, `counter_if` edge-detects the selected channels in the system clock domain and feeds the resulting start/stop pulses into two `time_counter` instances.
+For timing measurements, `counter_if` synchronizes the selected channel levels into the system clock domain before edge detection, then feeds the resulting start/stop pulses into two `time_counter` instances.
 
 ### Avalon-MM programming model
 
