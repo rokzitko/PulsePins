@@ -40,17 +40,31 @@ module rand_signal_gen #(
     // Biased-free baseline: we also use LFSR bit(s) to randomize initial baseline.
     logic [31:0] prng;
 
-    // Random range helper (modulo bias is negligible for typical ranges; if you need
-    // perfectly uniform selection, replace with rejection sampling).
-    function automatic int unsigned rand_range(
+    localparam int unsigned PERIOD_SPAN = MAX_PERIOD_CYCLES - MIN_PERIOD_CYCLES + 1;
+    localparam int unsigned PERIOD_RAND_BITS = (PERIOD_SPAN > 1) ? $clog2(PERIOD_SPAN) : 1;
+    localparam bit [32:0] PERIOD_MASK_WIDE = (33'd1 << PERIOD_RAND_BITS) - 1;
+    localparam logic [31:0] PERIOD_MASK = PERIOD_MASK_WIDE[31:0];
+
+    localparam int unsigned BURST_REPS_MIN = 5;
+    localparam int unsigned BURST_REPS_MAX = 10;
+    localparam int unsigned BURST_REPS_SPAN = BURST_REPS_MAX - BURST_REPS_MIN + 1;
+    localparam int unsigned BURST_REPS_RAND_BITS = $clog2(BURST_REPS_SPAN);
+    localparam bit [32:0] BURST_REPS_MASK_WIDE = (33'd1 << BURST_REPS_RAND_BITS) - 1;
+    localparam logic [31:0] BURST_REPS_MASK = BURST_REPS_MASK_WIDE[31:0];
+
+    // Fold a power-of-two range down with one subtract. This keeps the debug generator
+    // pseudo-random without inferring a divider/modulo in the FPGA fabric.
+    function automatic int unsigned folded_range(
         input logic [31:0] r,
         input int unsigned lo,
-        input int unsigned hi
+        input int unsigned span,
+        input logic [31:0] mask
     );
-        int unsigned span;
+        int unsigned candidate;
         begin
-            span = hi - lo + 1;
-            rand_range = lo + (r % span);
+            candidate = r & mask;
+            if (candidate >= span) candidate = candidate - span;
+            folded_range = lo + candidate;
         end
     endfunction
 
@@ -72,9 +86,9 @@ module rand_signal_gen #(
     // - When oe=0: output forced to 0 and internal counters stop (pauses generator).
     assign signal = oe ? sig_reg : 1'b0;
 
-    // Choose next inter-event delay uniformly in [MIN_PERIOD_CYCLES, MAX_PERIOD_CYCLES]
+    // Choose next inter-event delay in [MIN_PERIOD_CYCLES, MAX_PERIOD_CYCLES].
     function automatic int unsigned next_delay(input logic [31:0] r);
-        next_delay = rand_range(r, MIN_PERIOD_CYCLES, MAX_PERIOD_CYCLES);
+        next_delay = folded_range(r, MIN_PERIOD_CYCLES, PERIOD_SPAN, PERIOD_MASK);
     endfunction
 
     // Mode selection:
@@ -86,9 +100,9 @@ module rand_signal_gen #(
         pick_mode = r[1:0];
     endfunction
 
-    // Burst repetition count: 5..10 (uniform)
+    // Burst repetition count: 5..10.
     function automatic int unsigned pick_burst_reps(input logic [31:0] r);
-        pick_burst_reps = rand_range(r, 5, 10);
+        pick_burst_reps = folded_range(r, BURST_REPS_MIN, BURST_REPS_SPAN, BURST_REPS_MASK);
     endfunction
 
     // ----------------------------

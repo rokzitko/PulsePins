@@ -275,18 +275,18 @@ PulsePins uses:
 | Constraint type | Current item |
 | --------------- | ------------ |
 | primary clock | `FPGA_CLK1_50` at 20 ns |
-| primary clock | `EXT_CLKp` at 10 ns |
+| primary clock | `EXT_CLKp` at 100 ns |
 | derived clocks | `derive_pll_clocks` |
 | clock uncertainty | `derive_clock_uncertainty` |
 | generated clock | `STREAMER_FROM_INT` on `altclkctrl` output |
-| generated clock | `STREAMER_FROM_EXT` on `altclkctrl` output |
+| generated clock | `STREAMER_FROM_CLEAN` on `altclkctrl` output |
 | exclusivity | `set_clock_groups -logically_exclusive` between internal and external streamer-mux clocks |
 
 ### False paths
 
 | False-path target | Reason |
 | ----------------- | ------ |
-| `*u_clkctrl*clkselect*` | clock-select control path |
+| `u_clkctrl|auto_generated|sd2|clkselect[0/1]` | clock-select control path |
 | `*pll_reconfig*` | PLL reconfiguration control path |
 
 ### Scope of the current SDC
@@ -295,7 +295,7 @@ The current SDC covers:
 
 - primary clock declaration
 - automatic PLL-derived clock inference
-- streamer-clock mux output modeling
+- streamer-clock mux output modeling with self-checking post-map TimeQuest pin names
 - exclusion of mux-select and PLL-reconfiguration control paths from ordinary timing analysis
 
 The current SDC does not enumerate every CDC boundary in:
@@ -309,9 +309,9 @@ The current SDC does not enumerate every CDC boundary in:
 
 | Item | Current state |
 | ---- | ------------- |
-| external clock assumption | `EXT_CLKp` is constrained as a 10 ns / 100 MHz clock |
-| raw external mux case | modeled by current generated-clock definitions |
-| cleaned external mux case | not modeled by a separate generated-clock definition |
+| external clock assumption | `EXT_CLKp` is constrained as a 100 ns / 10 MHz clock matching the external-cleaning PLL configuration |
+| raw external mux case | not modeled by the active `SELECT_CLK_CLEAN` generated-clock definitions |
+| cleaned external mux case | modeled as `STREAMER_FROM_CLEAN` from the external-cleaning PLL output |
 | mux exclusivity | internal and external streamer sources are declared logically exclusive |
 | control-path timing | clock-select and PLL-reconfiguration paths are marked false |
 
@@ -332,6 +332,7 @@ Changes that trigger SDC review:
 - check `streamer_clk` behavior under both internal and external source selection
 - check whether software timing uses measured `streamer_clk` or a nominal assumption
 - check whether `pulsepins.sdc` still matches the top-level clock tree
+- run `python3 scripts/check_quartus_timing.py` after a Quartus build and resolve reported SDC, unconstrained-path, or negative-slack failures
 
 ## Summary table
 

@@ -58,6 +58,10 @@ Clocking is a central part of the hardware build. The current design uses PLL-ge
 selectable `streamer_clk` path, and explicit top-level timing constraints in `pulsepins.sdc`. For the detailed clocking
 model and software-side clock control, see `clock_domain.md`.
 
+After a Quartus build, run `python3 scripts/check_quartus_timing.py` from the repository root. The checker parses the
+Quartus reports and fails on ignored project SDC constraints, missing streamer generated clocks, PLL clock cross-check
+warnings, unconstrained paths, or negative timing slack.
+
 ### C++ build
 
 The ARM-side software lives in `c++/`.
