@@ -1,0 +1,7 @@
+SUCCESS
+tb.vcd
+transcript
+work/
+*.ucdb
+report.txt
+report_dir/

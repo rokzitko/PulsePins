@@ -96,6 +96,7 @@ module tb;
   // Main test
   logic [WIDTH-1:0] held;
   bit ok;
+  integer fh;
 
   initial begin
     // Wait for both resets to be low
@@ -145,6 +146,8 @@ module tb;
     if (!ok) $fatal(1, "[TB] TIMEOUT: out_data did not change within %0d out_clk cycles after releasing hold", TMO_UPDATE);
 
     $display("[TB] PASS (out_data=0x%08x out_valid=%0b)", out_data, out_valid);
+    fh = $fopen("SUCCESS", "w");
+    $fclose(fh);
     $finish;
   end
 

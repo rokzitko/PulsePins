@@ -27,10 +27,10 @@ wire overflow;
 basic_counter dut (
   .clk(clk),
   .d_clk(clk),
-  .reset,
+  .d_reset(reset),
   .d,
-  .valid,
-  .latch,
+  .d_valid(valid),
+  .d_latch(latch),
   .high_low,
   .addr,
   .result,

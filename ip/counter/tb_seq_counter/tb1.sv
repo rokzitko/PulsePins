@@ -111,7 +111,7 @@ initial begin
   data <= 'b000_001_010_011_100_101_110_111;
   #1;
   write_serial(data);
-  #2;
+  #5;
   latch <= 1;
   #1;
   latch <= 0;
@@ -131,7 +131,7 @@ initial begin
   data <= 'b000_001_010_011_100_101_110_000;
   #1;
   write_serial(data);
-  #2;
+  #5;
   latch <= 1;
   #1;
   latch <= 0;

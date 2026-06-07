@@ -133,6 +133,7 @@ module tb_crc32;
   // --------------------------------------------------------------------------
   int n;
   logic [31:0] rnd;
+  integer fh;
 
   initial begin
     // init
@@ -192,17 +193,13 @@ module tb_crc32;
     end
 
     $display("All tests PASSED.");
+    fh = $fopen("SUCCESS", "w");
+    $fclose(fh);
     $finish;
   end
 
-integer fh;
-
 initial begin
-  #1000000 $display("SUCCESS");
-  fh = $fopen("SUCCESS", "w");
-  $fclose(fh);
-  $set_coverage_db_name("run_mux1.ucdb");
-  $finish;
+  #1000000 $fatal(1, "timeout waiting for CRC32 test completion");
 end
 
 

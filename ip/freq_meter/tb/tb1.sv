@@ -119,6 +119,7 @@ module tb1;
   int unsigned gate_len;
   int unsigned r0, r1, r2;
   int unsigned exp0, exp1, exp2;
+  integer fh;
 
   initial begin
     // Defaults
@@ -175,6 +176,8 @@ module tb1;
     if ((r2 < exp2-2) || (r2 > exp2+2)) $fatal(1, "ch2 out of range");
 
     $display("PASS");
+    fh = $fopen("SUCCESS", "w");
+    $fclose(fh);
     #100ns;
     $finish;
   end
