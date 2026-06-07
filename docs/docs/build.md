@@ -55,7 +55,7 @@ Important outputs:
 * `pulsepins.sof` - SRAM programming image
 * `pulsepins.rbf` - raw binary file used for boot/runtime deployment
 
-`QDIR` can be overridden to point to a local Quartus installation, and `Makefile.local` can provide local overrides without changing the tracked build file. The top-level FPGA build runs `scripts/check_quartus_timing.py` after Quartus compilation by default. Use `make CHECK_QUARTUS_TIMING=0` only for local/debug builds where timing signoff should be skipped deliberately.
+`QDIR` can be overridden to point to a local Quartus `bin` directory, and `Makefile.local` can provide local overrides without changing the tracked build file. Qsys tools are resolved from the sibling `sopc_builder/bin` directory through `QUARTUS_ROOT` and `QSYS_DIR`, so the FPGA build does not rely on global `PATH` for Quartus tools. The top-level FPGA build runs `scripts/check_quartus_timing.py` after Quartus compilation by default. Use `make CHECK_QUARTUS_TIMING=0` only for local/debug builds where timing signoff should be skipped deliberately.
 
 Clocking is a central part of the hardware build. The current design uses PLL-generated `core_clk` and `int_clk`, a
 selectable `streamer_clk` path, and explicit top-level timing constraints in `pulsepins.sdc`. For the detailed clocking

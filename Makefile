@@ -8,13 +8,17 @@ RBF=${PREFIX}.rbf
 TARGETHOST ?= de10nano
 SCP_TARGET ?= $(TARGETHOST)
 
-# Quartus command location. Override in `Makefile.local` if the toolchain lives elsewhere.
-QDIR ?= ${HOME}/intelFPGA_lite/21.1/quartus/bin/
+# Quartus bin directory. Override in `Makefile.local` if the toolchain lives elsewhere.
+QDIR ?= ${HOME}/intelFPGA_lite/21.1/quartus/bin
+QUARTUS_ROOT ?= $(abspath ${QDIR}/..)
+QSYS_DIR ?= ${QUARTUS_ROOT}/sopc_builder/bin
 CHECK_QUARTUS_TIMING ?= 1
 
 RM=rm -vf
-QSYS=time qsys-generate
-QSH=time ${QDIR}/quartus_sh
+QSYS ?= time ${QSYS_DIR}/qsys-generate
+QSH ?= time ${QDIR}/quartus_sh
+SOPC_CREATE_HEADER_FILES ?= ${QSYS_DIR}/sopc-create-header-files
+QCPF ?= ${QDIR}/quartus_cpf
 
 QSYSIN=base_hps.qsys
 SOPC=base_hps.sopcinfo
@@ -64,10 +68,10 @@ endif
 	sha256sum ${SOF} >sha256.${SOF}
 
 ${HPS}: ${SOPC}
-	sopc-create-header-files ${SOPC} --single ${HPS} --module hps_0
+	${SOPC_CREATE_HEADER_FILES} ${SOPC} --single ${HPS} --module hps_0
 
 ${RBF}: ${SOF}
-	quartus_cpf -c ${PREFIX}.cof
+	${QCPF} -c ${PREFIX}.cof
 	sha256sum ${RBF} >sha256.${RBF}
 
 # Copy only the FPGA runtime image to a live target board.
