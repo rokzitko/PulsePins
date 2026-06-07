@@ -14,6 +14,8 @@ It also maintains 64-bit counters for traffic observed on each input path.
 
 Only the selected input sees `ready` asserted, so the block acts as a strict selector rather than as a merge or arbitration stage.
 
+For selected-path latency notes, see [RTL latency and timing](latency.md).
+
 The control interface is Avalon-MM based and allows software to:
 
 * choose the active source channel

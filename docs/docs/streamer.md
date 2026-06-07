@@ -110,6 +110,8 @@ In `streamer.sv`, the output FIFO read request is currently gated by:
 
 This makes gating an output-side pacing mechanism rather than an input-side buffering mechanism.
 
+For the concise trigger, gate, and output-valid timing summary, see [RTL latency and timing](latency.md).
+
 ## Trigger model
 
 The trigger subsystem supports more than a single mask/pattern comparison.
@@ -219,6 +221,7 @@ When changing behavior, update both the hardware docs and the host-side assumpti
 * `ip/streamer/st_interface.sv`
 * `ip/streamer/streamer.sv`
 * `ip/streamer/config.vh`
+* `latency.md`
 * `readback.md`
 * `clock_domain.md`
 * `cpp.md`

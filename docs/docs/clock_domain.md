@@ -307,6 +307,8 @@ The current SDC covers:
 
 The async clock groups are timing exceptions only. They do not make a crossing safe; RTL must still use an appropriate CDC structure or a documented software-stable protocol.
 
+For block-level latency and CDC visibility behavior, see [RTL latency and timing](latency.md).
+
 Current examples covered by those groups include:
 
 - dual-clock streamer FIFOs and reset/control crossings

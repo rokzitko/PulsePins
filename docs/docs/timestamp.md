@@ -35,6 +35,8 @@ This makes the block simple and deterministic, but it also means that timestamps
 
 One important constraint is that the core does not retry a capture if the downstream FIFO is not ready in the cycle where the edge is detected. In practice that is fine for sparse timing events, but it is not intended for dense event streams.
 
+For synchronizer and capture latency notes, see [RTL latency and timing](latency.md).
+
 ### Source selection
 
 The timestamp software interface exposes selectable signal sources for `sigA` and for the PPS reference path.

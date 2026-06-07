@@ -9,6 +9,7 @@ nav:
     - PP_PMOD hardware reference: pp_pmod_reference.md
     - Technicalities: details.md
     - Streamer subsystem: streamer.md
+    - RTL latency and timing: latency.md
     - Clock domains: clock_domain.md
     - Combiner subsystem: combiner.md
     - Counter subsystem: counter.md

@@ -52,6 +52,8 @@ The registered design has two practical consequences:
 * combination behavior is stable and easy to reason about at clock boundaries
 * the combiner adds latency, so it should be treated as part of the timed datapath rather than as transparent glue logic
 
+For the cross-IP latency summary, see [RTL latency and timing](latency.md).
+
 ### Control model
 
 The combiner is controlled through an Avalon-MM register file.
@@ -172,4 +174,5 @@ It is also useful when you want to separate sequence generation from final outpu
 
 * `ppqout.md`
 * `pptrig.md`
+* `latency.md`
 * `cpp.md`

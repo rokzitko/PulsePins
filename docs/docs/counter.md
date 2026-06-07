@@ -55,6 +55,8 @@ The interface also supports three channel selectors:
 
 For timing measurements, `counter_if` synchronizes the selected channel levels into the system clock domain before edge detection, then feeds the resulting start/stop pulses into two `time_counter` instances.
 
+For counter CDC and readout latency notes, see [RTL latency and timing](latency.md).
+
 ### Avalon-MM programming model
 
 The write-side control registers in `counter_if.sv` are:

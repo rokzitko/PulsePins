@@ -25,6 +25,8 @@ The measurement path is intentionally CDC-heavy because each observed signal is 
 
 One important consequence is that the reported values are per-gate edge counts, not continuously updated instantaneous frequencies. The host-side wrapper is responsible for turning those per-gate counts into Hz.
 
+For gate-update and CDC latency notes, see [RTL latency and timing](latency.md).
+
 ### Register model
 
 The key register groups are:

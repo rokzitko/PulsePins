@@ -41,6 +41,8 @@ Important behavior:
 * when validity drops, the pending run is flushed so the final observed state is not lost
 * overflow latches high if software is not draining the encoded FIFO fast enough
 
+For readback sampling and FIFO latency notes, see [RTL latency and timing](latency.md).
+
 ## rl_encoder_if interface
 
 `rl_encoder_if.sv` provides:
