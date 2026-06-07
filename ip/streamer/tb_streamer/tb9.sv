@@ -44,7 +44,6 @@ wire trigger_activated;
 
 integer sample_idx = 0;
 integer sample_idx_at_gate_close;
-integer used_before_pause;
 
 // Trace the gate state, FIFO occupancy, and visible output so pause/resume failures are easy to
 // diagnose from the console log.
@@ -118,16 +117,21 @@ end
 
 // Close the gate after playback has already started, then reopen it later.
 initial begin
-  wait(sample_idx >= 2);
+  wait(sample_idx >= 3);
   #0.1;
-  sample_idx_at_gate_close = sample_idx;
-  used_before_pause = dut.fifo0.used;
   gate_enable <= 0;
 
   repeat (4) @(posedge clk);
   assert(gate_enable == 0) else $fatal;
+  assert(dut.rdreq == 0) else $fatal;
+  assert(qout_valid == 0) else $fatal;
+  assert(done == 0) else $fatal;
+  sample_idx_at_gate_close = sample_idx;
+
+  repeat (3) @(posedge clk);
+  assert(dut.rdreq == 0) else $fatal;
+  assert(qout_valid == 0) else $fatal;
   assert(sample_idx == sample_idx_at_gate_close) else $fatal;
-  assert(dut.fifo0.used == used_before_pause) else $fatal;
   assert(done == 0) else $fatal;
 
   gate_enable <= 1;

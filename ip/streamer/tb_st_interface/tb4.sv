@@ -190,7 +190,8 @@ end
 
 // Once the gate opens, wrapper-level status and output progression should change together.
 initial begin
-  #34;
+  wait(gate_in == 1);
+  #2;
   avmm_read(GATING_R);
   assert(dut.gate_enable == 1) else $fatal;
   assert(avs_s0_readdata[12:10] == 3'b111) else $fatal;

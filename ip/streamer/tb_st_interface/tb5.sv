@@ -192,7 +192,8 @@ end
 
 // Once the selected trigger bit goes high, the gate should open and playback should resume.
 initial begin
-  #34;
+  wait(trigger_in[0] == 1);
+  #2;
   avmm_read(GATING_R);
   assert(dut.gate_signal == 1) else $fatal;
   assert(dut.gate_enable == 1) else $fatal;
