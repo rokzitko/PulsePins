@@ -6,6 +6,7 @@ SOF=${PREFIX}.sof
 RBF=${PREFIX}.rbf
 
 TARGETHOST ?= de10nano
+SCP_TARGET ?= $(TARGETHOST)
 
 # Quartus command location. Override in `Makefile.local` if the toolchain lives elsewhere.
 QDIR ?= ${HOME}/intelFPGA_lite/21.1/quartus/bin/
@@ -32,7 +33,7 @@ IPSOURCE=$(wildcard ip/*/*.v) $(wildcard ip/*/*.vh) $(wildcard ip/*/*.sv)
 all: ${HPS} ${SOF} ${RBF} c++
 
 c++:
-	make -C c++
+	$(MAKE) -C c++
 
 # Consolidated host-side contributor sanity pass. This intentionally stays in the
 # host-safe lane and does not touch the FPGA toolchain or the live board.
@@ -68,11 +69,11 @@ ${RBF}: ${SOF}
 
 # Copy only the FPGA runtime image to a live target board.
 copy: ${RBF}
-	scp ${RBF} @${TARGETHOST}:${PREFIX}.rbf
+	scp ${RBF} ${SCP_TARGET}:${PREFIX}.rbf
 
 # Copy the FPGA runtime image to the boot partition path on the live target board.
 copy_boot: ${RBF}
-	scp ${RBF} @${TARGETHOST}:fat/socfpga.rbf
+	scp ${RBF} ${SCP_TARGET}:fat/socfpga.rbf
 
 # Stage only the FPGA runtime image into the image tree.
 copy_img: ${RBF}
@@ -80,25 +81,28 @@ copy_img: ${RBF}
 
 # Do not check for dependences, force copying the current file
 forcecopy:
-	scp ${RBF} @${TARGETHOST}:${PREFIX}.rbf
+	scp ${RBF} ${SCP_TARGET}:${PREFIX}.rbf
 
 # Deploy the usual live-board runtime bundle: FPGA image, C++, Python, tests, I2C helpers,
 # and shell completion support.
 copy_all: copy
-	cd c++ ; make copy ; make copy_sources
-	cd python ; make copy_sources ; make copy_misc
-	cd tests ; make copy
-	cd I2C ; make copy
-	cd contrib/completions ; make copy
+	$(MAKE) -C c++ TARGETHOST=$(TARGETHOST) SCP_TARGET=$(SCP_TARGET) copy
+	$(MAKE) -C c++ TARGETHOST=$(TARGETHOST) SCP_TARGET=$(SCP_TARGET) copy_sources
+	$(MAKE) -C python TARGETHOST=$(TARGETHOST) SCP_TARGET=$(SCP_TARGET) copy_sources
+	$(MAKE) -C python TARGETHOST=$(TARGETHOST) SCP_TARGET=$(SCP_TARGET) copy_misc
+	$(MAKE) -C tests TARGETHOST=$(TARGETHOST) SCP_TARGET=$(SCP_TARGET) copy
+	$(MAKE) -C I2C TARGETHOST=$(TARGETHOST) SCP_TARGET=$(SCP_TARGET) copy
+	$(MAKE) -C contrib/completions TARGETHOST=$(TARGETHOST) SCP_TARGET=$(SCP_TARGET) copy
 
 
 # Stage the same runtime bundle into the image tree instead of pushing it to a board.
 copy_all_img: copy_img
-	cd c++ ; make copy_img ; make copy_sources_img
-	cd python ; make copy_sources_img
-	cd tests ; make copy_img
-	cd I2C ; make copy_img
-	cd contrib/completions ; make copy_img
+	$(MAKE) -C c++ copy_img
+	$(MAKE) -C c++ copy_sources_img
+	$(MAKE) -C python copy_sources_img
+	$(MAKE) -C tests copy_img
+	$(MAKE) -C I2C copy_img
+	$(MAKE) -C contrib/completions copy_img
 
 copy_all_image: copy_all_img
 

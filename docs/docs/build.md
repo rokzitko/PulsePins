@@ -161,6 +161,8 @@ Copy the current runtime artifacts to the board:
 make copy_all
 ```
 
+Deployment targets use `TARGETHOST` as the board host name and `SCP_TARGET` as the exact ssh/scp destination. By default `SCP_TARGET=$(TARGETHOST)`; override `SCP_TARGET=user@host` when the copy user or ssh alias differs from the board host name.
+
 This also installs the Bash-completion file for the `pptool` command family onto the live board under `/etc/profile.d/pulsepins-completion.sh`.
 
 Install Bash completion for the `pptool` command family on the live board:

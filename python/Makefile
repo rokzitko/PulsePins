@@ -1,4 +1,6 @@
 NR = 35
+TARGETHOST ?= de10nano
+SCP_TARGET ?= $(TARGETHOST)
 ALT_DEVICE_FAMILY ?= soc_cv_av
 
 # Default to a lighter-weight board build. Host-side builds are mainly for import/syntax/API
@@ -59,16 +61,16 @@ PY_EXAMPLE_DIR=examples
 PY_EXAMPLE_FILES=$(wildcard $(PY_EXAMPLE_DIR)/*.py)
 MISCFILES=CMakeLists.txt Makefile pyproject.toml pytest.ini test.py test_cli.py test_scpi_client.py test_timeline.py
 copy_sources:
-	ssh $(TARGETHOST) mkdir -p $(PYDIR) $(PYDIR)/$(PY_PACKAGE) $(PYDIR)/$(PY_EXAMPLE_DIR)
-	scp $(SOURCES) $(MISCFILES) @$(TARGETHOST):$(PYDIR)
-	scp $(PY_PACKAGE_FILES) @$(TARGETHOST):$(PYDIR)/$(PY_PACKAGE)
-	scp $(PY_EXAMPLE_FILES) @$(TARGETHOST):$(PYDIR)/$(PY_EXAMPLE_DIR)
+	ssh $(SCP_TARGET) mkdir -p $(PYDIR) $(PYDIR)/$(PY_PACKAGE) $(PYDIR)/$(PY_EXAMPLE_DIR)
+	scp $(SOURCES) $(MISCFILES) $(SCP_TARGET):$(PYDIR)
+	scp $(PY_PACKAGE_FILES) $(SCP_TARGET):$(PYDIR)/$(PY_PACKAGE)
+	scp $(PY_EXAMPLE_FILES) $(SCP_TARGET):$(PYDIR)/$(PY_EXAMPLE_DIR)
 
 copy_misc:
-	ssh $(TARGETHOST) mkdir -p $(PYDIR) $(PYDIR)/$(PY_PACKAGE) $(PYDIR)/$(PY_EXAMPLE_DIR)
-	scp $(MISCFILES) @$(TARGETHOST):$(PYDIR)
-	scp $(PY_PACKAGE_FILES) @$(TARGETHOST):$(PYDIR)/$(PY_PACKAGE)
-	scp $(PY_EXAMPLE_FILES) @$(TARGETHOST):$(PYDIR)/$(PY_EXAMPLE_DIR)
+	ssh $(SCP_TARGET) mkdir -p $(PYDIR) $(PYDIR)/$(PY_PACKAGE) $(PYDIR)/$(PY_EXAMPLE_DIR)
+	scp $(MISCFILES) $(SCP_TARGET):$(PYDIR)
+	scp $(PY_PACKAGE_FILES) $(SCP_TARGET):$(PYDIR)/$(PY_PACKAGE)
+	scp $(PY_EXAMPLE_FILES) $(SCP_TARGET):$(PYDIR)/$(PY_EXAMPLE_DIR)
 
 IMGROOT=../image/ext/home/root
 

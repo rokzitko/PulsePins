@@ -1,5 +1,6 @@
 NR = 35
 TARGETHOST ?= de10nano
+SCP_TARGET ?= $(TARGETHOST)
 TIDBIT_DIR ?= ../tidbit
 
 # Embed the current short git hash into host-side binaries for version/status reporting.
@@ -201,15 +202,15 @@ clean:
 
 # Copy the built executables to a live board and recreate the usual `pptool` symlink family.
 copy: $(TARGETS)
-	scp $(TARGETS) @$(TARGETHOST):
-	ssh $(TARGETHOST) 'for L in $(SYMLINKS); do ln -sf pptool $$L; done'
+	scp $(TARGETS) $(SCP_TARGET):
+	ssh $(SCP_TARGET) 'for L in $(SYMLINKS); do ln -sf pptool $$L; done'
 
 IMGROOT=../image/ext/home/root
 
 # Stage the same executables into the image tree.
 copy_img: $(TARGETS)
 	cp -v $(TARGETS) $(IMGROOT)
-	cd $(IMGROOT) ; for L in $(SYMLINKS); do ln -sf pptool $$L; done
+	cd $(IMGROOT) && for L in $(SYMLINKS); do ln -sf pptool $$L; done
 
 # Copy source files to the DE10-Nano for local compilation. This is useful because the board can
 # build Python bindings natively and can also rebuild the C++ tools from source when needed.
@@ -217,24 +218,24 @@ CPPDIR=c++/
 SOURCES=$(HEADERS) $(wildcard *.cc)
 MISCFILES=Makefile
 copy_sources: ../hps_0.h
-	ssh $(TARGETHOST) mkdir -p $(CPPDIR)
-	scp $(SOURCES) $(MISCFILES) @$(TARGETHOST):$(CPPDIR)
-	scp ../hps_0.h @$(TARGETHOST):
-	cd third_party/lua ; make clean
-	ssh $(TARGETHOST) "mkdir -p $(CPPDIR)/third_party"
-	scp -r third_party/lua-5.5.0 @$(TARGETHOST):$(CPPDIR)/third_party
-	ssh $(TARGETHOST) "cd c++/third_party ; ln -fs lua-5.5.0 lua"
-	scp -r third_party/asio @$(TARGETHOST):$(CPPDIR)/third_party
-	scp third_party/httplib.h @$(TARGETHOST):$(CPPDIR)/third_party
-	scp -r include/ @$(TARGETHOST):$(CPPDIR)
-	scp -r unit_tests_input/ @$(TARGETHOST):$(CPPDIR)
+	ssh $(SCP_TARGET) mkdir -p $(CPPDIR)
+	scp $(SOURCES) $(MISCFILES) $(SCP_TARGET):$(CPPDIR)
+	scp ../hps_0.h $(SCP_TARGET):
+	$(MAKE) -C third_party/lua clean
+	ssh $(SCP_TARGET) "mkdir -p $(CPPDIR)/third_party"
+	scp -r third_party/lua-5.5.0 $(SCP_TARGET):$(CPPDIR)/third_party
+	ssh $(SCP_TARGET) "cd c++/third_party && ln -fs lua-5.5.0 lua"
+	scp -r third_party/asio $(SCP_TARGET):$(CPPDIR)/third_party
+	scp third_party/httplib.h $(SCP_TARGET):$(CPPDIR)/third_party
+	scp -r include/ $(SCP_TARGET):$(CPPDIR)
+	scp -r unit_tests_input/ $(SCP_TARGET):$(CPPDIR)
 
 # Stage the same source bundle into the image tree for image-based rebuild workflows.
 copy_sources_img: ../hps_0.h
 	mkdir -p $(IMGROOT)/$(CPPDIR)
 	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(CPPDIR)
 	cp -v ../hps_0.h $(IMGROOT)
-	cd third_party/lua ; make clean
+	$(MAKE) -C third_party/lua clean
 	mkdir -p $(CPPDIR)/third_party
 	cp -r third_party/lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party
 	ln -fs $(CPPDIR)/third_party/lua-5.5.0 $(CPPDIR)/third_party/lua

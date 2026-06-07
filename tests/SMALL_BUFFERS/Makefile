@@ -1,7 +1,8 @@
 TARGETHOST ?= de10nano
+SCP_TARGET ?= $(TARGETHOST)
 
 .PHONY: copy
 
 copy:
-	ssh $(TARGETHOST) "mkdir -p tests"
-	scp test* sequence.* @$(TARGETHOST):tests/
+	ssh $(SCP_TARGET) "mkdir -p tests"
+	scp test* sequence.* $(SCP_TARGET):tests/
