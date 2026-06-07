@@ -396,6 +396,7 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
   const auto nr = parse_uint64(input, "-nr", "0");
   for (ctr = 0; nr == 0 || ctr < nr; ctr++) {
     fm.meter.wait_one_gate_time();
+    fm.refresh_streamer_clk();
     std::cout << format_with_dispatch(fmt, d) << std::endl;
   }
   return RC_OK;

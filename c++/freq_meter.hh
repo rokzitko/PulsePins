@@ -155,9 +155,10 @@ public:
       meter.set_correction_factor(*opts.correction_factor);
     if (meter.get_n_ch() != 4)
       throw std::runtime_error("PulsePins expects exactly 4 frequency-meter channels.");
-    if (wait)
+    if (wait) {
       meter.wait_one_gate_time();
-    fpga.set_streamer_clk(meter.read_freq(METER_STREAMER_CLK));
+      refresh_streamer_clk();
+    }
   }
 
   pp_freq_meter(const FreqMeterOptions &opts, FPGA &_fpga, const bool wait = true) :
@@ -165,6 +166,12 @@ public:
 
   pp_freq_meter(const InputParser &input, FPGA &_fpga, const bool wait = true, const bool verbose = false) :
     pp_freq_meter(resolve_freq_meter_options(input), _fpga, wait, verbose) {}
+
+  double refresh_streamer_clk() {
+    const auto hz = meter.read_freq(METER_STREAMER_CLK);
+    fpga.set_streamer_clk(hz);
+    return hz;
+  }
 
   // Standard four-channel PulsePins report used by the CLI tools.
   void report() {
