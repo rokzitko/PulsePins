@@ -143,9 +143,34 @@ static_assert(address_map::contains(address_map::h2f::sysid_h2f, 4));
 static_assert(address_map::contains(address_map::lw::pio_cfg, 0x04*5));
 static_assert(address_map::contains(address_map::lw::pio_elapsed, edgecapture_offset));
 
+class FPGAInstanceGuard {
+private:
+  inline static std::atomic<bool> constructed {false};
+
+public:
+  FPGAInstanceGuard() {
+    bool expected = false;
+    if (!constructed.compare_exchange_strong(expected, true,
+                                             std::memory_order_acq_rel)) {
+      throw std::logic_error("FPGA: second instance construction attempted");
+    }
+  }
+
+  ~FPGAInstanceGuard() noexcept {
+    constructed.store(false, std::memory_order_release);
+  }
+
+  FPGAInstanceGuard(const FPGAInstanceGuard&) = delete;
+  FPGAInstanceGuard& operator=(const FPGAInstanceGuard&) = delete;
+  FPGAInstanceGuard(FPGAInstanceGuard&&) = delete;
+  FPGAInstanceGuard& operator=(FPGAInstanceGuard&&) = delete;
+};
+
 // Top-level FPGA resource owner used by host-side tools.
 class FPGA {
 public:
+  // Must be first: reject duplicate owners before any hardware maps are opened.
+  FPGAInstanceGuard instance_guard;
   mm dev_lw, dev_h2f, dev_hps, dev_sysmgr, dev_fpgamgr;
   hpsled led;
   bool dark_mode = false; // disable all status LEDs
@@ -155,7 +180,6 @@ public:
   pio_out_bits pio_cfg; // oe signal
   Elapsed elapsed;
   const Verbosity &v;
-  inline static std::atomic<bool> constructed {false};
   std::mutex m;
   trigger_int trig_int;
   trigger_ext trig_ext;
@@ -164,6 +188,7 @@ public:
   pll_int_clk pll_int;
 
   FPGA(const Verbosity &_v, const int expected_version) :
+    instance_guard(),
     dev_lw(LWHPSFPGA_OFST, LWH2F_RANGE, "lw"),
     dev_h2f(HPSFPGA_OFST, H2F_RANGE, "h2f"),
     dev_hps(HPS_REGS_OFST, HPS_REGS_RANGE, "hps"),
@@ -180,13 +205,6 @@ public:
     pll_int(dev_lw, "pll_int")
     {
       check_version(expected_version);
-      // The host software assumes one coherent owner of the memory maps and top-level
-      // control bits, so creating multiple `FPGA` instances is treated as a logic error.
-      bool expected = false;
-      if (!constructed.compare_exchange_strong(expected, true,
-                                                std::memory_order_acq_rel)) {
-        throw std::logic_error("FPGA: second instance construction attempted");
-      }
     }
 
   void blink_led() {
@@ -199,7 +217,6 @@ public:
     if (v.veryverbose) {
       std::cout << "Elapsed time (since last reset): " << elapsed.seconds() << "s" << std::endl;
     }
-    constructed.store(false, std::memory_order_release);
   }
 
   FPGA(const FPGA&)            = delete;

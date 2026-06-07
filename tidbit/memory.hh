@@ -206,6 +206,10 @@ class mm
    auto get_loc(std::uintptr_t ptr_base = 0, std::uintptr_t shift = 0) const {
      return loc(*this, ptr_base, shift);
    }
+   mm(const mm&) = delete;
+   mm& operator=(const mm&) = delete;
+   mm(mm&&) = delete;
+   mm& operator=(mm&&) = delete;
    ~mm() {
      munmap((void*)virtual_base, span); // ignore return value
      close(fd);
