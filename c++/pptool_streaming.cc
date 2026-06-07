@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <unistd.h>
 
 #include "pptool_commands.hh"
 #include "address_map.hh"
@@ -150,7 +151,8 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
       s.sc.trigger_force();
     else
       s.sc.trigger_enable();
-    for (;;) {}
+    for (;;)
+      pause();
   }
 
   if (input.exists("-burst")) {
