@@ -41,6 +41,9 @@ set_fileset_property QUARTUS_SYNTH TOP_LEVEL st_interface
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS true
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file st_interface.sv SYSTEMVERILOG PATH ip/streamer/st_interface.sv TOP_LEVEL_FILE
+add_fileset_file endianness.sv SYSTEMVERILOG PATH ip/misc/endianness.sv
+add_fileset_file crc32.sv SYSTEMVERILOG PATH ip/misc/crc32.sv
+add_fileset_file sync.sv SYSTEMVERILOG PATH ip/misc/sync.sv
 add_fileset_file input_fifo.sv SYSTEMVERILOG PATH ip/streamer/input_fifo.sv
 add_fileset_file preprocessor.sv SYSTEMVERILOG PATH ip/streamer/preprocessor.sv
 add_fileset_file level_to_pulse.sv SYSTEMVERILOG PATH ip/streamer/level_to_pulse.sv
@@ -56,6 +59,9 @@ set_fileset_property SIM_VERILOG TOP_LEVEL st_interface
 set_fileset_property SIM_VERILOG ENABLE_RELATIVE_INCLUDE_PATHS true
 set_fileset_property SIM_VERILOG ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file st_interface.sv SYSTEMVERILOG PATH ip/streamer/st_interface.sv
+add_fileset_file endianness.sv SYSTEMVERILOG PATH ip/misc/endianness.sv
+add_fileset_file crc32.sv SYSTEMVERILOG PATH ip/misc/crc32.sv
+add_fileset_file sync.sv SYSTEMVERILOG PATH ip/misc/sync.sv
 add_fileset_file input_fifo.sv SYSTEMVERILOG PATH ip/streamer/input_fifo.sv
 add_fileset_file preprocessor.sv SYSTEMVERILOG PATH ip/streamer/preprocessor.sv
 add_fileset_file level_to_pulse.sv SYSTEMVERILOG PATH ip/streamer/level_to_pulse.sv

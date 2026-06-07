@@ -42,6 +42,8 @@ set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS true
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file rl_encoder.sv SYSTEMVERILOG PATH ip/rl_encoder_if/rl_encoder.sv
 add_fileset_file rl_encoder_if.sv SYSTEMVERILOG PATH ip/rl_encoder_if/rl_encoder_if.sv TOP_LEVEL_FILE
+add_fileset_file crc32.sv SYSTEMVERILOG PATH ip/misc/crc32.sv
+add_fileset_file sync.sv SYSTEMVERILOG PATH ip/misc/sync.sv
 
 add_fileset SIM_VERILOG SIM_VERILOG "" ""
 set_fileset_property SIM_VERILOG TOP_LEVEL rl_encoder_if
@@ -49,6 +51,8 @@ set_fileset_property SIM_VERILOG ENABLE_RELATIVE_INCLUDE_PATHS true
 set_fileset_property SIM_VERILOG ENABLE_FILE_OVERWRITE_MODE true
 add_fileset_file rl_encoder.sv SYSTEMVERILOG PATH ip/rl_encoder_if/rl_encoder.sv
 add_fileset_file rl_encoder_if.sv SYSTEMVERILOG PATH ip/rl_encoder_if/rl_encoder_if.sv
+add_fileset_file crc32.sv SYSTEMVERILOG PATH ip/misc/crc32.sv
+add_fileset_file sync.sv SYSTEMVERILOG PATH ip/misc/sync.sv
 
 
 #
