@@ -4,7 +4,7 @@
 
 For the underlying capture architecture, see `timestamp.md`.
 
-The tool resets the FPGA fabric, configures the timestamp-routing PIO, and then starts one reader thread per enabled timestamp stream.
+The tool uses the shared host startup path, configures the timestamp-routing PIO, clears the timestamp FIFOs, and then starts one reader thread per enabled timestamp stream. The shared startup path does not pulse the FPGA reset manager unless `-reset_FPGA` or `PP_RESET_FPGA` is requested.
 
 ### Stream selection
 

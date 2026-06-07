@@ -11,8 +11,8 @@ The implementation is in `c++/ppscpi.cc` and the SCPI session/server helpers are
 On startup it:
 
 * configures realtime scheduling and locks memory pages
-* resets the FPGA fabric
 * creates the shared `HostRuntime` and top-level `FPGA` wrapper
+* applies the shared clock/PLL startup policy; the FPGA reset-manager pulse runs only if `-reset_FPGA` or `PP_RESET_FPGA` is requested
 * reports the measured clocks using the frequency-meter block
 * accepts SCPI-style commands over the network
 

@@ -21,6 +21,8 @@ This means `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and several other commands 
 
 The clock-selection and PLL choices consumed during startup are resolved by `c++/options.hh`, applied by `c++/startup.hh`, and packaged together by `c++/host_runtime.hh`, which keeps startup behavior aligned across the main executables.
 
+By default, startup does not pulse the FPGA reset manager. Use `-reset_FPGA` or set `PP_RESET_FPGA` when a process-startup FPGA S2F reset is required.
+
 The command catalog itself is declared in `c++/pptool_commands.hh` and implemented mainly in:
 
 * `c++/pptool_streaming.cc`
