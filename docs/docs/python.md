@@ -131,14 +131,13 @@ Host-side builds are still useful for checking that the binding code compiles an
 That is helpful for contributor workflows without a board, but it should not be treated as a
 replacement for the board build.
 
-The recommended host-side command pair is:
+The recommended host-side command is:
 
 ```bash
-make -C python build
-make -C python test-host
+make -C python USE_PREGENERATED=1 build test-host
 ```
 
-`test-host` intentionally skips tests marked `hardware`, which require `/dev/mem`, board-backed MMIO, or a live PulsePins runtime.
+`USE_PREGENERATED=1` uses the checked-in `c++/artifacts/hps_0.h` header instead of the top-level generated `hps_0.h`, which is ignored and normally produced by the Quartus/Qsys hardware build. `test-host` intentionally skips tests marked `hardware`, which require `/dev/mem`, board-backed MMIO, or a live PulsePins runtime.
 
 ## Sequence I/O examples
 
@@ -208,7 +207,7 @@ The small helper scripts in `python/pptool.py` and `tests/test2.py` now use the 
 
 ## Testing expectations
 
-`make -C python test` currently runs `pytest python/test.py`.
+`make -C python test` runs the Python test files listed in `python/Makefile`: `test.py`, `test_cli.py`, `test_scpi_client.py`, and `test_timeline.py`.
 
 Some Python tests exercise board-backed MMIO/FPGA behavior, so they should not be treated as a
 strictly hardware-free test battery.

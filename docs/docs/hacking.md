@@ -92,8 +92,7 @@ Helpful commands:
 
 ```bash
 make -C docs site
-make -C python build
-make -C python test-host
+make -C python USE_PREGENERATED=1 build test-host
 make -C ip test
 ```
 

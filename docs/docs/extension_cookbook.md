@@ -121,8 +121,7 @@ The Python bindings live in:
 Host CI runs:
 
 ```bash
-make -C python build
-make -C python test-host
+make -C python USE_PREGENERATED=1 build test-host
 ```
 
 So Python tests that do not need real hardware should stay unmarked and should pass in a normal Linux build environment.

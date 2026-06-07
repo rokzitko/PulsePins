@@ -20,11 +20,10 @@ make -C docs site
 Build and test the Python bindings on a host machine:
 
 ```bash
-make -C python build
-make -C python test-host
+make -C python USE_PREGENERATED=1 build test-host
 ```
 
-This host-side path is useful for syntax/import/API validation, but it intentionally skips tests marked as hardware-only. It is not a supported
+This host-side path uses the checked-in pregenerated HPS header from `c++/artifacts/` and intentionally skips tests marked as hardware-only. It is useful for syntax/import/API validation, but it is not a supported
 replacement for building the production Python modules on the DE10-Nano. True Python
 cross-compilation is not currently supported.
 

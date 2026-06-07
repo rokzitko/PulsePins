@@ -180,8 +180,10 @@ If you stage a board image through the repository Makefiles, `make copy_all_img`
 Build only the Python bindings:
 
 ```bash
-make -C python build
+make -C python USE_PREGENERATED=1 build
 ```
+
+`USE_PREGENERATED=1` is the host-side path used when the top-level generated `hps_0.h` is not available.
 
 Run HDL test benches:
 
