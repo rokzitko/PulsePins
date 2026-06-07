@@ -91,6 +91,12 @@ public:
 
     RealtimeScheduler& operator=(RealtimeScheduler&& other) noexcept {
         if (this != &other) {
+            if (orig_policy != -1) {
+                if (sched_setscheduler(0, orig_policy, &orig_param) == -1) {
+                    std::cerr << "Warning: failed to restore scheduler: "
+                              << std::strerror(errno) << '\n';
+                }
+            }
             orig_policy = other.orig_policy;
             orig_param = other.orig_param;
             new_policy = other.new_policy;
@@ -130,9 +136,9 @@ public:
     }
 
 private:
-    int orig_policy{};
+    int orig_policy = -1;
     sched_param orig_param{};
-    int new_policy{};
+    int new_policy = -1;
     sched_param new_param{};
 };
 #else

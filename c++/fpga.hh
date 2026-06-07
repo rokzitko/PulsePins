@@ -288,7 +288,6 @@ public:
   // Apply streamer clock-source selection. Reset is only pulsed when the caller explicitly
   // requested a source change through the resolved options object.
   void set_clk(const ClockSelectionOptions &opts) {
-    rstmgr rm;
     if (opts.source == StreamerClockSource::internal) {
       rm.s2f_hold_reset();
       sel_clk_int();

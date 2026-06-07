@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include <cctype>
 #include <cstdlib>
+#include <ctime>
 #include <optional>
 #include <cerrno>
 #include <system_error>
@@ -724,7 +725,14 @@ inline std::string timestamp_iso8601_utc_ms() {
   // Extract whole seconds and milliseconds
   auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
   std::time_t t = system_clock::to_time_t(now);
-  std::tm utc_tm = *std::gmtime(&t);
+  std::tm utc_tm{};
+#if defined(_WIN32)
+  if (gmtime_s(&utc_tm, &t) != 0)
+    throw std::runtime_error("gmtime_s failed");
+#else
+  if (!gmtime_r(&t, &utc_tm))
+    throw std::runtime_error("gmtime_r failed");
+#endif
   std::ostringstream oss;
   oss << std::put_time(&utc_tm, "%FT%T")
     << '.' << std::setw(3) << std::setfill('0') << ms.count()

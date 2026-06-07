@@ -44,6 +44,13 @@ static int l_add(lua_State* L) {
 
 using Fn = std::function<int(lua_State*)>;
 
+struct lua_state_deleter {
+  void operator()(lua_State *state) const noexcept {
+    if (state)
+      lua_close(state);
+  }
+};
+
 // trampoline, called from lua
 static int fn_trampoline(lua_State* L) {
   // upvalue 1: full userdata storing std::shared_ptr<Fn>
@@ -86,36 +93,38 @@ private:
   const InputParser &input;
   const Verbosity &v;
   FPGA &fpga;
-  lua_State *L;
+  std::unique_ptr<lua_State, lua_state_deleter> L;
 
 public:
   lua_processor(const InputParser &_input, const Verbosity &_v, FPGA &_fpga) :
-    input(_input), v(_v), fpga(_fpga) {
-      L = luaL_newstate(); // create interpreter
+    input(_input), v(_v), fpga(_fpga), L(luaL_newstate()) {
       if (!L) throw std::runtime_error("luaL_newstate() failed");
-      luaL_openlibs(L);    // standard libs
+      lua_State *state = L.get();
+      luaL_openlibs(state); // standard libs
       // Register C function as global "add"
-      lua_pushcfunction(L, l_add);
-      lua_setglobal(L, "add");
-      lua_push_function_object(L, [capture = 42](lua_State* L) -> int {
+      lua_pushcfunction(state, l_add);
+      lua_setglobal(state, "add");
+      lua_push_function_object(state, [capture = 42](lua_State* L) -> int {
         lua_pushinteger(L, capture);
         return 1; // number of return values
       });
-      lua_setglobal(L, "get_capture");
-      lua_push_function_object(L, [&](lua_State *L) -> int {
+      lua_setglobal(state, "get_capture");
+      lua_push_function_object(state, [&](lua_State *L) -> int {
         int p = luaL_checknumber(L, 1);
         fpga.trig_int.trig(p);
         return 0;
       });
-      lua_setglobal(L, "trig");
+      lua_setglobal(state, "trig");
     }
 
-  ~lua_processor() {
-    lua_close(L); // cleanup
-  }
+  lua_processor(const lua_processor&) = delete;
+  lua_processor& operator=(const lua_processor&) = delete;
+  lua_processor(lua_processor&&) = delete;
+  lua_processor& operator=(lua_processor&&) = delete;
+  ~lua_processor() = default;
 
   void process_line(const std::string& line) {
-    throw_if_lua_error(L, luaL_dostring(L, line.c_str()));
+    throw_if_lua_error(L.get(), luaL_dostring(L.get(), line.c_str()));
   }
 
   void test() {

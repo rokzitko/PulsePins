@@ -190,17 +190,22 @@ count_t calc_duration_nr(const double duration_req,
                         const bool verbose,
                         const double output_clk = default_output_clk)
 {
+  if (!std::isfinite(duration_req) || duration_req < 0.0)
+    throw std::runtime_error("Duration must be a finite non-negative quantity.");
+  if (!std::isfinite(output_clk) || output_clk <= 0.0)
+    throw std::runtime_error("Output clock frequency must be a finite positive quantity.");
   const double output_clk_period = 1.0/output_clk;
   if (verbose)
     std::cout << "output_clk=" << pretty_frequency(output_clk) << " output_clk_period="
     << pretty_time(output_clk_period) << std::endl;
-  uint64_t nr = round(duration_req/output_clk_period);
-  nr = (nr > 0 ? nr : 1);
+  double nr_d = round(duration_req/output_clk_period);
+  nr_d = (nr_d > 0.0 ? nr_d : 1.0);
+  if (!std::isfinite(nr_d) || nr_d > max_count_t)
+    throw std::runtime_error("Duration exceeds the limit of the count_t timer range.");
+  const uint64_t nr = static_cast<uint64_t>(nr_d);
   const double duration_resulting = nr*output_clk_period;
   std::cout << "duration (requested)=" << pretty_time(duration_req) << " (resulting)="
     << pretty_time(duration_resulting) << " nr=" << std::dec << nr << std::endl;
-  if (nr > max_count_t)
-    throw std::runtime_error("Duration exceeds the limit of the count_t timer range.");
   return nr;
 }
 

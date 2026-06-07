@@ -9,6 +9,7 @@
 // to typed wrappers such as `counter`, `timestamp`, `freq_meter`, and `readback`.
 
 #include <algorithm>
+#include <atomic>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -317,15 +318,37 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
       },
       8
   );
-  auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&session, &agg](){
-    const auto A = session.ts.read_with_timeout(session.timeout);
-    agg.submitA(A);
-    return A;
+  std::atomic<bool> stop_requested{false};
+  auto request_stop = [&]() {
+    bool expected = false;
+    if (stop_requested.compare_exchange_strong(expected, true))
+      agg.stop(false);
+  };
+  auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&session, &agg, &stop_requested, &request_stop](){
+    if (stop_requested.load())
+      throw std::runtime_error("timestamp aggregation stopped");
+    try {
+      const auto A = session.ts.read_with_timeout(session.timeout);
+      if (!agg.submitA(A))
+        throw std::runtime_error("timestamp aggregation stopped");
+      return A;
+    } catch (...) {
+      request_stop();
+      throw;
+    }
   }, silent_after);
-  auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session, &agg](){
-    const auto B = session.ts.readA_with_timeout(session.timeout);
-    agg.submitB(B);
-    return B;
+  auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session, &agg, &stop_requested, &request_stop](){
+    if (stop_requested.load())
+      throw std::runtime_error("timestamp aggregation stopped");
+    try {
+      const auto B = session.ts.readA_with_timeout(session.timeout);
+      if (!agg.submitB(B))
+        throw std::runtime_error("timestamp aggregation stopped");
+      return B;
+    } catch (...) {
+      request_stop();
+      throw;
+    }
   }, silent_after);
   ts_pps.join();
   ts_sigA.join();

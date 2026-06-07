@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cctype>
+#include <limits>
 #include <stdexcept>
 
 using namespace std::string_literals;
@@ -60,6 +61,8 @@ inline uint64_t parseVerilogInt(const std::string& lit) {
       throw std::runtime_error("Invalid digit in Verilog literal");
     }
     if (v >= base) throw std::runtime_error("Digit out of range for base");
+    if (val > (std::numeric_limits<uint64_t>::max() - static_cast<uint64_t>(v)) / static_cast<uint64_t>(base))
+      throw std::runtime_error("Verilog literal exceeds uint64_t range");
     val = val * base + v;
   }
   return val;

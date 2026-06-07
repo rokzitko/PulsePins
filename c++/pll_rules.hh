@@ -9,21 +9,24 @@
 
 #pragma once
 
+#include <array>
 #include <string>
-#include <vector>
+#include <string_view>
 #include <utility>
 
-inline std::string applyReplacement(const std::string &s,
-                                    const std::vector<std::pair<std::string, std::string>> &rules)
+using pll_rule_t = std::pair<std::string_view, std::string_view>;
+
+inline std::string applyReplacement(std::string_view s,
+                                    const std::array<pll_rule_t, 20> &rules)
 {
   for (const auto &[from, to] : rules)
     if (s == from)
-      return to; // full-string match -> replace
-  return s; // no replacement applied
+      return std::string(to); // full-string match -> replace
+  return std::string(s); // no replacement applied
 }
 
 // N,M,C triplets, freq = ref * M / (N * C), where ref = 50 MHz on DE10-Nano.
-static const std::vector<std::pair<std::string, std::string>> pll_rules = {
+inline constexpr std::array<pll_rule_t, 20> pll_rules {{
   {"100M", "5,20,2"},
   {"80M",  "3,24,5"},
   {"75M",  "5,30,4"},
@@ -44,7 +47,7 @@ static const std::vector<std::pair<std::string, std::string>> pll_rules = {
   {"il",   "5,79,17"},   // 46.4706 MHz
   {"i2h",  "7,223,17"},  // 93.6975 MHz
   {"i2l",  "9,271,23"}   // 65.4589 MHz
-};
+}};
 
 // Ratio ih/il is 6035/3081 ~ 1.95878.
 // Ratio i2h/i2l is 46161/32249 (see pll_calc.nb).

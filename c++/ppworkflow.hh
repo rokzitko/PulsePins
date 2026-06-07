@@ -62,7 +62,7 @@ inline void drop_count0(Sequence &s)
 
 inline void convert_for_readback_check(Sequence &s) {
   auto s_new = s.convert_to_BitLoad().merge();
-  s = s_new;
+  s = std::move(s_new);
 }
 
 inline constexpr double default_readback_first_element_timeout_s = 2.0;
@@ -260,7 +260,7 @@ inline bool run_readback_check_phase(readback &rb,
       elements.dump(std::cout, "% ");
     if (v.veryverbose)
       rb.check_fill_status();
-    const auto successful = rb.check(elements, timeout_policy);
+    const auto successful = rb.check(std::move(elements), timeout_policy);
     if (!successful) {
       rb_failure = true;
       rc |= RC_ERROR_CHECK;

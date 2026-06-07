@@ -81,7 +81,8 @@ class pll {
    // ex=true: execute the reconfiguration; ex=false: part of a longer sequences of
    void set_N(const int val, const bool ex) { // val = Total_div
      if (ex) setmode(pll_mode::waitrequest);
-     assert(val >= 1 && val < 512);
+     if (val < 1 || val >= 512)
+       throw std::out_of_range("PLL N divider must be in range [1, 511]");
      const uint8_t half = val/2;
      const uint8_t rest = val-half;
      const uint32_t x = half*256 + rest;
@@ -91,7 +92,8 @@ class pll {
    }
    void set_M(const int val, const bool ex) { // val = Total_div
      if (ex) setmode(pll_mode::waitrequest);
-     assert(val >= 1 && val < 512);
+     if (val < 1 || val >= 512)
+       throw std::out_of_range("PLL M divider must be in range [1, 511]");
      const uint8_t half = val/2;
      const uint8_t rest = val-half;
      const uint32_t x = half*256 + rest;
@@ -101,8 +103,10 @@ class pll {
    }
    void set_C(const int val, const bool ex, int ndx = 0) { // val = Total_div
      if (ex) setmode(pll_mode::waitrequest);
-     assert(val >= 1 && val < 512);
-     assert(ndx >= 0 && ndx <= 17);
+     if (val < 1 || val >= 512)
+       throw std::out_of_range("PLL C divider must be in range [1, 511]");
+     if (ndx < 0 || ndx > 17)
+       throw std::out_of_range("PLL C counter index must be in range [0, 17]");
      const uint8_t half = val/2;
      const uint8_t rest = val-half;
      uint32_t x = half*256 + rest;
@@ -157,13 +161,15 @@ class pll {
    }
    void set_charge_pump(const int v, const bool ex = true) {
      if (ex) setmode(pll_mode::waitrequest);
-     assert(v >= 0 && v <= 7);
+     if (v < 0 || v > 7)
+       throw std::out_of_range("PLL charge pump must be in range [0, 7]");
      CP.write(v);
      if (ex) start.write(1);
    }
    void set_bandwidth(const int v, const bool ex = true) {
      if (ex) setmode(pll_mode::waitrequest);
-     assert(v >= 0 && v <= 15);
+     if (v < 0 || v > 15)
+       throw std::out_of_range("PLL bandwidth must be in range [0, 15]");
      BW.write(v);
      if (ex) start.write(1);
    }

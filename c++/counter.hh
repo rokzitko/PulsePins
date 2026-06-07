@@ -371,6 +371,11 @@ public:
           std::string name = "counter"s) :
     counter(_fpga, base, std::move(name)) {}
 
+  counter(const counter&) = delete;
+  counter& operator=(const counter&) = delete;
+  counter(counter&&) = delete;
+  counter& operator=(counter&&) = delete;
+
   // Read one logical measurement word from the selector-based counter backplane.
   uint32_t read(uint32_t instr, uint32_t part, uint32_t addr) {
     linstr.write(instr);
