@@ -54,5 +54,5 @@ Activated with ``-cont``.
 
 ## Servo motors
 
-As a convenience, using the ``-pwm`` switch ppfg can generate appropriate pulse-width modulation
+As a convenience, using the ``-servo`` switch ppfg can generate appropriate pulse-width modulation
 signal for testing servo motors.
