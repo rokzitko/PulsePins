@@ -135,6 +135,9 @@ ppscpi: ppscpi.o $(ASIO_DIR)
 	$(CXX) $(LDFLAGS)   $< -o $@ $(FSLIB)
 
 PPWEBGUI_OBJS = ppwebgui_main.o ppwebgui_app.o ppwebgui_server.o ppwebgui_service.o ppwebgui_service_api.o ppwebgui_json.o ppwebgui_http.o ppwebgui_assets.o ppwebgui_config.o ppwebgui_bootstrap.o
+HOST_MAIN_SRCS = $(PPTOOL_OBJS:.o=.cc) ppscpi.cc $(PPWEBGUI_OBJS:.o=.cc) pllcalc.cc
+HOST_CHECK_DIR ?= .host-check
+HOST_MAIN_OBJS = $(addprefix $(HOST_CHECK_DIR)/,$(HOST_MAIN_SRCS:.cc=.o))
 
 ppwebgui: $(PPWEBGUI_OBJS)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB)
@@ -146,6 +149,15 @@ HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wild
 
 unit_tests: unit_tests.cc ppwebgui_http.cc ppwebgui_json.cc $(HEADERS)
 	g++ $(CXXFLAGS) $(LDFLAGS) unit_tests.cc -o $@
+
+# Host-safe compile-only check for the main board-facing executables.
+host-main-compile: $(HOST_MAIN_OBJS)
+
+$(HOST_CHECK_DIR):
+	mkdir -p $@
+
+$(HOST_CHECK_DIR)/%.o: %.cc $(HEADERS) | $(HOST_CHECK_DIR) $(ASIO_DIR)
+	$(CXX) $(CROSSCXXFLAGS) $(CXXFLAGS) -c $< -o $@
 
 pptool.o : pptool.cc $(HEADERS)
 	$(CXX) $(CROSSCXXFLAGS) $(CXXFLAGS) -c $< -o $@
@@ -192,13 +204,13 @@ pllcalc.o : pllcalc.cc $(HEADERS)
 ppwebgui_server.o : ppwebgui_server.cc $(HEADERS)
 	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
-.PHONY: test clean copy lint-whitespace
+.PHONY: test clean copy lint-whitespace host-main-compile
 
 test: unit_tests
 	./unit_tests
 
 clean:
-	rm -f $(TARGETS) unit_tests *.a *.o *~
+	rm -rf $(TARGETS) unit_tests *.a *.o $(HOST_CHECK_DIR) *~
 
 # Copy the built executables to a live board and recreate the usual `pptool` symlink family.
 copy: $(TARGETS)

@@ -4,5 +4,6 @@ ppscpi
 ppwebgui
 pllcalc
 unit_tests
+/.host-check/
 ._*
 unit_tests.dSYM

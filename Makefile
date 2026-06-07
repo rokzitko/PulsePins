@@ -45,7 +45,7 @@ c++:
 # Consolidated host-side contributor sanity pass. This intentionally stays in the
 # host-safe lane and does not touch the FPGA toolchain or the live board.
 dev-check:
-	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C c++ unit_tests test
+	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C c++ host-main-compile unit_tests test
 	$(MAKE) -C docs site
 	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python build
 	$(MAKE) CROSS_COMPILE= GCC_SUFFIX= USE_PREGENERATED=1 -C python test-host
