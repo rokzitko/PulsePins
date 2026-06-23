@@ -57,7 +57,7 @@ Trigger configuration follows a similar split:
 
 The host-side sequence model mirrors the encoded data consumed by the streamer core. The core types are defined in `elements.hh` and `sequence.hh`.
 
-Besides the text sequence format used by several tools, `Sequence` also supports VCD import and deterministic waveform export back to VCD. The export path targets sequences that can be reduced to a regular effective output waveform; control-flow and random elements are intentionally rejected. The C++ VCD export default is `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
+Besides the text sequence format used by several tools, `Sequence` also supports [Value Change Dump (VCD)](https://en.wikipedia.org/wiki/Value_change_dump) import and deterministic waveform export back to VCD. The export path targets sequences that can be reduced to a regular effective output waveform; control-flow and random elements are intentionally rejected. The C++ VCD export default is `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
 
 For exact, lossless interchange, `Sequence` also supports a self-describing binary format that preserves the full internal sequence representation, including control-flow elements and the force-trigger flag.
 
@@ -68,7 +68,7 @@ Current serialization capability matrix:
 | Format | C++ | Python | CLI |
 | ------ | --- | ------ | --- |
 | PulsePins text sequence format | import + export | import + export | export via `ppread -save-text`; import in selected workflows |
-| VCD | import + export | import + export | import via `ppplay` (`ppvcd` compatibility alias); export via `ppread -save-vcd` |
+| Value Change Dump (VCD) | import + export | import + export | import via `ppplay` (`ppvcd` compatibility alias); export via `ppread -save-vcd` |
 | PulsePins binary sequence format | import + export | import + export | import via `ppplay`, export via `ppread -save-binary` |
 
 Class hierarchy for counter and value helper objects:

@@ -10,7 +10,7 @@ to record a readback stream with `ppread` and replay the saved file with `ppplay
 
 Current supported formats:
 
-* `vcd`
+* [Value Change Dump (VCD)](https://en.wikipedia.org/wiki/Value_change_dump) (`vcd`)
 * PulsePins text sequence format (`text`)
 * PulsePins binary sequence format (`binary`)
 
