@@ -1,7 +1,6 @@
 ## PulsePins development
 
-Users are encouraged to participate in the further development of PulsePins by contributing code or by making reasonable
-feature requests. This page documents some of the development practices and standards followed in the project.
+This page documents some of the development practices and standards followed in the project.
 
 ### Coding standards
 

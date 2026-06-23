@@ -1,9 +1,9 @@
 # ppboards - shields for the DE10-Nano board
 
 ppboards are shields that plug into the two 40-pin 2.54 mm GPIO pin headers on the [DE10-Nano board](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046).
-They enable custom interfacing of the FPGA module with the external world. As an example, a KiCad design for
+They enable custom interfacing of the FPGA module. As an example, a KiCad design for
 a simple shield using PMOD-style expansion connectors is provided (`PP_PMOD`, described below). This reference design
-can be used as is or it can serve as a starting point for user customization (different connectors, buffering, etc.).
+can be used as is or it can serve as a starting point for derivative designs (different connectors, buffering, etc.).
 
 For exact GPIO header pinouts and electrical limits, verify against the Terasic board documentation before designing or assembling a shield.
 

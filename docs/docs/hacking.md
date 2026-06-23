@@ -1,7 +1,5 @@
 ## Hacking on PulsePins
 
-PulsePins is intended to be approachable to hackers, tinkerers, and experimenters, even though the project lives in a niche space.
-
 There are several useful ways to contribute without needing to understand the whole system at once.
 
 ### Choose a path
@@ -17,7 +15,7 @@ Typical work:
 * document real hardware workflows
 * improve contributor onboarding
 
-Worked examples are especially encouraged. Example-driven docs are one of the best ways to make PulsePins approachable.
+Worked examples are especially encouraged.
 
 Start here:
 
@@ -69,7 +67,7 @@ Typical work:
 * improve CDC/reset structure
 * document register maps and interfaces
 
-Simulation-only RTL work is very valuable. High reliability is a major project goal, and test benches help with both verification and documentation of interfaces and behavior.
+Simulation-only RTL work is useful. Test benches help with both verification and documentation of interfaces and behavior.
 
 Start here:
 
@@ -123,10 +121,6 @@ Examples:
 Community-contributed artifacts such as wiring diagrams, timing diagrams, screenshots, scope traces, logic-analyzer captures, and photos of custom hardware setups are also very welcome.
 
 ### Community direction
-
-PulsePins is a niche project, but niche projects can grow strong communities if they are welcoming, well documented, and easy to experiment with.
-
-Contributions that improve usability, examples, testing, onboarding, and real-world workflows are especially valuable.
 
 Typical application areas where community examples would be especially appreciated include:
 

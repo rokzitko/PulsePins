@@ -1,7 +1,9 @@
 ## ppscpi
 
 `ppscpi` is a standalone network server for remote control of a PulsePins device using
-the [Standard Commands for Programmable Instruments (SCPI)](https://www.ivifoundation.org/About-IVI/scpi.html) protocol. It provides a minimal SCPI surface for common PulsePins workflows and can be extended for site-specific requirements.
+the [Standard Commands for Programmable Instruments
+(SCPI)](https://www.ivifoundation.org/About-IVI/scpi.html) protocol. It provides a minimal SCPI
+interface for simple sequence streaming.
 
 The IVI Foundation maintains the SCPI standard and hosts the [SCPI-99 specification](https://www.ivifoundation.org/downloads/SCPI/scpi-99.pdf); for a quick non-normative overview, see the [SCPI overview](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments).
 

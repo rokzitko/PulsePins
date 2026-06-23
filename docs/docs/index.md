@@ -1,6 +1,6 @@
 # PulsePins pulse sequencer
 
-PulsePins is a [feature-rich](about.md) general-purpose programmable pulse sequencer running on field-programmable gate array (FPGA) system-on-chip (SOC) modules, including [Cyclone V SoC FPGA](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html)-based boards.
+PulsePins is a general-purpose programmable pulse sequencer running on field-programmable gate array (FPGA) system-on-chip (SOC) modules, including [Cyclone V SoC FPGA](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html)-based boards.
 It targets low-speed (up to 100MHz) applications on a moderate number of digital output channels (typically 32 or 64).
 It is scriptable via Python and C++. It can run on small compact FPGA modules, such as
 [Terasic DE10-Nano FPGA](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046)
@@ -55,13 +55,10 @@ SerDes circuits that generate high-speed signals on transceiver ports. For Pulse
 triggering with multiple trigger stages and multiple trigger input pins. The main application area
 is timing-critical control of quantum and other experimental devices that require precisely
 scheduled updates of signals (digital; analog via DAC boards; oscillatory via DDS boards). PulsePins is
-distributed both as modifiable source code (Verilog, C++, Python), allowing adaptation to users’
-individual needs, and as a pre-built SD-card image for a quick start.
+distributed both as modifiable source code (Verilog, C++, Python) and as a pre-built SD-card image for a quick start.
 
 This web site serves as the reference and user manual for PulsePins. It provides low-level implementation details,
 interfacing with the hard processor system (HPS), API, software library (C++ and Python interfaces), and testing tools. Timing diagrams are also provided.
-
-PulsePins is not only a digital pulse sequencer: through its readback path it can also serve as a simple digital logic analyzer, including VCD export for captured deterministic waveforms.
 
 ![PulsePins diagram](img/PulsePins.001.png){: style="height:300px"}
 
@@ -162,8 +159,7 @@ bit-resolved inversion and masking at all inputs and outputs. There are multiple
 * SUM12, SUM1234: algebraic sum of data from streamer 1 and 2, or 1, 2, 3, and 4
 * DIFF12: algebraic difference of data from streamer 1 and 2
 
-This design allows conditional streaming of different sequences based on the trigger conditions. Highly
-complex digital patterns can be generated in this manner.
+This design allows conditional streaming of different sequences based on the trigger conditions.
 
 ## DMA streaming
 
@@ -408,7 +404,7 @@ software, see [ppaux](ppaux.md).
 PulsePins has been successfully extended to 64 output channels and to a 64-bit size of the count variable. Currently,
 only the 32-bit version (32-bit for both data and count registers) is distributed as a prebuild binary.
 
-PulsePins is easily portable to other Altera/Intel FPGA solutions and it has been tested, for example, on Arria 10
+PulsePins is portable to other Altera/Intel FPGA solutions and it has been tested, for example, on Arria 10
 FPGAs for driving 10Gbps transceivers, specifically on [Terasic HAN
 Pilot](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=1133), reaching 100ps timing accuracy.
 

@@ -82,7 +82,7 @@ Use:
 * [`ppfreq`](ppfreq.md) for external/internal/streamer clock measurements
 * [`ppts`](ppts.md) for PPS and timestamp stream inspection
 
-These tools are especially useful during board bring-up, synchronization work, and external-reference troubleshooting.
+These tools are useful during board bring-up, synchronization work, and external-reference troubleshooting.
 
 #### I want to debug triggers and routing
 

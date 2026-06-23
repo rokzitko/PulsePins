@@ -1,6 +1,6 @@
 ## Worked examples
 
-This page collects concrete PulsePins workflows that are useful for first contact, lab bring-up, and contributor exploration. The goal is not to replace the per-command manual pages, but to show how the pieces fit together in practice.
+This page collects some useful concrete PulsePins examplesd. The goal is not to replace the per-command manual pages, but to show how the pieces fit together in practice.
 
 Unless stated otherwise, these examples assume the standard DE10-Nano PulsePins runtime environment described in `INSTALL-quick_start.md` and `getting_started_hardware.md`.
 
@@ -125,7 +125,7 @@ ppfreq -gate_len 1000000
 ppts -nopps -sigA -selA 3 -timeout 2
 ```
 
-These tools are especially useful during board bring-up, external-clock validation, and troubleshooting trigger/timestamp routing.
+These tools are useful during board bring-up, external-clock validation, and troubleshooting trigger/timestamp routing.
 
 See also: `ppfreq.md`, `ppts.md`, `freq_meter.md`, and `timestamp.md`.
 
@@ -149,7 +149,8 @@ What to expect:
 * one temperature reading per second
 * values track board temperature changes over time
 
-This is a good sanity check for the PP_PMOD I2C path before attempting DAC or external Qwiic workflows.
+This is a good sanity check for the PP_PMOD I2C path before attempting DAC or external Qwiic
+interfacing.
 
 See also: `pptemp.md`, `pp_pmod.md`, and `pp_pmod_reference.md`.
 
@@ -173,7 +174,7 @@ What it does:
 * copies that sequence to the board
 * plays it through the normal streaming path using `pptest`
 
-When to use this workflow:
+When to use:
 
 * bringing up SPI peripherals from PulsePins outputs
 * validating board wiring and pin assignments
@@ -223,7 +224,7 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-The same minimal workflow is available as `python/examples/ppscpi_hello.py`:
+The same minimal example is available as `python/examples/ppscpi_hello.py`:
 
 ```bash
 PYTHONPATH=python python3 python/examples/ppscpi_hello.py de10nano
@@ -237,7 +238,7 @@ What it does:
 * leaves the outputs at the last sequence value because no explicit `final ...` record is supplied
 * starts playback with `STREAM`
 
-This workflow is the best first step for notebook integration. It avoids installing Jupyter on the board and keeps plotting, parameter sweeps, and data analysis on the host computer.
+This is the recommended first step for notebook integration. It avoids installing Jupyter on the board and keeps plotting, parameter sweeps, and data analysis on the host computer.
 
 For named-channel pulse construction, use `Timeline`:
 
@@ -286,20 +287,3 @@ As a rule of thumb:
 * use `ppfreq` and `ppts` for validation of timing sources and timing observability
 * use the `tools/` helpers when you want to prototype device-specific bus transactions or payload generation
 
-### Contributions welcome
-
-The examples above are intended as stable starting points, not an exhaustive catalog. High-value additions include:
-
-* lasers / shutters / detectors
-* synchronized instrument triggering
-* DAC/DDS sweeps
-* PMOD module bring-up notes
-* logic-analyzer and scope screenshots for validated workflows
-
-For board-specific workflows, especially around `PP_PMOD`, it is very helpful to record:
-
-* exact wiring
-* command lines
-* expected output
-* observed measurements
-* board revision and optional populated parts

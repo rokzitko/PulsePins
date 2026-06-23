@@ -10,8 +10,7 @@ The basic syntax is
 
 ```pptool <nr> [args...]```
 
-``nr`` indicated the test number. We will strive to make the interface stable and maintain the numbering scheme,
-semantics and synthax.
+``nr`` indicated the test number.
 
 Command line switches:
 

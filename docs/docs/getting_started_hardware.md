@@ -146,8 +146,6 @@ Please record:
 * exact commands run
 * expected and observed output
 
-That information is especially useful when turning an experiment into durable project documentation.
-
 ### Current note
 
-Worked examples from real experimental setups would be especially valuable additions here. If you validate a setup, please consider contributing the commands, wiring notes, timing diagrams, screenshots, scope traces, or photos through GitHub Issues or a pull request.
+If you validate a setup, please consider contributing the commands, wiring notes, timing diagrams, screenshots, scope traces, or photos through GitHub Issues or a pull request.
