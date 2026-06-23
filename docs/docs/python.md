@@ -2,12 +2,14 @@
 
 PulsePins has two Python-facing surfaces:
 
-* `pulsepins` - a pure-Python, host-side SCPI client for scripts and Jupyter notebooks talking to a board running `ppscpi`
+* `pulsepins` - a pure-Python, host-side [SCPI](https://www.ivifoundation.org/About-IVI/scpi.html) client for scripts and Jupyter notebooks talking to a board running `ppscpi`
 * `pp` / `pp_impl` - nanobind extension modules for the underlying C++ interface
 
 ## Host-side SCPI client
 
 The host-side client lives in `python/pulsepins/` and has no dependency beyond the Python standard library. It is the recommended Python entry point for notebooks running on a laptop or workstation while the DE10-Nano runs `ppscpi`.
+
+In this project, SCPI is used as a lightweight ASCII command protocol over TCP for PulsePins-specific commands rather than as a complete SCPI instrument-class implementation.
 
 From a repository checkout, either set `PYTHONPATH`:
 
