@@ -23,7 +23,7 @@ Command line switches:
 * ``-t``: final data value
 * ``-random_final``: append a random final data value instead of the default no-modify final terminator
 * ``-check``: perform verification using the read-back method
-* ``-timeout``: controls readback wait bounds during ``-check`` and ``-read``; if omitted, the shared workflow uses a conservative 2s timeout both for the first readback element and for later idle gaps. Use a positive value for idle-gap timeout, a negative value for absolute timeout from start, or ``-timeout 0`` to disable timeout protection.
+* ``-timeout``: controls readback wait bounds during ``-check`` and ``-read``; if omitted, the default is a conservative 2s timeout both for the first readback element and for later idle gaps. Use a positive value for idle-gap timeout, a negative value for absolute timeout from start, or ``-timeout 0`` to disable timeout protection.
 * ``-dont_wait``: return after queueing the sequence, activating or arming the trigger, and completing any requested readback phase. This skips the normal wait and post-run cleanup, so forced or armed trigger state may remain active until reset, reconfiguration, or explicit deactivation.
 * ``-dump-converted``: dump out the sequence of elements after converting elements with non-trivial update modes to simple BITLOAD elements
 * ``-i``: initial value to be presented on the output ports before the sequence begins to stream out

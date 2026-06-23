@@ -1,12 +1,15 @@
 ## ppscpi
 
-`ppscpi` is a standalone network server for remote control of a PulsePins device.
+`ppscpi` is a standalone network server for remote control of a PulsePins device using
+the [Standard Commands for Programmable Instruments (SCPI)](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) protocol. The current proof-of-principle implementation is intentionally minimalistic and supports only a subset of PulsePins functionality, but it can be easily extended to meet users' specific requirements.
+
+`ppscpi` is also convenient for controlling PulsePins from remote computers through Python/Jupyter notebooks (or any programming language/environment that can talk to socket interfaces).
 
 The implementation is in `c++/ppscpi.cc` and the SCPI session/server helpers are in `c++/scpi_server.hh`.
 
 ### Transport and startup
 
-`ppscpi` listens on TCP port `5025`.
+`ppscpi` listens on standard SCPI TCP port `5025`.
 
 On startup it:
 
@@ -99,7 +102,7 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-`load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the current SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit. Larger notebook-generated sequences should be played through file-based tools for now, or wait for a future chunked/binary upload command.
+`load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the current SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit.
 
 If `SEQ` or `STREAM` returns an error response, the Python client drains `SYST:ERR?` and raises `PulsePinsCommandError` with the queued server-side diagnostic text.
 

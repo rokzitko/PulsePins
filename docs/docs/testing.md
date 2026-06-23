@@ -62,11 +62,9 @@ make dev-check
 
 Use the three levels like this:
 
-* `make dev-check` - host-safe contributor sanity pass
-* `make board-smoke` - fast manual live-board regression
-* `run_all_tests` - broader on-board validation sweep
-
-### Multiboard
+* `make dev-check` - host-side sanity pass
+* `make board-smoke` - fast manual live-board regression test
+* `run_all_tests` - intensive on-board validation sweep
 
 ### Random number generator
 

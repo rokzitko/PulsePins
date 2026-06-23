@@ -1,17 +1,11 @@
 # ppwebgui
 
-`ppwebgui` is a standalone host-side web server for PulsePins.
+`ppwebgui` is a standalone host-side web server for PulsePins for rapid interactive testing and hardware troubleshooting.
 
-It starts an embedded HTTP server, serves a small browser UI from the same binary, shows live AUX, trigger-input/control, and streamer-runtime status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream PulsePins text sequences from the browser.
+It starts an embedded HTTP server on the FPGA board, serves a small browser UI from the same binary, shows live AUX signal status, trigger-input/control, and streamer-runtime status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream PulsePins text sequences from the browser.
 
-## v1 scope
-
-The first version is intentionally simple:
-
-* HTTP only
-* no authentication
-* browser polling for live status updates
-* embedded HTML, CSS, and JavaScript with no frontend build step
+The code is intentionally simple (HTTP only, no authentication, browser polling for live status updates,
+embedded HTML, CSS, and JavaScript).
 
 ## Startup
 
@@ -73,23 +67,22 @@ The runtime flow is:
 5. `ppwebgui_service.cc` executes those requests against the hardware-owning wrapper graph
 6. `ppwebgui_json.cc` renders returned value snapshots/results into responses
 
-The shared process startup only pulses the FPGA reset manager if `-reset_FPGA` or `PP_RESET_FPGA` is requested. The current web controller reset path described below does not do a full FPGA fabric reset.
 
 ## Browser UI
 
 The page exposes these main sections:
 
-* Status Provenance: a legend explaining which values are live hardware polls, which are tracked by `ppwebgui`, and which form edits are still local to the browser
-* Live Hardware: AUX bits, trigger bits, trigger enable/force/reset flags, and the live streamer runtime status word
+* Status Provenance: a legend explaining which values are live hardware polls, which are tracked by `ppwebgui`, and which form edits are still local to the browser (i.e. not applied yet)
+* Live Hardware: AUX bits, trigger bits, trigger enable/force/reset flags, and the streamer status
 * Tracked by ppwebgui: displayed qout, tracked idle streamer qout, output-override state, combiner mode, trigger mode, and recent action/error text
-* Clocking: a read-only display of the current tracked streamer clock source, editable managed `int_clk`/`ext_clk` selection, tracked `core_clk` and `int_clk` PLL profiles, and the last measured `ext_clk`, `int_clk`, `streamer_clk`, and `core_clk` frequencies
-* Trigger Settings: tracked trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask remain visible read-only
+* Clocking: a read-only display of the current streamer clock source, tracked `int_clk`/`ext_clk` selection, `core_clk` and `int_clk` PLL profiles, and the last measured `ext_clk`, `int_clk`, `streamer_clk`, and `core_clk` frequencies
+* Trigger Settings: trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask are also visible (read-only)
 * Output Override: one manual final-output override control for the active streamer path used by browser-triggered sequence playback
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
-* Timeline Composer: a dependency-free browser-side editor for simple multi-channel pulse timelines in raw cycles or absolute time units, with JSON draft and pulse-table CSV import/export
+* Timeline Composer: web-browser editor for simple multi-channel pulse timelines in raw cycles or absolute time units, with JSON draft and pulse-table CSV import/export
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
 
-The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard current PLL profile, the current value is still surfaced in the menu so the browser state remains accurate. Non-preset frequency strings are accepted and resolved with the same strict Cyclone V calculator as [`pllcalc`](pllcalc.md).
+The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard PLL profile, the current value is shown in the menu so the browser state remains accurate. Non-preset frequency strings are accepted and resolved with the same Cyclone V calculator as [`pllcalc`](pllcalc.md).
 
 Applying clock settings reruns the same web-controller reset/bring-up path used by **Reset hardware**, then remeasures all four clocks and returns the updated snapshot. The displayed frequencies are therefore measurement snapshots, not live-polled readbacks. If startup used no explicit source request or a raw `-clk` selector, that current source is shown read-only until the user explicitly applies a managed `int_clk` or `ext_clk` choice.
 
@@ -104,27 +97,24 @@ The trigger form uses the same semantic mode names as the CLI trigger tool:
 
 `STANDARD` matches the CLI meaning: it selects the OR combiner path and forces all EXT trigger lines inverted. In the browser UI, `EXT invert` becomes read-only while `STANDARD` is selected so the visible form state stays consistent with the applied semantics.
 
-Browser-triggered streams first run the same web-controller reset/bring-up sequence exposed by the **Reset hardware** button, then append the currently tracked idle raw qout value as the final output element. That resets the streamer core, readback encoder, and counters for a deterministic run without implying a full FPGA fabric reset. Because `ppwebgui` owns that final-output policy, sequence text submitted through the browser must not also contain an explicit `final ...` record, and shared random-final overrides such as `PP_RANDOM_FINAL` conflict with browser playback.
+Browser-triggered streams first run the same web-controller reset/bring-up sequence exposed by the **Reset hardware** button. That resets the streamer core, readback encoder, and counters for a deterministic run. The currently tracked idle raw qout value is used as the final output element. Because `ppwebgui` controls the final-output policy, sequence text submitted through the browser must not contain an explicit `final ...` record, and shared random-final overrides such as `PP_RANDOM_FINAL` conflict with browser playback.
 
-The **Timeline Composer** is a browser-only helper layered on top of the existing sequence text path. It lets users define named output-bit channels and pulse intervals in raw cycles, `ns`, `us`, `ms`, or `s`, validates that pulses on the same channel do not overlap after conversion to cycles, previews the result as an SVG timing diagram, and writes ordinary `d <cycles> <value>` records into the **Sequence** text area once the browser has a status snapshot. Cycle input stays integer-only. Absolute-time input accepts decimals and rounds each start/duration to the nearest streamer-clock cycle; durations that round to zero cycles are rejected. For managed `int_clk`, conversion uses the nominal tracked `int_clk` PLL profile, including the standard presets, raw `N,M,C` triplets, and parseable frequency strings. For managed `ext_clk`, conversion uses the last measured `ext_clk` rounded to a lab-friendly decimal value within `0.1%`; unmanaged sources fall back to the last measured streamer clock. Clicking a preview lane adds a pulse to that channel at the clicked time using the **Preview click duration** field and the currently selected unit; dragging a preview lane creates a pulse spanning the dragged interval. Hovering a valid lane highlights the row, shows the insertion cursor, and draws a ghost pulse for the configured duration. Clicking an existing preview pulse or non-input area of a pulse-table row selects it and enables **Delete selected pulse**; when focus is not in a text field, `Delete` or `Backspace` removes the selected pulse and `Escape` clears the selection. Normal validation still catches overlaps. **Export draft** writes a portable JSON draft containing the selected unit, channels, and pulses; **Import draft** restores that JSON without contacting the backend and leaves the current browser timeline unchanged if the draft is malformed. **Export CSV** writes one pulse row per interval with `channel,bit,start,duration,color`; **Import CSV** rebuilds channels from those rows using the currently selected pulse time unit and leaves the current timeline unchanged if parsing fails. Unassigned output bits preserve the current tracked qout state, timeline-owned bits are driven high only during their pulses, and no `final` record is generated by the browser because the backend appends the current tracked qout final value.
+The **Timeline Composer** is a graphical interface layered on top of the existing sequence text path. It lets users define named output-bit channels and pulse intervals in raw cycles, `ns`, `us`, `ms`, or `s`. It validates that pulses on the same channel do not overlap after conversion to cycles. The result can be reviewed as an SVG timing diagram. The output `d <cycles> <value>` records are copied into the **Sequence** text area once the browser has a status snapshot. Cycle input is integer-only. Absolute-time input accepts decimals and rounds each start/duration to the nearest streamer-clock cycle; durations that round to zero cycles are rejected. For managed `int_clk`, conversion uses the nominal tracked `int_clk` PLL profile, including the standard presets, raw `N,M,C` triplets, and parseable frequency strings. For managed `ext_clk`, conversion uses the last measured `ext_clk` rounded to a lab-friendly decimal value within `0.1%`; unmanaged sources fall back to the last measured streamer clock. Clicking a preview lane adds a pulse to that channel at the clicked time using the **Preview click duration** field and the currently selected unit; dragging a preview lane creates a pulse spanning the dragged interval. Hovering a valid lane highlights the row, shows the insertion cursor, and draws a ghost pulse for the configured duration. Clicking an existing preview pulse or non-input area of a pulse-table row selects it and enables **Delete selected pulse**; when focus is not in a text field, `Delete` or `Backspace` removes the selected pulse and `Escape` clears the selection. **Export draft** writes a JSON draft containing the selected unit, channels, and pulses; **Import draft** restores that JSON. **Export CSV** writes one pulse row per interval with `channel,bit,start,duration,color`; **Import CSV** rebuilds channels from those rows using the currently selected pulse time unit and leaves the current timeline unchanged if parsing fails. Unassigned output bits preserve the current tracked qout state, timeline-owned bits are driven high only during their pulses, and no `final` record is generated by the browser because the backend appends the current tracked qout final value.
 
-When **Check readback** is enabled, `ppwebgui` uses the same default safe timeout policy as the shared CLI/SCPI workflow: 2s waiting for the first readback element and 2s for later idle gaps. Finite browser-triggered streams also inherit the internal 10 s streamer-completion timeout used by the shared playback path. A timeout during streaming is reported back to the browser as an HTTP `504` result, with the message text distinguishing readback wait timeout from streamer-completion timeout.
+When **Check readback** is enabled, `ppwebgui` uses the same default safe timeout policy as the shared CLI workflow: 2s waiting for the first readback element and 2s for later idle gaps. Finite browser-triggered streams also inherit the internal 10s streamer-completion timeout used by the shared playback path. A timeout during streaming is reported back to the browser as an HTTP `504` result, with the message text distinguishing readback wait timeout from streamer-completion timeout.
 
-The header also includes a **Reset hardware** button. That action reapplies the tracked clock/PLL policy, resets the streamer core, readback encoder, and counters, remeasures the clocks, and reapplies the current web-managed trigger, combiner, and output-override settings so the browser state is preserved across the reset. It does not pulse the FPGA reset manager in the current implementation. If the tracked source came from an unmanaged startup/raw selector state, that exact state is preserved instead of being coerced to `int_clk`.
+The header also includes a **Reset hardware** button. That action reapplies the tracked clock/PLL policy, resets the streamer core, readback encoder, and counters, remeasures the clocks, and reapplies the current web-managed trigger, combiner, and output-override settings so the browser state is preserved across the reset. If the tracked clock source came from an unmanaged startup/raw selector state, that exact state is preserved instead of being coerced to `int_clk`.
 
 The backend keeps hardware access serialized and the UI polls `/api/status` at the configured interval.
 
-The current implementation restores live polling only for register paths that have been stable on the deployed hardware: AUX input state, external trigger input/control status, and the streamer runtime status word. Trigger-combiner settings, combiner routing, the clocking snapshot, and the displayed qout values remain controller-managed snapshots so the web GUI does not re-enter the crashy register read paths.
 
 ## Maintainer note
 
 `ppwebgui` keeps a strict ownership boundary between the GUI/HTTP layer and the hardware-facing controller.
 
-- `WebGuiController` is the anchored owner of the hardware object graph.
+- `WebGuiController` is the anchored owner of the hardware object.
 - Higher layers must not copy, move, or re-own that controller or the FPGA-facing wrappers beneath it.
-- Route/UI code should access the controller only through pointer/reference-based adapters that forward value requests and value snapshots.
-
-This rule is not only architectural hygiene. Refactors that changed the storage or ownership of the hardware controller, while leaving the logical operations the same, have caused board-only crashes in the output-override path. Preserve the anchored controller instance and add indirection around it instead of relocating it.
+- UI code should access the controller only through pointer/reference-based adapters that forward value requests and value snapshots.
 
 On the GUI side, the current split also keeps the remaining non-hardware dependencies explicit through small value objects:
 
@@ -140,7 +130,7 @@ The hardware-facing side should continue to expose only:
 - value requests such as combiner changes, output override changes, reset requests, and stream launch requests
 - value snapshots/results such as `StatusSnapshot`, `ResetResult`, and `StreamResult`
 
-Higher layers should never own or relocate the hardware wrapper graph directly.
+Higher layers should never own or relocate the hardware wrapper directly.
 
 While the user is editing the **Trigger Settings**, **Output Override**, or **Output Combiner** form, the browser keeps those local edits visible until **Apply** or **Revert local edits** is pressed. That makes it explicit when the visible form contents differ from the tracked state coming back from `/api/status`.
 
@@ -149,8 +139,6 @@ The **Clocking** form behaves the same way. Local clock edits stay in the browse
 Values shown in the browser are rendered in hexadecimal by default. Input fields still accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
 
 ## API summary
-
-Version 1 keeps the API small:
 
 * `GET /api/status` returns JSON status for AUX, trigger state, trigger-combiner settings, active streamer qout state, combiner state, and recent action/error text
 * `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with managed `source` (`int_clk` or `ext_clk`), `core_profile`, and `int_profile`; malformed requests or invalid preset/raw/frequency profile strings return HTTP `400`, while valid requests rerun the web-controller reset/bring-up path and then remeasure all clocks
@@ -230,7 +218,7 @@ ppwebgui -ip 127.0.0.1
 
 ## Security note
 
-Version 1 does not provide authentication or HTTPS.
+ppwebgui currently does not provide authentication or HTTPS.
 
 Treat the default `0.0.0.0` bind as network-exposed control access. On shared or untrusted networks, prefer a more restrictive bind address or external network controls.
 

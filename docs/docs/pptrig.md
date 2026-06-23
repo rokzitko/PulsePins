@@ -11,7 +11,7 @@ external pulse-per-second singal is also connected to this trigger input block
 * ``-trig_any``: use a combination of the above (logical or, "any of")
 * ``-trig_all``: require all trigger signals to be present (logical and, "all of")
 * ``-trig_std``: similar to ``-trig_any``, but automatically inverts all external signals (the singals are
-internally pulled up, thus shorting a signal to zero produces a logical 0)
+internally pulled up, thus shorting a signal to ground produces a logical 0)
 * ``-invert_trig_result v``: uses v as the inversion pattern on the output of the combiner circuit
 * ``-invert_int v``: uses v as the inversion pattern on the input INT
 * ``-invert_ext v``: uses v as the inversion pattern on the input EXT
