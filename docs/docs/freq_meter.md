@@ -19,7 +19,7 @@ The current block is an Avalon-MM controlled frequency meter with:
 * a programmable gate length in reference-clock cycles
 * per-channel sampled results exposed through a small register file
 
-The design counts transitions in each input clock domain and transfers results back into the Avalon clock domain using Gray-coded counters and synchronization stages.
+The design counts transitions in each input clock domain and transfers per-channel counts into the gate/reference domain using [Gray-coded](https://en.wikipedia.org/wiki/Gray_code) counters and synchronization stages. A Gray-coded counter changes only one bit per increment, which makes it suitable for sampling a changing count across a [CDC](clock_domain.md#cdc-background-terms) boundary.
 
 The measurement path is intentionally CDC-heavy because each observed signal is itself a running clock. Rather than sampling those clocks directly in the Avalon domain, the hardware increments a per-channel counter in the input-clock domain, converts it to Gray code, synchronizes that Gray value into the gate/reference clock domain, and computes a delta at the end of each gate interval.
 

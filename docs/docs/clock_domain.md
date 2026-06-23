@@ -7,6 +7,16 @@
 - subsystem clock ownership
 - timing constraints in `pulsepins.sdc`
 
+## CDC background terms
+
+A [clock-domain crossing](https://en.wikipedia.org/wiki/Clock_domain_crossing) (CDC) is any signal path whose source and destination registers are clocked by clocks with no fixed safe sampling relationship. In PulsePins, CDC is expected at FIFO, reset/control, timestamp, and frequency-meter boundaries.
+
+[Metastability](https://en.wikipedia.org/wiki/Metastability_%28electronics%29) is the short-lived ambiguous state a flip-flop can enter when an input changes too close to a sampling edge. Synchronizer chains reduce the probability of visible failure by giving the signal extra destination-clock cycles to settle; they do not make asynchronous sampling impossible. Intel/Altera's [Understanding Metastability in FPGAs](https://www.intel.com/content/dam/www/programmable/us/en/pdfs/literature/wp/wp-01082-quartus-ii-metastability.pdf) is a useful FPGA-oriented reference.
+
+Use single-bit synchronizers for individual flags or toggles. Use a dual-clock FIFO, mailbox, or handshake when multiple bits must be observed as one value.
+
+[Gray code](https://en.wikipedia.org/wiki/Gray_code) changes only one bit between adjacent counts. PulsePins uses Gray-coded counters in the frequency meter so a running count can be sampled across a CDC boundary without transiently combining unrelated old and new binary bits.
+
 ## Named clocks
 
 | Name | RTL name / location | Function | Typical nominal value |
@@ -307,7 +317,7 @@ The current SDC covers:
 - explicit false-path treatment for board/user/HPS peripheral ports that do not have an FPGA-owned external timing contract
 - exclusion of mux-select and PLL-reconfiguration control paths from ordinary timing analysis
 
-The async clock groups are timing exceptions only. They do not make a crossing safe; RTL must still use an appropriate CDC structure or a documented software-stable protocol.
+The async clock groups are timing exceptions only. They tell TimeQuest not to enforce a synchronous setup/hold relationship across those clocks; they do not make the crossing safe. RTL must still use an appropriate CDC structure or a documented software-stable protocol.
 
 For block-level latency and CDC visibility behavior, see [RTL latency and timing](latency.md).
 

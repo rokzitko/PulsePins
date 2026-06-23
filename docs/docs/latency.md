@@ -10,6 +10,8 @@ Use this page when checking how quickly an RTL event can become visible.
 * Trigger force, trigger reset, retrigger, `done`, and `buffer_error` are state-machine effects, not combinational shortcuts.
 * Fixed cycle counts are listed only for simple single-domain registered paths. FIFO, synchronizer, and CDC paths are described by observable behavior instead of one universal cycle number.
 
+For CDC terminology used in the tables below, see [CDC background terms](clock_domain.md#cdc-background-terms). Here, CDC paths have observable behavior rather than one universal cycle count because FIFO state, synchronizer phase, and source/destination clock relationships can vary.
+
 ## Streamer Timing
 
 | Area | Timing behavior | Practical consequence |

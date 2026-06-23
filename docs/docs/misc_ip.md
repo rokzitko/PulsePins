@@ -4,7 +4,7 @@ The `ip/misc/` directory contains reusable support blocks that are shared across
 
 These blocks are generally not end-user features by themselves, but they are important for maintenance, integration, and understanding the overall system.
 
-Several of them are specifically about clock-domain crossing, reset hygiene, observability, and small glue-logic transformations.
+Several of them are specifically about [clock-domain crossing](clock_domain.md#cdc-background-terms), reset hygiene, observability, and small glue-logic transformations.
 
 ### Common utility blocks
 
@@ -16,7 +16,7 @@ Several of them are specifically about clock-domain crossing, reset hygiene, obs
 
 More detail:
 
-* `sync.sv` provides two-stage and three-stage single-bit synchronizers with Quartus/Altera synchronization attributes so CDC intent remains visible to tools
+* `sync.sv` provides two-stage and three-stage single-bit synchronizers with Quartus/Altera synchronization attributes so CDC intent remains visible to tools; multi-bit values should use a mailbox, FIFO, or handshake-style protocol instead
 * `cdc_mailbox.sv` transfers a multi-bit word between clock domains using a toggle-based notification path plus a hold/request handshake from the output side
 * `reset.sv` provides `reset_sync2_hold`, a reset combiner/synchronizer with asynchronous assertion, synchronous release, and programmable hold time after release
 * `sig_mux.sv` is a small parameterized bit selector that safely handles non-power-of-two input counts
