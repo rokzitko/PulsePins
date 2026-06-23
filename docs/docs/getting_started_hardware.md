@@ -6,9 +6,11 @@ This page is a contributor-oriented starting point for work that needs a real DE
 
 The default documented hardware baseline is:
 
-* `DE10-Nano` only
+* [`DE10-Nano`](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046) only
 * latest released pre-built PulsePins image
 * no extra wiring required for the baseline verification flow
+
+Use the linked Terasic board documentation for board-level details such as power, Ethernet, UART, GPIO headers, switches, and connectors. For SoC/HPS family context, see the [Cyclone V SoC FPGA overview](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html).
 
 The board obtains an address via DHCP by default.
 

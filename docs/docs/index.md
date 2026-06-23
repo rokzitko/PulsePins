@@ -1,6 +1,6 @@
 # PulsePins pulse sequencer
 
-PulsePins is a [feature-rich](about.md) general-purpose programmable pulse sequencer running on field-programmable gate array (FPGA) system-on-chip (SOC) modules.
+PulsePins is a [feature-rich](about.md) general-purpose programmable pulse sequencer running on field-programmable gate array (FPGA) system-on-chip (SOC) modules, including [Cyclone V SoC FPGA](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html)-based boards.
 It targets low-speed (up to 100MHz) applications on a moderate number of digital output channels (typically 32 or 64).
 It is scriptable via Python and C++. It can run on small compact FPGA modules, such as
 [Terasic DE10-Nano FPGA](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046)
