@@ -25,7 +25,7 @@ The reference design includes:
 * a trigger-input connector group plus a separate SMA trigger input path
 * two buffered SMA outputs for instrument connection
 * SMA inputs for `EXT_CLK` and `PPS_IN`
-* a Qwiic-compatible I2C connector for external modules
+* a [Qwiic-compatible I2C connector](pp_pmod_reference.md#i2c-and-onboard-peripherals) for external modules
 * an onboard `MCP9808` temperature sensor
 * an onboard `AD5693` DAC with a separate low-noise regulator
 * status, activity, and heartbeat LEDs
@@ -82,7 +82,7 @@ Quick reference for the board's main external interfaces:
 | `J13` | buffered `Q0` SMA output |
 | `J14` | buffered `Q1` SMA output |
 | `J17` | thresholded trigger SMA input |
-| `J18` | Qwiic I2C connector |
+| `J18` | [Qwiic I2C connector](pp_pmod_reference.md#i2c-and-onboard-peripherals) |
 | `J26` | `PPS_IN` SMA input |
 
 ## Validated workflows

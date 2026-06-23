@@ -22,7 +22,7 @@ threshold voltage; optional 50-ohm terminator; monitoring LED
 * two buffered output signals are wired to SMA connectors; monitoring LEDs
 * Status LEDs: trigger armed, trigger activated, done, buffer error
 * Activity & heartbeat LEDs
-* Qwiic I2C connector for external modules
+* [Qwiic I2C connector](pp_pmod_reference.md#i2c-and-onboard-peripherals) for external modules
 * Optional onboard `MCP9808` temperature monitor (I2C interface)
 * Optional 16-bit DAC (I2C interface) with separate low-noise power supply (a possible application
 is frequency tuning of an OCXO; in combination with the PPS input from a GPS receiver, PulsePins can

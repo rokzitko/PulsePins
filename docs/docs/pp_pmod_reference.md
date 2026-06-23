@@ -171,6 +171,8 @@ The `I2C` sheet serves two roles:
 * external I2C via the Qwiic-compatible connector `J18`
 * optional onboard peripherals: `MCP9808` and `AD5693`
 
+[Qwiic](https://www.sparkfun.com/qwiic) is SparkFun's 4-pin JST-SH connector and cable ecosystem for I2C modules. The external connector shares the shield's 3.3 V I2C bus, so attached modules should be compatible with the bus voltage and address plan. For protocol background, see NXP's [I2C-bus specification and user manual](https://www.nxp.com/docs/en/user-guide/UM10204.pdf).
+
 `J18` pin order:
 
 | Pin | Signal |
