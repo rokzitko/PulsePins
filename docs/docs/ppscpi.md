@@ -1,7 +1,7 @@
 ## ppscpi
 
 `ppscpi` is a standalone network server for remote control of a PulsePins device using
-the [Standard Commands for Programmable Instruments (SCPI)](https://www.ivifoundation.org/About-IVI/scpi.html) protocol. The current proof-of-principle implementation is intentionally minimalistic and supports only a subset of PulsePins functionality, but it can be easily extended to meet users' specific requirements.
+the [Standard Commands for Programmable Instruments (SCPI)](https://www.ivifoundation.org/About-IVI/scpi.html) protocol. It provides a minimal SCPI surface for common PulsePins workflows and can be extended for site-specific requirements.
 
 The IVI Foundation maintains the SCPI standard and hosts the [SCPI-99 specification](https://www.ivifoundation.org/downloads/SCPI/scpi-99.pdf); for a quick non-normative overview, see the [SCPI overview](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments).
 
@@ -28,7 +28,7 @@ Each client connection gets its own SCPI session object.
 Session state includes:
 
 * one `streamer`, `readback`, and `counter` wrapper set bound to the shared `FPGA`
-* the currently loaded `Sequence`
+* the loaded `Sequence`
 * whether readback checking is enabled
 * whether streaming should use forced triggering
 
@@ -42,7 +42,7 @@ Standard commands:
 * `*RST` - clear loaded sequence and session state
 * `*CLS` - clear status and error queue
 * `*OPC` / `*OPC?` - operation complete flag/query
-* `*WAI` - compatibility no-op; `STREAM` itself is synchronous
+* `*WAI` - no-op; `STREAM` itself is synchronous
 * `*ESR?` - standard event status register
 * `*STB?` - status byte
 * `SYST:ERR?` - query and drain the error queue
@@ -52,10 +52,10 @@ PulsePins-specific commands:
 * `TEST1` - run a built-in short self-test sequence
 * `SEQ <data>` - parse and load a sequence from textual representation, including `f`, `final`, and control-flow records supported by `parse_sequence_from_stream(...)`
 * `CHECK <bool>` - enable or disable readback checking during `STREAM`
-* `CHECK?` - query the current check setting
+* `CHECK?` - query the check setting
 * `CLOCK:STREAMER?` - query the measured streamer clock frequency in Hz
-* `STREAM` - send the currently loaded sequence and trigger execution
-* `DISCONNECT` - close the current client session; the `ppscpi` server keeps running
+* `STREAM` - send the loaded sequence and trigger execution
+* `DISCONNECT` - close the client session; the `ppscpi` server keeps running
 * `TERMINATE` - stop the `ppscpi` server process
 
 ### Typical flow
@@ -104,7 +104,7 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-`load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the current SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit.
+`load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit.
 
 If `SEQ` or `STREAM` returns an error response, the Python client drains `SYST:ERR?` and raises `PulsePinsCommandError` with the queued server-side diagnostic text.
 
@@ -157,7 +157,7 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 * The server is intended for remote orchestration, not for high-throughput binary bulk transfer.
 * Command-handler exceptions are converted into SCPI error/status state instead of tearing down the whole server process.
 * After `DISCONNECT`, clients can reconnect and start a fresh independent session.
-* `TERMINATE` is the explicit server-shutdown command; it closes the current session and stops the process.
+* `TERMINATE` is the explicit server-shutdown command; it closes the client session and stops the process.
 
 ### Related pages
 

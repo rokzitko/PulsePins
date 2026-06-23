@@ -288,7 +288,7 @@ As a rule of thumb:
 
 ### Contributions welcome
 
-The examples above are intended as stable starting points, not an exhaustive catalog. High-value future additions would include:
+The examples above are intended as stable starting points, not an exhaustive catalog. High-value additions include:
 
 * lasers / shutters / detectors
 * synchronized instrument triggering

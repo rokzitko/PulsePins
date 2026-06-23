@@ -5,7 +5,7 @@ The C++ code in `c++/` serves two closely related roles:
 * it is the host-side control plane for the PulsePins hardware
 * it is also the implementation substrate for the `pptool` command family
 
-The architecture is intentionally layered so command-line tools, tests, and future bindings can share the same sequence and hardware-control model.
+The architecture is intentionally layered so command-line tools, tests, and bindings share the same sequence and hardware-control model.
 
 ### Host-side architecture
 
@@ -63,12 +63,12 @@ For exact, lossless interchange, `Sequence` also supports a self-describing bina
 
 In practice this also makes PulsePins useful as a simple logic-analyzer backend for deterministic readback waveforms.
 
-Current serialization capability matrix:
+Serialization capability matrix:
 
 | Format | C++ | Python | CLI |
 | ------ | --- | ------ | --- |
 | PulsePins text sequence format | import + export | import + export | export via `ppread -save-text`; import in selected workflows |
-| Value Change Dump (VCD) | import + export | import + export | import via `ppplay` (`ppvcd` compatibility alias); export via `ppread -save-vcd` |
+| Value Change Dump (VCD) | import + export | import + export | import via `ppplay` or `ppvcd`; export via `ppread -save-vcd` |
 | PulsePins binary sequence format | import + export | import + export | import via `ppplay`, export via `ppread -save-binary` |
 
 Class hierarchy for counter and value helper objects:
@@ -99,7 +99,7 @@ Update types (``d`` is the input value, ``q_prev`` is the previous output value,
 * ``SLL``: ``q = q_prev << d``
 * ``SRL``: ``q = q_prev >> d``
 
-The corresponding ``Value`` helper hierarchy is still exposed in ``elements.hh``:
+The corresponding ``Value`` helper hierarchy is exposed in ``elements.hh``:
 
 * ``Value``
 * ``BitLoad``
@@ -115,7 +115,7 @@ The corresponding ``Value`` helper hierarchy is still exposed in ``elements.hh``
 * ``BitSrl``
 * ``TriggerCondition``
 
-These helper types are now lightweight tags and inspectors for authored elements. The ``el`` object itself stores flattened raw ``control``, ``count``, and ``value`` fields; it no longer owns ``std::shared_ptr`` wrappers internally.
+These helper types are lightweight tags and inspectors for authored elements. The ``el`` object itself stores flattened raw ``control``, ``count``, and ``value`` fields without internal ``std::shared_ptr`` wrappers.
 
 Interface of ``Value`` objects:
 
@@ -139,7 +139,7 @@ Class ``el`` (defined in ``elements.hh``) represents one encoded sequence elemen
 * ``el(Retrig, value_t)``: stop streaming and wait for a retrigger event
 * ``el(PseudoRandom, count_t)``: emit pseudo-random values for the selected count
 
-Important implementation detail: the effective element kind is now derived from the encoded control word rather than stored separately. ``el`` keeps small authored metadata only where the raw wire format is ambiguous for regular elements (for example, to preserve descriptive strings around plain ``Value`` vs authored ``BitLoad`` construction).
+Important implementation detail: ``el`` derives the effective element kind from the encoded control word. It keeps small authored metadata only where the raw wire format is ambiguous for regular elements (for example, to preserve descriptive strings around plain ``Value`` vs authored ``BitLoad`` construction).
 
 Useful ``el`` methods:
 
@@ -150,10 +150,10 @@ Useful ``el`` methods:
 * ``trigger_pattern()``, ``trigger_mask()``, ``trigger_is_final()``: inspect trigger elements
 * ``updated_value(value_t)``: compute the effective streamed output for a previous output state
 * ``desc()``: detailed debug description
-* ``decode()``: currently exposes extra control decorations such as the ``store`` slot
+* ``decode()``: includes extra control decorations such as the ``store`` slot
 * ``regular_token()`` and ``sequence_record()``: render the element into the PulsePins text sequence grammar
 
-Preferred transformation helpers on ``el`` are now immutable:
+Preferred transformation helpers on ``el`` are immutable:
 
 * ``stored_in(int)``
 * ``with_control(control_t)``
@@ -162,7 +162,7 @@ Preferred transformation helpers on ``el`` are now immutable:
 * ``with_regular_value(Value)``
 * ``as_bitload_after(value_t)``
 
-The older mutating helpers ``set_control()``, ``set_count()``, ``set_value()``, and ``store()`` are still present for compatibility, but new code should prefer the immutable helpers above.
+Additional mutating helpers are available for direct in-place updates: ``set_control()``, ``set_count()``, ``set_value()``, and ``store()``. Prefer the immutable helpers above when constructing transformed elements.
 
 ``elements.hh`` also centralizes reconstruction helpers that are used by binary and text I/O:
 
@@ -185,7 +185,7 @@ Public member functions are:
 
 Two sequences can be compared using function ``compare()`` and using ``operator==``.
 
-`sequence.hh` also provides ``parse_sequence_from_stream(std::istream&)`` for the text-based sequence format used by `pptest` test 42 and by the SCPI `SEQ` command. That parser now exposes the same regular update modes implemented by the `Value` subclasses, non-final triggers, preprocessor operations (`store`, `r`, `rt`, `pr`), explicit final terminators, and the `f` force-trigger flag. The accepted token grammar is documented inline next to the parser and mirrored in `docs/docs/pptest.md`.
+`sequence.hh` also provides ``parse_sequence_from_stream(std::istream&)`` for the text-based sequence format used by `pptest` test 42 and by the SCPI `SEQ` command. That parser accepts the same regular update modes implemented by the `Value` subclasses, non-final triggers, preprocessor operations (`store`, `r`, `rt`, `pr`), explicit final terminators, and the `f` force-trigger flag. The accepted token grammar is documented inline next to the parser and mirrored in `docs/docs/pptest.md`.
 
 The same header also provides ``write_sequence_to_stream(...)`` and ``write_sequence_to_file(...)`` for emitting that text format from an in-memory `Sequence`. These helpers are intended for round-tripping sequences through files or for generating sequence files programmatically instead of hand-writing token streams.
 

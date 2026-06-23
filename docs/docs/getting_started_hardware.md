@@ -7,7 +7,7 @@ This page is a contributor-oriented starting point for work that needs a real DE
 The default documented hardware baseline is:
 
 * [`DE10-Nano`](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046) only
-* latest released pre-built PulsePins image
+* latest pre-built PulsePins image
 * no extra wiring required for the baseline verification flow
 
 Use the linked Terasic board documentation for board-level details such as power, Ethernet, UART, GPIO headers, switches, and connectors. For SoC/HPS family context, see the [Cyclone V SoC FPGA overview](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html).
@@ -30,7 +30,7 @@ Initial access details:
 
 ### Basic workflow
 
-1. Prepare a board with the latest released pre-built PulsePins image
+1. Prepare a board with the latest pre-built PulsePins image
 2. Connect over SSH or serial console
 3. Run the host-side sanity check from your repository checkout
 4. Run the baseline test on the board
@@ -57,21 +57,21 @@ Expected result:
 
 * the command exits successfully
 * it prints `SUCCESS`
-* it currently takes a few minutes, around 7 minutes at the default 100 MHz streaming frequency
+* it takes a few minutes, around 7 minutes at the default 100 MHz streaming frequency
 
 Treat the runtime as approximate; it is expected to evolve as more tests are added.
 
-For a faster manual regression pass from the current repository checkout, use:
+For a faster manual regression pass from the repository checkout, use:
 
 ```bash
 make board-smoke
 ```
 
-This redeploys the current local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, kills any running `ppscpi` / `ppwebgui` processes on the board, and runs a concise finite smoke sequence. Override the board target with `TARGETHOST=...` when needed.
+This redeploys the local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, kills any running `ppscpi` / `ppwebgui` processes on the board, and runs a concise finite smoke sequence. Override the board target with `TARGETHOST=...` when needed.
 
-### Updating the board from the current repository
+### Updating the board from the repository
 
-The current recommended update flow is:
+The recommended update flow is:
 
 1. build the latest GitHub version locally
 2. run `make copy_all`
@@ -84,7 +84,7 @@ FPGA-writeConfig -f pulsepins.rbf
 
 5. run `run_all_tests`
 
-For now, treat the FPGA reload step as required after `make copy_all`.
+Treat the FPGA reload step as required after `make copy_all`.
 
 ### Optional profile: PP_PMOD
 

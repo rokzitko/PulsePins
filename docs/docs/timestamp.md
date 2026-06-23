@@ -15,14 +15,14 @@ For maintainers, the important split is:
 
 `ts_core` maintains a free-running counter and captures its value when monitored asynchronous inputs change.
 
-The current implementation exposes two capture paths:
+The hardware exposes two capture paths:
 
 * `PPS` path
 * `sigA` path
 
 Each path produces timestamp values over its own Avalon-ST output FIFO.
 
-In the current implementation, both capture paths trigger on rising edges only.
+Both capture paths trigger on rising edges only.
 
 Internally the block:
 

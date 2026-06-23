@@ -1,6 +1,6 @@
 ## Host-side work without hardware
 
-PulsePins is primarily a hardware-backed project, but some useful contribution work can still be done without owning a board.
+PulsePins is primarily a hardware-backed project, but useful contribution work is possible without owning a board.
 
 ### Best entry points
 
@@ -25,7 +25,7 @@ make -C python USE_PREGENERATED=1 build test-host
 
 This host-side path uses the checked-in pregenerated HPS header from `c++/artifacts/` and intentionally skips tests marked as hardware-only. It is useful for syntax/import/API validation, but it is not a supported
 replacement for building the production Python modules on the DE10-Nano. True Python
-cross-compilation is not currently supported.
+cross-compilation is not supported.
 
 Run HDL test benches:
 
@@ -46,7 +46,7 @@ make -C ip test
 Without hardware, avoid making strong claims about:
 
 * timing accuracy
-* current clocking behavior on the board
+* active clocking behavior on the board
 * exact runtime behavior of deployment scripts on the target image
 * measured outputs from `ppfreq`, `ppts`, `pptemp`, and related tools
 

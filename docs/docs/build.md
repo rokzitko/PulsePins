@@ -21,7 +21,7 @@ Relevant targets in `Makefile`:
 * `dev-check` - consolidated host-side sanity pass
 * `timing-check` - parse existing Quartus reports and enforce timing signoff checks
 * `timing-sdc-check` - parse existing Quartus reports and check only project SDC handling
-* `board-smoke` - fast manual live-board smoke pass against current local artifacts
+* `board-smoke` - fast manual live-board smoke pass against local artifacts
 * `copy` - copy `pulsepins.rbf` to the target host
 * `copy_boot` - copy the RBF to the boot partition path
 * `copy_all` - copy hardware, C++, Python, tests, and I2C helpers to the target host
@@ -29,7 +29,7 @@ Relevant targets in `Makefile`:
 * `lint` - run Verible lint on top-level Verilog/SystemVerilog
 * `clean` - remove generated artifacts across subprojects
 
-For a quick manual live-board regression pass after the build artifacts already exist, use `make board-smoke`. That target wraps `scripts/board_smoke.sh`, redeploys the current local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, and runs a small finite smoke sequence against the board plus the two network services, including a few selected failure-path checks (`ppscpi` error queue, `ppwebgui` HTTP `400`, and `ppwebgui` HTTP `504`). It does not rebuild the artifacts first. Override the target host with `TARGETHOST=...` when needed.
+For a quick manual live-board regression pass after the build artifacts already exist, use `make board-smoke`. That target wraps `scripts/board_smoke.sh`, redeploys the local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, and runs a small finite smoke sequence against the board plus the two network services, including a few selected failure-path checks (`ppscpi` error queue, `ppwebgui` HTTP `400`, and `ppwebgui` HTTP `504`). It does not rebuild the artifacts first. Override the target host with `TARGETHOST=...` when needed.
 
 For the normal host-side contributor sanity pass, use:
 
@@ -48,7 +48,7 @@ The FPGA build depends on:
 * IP sources under `ip/`
 * `*_hw.tcl` integration files used by the Quartus system description
 
-Platform Designer, formerly Qsys, is Intel/Altera's system-integration tool for assembling FPGA IP blocks, interconnects, clocks, resets, and HPS-to-FPGA interfaces into the generated hardware system.
+Platform Designer/Qsys is Intel/Altera's system-integration tool for assembling FPGA IP blocks, interconnects, clocks, resets, and HPS-to-FPGA interfaces into the generated hardware system.
 
 Important outputs:
 
@@ -59,7 +59,7 @@ Important outputs:
 
 `QDIR` can be overridden to point to a local Quartus `bin` directory, and `Makefile.local` can provide local overrides without changing the tracked build file. Qsys tools are resolved from the sibling `sopc_builder/bin` directory through `QUARTUS_ROOT` and `QSYS_DIR`, so the FPGA build does not rely on global `PATH` for Quartus tools. The top-level FPGA build runs `scripts/check_quartus_timing.py` after Quartus compilation by default. Use `make CHECK_QUARTUS_TIMING=0` only for local/debug builds where timing signoff should be skipped deliberately.
 
-Clocking is a central part of the hardware build. The current design uses PLL-generated `core_clk` and `int_clk`, a
+Clocking is a central part of the hardware build. The hardware design uses PLL-generated `core_clk` and `int_clk`, a
 selectable `streamer_clk` path, and explicit top-level timing constraints in `pulsepins.sdc`. For the detailed clocking
 model and software-side clock control, see `clock_domain.md`.
 
@@ -103,9 +103,9 @@ The host-side ownership split is deliberate:
 
 The Python bindings live in `python/` and are built with CMake and nanobind.
 
-Production Python builds are currently expected to happen on the DE10-Nano board itself.
-Host-side builds are still useful for syntax/import/API testing, but true Python cross-
-compilation is not currently supported.
+Production Python builds are expected to happen on the DE10-Nano board itself.
+Host-side builds are useful for syntax/import/API testing, but true Python cross-
+compilation is not supported.
 
 The `python/Makefile` provides:
 
@@ -126,7 +126,7 @@ The `pp` module is split across multiple translation units: `python/pp.cc` conta
 
 `ip/Makefile` delegates to IP subdirectories and is mainly used for HDL-level test benches.
 
-Running `make -C ip test` executes the currently integrated per-IP test targets for directories such as:
+Running `make -C ip test` executes the integrated per-IP test targets for directories such as:
 
 * `combiner`
 * `combiner_comb`
@@ -161,13 +161,13 @@ Hardware + software build:
 make
 ```
 
-Copy the current runtime artifacts to the board:
+Copy the runtime artifacts to the board:
 
 ```bash
 make copy_all
 ```
 
-Deployment targets use `TARGETHOST` as the board host name and `SCP_TARGET` as the exact ssh/scp destination. By default `SCP_TARGET=$(TARGETHOST)`; override `SCP_TARGET=user@host` when the copy user or ssh alias differs from the board host name.
+Deployment targets use `TARGETHOST` as the board host name and `SCP_TARGET` as the exact ssh/scp destination. By default `SCP_TARGET=$(TARGETHOST)`; override `SCP_TARGET=user@host` when the copy user or ssh destination differs from the board host name.
 
 This also installs the Bash-completion file for the `pptool` command family onto the live board under `/etc/profile.d/pulsepins-completion.sh`.
 
@@ -179,7 +179,7 @@ sudo ./scripts/install_bash_completion.sh
 
 The prepackaged quick-start SD-card images already ship with this completion installed, so the installer is only needed for manually provisioned systems.
 
-If you stage a board image through the repository Makefiles, `make copy_all_img` (or the alias `make copy_all_image`) also stages the same completion file into `image/etc/profile.d/pulsepins-completion.sh`.
+If you stage a board image through the repository Makefiles, `make copy_all_img` (or `make copy_all_image`) also stages the same completion file into `image/etc/profile.d/pulsepins-completion.sh`.
 
 Build only the Python bindings:
 

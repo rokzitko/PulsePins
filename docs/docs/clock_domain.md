@@ -15,7 +15,7 @@ A [clock-domain crossing](https://en.wikipedia.org/wiki/Clock_domain_crossing) (
 
 Use single-bit synchronizers for individual flags or toggles. Use a dual-clock FIFO, mailbox, or handshake when multiple bits must be observed as one value.
 
-[Gray code](https://en.wikipedia.org/wiki/Gray_code) changes only one bit between adjacent counts. PulsePins uses Gray-coded counters in the frequency meter so a running count can be sampled across a CDC boundary without transiently combining unrelated old and new binary bits.
+[Gray code](https://en.wikipedia.org/wiki/Gray_code) changes only one bit between adjacent counts. PulsePins uses Gray-coded counters in the frequency meter so a running count can be sampled across a CDC boundary without transiently combining binary bits from different counter states.
 
 ## Named clocks
 
@@ -124,7 +124,7 @@ PLL programming and clock-source selection are separate operations.
 
 `FPGA::set_clk()` only performs the reset-wrapped source-switch sequence when the caller explicitly requested a source change through `ClockSelectionOptions`.
 
-`ppwebgui` now exposes the same source-switch path through `POST /api/clocking`, but keeps the applied clock choice in tracked controller state so later reset and stream operations reuse the updated source/profile settings instead of falling back to startup-only config. If startup used no explicit source request or a raw `-clk` selector, that state stays tracked as read-only until the user explicitly applies a managed `int_clk` or `ext_clk` choice.
+`ppwebgui` exposes the same source-switch path through `POST /api/clocking`, and keeps the applied clock choice in tracked controller state so later reset and stream operations reuse the updated source/profile settings instead of falling back to startup-only config. If startup used no explicit source request or a raw `-clk` selector, that state stays tracked as read-only until the user explicitly applies a managed `int_clk` or `ext_clk` choice.
 
 ### Measured streamer clock
 
@@ -149,7 +149,7 @@ Uses:
 | `ip/streamer/streamer.sv` | `clk` | `streamer_clk` | dual-clock output FIFO |
 | `ip/streamer/st_interface.sv` | `clk` | `streamer_clk` | control registers feeding streamer/output behavior |
 
-Current streamer facts:
+Streamer facts:
 
 - input FIFO write side: `clk`
 - output FIFO read side: `streamer_clk`
@@ -170,7 +170,7 @@ Top-level assignments in `pulsepins.sv`:
 - `rl_qin_clk = streamer_clk`
 - `counter_q_input_clock = streamer_clk`
 
-Readback and counter sampling follow the currently selected `streamer_clk` source.
+Readback and counter sampling follow the selected `streamer_clk` source.
 
 ### Counter subsystem
 
@@ -306,9 +306,9 @@ PulsePins uses:
 | `u_clkctrl|auto_generated|sd2|clkselect[0/1]` | clock-select control path |
 | `*pll_reconfig*` | PLL reconfiguration control path |
 
-### Scope of the current SDC
+### Scope of the SDC
 
-The current SDC covers:
+The SDC covers:
 
 - primary clock declaration
 - automatic PLL-derived clock inference
@@ -317,11 +317,11 @@ The current SDC covers:
 - explicit false-path treatment for board/user/HPS peripheral ports that do not have an FPGA-owned external timing contract
 - exclusion of mux-select and PLL-reconfiguration control paths from ordinary timing analysis
 
-The async clock groups are timing exceptions only. They tell TimeQuest not to enforce a synchronous setup/hold relationship across those clocks; they do not make the crossing safe. RTL must still use an appropriate CDC structure or a documented software-stable protocol.
+The async clock groups are timing exceptions only. They tell TimeQuest not to enforce a synchronous setup/hold relationship across those clocks; they do not make the crossing safe. RTL must use an appropriate CDC structure or a documented software-stable protocol.
 
 For block-level latency and CDC visibility behavior, see [RTL latency and timing](latency.md).
 
-Current examples covered by those groups include:
+Examples covered by those groups include:
 
 - dual-clock streamer FIFOs and reset/control crossings
 - counter latch-then-read paths between `d_clk` snapshots and Avalon readout
@@ -330,7 +330,7 @@ Current examples covered by those groups include:
 
 ### Specific SDC observations
 
-| Item | Current state |
+| Item | State |
 | ---- | ------------- |
 | external clock assumption | `EXT_CLKp` is constrained as a 100 ns / 10 MHz clock matching the external-cleaning PLL configuration |
 | raw external mux case | not modeled by the active `SELECT_CLK_CLEAN` generated-clock definitions |
@@ -356,7 +356,7 @@ Changes that trigger SDC review:
 - check reset assertion and release per domain
 - check `streamer_clk` behavior under both internal and external source selection
 - check whether software timing uses measured `streamer_clk` or a nominal assumption
-- check whether `pulsepins.sdc` still matches the top-level clock tree
+- check whether `pulsepins.sdc` matches the top-level clock tree
 - run `make timing-check` after a Quartus build and resolve reported SDC, unconstrained-path, or negative-slack failures
 
 ## Summary table

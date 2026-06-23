@@ -6,7 +6,7 @@ For the underlying measurement block and API, see `freq_meter.md`.
 
 The tool creates the shared `pp_freq_meter` wrapper, optionally reprograms the gate settings, waits one full measurement interval, and then prints formatted readings in a loop.
 
-It uses the interface in `c++/freq_meter.hh`, and the current command implementation lives in `c++/pptool_measurement.cc`.
+It uses the interface in `c++/freq_meter.hh`, and the command implementation lives in `c++/pptool_measurement.cc`.
 
 Common options:
 
@@ -14,26 +14,26 @@ Common options:
 * `-gate_len N`: set the measurement gate length directly in clock cycles
 * `-nr N`: number of measurements to print; `0` means run continuously
 
-The current implementation chooses gate configuration this way:
+Gate configuration follows this order:
 
 * if `-gate_time` is present, it is used
 * otherwise `-gate_len` is used, defaulting to `500000`
 
-The command currently uses a fixed output format equivalent to `%t %e`, so by default it prints a wall-clock timestamp plus the external-clock reading. The formatter infrastructure in the implementation already has access to the internal and streamer channels as well.
+The command uses a fixed output format equivalent to `%t %e`, so by default it prints a wall-clock timestamp plus the external-clock reading. The formatter infrastructure also has access to the internal and streamer channels.
 
 ### Displayed channels
 
-The current output format prints:
+The output format prints:
 
 * wall-clock timestamp
 * external clock frequency
 
-Internally the formatter also has access to internal and streamer clock channels, but the default format currently shows only the timestamp and the external clock reading.
+The formatter also has access to internal and streamer clock channels, but the default format shows only the timestamp and the external clock reading.
 
 Output behavior:
 
 * each printed line includes a wall-clock timestamp and the formatted frequency reading
-* the default implementation reports the primary displayed channel through the shared frequency-meter wrapper
+* the command reports the primary displayed channel through the shared frequency-meter wrapper
 
 Longer gate settings give more stable readings, while shorter gate settings give faster updates.
 

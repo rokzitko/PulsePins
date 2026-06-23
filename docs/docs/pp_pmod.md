@@ -6,7 +6,7 @@ It is an optional hardware profile rather than a required baseline. The board is
 
 ## Revision and source
 
-The current top-level KiCad project is `pcb/ppshield_pmod/shield.kicad_sch` with title `PP_PMOD: GPIO shield for DE10-Nano`, revision `1`, and date `2025-09-20`.
+The top-level KiCad project is `pcb/ppshield_pmod/shield.kicad_sch` with title `PP_PMOD: GPIO shield for DE10-Nano`, revision `1`, and date `2025-09-20`.
 
 Project files:
 

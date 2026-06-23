@@ -20,7 +20,7 @@ More detail:
 * `cdc_mailbox.sv` transfers a multi-bit word between clock domains using a toggle-based notification path plus a hold/request handshake from the output side
 * `reset.sv` provides `reset_sync2_hold`, a reset combiner/synchronizer with asynchronous assertion, synchronous release, and programmable hold time after release
 * `sig_mux.sv` is a small parameterized bit selector that safely handles non-power-of-two input counts
-* `delay.sv` currently contains `delay_or4`, a simple two-stage register/OR helper for combining delayed trigger-like signals
+* `delay.sv` contains `delay_or4`, a simple two-stage register/OR helper for combining delayed trigger-like signals
 
 ### Observability and diagnostics
 
@@ -46,7 +46,7 @@ More detail:
 * `rand_signal_gen.sv` generates pseudo-random test activity including baseline flips, short glitches, and multi-segment bursts, with output-enable based pausing
 * `tik.sv` is a compact periodic pulse generator that asserts once every configured number of cycles
 * `level_to_pulse.v` contains several level-to-pulse converters, including variants with extra delay and built-in synchronizer stages
-* `endianness.sv` currently contains a 96-bit byte-order swapper used where fixed-layout word packing needs explicit reordering
+* `endianness.sv` contains a 96-bit byte-order swapper used where fixed-layout word packing needs explicit reordering
 
 ### Notes for developers
 

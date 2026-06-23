@@ -54,7 +54,7 @@ The `sigA` stream is a secondary timestamp path with a selectable source. The se
 | `4` | 1 s generated pulse | Sanity-check timestamp cadence against a slow internal source. |
 | `5` | 100 ms generated pulse | Check 10 Hz internal timing. |
 | `6` | 10 ms generated pulse | Check 100 Hz internal timing. |
-| `7` | 1 ms generated pulse | Check 1 kHz internal timing; still sparse enough for timestamp capture. |
+| `7` | 1 ms generated pulse | Check 1 kHz internal timing; sparse enough for timestamp capture. |
 
 If `-selA` is omitted, selector `0` is used.
 

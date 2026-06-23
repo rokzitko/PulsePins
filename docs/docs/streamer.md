@@ -56,7 +56,7 @@ At runtime the streamer also consumes:
 
 And it produces:
 
-* `qout` - current output word
+* `qout` - active output word
 * `qout_valid` - output-valid qualifier
 * `qout_strobe` - output strobe pulse
 * `done` - successful stream completion
@@ -105,7 +105,7 @@ Once triggered, output advancement is additionally qualified by:
 * `stop`
 * optional stop-on-buffer-error policy
 
-In `streamer.sv`, the output FIFO read request is currently gated by:
+In `streamer.sv`, the output FIFO read request is gated by:
 
 * trigger active
 * gate open
@@ -140,7 +140,7 @@ For lower-level trigger implementation details, see `details.md`.
 
 ### Gating
 
-Gating decides whether output-side advancement is currently allowed.
+Gating decides whether output-side advancement is allowed.
 
 The effective gate can be sourced from:
 

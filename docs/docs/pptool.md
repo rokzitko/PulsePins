@@ -71,7 +71,7 @@ This keeps the high-level user interface stable while letting the internal imple
 * [ppgpsdo](ppgpsdo.md)
 * [pptemp](pptemp.md)
 * [ppfreq](ppfreq.md)
-* [ppvcd](ppvcd.md) - VCD compatibility alias for `ppplay`
+* [ppvcd](ppvcd.md) - VCD entry point for `ppplay`
 * [pphelloworld](pphelloworld.md)
 
 Related non-symlink tools:

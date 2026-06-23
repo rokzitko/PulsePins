@@ -34,7 +34,7 @@ The `st_mux` class provides:
 
 This block is primarily an integration component.
 
-It is useful when two producers share one downstream Avalon-ST consumer and software needs to decide which path is active while still keeping simple statistics for both sources.
+It is useful when two producers share one downstream Avalon-ST consumer and software needs to decide which path is active while keeping simple statistics for both sources.
 
 ### Related pages
 

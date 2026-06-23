@@ -6,8 +6,6 @@ It is scriptable via Python and C++. It can run on small compact FPGA modules, s
 [Terasic DE10-Nano FPGA](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046)
 (68.6mmx107mm footprint) using Ethernet connectivity.
 
-The predecessor to this code was written in 2020-2021. PulsePins was first released to the public in November 2025.
-
 Project repository: [https://github.com/rokzitko/PulsePins](https://github.com/rokzitko/PulsePins).
 
 ## Start here
@@ -19,7 +17,7 @@ If you have access to a board, these are the best first entry points:
 * [Worked examples](examples.md)
 * [Extension cookbook](extension_cookbook.md)
 
-PulsePins is primarily a hardware-backed project. Some host-side work is still useful, but the main workflows and validation paths revolve around a real board.
+PulsePins is primarily a hardware-backed project. Host-side work is useful, but the main workflows and validation paths revolve around a real board.
 
 ## Common tasks
 
@@ -248,8 +246,8 @@ pins (defined in ``pulsepins.sv``):
 |           | 35:28 |            | <font color="#FFD580">AUX</font>            | Auxiliary inputs |
 | GPIO1     | 0     |            | <font color="Cyan">EXT_CLKp</font>    | External clock input |
 |           | 1     |            | <font color="Cyan">PPS_IN</font>      | Pulse-per-second input (for synchronization and triggering) |
-|           | 2     |            | <font color="Cyan">PPCLK1</font>      | External crystal clock 1 (for future use) |
-|           | 3     |            | <font color="Cyan">PPCLK2</font>      | External crystal clock 2 (for future use) |
+|           | 2     |            | <font color="Cyan">PPCLK1</font>      | Reserved external crystal clock 1 |
+|           | 3     |            | <font color="Cyan">PPCLK2</font>      | Reserved external crystal clock 2 |
 |           | 35:4  | D[7:4] for qout[3:0]     | <font color="red">streamer_qout</font> | Data output, qout[31:0] |
 
 Note that the table contains the "index" within the GPIO arrays, not the pin numbers on headers. The signals marked by
@@ -282,10 +280,10 @@ the clock is running (at the default rate of 100MHz).
 
 ## Trigger system
 
-There are 8 trigger inputs in the current implementation. Trigger conditions are defined by a pattern and a mask. The
+PulsePins provides 8 trigger inputs. Trigger conditions are defined by a pattern and a mask. The
 mask defines which trigger inputs are tested, while the pattern defines the target values.
 
-The trigger conditions can be chained. The default implementation has a 256-position buffer for trigger conditions.
+The trigger conditions can be chained. The trigger-program buffer has 256 positions for trigger conditions.
 The trigger is activated when all trigger conditions in the chain have been consecutively fulfilled and a trigger condition element
 marked as final has been encountered or the trigger buffer becomes empty.
 

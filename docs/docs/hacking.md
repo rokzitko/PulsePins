@@ -79,7 +79,7 @@ Start here:
 
 ### Without hardware
 
-You can still do useful work without a board.
+Useful work is possible without a board.
 
 The most accessible areas are:
 
@@ -124,7 +124,7 @@ Community-contributed artifacts such as wiring diagrams, timing diagrams, screen
 
 ### Community direction
 
-PulsePins is a niche project, but niche projects can still grow strong communities if they are welcoming, well documented, and easy to experiment with.
+PulsePins is a niche project, but niche projects can grow strong communities if they are welcoming, well documented, and easy to experiment with.
 
 Contributions that improve usability, examples, testing, onboarding, and real-world workflows are especially valuable.
 

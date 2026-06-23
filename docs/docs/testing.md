@@ -52,7 +52,7 @@ For a quick hand-run live-board regression check from the repository root, use:
 make board-smoke
 ```
 
-This is intentionally smaller and faster than `run_all_tests`: it redeploys the current local board artifacts, reloads the FPGA, runs a few finite `pptool` checks, and exercises both `ppscpi` and `ppwebgui` over the network. Override the target board with `TARGETHOST=...` if needed.
+This is intentionally smaller and faster than `run_all_tests`: it redeploys the local board artifacts, reloads the FPGA, runs a few finite `pptool` checks, and exercises both `ppscpi` and `ppwebgui` over the network. Override the target board with `TARGETHOST=...` if needed.
 
 For the host-side precursor check before touching the board, run:
 

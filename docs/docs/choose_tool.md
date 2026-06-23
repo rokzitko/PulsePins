@@ -39,7 +39,7 @@ If you want to...
 
 ### By task
 
-#### I want to generate a simple digital output now
+#### I want to generate a simple digital output
 
 Use:
 

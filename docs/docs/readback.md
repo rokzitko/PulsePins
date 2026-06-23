@@ -2,7 +2,7 @@
 
 Readback is the name of the run-length encoder subsystem connected directly to the PulsePins streamer output.
 
-Its job is to observe streamed symbols, compress them back into `{count, value}` runs, and expose those runs to software for verification, debugging, and external-signal capture. PulsePins uses this path heavily for self-test: software can compare the observed output stream against the reference sequence that was originally sent to the streamer.
+Its job is to observe streamed symbols, compress them back into `{count, value}` runs, and expose those runs to software for verification, debugging, and external-signal capture. PulsePins uses this path heavily for self-test: software can compare the observed output stream against the reference sequence sent to the streamer.
 
 Besides verification, the readback path lets PulsePins act as a simple digital logic analyzer: it can observe digital activity, compress it on-chip, and export the captured deterministic waveform as a VCD file for standard waveform viewers.
 
@@ -37,7 +37,7 @@ Important behavior:
 
 * equal consecutive samples are merged into one run-length element
 * normal builds sample `qin` on `qin_clk` while `qin_valid` is asserted
-* the older strobe-clocked mode is hidden unless the RTL is explicitly built with `WEIRD_CLOCK`
+* the strobe-clocked alternate mode is hidden unless the RTL is explicitly built with `WEIRD_CLOCK`
 * when validity drops, the pending run is flushed so the final observed state is not lost
 * overflow latches high if software is not draining the encoded FIFO fast enough
 
@@ -75,9 +75,9 @@ The key member functions are:
 
 Captured deterministic waveforms can also be turned into VCD files through the `Sequence` export path in `c++/sequence.hh`.
 
-At the CLI level, `ppread` can now save captures as PulsePins text sequence files, as VCD waveforms, or as the exact binary sequence format.
+At the CLI level, `ppread` can save captures as PulsePins text sequence files, as VCD waveforms, or as the exact binary sequence format.
 
-The `check` function returns true if no errors are detected. A timeout argument can be provided; if no new elements are received during the specified interval, an exception is raised. Higher-level playback tools now default to a conservative safe policy when no explicit timeout is provided: 2s waiting for the first readback element and 2s for later idle gaps. An exception is also raised if the reference sequence is exhausted and a new element is received from the encoder. A report is produced when the check completes, including the number and ratio of errors plus the difference in encoded size and effective output length.
+The `check` function returns true if no errors are detected. A timeout argument can be provided; if no new elements are received during the specified interval, an exception is raised. Higher-level playback tools default to a conservative safe policy when no explicit timeout is provided: 2s waiting for the first readback element and 2s for later idle gaps. An exception is also raised if the reference sequence is exhausted and a new element is received from the encoder. A report is produced when the check completes, including the number and ratio of errors plus the difference in encoded size and effective output length.
 
 ## Readback of external signals
 

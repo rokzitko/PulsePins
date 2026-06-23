@@ -18,7 +18,7 @@ Calculated settings follow the Cyclone V integer-PLL limits used by the project:
 
 * `fPFD` must be between 5 MHz and 325 MHz
 * `fVCO` must be between 600 MHz and 1600 MHz for the DE10-Nano `-I7` speed grade
-* generated `N`, `M`, and `C` values must be programmable by the current PLL reconfiguration helper
+* generated `N`, `M`, and `C` values must be programmable by the PLL reconfiguration helper
 
 These are PulsePins' strict project limits, not a complete substitute for the vendor device documentation.
 

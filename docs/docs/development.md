@@ -41,7 +41,7 @@ The following symbols are used in project TODO lists:
 These manual pages are built with [MkDocs](https://www.mkdocs.org/). For testing the generated web site, we use
 [caddy](https://caddyserver.com/).
 
-Useful starting points for the current codebase:
+Useful starting points for the codebase:
 
 * `build.md` - hardware/software build and deployment flow
 * `clock_domain.md` - detailed clocking, CDC, and timing-constraint reference

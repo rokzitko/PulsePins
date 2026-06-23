@@ -70,7 +70,7 @@ If the new feature changes the meaning or representation of sequence elements, t
 * `c++/sequence.hh`
 * `c++/unit_tests.cc`
 
-### What lives where now
+### What lives where
 
 * `elements.hh` owns:
   * the `el` representation

@@ -24,7 +24,7 @@ period)
 * ``-i``: initial output value (before triggering)
 * ``-trig``, ``-autotrig``: do not wait for external trigger, automatically start
 * ``-gate``: gate settings, specified by a [gate string](#gate-settings)
-* ``-gate_debug``: start the program in gate debug mode, the current state of gate signals is dumped
+* ``-gate_debug``: start the program in gate debug mode; gate signal state is dumped
 every 100ms
 * ``-core_pll``, ``-core_pll_charge_pump``, ``-core_pll_bandwidth``: core-clock PLL settings, as explained [here](pptest.md#pll-settings)
 * ``-int_pll``, ``-int_pll_charge_pump``, ``-int_pll_bandwidth``: internal streamer-clock PLL settings, as explained [here](pptest.md#pll-settings)

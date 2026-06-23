@@ -13,7 +13,7 @@ For maintainers, the most important split is:
 
 ### Hardware model
 
-The current block is an Avalon-MM controlled frequency meter with:
+The block is an Avalon-MM controlled frequency meter with:
 
 * `N_CH = 4` channels by default
 * a programmable gate length in reference-clock cycles
@@ -36,7 +36,7 @@ The key register groups are:
 * number-of-channels register
 * one result register per channel
 
-More concretely, the current word offsets are:
+More concretely, the word offsets are:
 
 * `0x00` - control (`enable`, `clear`)
 * `0x04` - gate length
@@ -62,7 +62,7 @@ The class also keeps track of:
 
 * the nominal counter clock frequency used for conversion to Hz
 * an optional correction factor for calibration
-* the gate length currently programmed into the hardware
+* the gate length programmed into the hardware
 
 The higher-level `pp_freq_meter` wrapper additionally:
 
@@ -78,14 +78,14 @@ The user-facing command implementation lives in `c++/pptool_measurement.cc`.
 
 ### Standard channels
 
-The current C++ layer names the four channels as:
+The C++ layer names the four channels as:
 
 * external clock
 * internal clock
 * streamer clock
 * core clock
 
-The wrapper currently expects all four channels to be present.
+The wrapper expects all four channels to be present.
 
 The standard channel IDs in `c++/freq_meter.hh` are:
 

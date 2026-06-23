@@ -24,7 +24,7 @@ The main instruments are:
 
 The wrapper is intentionally backplane-like: the instruments run in parallel, but software sees them through one compact selector-based Avalon-MM interface instead of through separate bus wrappers.
 
-The instrument selector in `counter_if.sv` currently maps these numeric IDs:
+The instrument selector in `counter_if.sv` maps these numeric IDs:
 
 | ID | Instrument |
 | -- | ---------- |
@@ -140,11 +140,11 @@ In practice this block is useful for questions like “how long do high pulses u
 
 The packet-statistics block is useful for streams that carry an explicit valid/idle notion through `d_valid`. A packet is defined purely by that validity signal: an assertion starts a packet and a deassertion ends it.
 
-`seq_counter` builds a histogram of short bit patterns. In the current integration it is configured for 4-bit sequences, which is why the C++ wrapper prints 16 bins.
+`seq_counter` builds a histogram of short bit patterns. In the integrated design it is configured for 4-bit sequences, which is why the C++ wrapper prints 16 bins.
 
-The implementation supports both overlapping and non-overlapping windows, although the current integrated instance in `counter_if.sv` uses non-overlapping windows.
+The implementation supports both overlapping and non-overlapping windows, although the integrated instance in `counter_if.sv` uses non-overlapping windows.
 
-`autocorrelation` and `crosscorrelation` expose compact lag-based correlation counts. Address 0 reports the total number of valid samples, and higher addresses report per-lag match counts. The current C++ wrapper instantiates them with 16 result bins.
+`autocorrelation` and `crosscorrelation` expose compact lag-based correlation counts. Address 0 reports the total number of valid samples, and higher addresses report per-lag match counts. The C++ wrapper instantiates them with 16 result bins.
 
 The time-counter path is slightly different from the other instruments: it measures elapsed system-clock ticks between start and stop edges derived from selected channels, and exposes ready flags separately.
 
@@ -185,7 +185,7 @@ It can:
 
 The built-in `-test1` path uses a short deterministic sequence from `c++/counter.hh`, while `-test2` can drive a longer pseudo-random sequence.
 
-`-check` currently validates the deterministic reference case by comparing several instrument outputs against expected values.
+`-check` validates the deterministic reference case by comparing several instrument outputs against expected values.
 
 ### Typical use cases
 

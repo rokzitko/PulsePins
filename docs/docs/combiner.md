@@ -32,7 +32,7 @@ The hardware supports:
 * forced values on each input and on the final output
 * readback of either configured force values or live port values
 
-The current output combiner modes are:
+The output combiner modes are:
 
 | Mode | Meaning |
 | ---- | ------- |

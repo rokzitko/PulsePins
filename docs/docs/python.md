@@ -43,7 +43,7 @@ with PulsePins("de10nano") as pp:
 
 The `f` line requests forced triggering; it does not choose the final output value. If no `final ...` line is present, `STREAM` appends a no-modify final terminator and leaves the outputs at the last sequence value.
 
-The client exposes `idn()`, `reset()`, `clear_status()`, `streamer_clock_hz()`, `timeline(...)`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so it is still subject to the current `ppscpi` 64 KiB SCPI line limit.
+The client exposes `idn()`, `reset()`, `clear_status()`, `streamer_clock_hz()`, `timeline(...)`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so the uploaded command must fit within the `ppscpi` 64 KiB SCPI line limit.
 
 The same package also includes a dependency-free `Timeline` builder for simple named-channel pulse programs:
 
@@ -92,7 +92,7 @@ The Python binding tree lives in `python/` and builds two modules:
 * `pp`
 * `pp_impl`
 
-At the sequence-serialization level, Python now exposes the same practical formats as the core C++ layer:
+At the sequence-serialization level, Python exposes the same practical formats as the core C++ layer:
 
 * PulsePins text sequence format via `parse_sequence_text(...)` and `write_sequence_text(...)`
 * VCD import/export via `Sequence.load_VCD(...)` and `Sequence.write_VCD_file(...)`
@@ -102,12 +102,12 @@ Text and binary sequence helpers preserve explicit `final`, trigger, replay, ret
 
 ## Supported build modes
 
-There are two practical ways to build/test the Python bindings today:
+There are two practical ways to build/test the Python bindings:
 
 * build on the DE10-Nano board - this is the supported production path
 * build on a host machine - useful for syntax/import/API testing only
 
-True cross-compilation of the Python bindings is not currently supported.
+True cross-compilation of the Python bindings is not supported.
 
 ## Board build
 
@@ -120,7 +120,7 @@ make
 make test
 ```
 
-The default build now uses `-O2` and omits `-g` to reduce memory pressure on the board.
+The default build uses `-O2` and omits `-g` to reduce memory pressure on the board.
 If you need debug symbols while developing the bindings, use:
 
 ```bash
@@ -129,7 +129,7 @@ make PY_DEBUG=1
 
 ## Host-side testing
 
-Host-side builds are still useful for checking that the binding code compiles and imports cleanly.
+Host-side builds are useful for checking that the binding code compiles and imports cleanly.
 That is helpful for contributor workflows without a board, but it should not be treated as a
 replacement for the board build.
 
@@ -155,7 +155,7 @@ seq2, force_trigger2 = pp.read_sequence_binary("capture.ppbin")
 
 ## Sequence element API
 
-Python exposes the same sequence-element model as the C++ layer, but the supported construction paths now follow the flattened `el` design rather than the older raw `(el_type, Counter, Value, control)` constructor.
+Python exposes the same sequence-element model as the C++ layer. The supported construction paths follow the flattened `el` design and do not include the raw `(el_type, Counter, Value, control)` constructor.
 
 Supported `pp.el(...)` constructors include:
 
@@ -169,7 +169,7 @@ Supported `pp.el(...)` constructors include:
 * `pp.el(pp.Retrig(), value=...)` - retrigger element
 * `pp.el(pp.PseudoRandom(), count)` - pseudo-random element
 
-Useful element inspectors and helpers now exposed in Python:
+Useful element inspectors and helpers exposed in Python:
 
 * `kind()`, `mode()`, `no_strobe()`
 * `is_stored()`, `store_slot()`, `stored_in(...)`
@@ -177,7 +177,7 @@ Useful element inspectors and helpers now exposed in Python:
 * `regular_token()`, `sequence_record()`
 * `with_control(...)`, `with_count(...)`, `with_counter(...)`, `with_regular_value(...)`, `as_bitload_after(...)`
 
-The mutating compatibility methods `store(...)`, `set_control(...)`, `set_count(...)`, and `set_value(...)` are still available, but new code should prefer the immutable helpers above.
+The mutating methods `store(...)`, `set_control(...)`, `set_count(...)`, and `set_value(...)` are also available. Prefer the immutable helpers above when constructing transformed elements.
 
 Static reconstruction helpers are also bound:
 
@@ -203,9 +203,9 @@ decoded = pp.el.from_regular_token("xr", 7, 0x55)
 assert decoded.sequence_record() == "xr 7 0x55"
 ```
 
-Bindings that wrap MMIO-backed hardware objects should still be treated as owning long-lived board resources even though the module now keeps the immediate `mm`/`FPGA` constructor arguments alive for the wrapper object.
+Bindings that wrap MMIO-backed hardware objects own long-lived board resources. The module keeps the immediate `mm`/`FPGA` constructor arguments alive for the wrapper object.
 
-The small helper scripts in `python/pptool.py` and `tests/test2.py` now use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` still disabling the readback timeout.
+The small helper scripts in `python/pptool.py` and `tests/test2.py` use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` disabling the readback timeout.
 
 ## Testing expectations
 
