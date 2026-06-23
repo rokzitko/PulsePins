@@ -169,7 +169,7 @@ Additional parameters:
 
 ### Test 21
 
-PMOD DA3 SPI sweep. This generates DAC codes for a PMOD DA3 module using the host-side SPI sequence generator and streams them through PulsePins.
+[PMOD DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) SPI sweep. This generates DAC codes for a PMOD DA3 module using the host-side [SPI sequence generator](cpp.md#spi-sequence-generation) and streams them through PulsePins.
 
 By default the test sweeps from 0.0 V to 2.5 V in 0.01 V increments, uses a 10 MHz SPI clock, and inserts a 10 ms dwell after each DAC update. This produces a sweep of roughly 2.5 s total duration.
 
@@ -248,7 +248,7 @@ Repeated playback of the long DMA sequence from test 21. The number of repetitio
 
 ### Test 25
 
-PMOD DA3 sine generator using DMA. This builds one sampled sine-wave period as a sequence of SPI DAC updates for the PMOD DA3 and then replays that period using DMA, so repeated playback produces a continuous periodic waveform.
+PMOD DA3 sine generator using DMA. This builds one sampled sine-wave period as a sequence of SPI DAC updates for the [PMOD DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) and then replays that period using DMA, so repeated playback produces a continuous periodic waveform.
 
 Additional parameters:
 

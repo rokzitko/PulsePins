@@ -168,7 +168,7 @@ ssh de10nano 'pptest 42 -f sequence -veryverbose'
 
 What it does:
 
-* builds the standalone SPI payload generators
+* builds the standalone [SPI payload generators](cpp.md#spi-sequence-generation)
 * generates a PulsePins text sequence that programs an AD9833 for a 5 MHz sine output
 * copies that sequence to the board
 * plays it through the normal streaming path using `pptest`

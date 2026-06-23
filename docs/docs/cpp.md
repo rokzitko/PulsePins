@@ -191,7 +191,9 @@ The same header also provides ``write_sequence_to_stream(...)`` and ``write_sequ
 
 ### SPI sequence generation
 
-`SPI.hh` provides a host-side SPI sequence generator that emits PulsePins `Sequence` objects directly, without going through the old standalone `tools/spi_payload` utility.
+`SPI.hh` provides a host-side [SPI](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface) sequence generator that emits PulsePins `Sequence` objects.
+
+PulsePins generates SPI transactions by turning clock, data, and chip-select transitions into ordinary output-sequence elements.
 
 Generic SPI support lives in the `spi` namespace:
 
@@ -214,7 +216,7 @@ const Sequence &seq = spi_builder.sequence();
 write_sequence_to_file(seq, "spi_sequence.txt");
 ```
 
-Device-specific helpers stay separate from the generic SPI layer. `PMODDA3.hh` provides PMOD DA3 support in the `pmod_da3` namespace:
+Device-specific helpers stay separate from the generic SPI layer. `PMODDA3.hh` provides [PMOD DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) support in the `pmod_da3` namespace:
 
 * ``pmod_da3::default_spi_config()``: PMOD pin mapping and timing defaults matching the existing PMOD DA3 example
 * ``pmod_da3::code_from_voltage()``: convert output voltage to the 16-bit DAC code

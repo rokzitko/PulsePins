@@ -114,7 +114,7 @@ Documented/tested optional examples and checks include:
 * LED PMODs driven with `pptest` and various scripts in `tests/`
 * onboard `MCP9808` via `pptemp` or `I2C/mcp9808.py`
 * external `TMP117` via `I2C/tmp117.py` on the Qwiic connector
-* `PMOD DA3` for fixed-voltage DAC output
+* [PMOD DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) for fixed-voltage DAC output
 * external clock checks with `ppfreq`
 * PPS checks with `ppts`
 
