@@ -50,10 +50,10 @@ PulsePins is well suited to:
 
 ## Run-length encoding
 
-Run-length encoding (RLE) is a data-compression technique in which consecutive identical values
+[Run-length encoding](https://en.wikipedia.org/wiki/Run-length_encoding) (RLE) is a data-compression technique in which consecutive identical values
 are stored as pairs of value and length (number of repetitions). PulsePins decodes RLE sequences
 and streams the resulting data to the output pins of an FPGA board or to other data sinks, such as
-SerDes circuits that generate high-speed signals on transceiver ports. It supports complex
+SerDes circuits that generate high-speed signals on transceiver ports. For PulsePins, holding one output value for `N` streamer-clock cycles can be represented as one regular element with count `N` rather than `N` repeated samples. It supports complex
 triggering with multiple trigger stages and multiple trigger input pins. The main application area
 is timing-critical control of quantum and other experimental devices that require precisely
 scheduled updates of signals (digital; analog via DAC boards; oscillatory via DDS boards). PulsePins is

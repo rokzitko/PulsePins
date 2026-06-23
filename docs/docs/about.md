@@ -2,7 +2,7 @@
 
 ## Project summary
 
-PulsePins is a flexible run-length–encoded (RLE) pattern generator for parallel data buses with 10&nbsp;ns timing resolution and advanced triggering capabilities. It is designed for reliable, robust operation with extensive self-testing. Common use cases are quick to implement, while the architecture remains flexible and easily extensible.
+PulsePins is a flexible [run-length–encoded (RLE)](index.md#run-length-encoding) pattern generator for parallel data buses with 10&nbsp;ns timing resolution and advanced triggering capabilities. It is designed for reliable, robust operation with extensive self-testing. Common use cases are quick to implement, while the architecture remains flexible and easily extensible.
 
 ## Main features
 
