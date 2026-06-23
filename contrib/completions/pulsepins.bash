@@ -95,7 +95,9 @@ _pulsepins_ppaux_opts="
 -nr -wait -mode -file -ctr -ts
 "
 
-_pulsepins_pptemp_opts=""
+_pulsepins_pptemp_opts="
+-bus -addr -wait -nr -timestamp -csv -celsius -fahrenheit -kelvin -reopen -quiet-errors
+"
 _pulsepins_ppreset_opts=""
 _pulsepins_pphelloworld_opts=""
 _pulsepins_pptool_opts=""

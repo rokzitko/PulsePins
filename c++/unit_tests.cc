@@ -24,6 +24,7 @@
 
 #include "elements.hh"
 #include "freq_meter.hh"
+#include "MCP9808.hh"
 #include "PMODDA3.hh"
 #include "SPI.hh"
 #include "options.hh"
@@ -226,6 +227,39 @@ TEST_CASE("time and frequency parsers are strict and finite") {
   CHECK_THROWS_AS(parse_frequency("nanHz"), std::invalid_argument);
   CHECK_THROWS_AS(parse_frequency("-1Hz"), std::invalid_argument);
   CHECK_THROWS_AS(parse_frequency("1e9999Hz"), std::runtime_error);
+}
+
+TEST_CASE("MCP9808 formatting handles Celsius Fahrenheit Kelvin and CSV") {
+  Args args;
+  args.celsius = true;
+  args.fahrenheit = true;
+  args.kelvin = true;
+
+  std::ostringstream header;
+  args.csv = true;
+  MCP9808::print_csv_header(args, header);
+  CHECK(header.str() == "timestamp,temp_c,temp_f,temp_k\n");
+
+  const auto csv_line = MCP9808::format_line(args, 25.0);
+  CHECK(contains(csv_line, ",25.0000,77.0000,298.1500"));
+
+  args.csv = false;
+  CHECK(MCP9808::format_line(args, 25.0) == "25.0000 °C  (77.0000 °F, 298.1500 K)");
+}
+
+TEST_CASE("MCP9808 quiet CSV errors match enabled unit columns") {
+  Args args;
+  args.csv = true;
+  args.celsius = true;
+  args.fahrenheit = true;
+  args.kelvin = true;
+  std::ostringstream out;
+  std::ostringstream err;
+
+  MCP9808::emit_quiet_error_placeholder(args, out, err, "synthetic failure");
+
+  CHECK(contains(out.str(), ",NaN,NaN,NaN\n"));
+  CHECK(contains(err.str(), "ERROR: I2C read failed: synthetic failure"));
 }
 
 TEST_CASE("timing to hardware count conversions validate ranges") {

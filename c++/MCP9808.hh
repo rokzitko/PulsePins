@@ -28,8 +28,10 @@ struct Args {
   int bus = 1;
   int addr = 0x18;
   double delay = 1.0;
-  int count = 0;              // 0 => forever
+  uint64_t count = 0;          // 0 => forever
+  bool celsius = true;
   bool fahrenheit = false;
+  bool kelvin = false;
   bool timestamp = false;
   bool csv = false;
   bool reopen = false;
@@ -66,31 +68,52 @@ public:
   // Formatting moved here, per request.
   static void print_csv_header(const Args& args, std::ostream& os) {
     if (!args.csv) return;
-    if (args.fahrenheit) os << "timestamp,temp_c,temp_f\n";
-    else                 os << "timestamp,temp_c\n";
+    os << "timestamp";
+    if (args.celsius) os << ",temp_c";
+    if (args.fahrenheit) os << ",temp_f";
+    if (args.kelvin) os << ",temp_k";
+    os << "\n";
     os.flush();
   }
 
   static std::string format_line(const Args& args, double t_c) {
     const double t_f = args.fahrenheit ? (t_c * 9.0 / 5.0 + 32.0) : 0.0;
+    const double t_k = args.kelvin ? (t_c + 273.15) : 0.0;
     std::ostringstream oss;
     oss.setf(std::ios::fixed);
     oss << std::setprecision(4);
     if (args.csv) {
-      oss << now_iso_utc_seconds() << "," << t_c;
+      oss << now_iso_utc_seconds();
+      if (args.celsius) oss << "," << t_c;
       if (args.fahrenheit) oss << "," << t_f;
+      if (args.kelvin) oss << "," << t_k;
       return oss.str();
     }
     if (args.timestamp) oss << now_iso_utc_seconds() << "  ";
-    oss << t_c << " °C";
-    if (args.fahrenheit) oss << "  (" << t_f << " °F)";
+    if (args.celsius) oss << t_c << " °C";
+    const bool extra_units = args.fahrenheit || args.kelvin;
+    if (extra_units) {
+      oss << "  (";
+      bool need_sep = false;
+      if (args.fahrenheit) {
+        oss << t_f << " °F";
+        need_sep = true;
+      }
+      if (args.kelvin) {
+        if (need_sep) oss << ", ";
+        oss << t_k << " K";
+      }
+      oss << ")";
+    }
     return oss.str();
   }
 
   static void emit_quiet_error_placeholder(const Args& args, std::ostream& out, std::ostream& err, const std::string &detail = "") {
     if (args.csv) {
-      out << now_iso_utc_seconds() << ",NaN";
+      out << now_iso_utc_seconds();
+      if (args.celsius) out << ",NaN";
       if (args.fahrenheit) out << ",NaN";
+      if (args.kelvin) out << ",NaN";
       out << "\n";
       out.flush();
       if (!detail.empty()) {

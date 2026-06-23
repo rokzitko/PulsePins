@@ -397,14 +397,38 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
   return timestamp_reader_rc(pps_failure) | timestamp_reader_rc(sigA_failure) | timestamp_reader_rc(aggregation_failure);
 }
 
-int pptemp(FPGA &, const InputParser &, const Verbosity &)
+int pptemp(FPGA &, const InputParser &input, const Verbosity &)
 {
   // Temperature polling loop for the MCP9808 sensor. The formatting and retry policy live
   // in the sensor wrapper so this command can stay focused on the read/print cadence.
   Args args;
+  try {
+    const auto bus = parse_uint32(input, "-bus", "1");
+    if (bus > static_cast<uint32_t>(std::numeric_limits<int>::max()))
+      throw std::runtime_error("-bus is out of range");
+    args.bus = static_cast<int>(bus);
+    const auto addr = parse_uint32(input, "-addr", "0x18");
+    if (addr < 0x03 || addr > 0x77)
+      throw std::runtime_error("-addr must be a 7-bit I2C address in range 0x03..0x77");
+    args.addr = static_cast<int>(addr);
+    args.delay = parse_time(input, "-wait", "1s");
+    args.count = parse_uint64(input, "-nr", "0");
+    args.celsius = true; // default; -celsius is accepted for explicitness.
+    if (input.exists("-celsius"))
+      args.celsius = true;
+    args.fahrenheit = input.exists("-fahrenheit");
+    args.kelvin = input.exists("-kelvin");
+    args.timestamp = input.exists("-timestamp");
+    args.csv = input.exists("-csv");
+    args.reopen = input.exists("-reopen");
+    args.quiet_errors = input.exists("-quiet-errors");
+  } catch (const std::exception &e) {
+    std::cerr << "Invalid pptemp argument: " << e.what() << std::endl;
+    return RC_INVALID_ARG;
+  }
   MCP9808::print_csv_header(args, std::cout);
   MCP9808 sensor(args.bus, args.addr, args.reopen);
-  int n = 0;
+  uint64_t n = 0;
   while (true) {
     try {
       const double t_c = sensor.read_temp_c();
