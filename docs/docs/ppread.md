@@ -1,6 +1,6 @@
 ## ppread
 
-`ppread` is the user-facing readback capture tool. It can dump captured run-length encoded data,
+`ppread` is a readback capture tool. It can dump captured run-length encoded data to console,
 or it can switch into export mode and save the capture as PulsePins text sequence format, as VCD,
 as the exact binary sequence format, or as any combination of those.
 
