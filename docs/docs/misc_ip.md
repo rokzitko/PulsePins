@@ -26,13 +26,13 @@ More detail:
 
 * `activity_monitor.sv` - activity indication / observation support
 * `heartbeat.sv` - periodic heartbeat generation
-* `crc32.sv` - CRC32 calculation logic used for integrity checks and diagnostics
+* `crc32.sv` - reflected CRC-32 calculation logic used for integrity checks and diagnostics
 
 More detail:
 
 * `activity_monitor.sv` blinks an output when the observed signal has changed recently; the same file also contains `presence_detector_async_posedge`, which latches asynchronous positive edges and holds an `active` indication for a programmable time window
 * `heartbeat.sv` generates a repeated double-pulse heartbeat pattern from a single input clock
-* `crc32.sv` implements a streaming reflected CRC-32 over 32-bit words with one word consumed per clock and a valid pulse aligned to the registered result
+* `crc32.sv` implements a streaming reflected CRC-32 over 32-bit words with one word consumed per clock and a valid pulse aligned to the registered result; see [CRC32 integrity checks](readback.md#crc32-integrity-checks) for how the value is used by software
 
 ### Signal-generation helpers
 

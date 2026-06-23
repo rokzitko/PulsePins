@@ -41,7 +41,7 @@ For streamer-oriented tools, the typical host-side path is:
 3. transmit the sequence to the FPGA
 4. enable or force the trigger
 5. optionally validate the readback stream
-6. wait for completion and inspect final status, counters, FIFO statistics, and CRCs
+6. wait for completion and inspect final status, counters, FIFO statistics, and [CRC32 integrity checks](readback.md#crc32-integrity-checks)
 
 That common pattern is centralized in `send_and_trig(...)` in `ppworkflow.hh` so that behavior stays consistent across multiple tools.
 
@@ -296,7 +296,7 @@ Streamer classes (defined in ``basic_multi_dma.hh``):
 
 The host-side transport split is:
 
-* ``streamer_control.hh`` - register-level lifecycle control, status, gating, CRC, and FIFO statistics
+* ``streamer_control.hh`` - register-level lifecycle control, status, gating, CRC readout, and FIFO statistics
 * ``streamer_fifo.hh`` - direct CPU-driven FIFO transport for short/simple sequence delivery
 * ``streamer_dma.hh`` - SDRAM + [Intel/Altera Modular Scatter-Gather DMA](https://www.intel.com/content/www/us/en/docs/programmable/683130/21-4/modular-scatter-gather-dma-core.html) transport for longer or repeated transfers
 

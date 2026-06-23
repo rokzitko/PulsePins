@@ -36,7 +36,7 @@ For CDC terminology used in the tables below, see [CDC background terms](clock_d
 
 | Block | Domain or path | Timing behavior |
 | ----- | -------------- | --------------- |
-| `crc32.sv` | Single `clk` domain; used from `st_interface.sv` in `streamer_clk`. | `crc_valid` is asserted one cycle after `data_en`; `crc_out` is registered for that input word. |
+| `crc32.sv` | Single `clk` domain; used from `st_interface.sv` in `streamer_clk`. | `crc_valid` is asserted one cycle after `data_en`; `crc_out` is the registered [CRC32](readback.md#crc32-integrity-checks) value for that input word. |
 | `combiner.sv` | Control `clock_clk`, signal `clk`. | The normal output combiner registers inputs and registers the final output, so it is part of the timed datapath. |
 | `combiner_comb.sv` | Control `clock_clk`, combinational signal path. | The output path is combinational after the programmed configuration. Use only when that tradeoff is desired. |
 | `combiner_trig.sv` | Control `clock_clk`, trigger signal `clk`. | Trigger groups follow the registered combiner structure, with registered inputs and final output. |

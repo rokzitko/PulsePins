@@ -52,6 +52,14 @@ For readback sampling and FIFO latency notes, see [RTL latency and timing](laten
 
 The pulse counter and CRC are computed in the sampled-input domain, which lets software compare transport-level integrity against the transmitted reference stream.
 
+## CRC32 integrity checks
+
+PulsePins uses a streaming [cyclic redundancy check](https://en.wikipedia.org/wiki/Cyclic_redundancy_check) as a compact integrity check over the output words observed by the streamer and readback paths. A CRC is an error-detection value, not a cryptographic hash; here it is used to catch accidental data-path divergence alongside full readback comparison, FIFO accounting, overflow checks, and final-output checks.
+
+The RTL helper `ip/misc/crc32.sv` implements reflected CRC-32/Ethernet-style processing over 32-bit words: LSB-first, polynomial `0xEDB88320`, initial state `0xffffffff`, and final XOR `0xffffffff`. For CRC parameter naming, the [CRC RevEng catalogue](https://reveng.sourceforge.io/crc-catalogue/all.htm#crc.cat.crc-32-iso-hdlc) is a useful reference.
+
+During post-run checks, software compares the streamer-side CRC with the readback-side CRC. A mismatch means the transmitted stream and observed stream disagree at the compact integrity-check level and sets `RC_ERROR_CRC_MISMATCH`; it does not by itself identify which word differed.
+
 ## Software interface
 
 The software interface is provided through class `readback` in `c++/readback.hh`.
