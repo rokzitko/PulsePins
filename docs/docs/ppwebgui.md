@@ -82,7 +82,7 @@ The page exposes these main sections:
 * Timeline Composer: web-browser editor for simple multi-channel pulse timelines in raw cycles or absolute time units, with JSON draft and pulse-table CSV import/export
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
 
-The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard PLL profile, the current value is shown in the menu so the browser state remains accurate. Non-preset frequency strings are accepted and resolved with the same Cyclone V calculator as [`pllcalc`](pllcalc.md).
+The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard PLL profile, the current value is shown in the menu so the browser state remains accurate. Non-preset frequency strings are accepted and resolved with the same Cyclone V PLL calculator as [`pllcalc`](pllcalc.md).
 
 Applying clock settings reruns the same web-controller reset/bring-up path used by **Reset hardware**, then remeasures all four clocks and returns the updated snapshot. The displayed frequencies are therefore measurement snapshots, not live-polled readbacks. If startup used no explicit source request or a raw `-clk` selector, that current source is shown read-only until the user explicitly applies a managed `int_clk` or `ext_clk` choice.
 

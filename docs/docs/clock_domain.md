@@ -227,7 +227,7 @@ Reset release is domain-specific.
 | `ip/misc/reset.sv` | async-assert / sync-release reset synchronizer with hold time |
 | `ip/misc/cdc_mailbox.sv` | mailbox-style multi-bit CDC helper |
 
-## Cyclone V clocking facts used by this design
+## [Cyclone V](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html) clocking facts used by this design
 
 ### Clock networks and clock-control blocks
 
@@ -240,6 +240,8 @@ Reset release is domain-specific.
 | PLL outputs | can drive GCLK and RCLK networks | `core_clk`, `int_clk`, `clean_clk` distribution |
 
 ### PLL facts
+
+For the PulsePins frequency-profile calculator and the project-specific integer-PLL constraints, see [`pllcalc`](pllcalc.md).
 
 | Item | Device fact |
 | ---- | ----------- |
