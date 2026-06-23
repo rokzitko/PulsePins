@@ -19,6 +19,8 @@ The streamer achieves that by separating responsibilities:
 
 ## External interfaces
 
+The streamer uses Intel Avalon interfaces: [Avalon-ST](https://www.intel.com/content/www/us/en/docs/programmable/683091/22-3/avalon-streaming-interfaces.html) for sequence ingress and [Avalon-MM](https://www.intel.com/content/www/us/en/docs/programmable/683091/22-3/avalon-memory-mapped-interfaces.html) for control/status registers.
+
 ### Avalon-ST sequence ingress
 
 The data ingress port on `st_interface.sv` receives encoded `{control, counter, data}` elements.

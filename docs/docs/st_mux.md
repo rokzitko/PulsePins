@@ -1,6 +1,6 @@
 # Avalon-ST multiplexer
 
-The `st_mux` block is a small Avalon-ST routing helper used to select between two streaming sources.
+The `st_mux` block is a small [Avalon-ST](https://www.intel.com/content/www/us/en/docs/programmable/683091/22-3/avalon-streaming-interfaces.html) routing helper used to select between two streaming sources.
 
 The hardware implementation is `ip/st_mux/st_mux_if.sv`, and the C++ control wrapper is `c++/st_mux.hh`.
 
@@ -16,7 +16,7 @@ Only the selected input sees `ready` asserted, so the block acts as a strict sel
 
 For selected-path latency notes, see [RTL latency and timing](latency.md).
 
-The control interface is Avalon-MM based and allows software to:
+The control interface is based on [Avalon-MM](https://www.intel.com/content/www/us/en/docs/programmable/683091/22-3/avalon-memory-mapped-interfaces.html) and allows software to:
 
 * choose the active source channel
 * read low/high words of the two traffic counters

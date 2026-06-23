@@ -67,12 +67,12 @@ PulsePins is not only a digital pulse sequencer: through its readback path it ca
 
 ![PulsePins diagram](img/PulsePins.001.png){: style="height:300px"}
 
-HPS = hard processor system (ARM cores), ST = Avalon streaming interface, MM = Avalon memory-mapped interface, PIO = programmable input/output.
+HPS = hard processor system (ARM cores), ST = [Avalon-ST](https://www.intel.com/content/www/us/en/docs/programmable/683091/22-3/avalon-streaming-interfaces.html) streaming interface, MM = [Avalon-MM](https://www.intel.com/content/www/us/en/docs/programmable/683091/22-3/avalon-memory-mapped-interfaces.html) memory-mapped interface, PIO = programmable input/output.
 
 ## General concept
 
 Sequence _elements_ representing updates of the output data signals or control information (e.g. trigger settings) are
-fed from the HPS through an Avalon streaming (AVS) bus via an input FIFO buffer to a RLE decoding core. The core
+fed from the HPS through an Avalon-ST bus via an input FIFO buffer to a RLE decoding core. The core
 transmits the decoded signals to an output FIFO buffer, from which it is read out using a reading clock and provided
 on the output pins. Reading out starts upon triggering. The input buffer has a preprocessor that can perform
 high-level manipulations on the sequence (e.g. storing short segments in memory and replaying stored segments, i.e.,
@@ -86,7 +86,7 @@ The structure of each _element_ is as follows:
 * ``count_t c``: counter payload
 * ``value_t v``: value payload (output data, trigger patern, etc.)
 
-This list defines the standard order (as transmitted via AVS) and the standard variable names (``y``, ``c``, ``v``) of
+This list defines the standard order (as transmitted via Avalon-ST) and the standard variable names (``y``, ``c``, ``v``) of
 the three constituents. The types ``control_t``, ``count_t`` and ``value_t`` are unsigned integers, by default 32-bit,
 i.e., ``uint32_t``; both the hardware description and the software library are written in such a way that expansion
 (to e.g. 64-bit values) or narrowing (to e.g. 16-bit values) is easily accomplished. The control register contains
