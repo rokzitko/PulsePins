@@ -184,7 +184,7 @@ public:
 
   int run(const int test) {
     std::cout << "Requested test " << std::dec << test << std::endl;
-    int rc = 0;
+    int rc = RC_OK;
     switch (test) {
     case 0:
       std::cout << "There is nothing to do!" << std::endl;

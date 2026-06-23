@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "pll_calc.hh"
+#include "definitions.hh"
 
 namespace {
 
@@ -28,27 +29,27 @@ void print_result(const pllcalc::PllParameters &params) {
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     usage();
-    return 1;
+    return RC_INVALID_ARG;
   }
 
   const std::string arg = argv[1];
   if (arg == "-h" || arg == "--help") {
     usage();
-    return 0;
+    return RC_OK;
   }
 
   try {
     const auto params = pllcalc::calculate(arg);
     if (!params) {
       std::cerr << "No strict Cyclone V integer PLL parameters for '" << arg << "'\n";
-      return 1;
+      return RC_INVALID_ARG;
     }
     print_result(*params);
   }
   catch (const std::exception &e) {
     std::cerr << "Fatal: " << e.what() << '\n';
-    return 1;
+    return RC_EXCEPTION;
   }
 
-  return 0;
+  return RC_OK;
 }

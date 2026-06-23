@@ -92,7 +92,7 @@ public:
       const double timeout = 1.0;
       int successful = rb.check(el_ref, timeout);
       if (!successful)
-        rc |= 1;
+        rc |= RC_ERROR_CHECK;
     }
     trig.join();
     return rc;
@@ -100,7 +100,7 @@ public:
 
   int run(int test) {
     std::cout << "Requested test " << std::dec << test << std::endl;
-    int rc = 0;
+    int rc = RC_OK;
     switch (test) {
     case 0:
       std::cout << "There is nothing to do!" << std::endl;

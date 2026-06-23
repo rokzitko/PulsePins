@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "fpga.hh"
+#include "definitions.hh"
 #include "ppwebgui_assets.hh"
 #include "ppwebgui_frontend.hh"
 #include "ppwebgui_server.hh"
@@ -25,8 +26,8 @@ int run_ppwebgui(FPGA &fpga, const WebGuiRuntimeConfig &config, const Verbosity 
     run_ppwebgui_server(service, get_ppwebgui_assets(), webgui_server_binding(config), {verbosity.veryverbose});
   } catch (const std::exception &e) {
     std::cerr << "Fatal: " << e.what() << '\n';
-    return 1;
+    return RC_EXCEPTION;
   }
 
-  return 0;
+  return RC_OK;
 }

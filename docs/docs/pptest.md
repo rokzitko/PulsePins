@@ -34,13 +34,7 @@ Command line switches:
 * ``-int_pll_charge_pump``: set the internal PLL charge pump parameter
 * ``-int_pll_bandwidth``: set the internal PLL bandwidth parameter
 
-Tests return code 0 if successful. Non-zero error indicates an error. The follow bits can be set:
-
-* bit 0: mismatch detected in sequence checker
-* bit 1: incorrect final data value detected
-* bit 6: timeout while waiting for transport queueing, readback, DMA setup, or streamer completion
-
-Finite playback runs also have an internal streamer-completion timeout: if the streamer does not report `done` within 10 s, the tools report `timed out waiting for streamer completion (10 s internal limit)` and skip the usual post-completion checks.
+Tests return code 0 if successful. Non-zero return codes use the shared [PulsePins return-code bits](return_codes.md). Finite playback runs also have an internal streamer-completion timeout: if the streamer does not report `done` within 10 s, the tools report `timed out waiting for streamer completion (10 s internal limit)` and skip the usual post-completion checks.
 
 If neither ``-t`` nor an explicit ``final V`` sequence record is provided, the shared playback path appends a no-modify final terminator. The outputs therefore remain at the last value produced by the sequence. Set ``-random_final`` or the environment variable ``PP_RANDOM_FINAL`` to request the old randomized final-value test behavior explicitly. ``-t``, ``-random_final``/``PP_RANDOM_FINAL``, and an authored ``final V`` record are mutually exclusive final-output policies.
 

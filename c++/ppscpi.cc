@@ -212,10 +212,10 @@ int main(int argc, char *argv[]) {
     io.run();
   } catch (const std::exception& e) {
     std::cerr << "Fatal: " << e.what() << "\n";
-    return 1;
+    return RC_EXCEPTION;
   } catch (...) {
     std::cerr << "Fatal: unknown exception\n";
-    return 1;
+    return RC_EXCEPTION;
   }
-  return 0;
+  return RC_OK;
 }

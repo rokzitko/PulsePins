@@ -45,7 +45,7 @@ public:
   // **** Basic tests for streaming out data
   int test0() {
     std::cout << "There is nothing to do!" << std::endl;
-    return 0;
+    return RC_OK;
   }
 
   int test1() {
@@ -156,22 +156,24 @@ public:
     auto qout = sc.get_qout();
     if (qout != initial_value) {
       std::cerr << "Mismatch: qout=" << std::hex << qout << " Expected: " << std::hex << initial_value << std::endl;
-      return 1;
+      return RC_ERROR_CHECK;
     }
     Sequence elements;
     if (input.exists("-ns")) elements.push_back(el(NoStrobe(1), initial_value));
     const auto c = parse_count(input, "-c", "1");
     const auto v = parse_value(input, "-v", "0b11");
     elements.push_back(el(c, v));
-    send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb); // don't trigger!
+    const int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb); // don't trigger!
+    if (rc != RC_OK)
+      return rc;
     qout = sc.get_qout();
     if (qout != initial_value) {
       std::cerr << "Mismatch: qout=" << std::hex << qout << " Expected: " << std::hex << initial_value << std::endl;
-      return 1;
+      return RC_ERROR_CHECK;
     } else {
       std::cout << green << "SUCCESS" << rst << std::endl;
     }
-    return 0;
+    return RC_OK;
   }
 
   int test8() {
@@ -197,10 +199,10 @@ public:
     std::cout << "q_override=0x" << std::hex << q << " qout=0x" << qout << " qout_streamer=0x" << qout_streamer << std::endl;
     if (q == qout) {
       std::cout << green << "SUCCESS" << rst << std::endl;
-      return 0 | rc;
+      return rc;
     } else {
       std::cout << red << "FAILURE" << rst << std::endl;
-      return 0x2 | rc;
+      return RC_ERROR_CHECK | rc;
     }
   }
 
@@ -438,7 +440,7 @@ public:
     }
     if (verb.verbose)
       s.sc.status_report();
-    return 0;
+    return RC_OK;
   }
 
   // ****  Complex tests
@@ -611,7 +613,7 @@ public:
       rc = send_and_trig(fifo, sc, rb, ctr, elements, input, force_trigger_p, verb);
     } catch (const std::exception& e) {
       std::cout << "Caught exception: " << e.what() << std::endl;
-      rc = 1;
+      rc = RC_EXCEPTION;
     }
     return rc;
   }
@@ -621,7 +623,7 @@ public:
 
   int run(int test) {
     std::cout << "Requested test " << std::dec << test << std::endl;
-    int rc = 0;
+    int rc = RC_OK;
     switch (test) {
     case 0:
       rc = test0();

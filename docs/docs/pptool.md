@@ -56,6 +56,7 @@ This keeps the high-level user interface stable while letting the internal imple
 ## Related docs
 
 * [pptest](pptest.md)
+* [Return codes](return_codes.md)
 * [ppmstest](pptest.md#ppmstest)
 * [ppdmatest](pptest.md#ppdmatest)
 * [ppfg](ppfg.md)

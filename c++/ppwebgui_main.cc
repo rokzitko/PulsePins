@@ -4,6 +4,7 @@
 // Embedded host-side web GUI server for PulsePins.
 //
 #include "host_runtime.hh"
+#include "definitions.hh"
 #include "ppwebgui_app.hh"
 #include "ppwebgui_bootstrap.hh"
 #include "ppwebgui_config.hh"
@@ -20,9 +21,9 @@ int main(int argc, char *argv[]) {
     return run_ppwebgui(runtime.get_fpga(), config, runtime.verbosity);
   } catch (const std::exception &e) {
     std::cerr << "Fatal: " << e.what() << "\n";
-    return 1;
+    return RC_EXCEPTION;
   } catch (...) {
     std::cerr << "Fatal: unknown exception\n";
-    return 1;
+    return RC_EXCEPTION;
   }
 }

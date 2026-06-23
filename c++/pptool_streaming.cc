@@ -51,6 +51,7 @@ int pptest(FPGA &fpga, const InputParser &input, const Verbosity &v)
   }
   catch (const char *e) {
     std::cout << "exception: " << e << std::endl;
+    rc = RC_EXCEPTION;
   }
   return rc;
 }
@@ -69,6 +70,7 @@ int ppmstest(FPGA &fpga, const InputParser &input, const Verbosity &v)
   }
   catch (const char *e) {
     std::cout << "exception: " << e << std::endl;
+    rc = RC_EXCEPTION;
   }
   return rc;
 }
@@ -86,6 +88,7 @@ int ppdmatest(FPGA &fpga, const InputParser &input, const Verbosity &v)
   }
   catch (const char *e) {
     std::cout << "exception: " << e << std::endl;
+    rc = RC_EXCEPTION;
   }
   return rc;
 }
@@ -266,10 +269,10 @@ int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
   multistreamer s(input, fpga);
   qout q(input, verb, fpga);
   if (input.exists("-self_test")) {
-    auto rc = q.cq.self_test();
-    if (rc != 0) {
-      std::cout << red << "Self test failed: rc=" << rc << rst << std::endl;
-      return rc;
+    const auto self_test_rc = q.cq.self_test();
+    if (self_test_rc != 0) {
+      std::cout << red << "Self test failed: detail rc=" << self_test_rc << rst << std::endl;
+      return RC_ERROR_CHECK;
     }
   }
   if (input.exists("-report_pre"))
@@ -296,7 +299,7 @@ int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
     q.cq.report();
   if (input.exists("-test")) {
     const int nr = input.get_uint32("-test", 10000);
-    int rc = 0;
+    int rc = RC_OK;
     for (int i = 0; i < nr; i++) {
       const auto v1 = random_u32();
       const auto v2 = random_u32();
@@ -340,7 +343,7 @@ int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
         const auto o = (ref^io)&mo;
         if (v != o) {
           std::cout << red << "ERROR: got 0x" << std::hex << v << " expected 0x" << std::hex << o << rst << std::endl;
-          rc = 1;
+          rc |= RC_ERROR_CHECK;
         }
         if (verb.veryverbose)
           std::cout << "qout=0x" << std::hex << v << std::endl;
@@ -372,7 +375,7 @@ int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
       q.cq.mode(comb_mode::DIFF12);
       test(y1-y2);
     }
-    if (rc == 0)
+    if (rc == RC_OK)
       std::cout << green << "SUCCESS." << rst << std::endl;
     return rc;
   }

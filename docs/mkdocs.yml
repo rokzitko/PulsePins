@@ -30,6 +30,7 @@ nav:
     - Host-side work without hardware: getting_started_no_hardware.md
   - pptool:
     - pptool: pptool.md
+    - Return codes: return_codes.md
     - ppaux - AUX port tool: ppaux.md
     - ppcounter - counter tool: ppcounter.md
     - ppdelay - delay generator: ppdelay.md

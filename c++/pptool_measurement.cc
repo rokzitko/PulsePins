@@ -93,7 +93,7 @@ int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
   //   3. stream it to the FPGA and force execution
   //   4. latch all counter instruments
   //   5. print reports and optionally run the deterministic self-check
-  int rc = 0;
+  int rc = RC_OK;
   streamer s(input, fpga);
   counter ctr(input, fpga);
   if (input.exists("-test1"))
@@ -116,7 +116,8 @@ int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
   ctr.latch_all();
   ctr.report();
   if (input.exists("-test1") && input.exists("-check"))
-    rc = counter_test1(ctr);
+    if (counter_test1(ctr) != 0)
+      rc |= RC_ERROR_CHECK;
   return rc;
 }
 
@@ -527,8 +528,10 @@ int ppplay(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   try {
     const std::string filename = input.get_string("-file", "");
-    if (filename.empty())
-      throw std::runtime_error("Missing required -file argument.");
+    if (filename.empty()) {
+      std::cerr << "Missing required -file argument." << std::endl;
+      return RC_INVALID_ARG;
+    }
     const auto format = resolve_sequence_file_format(input, filename);
     validate_sequence_file_options(input, format);
     auto [seq, force_now] = load_sequence_from_file(input, filename, format);
