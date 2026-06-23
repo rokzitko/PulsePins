@@ -82,6 +82,8 @@ The build expects:
 * SoC EDS / hwlib headers
 * the Lua sources vendored under `c++/third_party/lua`
 
+The DMA-backed streamer uses the FPGA design's Intel/Altera Modular Scatter-Gather DMA block through the host-side `streamer_dma.hh` wrapper, so DMA support depends on both the generated hardware address map and the SoC EDS / hwlib-facing build environment.
+
 By default the build is cross-compiling for ARM, but the sources are also structured so they can be copied to the board and built there.
 
 `ppwebgui` and `pllcalc` are standalone executables like `ppscpi`, not `pptool` symlink modes. They are included in the normal `build` and `copy` targets.

@@ -200,9 +200,11 @@ For the broader system clock tree and ownership model, see `clock_domain.md`.
 On the host side, the main C++ entry points are:
 
 * `c++/streamer_control.hh` - control/status wrapper for `st_interface.sv`
-* `c++/streamer_fifo.hh` and DMA-backed streamer wrappers - sequence transport into the ingress FIFO or memory-backed path
+* `c++/streamer_fifo.hh` and [DMA](https://en.wikipedia.org/wiki/Direct_memory_access)-backed streamer wrappers - sequence transport into the ingress FIFO or memory-backed path
 * `c++/ppworkflow.hh` - shared send/trigger/check flow used by multiple tools
 * `c++/sequence.hh` and `c++/elements.hh` - host-side sequence representation
+
+The DMA-backed path stages encoded sequence data in SDRAM and lets the FPGA-side [Intel/Altera Modular Scatter-Gather DMA](https://www.intel.com/content/www/us/en/docs/programmable/683130/21-4/modular-scatter-gather-dma-core.html) engine feed the streamer path. This is mainly useful for longer or repeated transfers where CPU-driven FIFO writes would add avoidable host-side overhead.
 
 CLI tools such as `ppfg`, `ppdelay`, `ppplay`, and `pptest` all eventually program this subsystem.
 

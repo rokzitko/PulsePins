@@ -264,13 +264,15 @@ Class ``streamer_fifo`` (defined in ``streamer_fifo.hh`` and re-exported by ``st
 * ``check_fill_status()``: check FIFO status
 
 Class ``streamer_dma`` (defined in ``streamer_dma.hh`` and re-exported by ``streamer.hh``) is the high-level interface for transmitting the sequence to the
-RLE-decoder code using direct memory access (DMA). Member functions:
+RLE-decoder code using [direct memory access (DMA)](https://en.wikipedia.org/wiki/Direct_memory_access). Member functions:
 
 * ``write_element()``: write an element at given memory location
 * ``prepare()``: write an entire sequence in the memory buffer
 * ``verify()``: verify the correctness of the sequence stored in memory
 * ``transfer()``: perform the transfer
 * ``send_sequence()``: high-level function for transmitting a sequence to the streamer via DMA
+
+In practical terms, ``streamer_fifo`` is the simpler CPU-driven path for short sequences, while ``streamer_dma`` prepares a memory-backed transfer and lets the DMA engine move the sequence into the hardware path.
 
 ### System-level interfaces
 
@@ -296,7 +298,7 @@ The host-side transport split is:
 
 * ``streamer_control.hh`` - register-level lifecycle control, status, gating, CRC, and FIFO statistics
 * ``streamer_fifo.hh`` - direct CPU-driven FIFO transport for short/simple sequence delivery
-* ``streamer_dma.hh`` - SDRAM + MSGDMA transport for longer or repeated transfers
+* ``streamer_dma.hh`` - SDRAM + [Intel/Altera Modular Scatter-Gather DMA](https://www.intel.com/content/www/us/en/docs/programmable/683130/21-4/modular-scatter-gather-dma-core.html) transport for longer or repeated transfers
 
 `combiner` (defined in `combiner.hh`) is the interface for advanced multiplexers.
 
