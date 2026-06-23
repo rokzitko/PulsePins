@@ -10,7 +10,7 @@ Running `make` at the repository root performs these steps:
 
 1. Generate `base_hps.sopcinfo` from `base_hps.qsys`
 2. Generate the HPS header `hps_0.h`
-3. Compile the Quartus project into `pulsepins.sof`
+3. Compile the [Quartus Prime](https://www.altera.com/products/development-tools/quartus) project into `pulsepins.sof`
 4. Run the Quartus timing/report checker
 5. Convert the SOF bitstream into `pulsepins.rbf`
 6. Build the ARM-side C++ programs in `c++/`
@@ -48,12 +48,14 @@ The FPGA build depends on:
 * IP sources under `ip/`
 * `*_hw.tcl` integration files used by the Quartus system description
 
+Platform Designer, formerly Qsys, is Intel/Altera's system-integration tool for assembling FPGA IP blocks, interconnects, clocks, resets, and HPS-to-FPGA interfaces into the generated hardware system.
+
 Important outputs:
 
 * `base_hps.sopcinfo` - system description generated from `base_hps.qsys`
 * `hps_0.h` - HPS/FPGA address map header consumed by the C++ build
-* `pulsepins.sof` - SRAM programming image
-* `pulsepins.rbf` - raw binary file used for boot/runtime deployment
+* `pulsepins.sof` - SRAM Object File; Quartus-generated volatile FPGA programming image used for direct FPGA programming/debug loading
+* `pulsepins.rbf` - Raw Binary File; compact FPGA configuration bitstream used for boot/runtime deployment, including `FPGA-writeConfig` and boot-partition workflows
 
 `QDIR` can be overridden to point to a local Quartus `bin` directory, and `Makefile.local` can provide local overrides without changing the tracked build file. Qsys tools are resolved from the sibling `sopc_builder/bin` directory through `QUARTUS_ROOT` and `QSYS_DIR`, so the FPGA build does not rely on global `PATH` for Quartus tools. The top-level FPGA build runs `scripts/check_quartus_timing.py` after Quartus compilation by default. Use `make CHECK_QUARTUS_TIMING=0` only for local/debug builds where timing signoff should be skipped deliberately.
 
