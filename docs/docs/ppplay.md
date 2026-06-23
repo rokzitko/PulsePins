@@ -5,6 +5,9 @@
 It loads a sequence from a file, converts it into the internal `Sequence` representation if needed,
 and streams it through the normal PulsePins playback path.
 
+[`ppread`](ppread.md) can export captures in all supported playback formats, so a common workflow is
+to record a readback stream with `ppread` and replay the saved file with `ppplay`.
+
 Current supported formats:
 
 * `vcd`
@@ -41,6 +44,30 @@ If `-format` is not provided, `ppplay` tries to infer the format from the file e
 If the extension is ambiguous, `ppplay` exits with an error and asks for `-format`.
 
 ## Examples
+
+### Replay a `ppread` capture
+
+Record a capture in all replayable formats:
+
+```bash
+ppread -timeout 1 -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
+```
+
+Replay one of the saved files:
+
+```bash
+ppplay -file capture.vcd
+ppplay -file capture.seq
+ppplay -file capture.ppbin
+```
+
+`ppread` VCD exports use the default `outs` signal and `$timescale 10ns`, so normal captures replay
+with `ppplay -file capture.vcd` without extra VCD options. Use `capture.seq` when you want an
+editable text sequence and `capture.ppbin` when you want exact lossless replay.
+
+For a fuller workflow, see [Example 3: Capture a waveform and replay it exactly](examples.md#example-3-capture-a-waveform-and-replay-it-exactly).
+
+### Other playback examples
 
 Replay a waveform from a VCD file:
 
