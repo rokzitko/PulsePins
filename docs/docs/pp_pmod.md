@@ -32,6 +32,8 @@ The reference design includes:
 * testpoints and probe-grounding features
 * optional oscillator-module footprints and optional input terminations
 
+The `QOUT`, `AUX`, and trigger connector groups use PMOD-style 2x6 mechanics; for the baseline mechanical/electrical convention, see the [Pmod Interface Specification](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf).
+
 All of the external connector-facing signal groups in the design are protected with ESD devices.
 
 ## Board architecture

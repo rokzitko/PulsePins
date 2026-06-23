@@ -30,7 +30,7 @@ The connector and signal names below follow the KiCad schematics. For final pin-
 | `J18` | Qwiic-compatible I2C | JST-SH 1x4 | external I2C module connection |
 | `J26` | `PPS_IN` | SMA | pulse-per-second input |
 
-The QOUT, AUX, and trigger bus connectors use the same 2x6 mechanical style as a PMOD-style expansion connector, but the clock and trigger-control breakouts are simple headers rather than standard PMOD ports.
+The QOUT, AUX, and trigger bus connectors use the same 2x6 mechanical style as a [PMOD-style expansion connector](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf), but the clock and trigger-control breakouts are simple headers rather than standard PMOD ports.
 
 ## QOUT And AUX
 
