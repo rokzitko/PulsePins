@@ -1,14 +1,22 @@
 # ppts
 
-`ppts` reads timestamp events from the `ts_core` hardware block.
+`ppts` reads timestamp events from the `ts_core` hardware block. It is useful for checking that an event source is present, estimating event periods from timestamp differences, and validating selector routing before using higher-level timing tools.
 
-For the underlying capture architecture, see `timestamp.md`.
+For the underlying capture architecture, see [Timestamp capture](timestamp.md).
 
-The tool uses the shared host startup path, configures the timestamp-routing PIO, clears the timestamp FIFOs, and then starts one reader thread per enabled timestamp stream. The shared startup path does not pulse the FPGA reset manager unless `-reset_FPGA` or `PP_RESET_FPGA` is requested.
+The tool uses the shared host startup path, configures the timestamp-routing PIO, clears the timestamp FIFOs, and then starts one reader thread per enabled timestamp stream.
+
+The implementation lives in `c++/pptool_measurement.cc` and uses the timestamp interface from `c++/timestamp.hh`.
+
+### Syntax
+
+```bash
+ppts [options]
+```
 
 ### Stream selection
 
-By default `ppts` reads the PPS stream.
+By default `ppts` reads the (pulse per second) PPS stream.
 
 Use these switches to control which streams are enabled:
 
@@ -20,8 +28,6 @@ This means the most common modes are:
 * PPS-only capture
 * `sigA`-only capture using `-nopps -sigA`
 * simultaneous PPS + `sigA` capture using `-sigA`
-
-It can monitor the PPS input, the auxiliary `sigA` input, or both. The implementation lives in `c++/pptool_measurement.cc` and uses the timestamp interface from `c++/timestamp.hh`.
 
 Common options:
 
@@ -35,9 +41,37 @@ Common options:
 
 The `-nr` limit is applied per active stream reader.
 
+### `sigA` Sources
+
+The `sigA` stream is a secondary timestamp path with a selectable source. The selector values are documented here; the lower-level routing model is described in [Timestamp capture](timestamp.md).
+
+| `-selA` | Source | Typical Use |
+|---:|---|---|
+| `0` | Streamer trigger activated | Timestamp when the streamer trigger logic fires. |
+| `1` | Streamer trigger input 0 | Observe trigger input 0 at the streamer trigger block. |
+| `2` | External trigger input 0 | Observe external trigger input 0. |
+| `3` | Auxiliary input 0 | Observe AUX input 0. |
+| `4` | 1 s generated pulse | Sanity-check timestamp cadence against a slow internal source. |
+| `5` | 100 ms generated pulse | Check 10 Hz internal timing. |
+| `6` | 10 ms generated pulse | Check 100 Hz internal timing. |
+| `7` | 1 ms generated pulse | Check 1 kHz internal timing; still sparse enough for timestamp capture. |
+
+If `-selA` is omitted, selector `0` is used.
+
+### PPS Sources
+
+The PPS path has a separate two-way source selector:
+
+| Option | PPS Source |
+|---|---|
+| default or `-pps_xtal` | crystal-derived PPS source |
+| `-pps_in` | external PPS input |
+
+If both `-pps_in` and `-pps_xtal` are supplied, the later command-handler check selects `-pps_xtal` because `ppts` applies `-pps_xtal` after `-pps_in`.
+
 ### Output format
 
-The current implementation prints lines of the form:
+`ppts` prints lines of the form:
 
 * stream label (`PPS` or `sigA`)
 * wall-clock timestamp
@@ -59,6 +93,8 @@ Because the two streams are read independently, the printed lines from PPS and `
 
 Because the hardware capture core drops events that arrive when the downstream FIFO is not ready, `ppts` is intended for sparse timing signals rather than dense pulse trains.
 
+Use [Timestamp capture](timestamp.md) for counter-width, edge-capture, FIFO, and timing-semantics details.
+
 ### Typical examples
 
 Read PPS timestamps continuously:
@@ -73,10 +109,14 @@ Read only the `sigA` stream from selector `3` with a timeout:
 ppts -nopps -sigA -selA 3 -timeout 2
 ```
 
+Read only the `sigA` stream from the generated 1 s pulse:
+
+```bash
+ppts -nopps -sigA -selA 4 -nr 5
+```
+
 Read both streams and stop after 10 samples per stream:
 
 ```bash
 ppts -sigA -nr 10
 ```
-
-This tool is especially useful for checking that an event source is present, estimating event periods from timestamp differences, and validating selector routing before using higher-level timing tools.
