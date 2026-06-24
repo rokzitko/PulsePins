@@ -20,12 +20,13 @@ Calculated settings follow the Cyclone V integer-PLL limits used by the project:
 * `fVCO` must be between 600 MHz and 1600 MHz for the DE10-Nano `-I7` speed grade
 * generated `N`, `M`, and `C` values must be programmable by the PLL reconfiguration helper
 
-These are PulsePins' strict project limits, not a complete substitute for the vendor device documentation.
-
 If no strict solution exists, `pllcalc` exits nonzero and does not print a substitute unsafe configuration.
 
 ## CLI PLL Options
 
-The normal `-core_pll` and `-int_pll` options first preserve existing preset names from `c++/pll_rules.hh` and raw `N,M,C` strings. If the value is neither a preset nor raw parameters, it is parsed as a requested frequency and the same strict calculator is used.
+The normal `-core_pll` and `-int_pll` options first examine existing preset names from
+`c++/pll_rules.hh` and raw `N,M,C` strings. If the value is neither a preset nor raw parameters,
+the string is parsed as a requested frequency and the PLL calculator is used to obtain the N,M,C
+parameters.
 
 When runtime calculation is used, the tool prints a warning and the calculated parameters to standard output before programming the PLL.

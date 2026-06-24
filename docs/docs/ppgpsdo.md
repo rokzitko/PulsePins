@@ -20,6 +20,4 @@ Implementation notes:
 * timestamp routing comes from `c++/timestamp.hh`
 * DAC control is handled through the I2C-backed helper used in the same command implementation
 
-Because the underlying timestamp core is designed for sparse events, `ppgpsdo` assumes PPS-like timing signals rather than dense arbitrary transitions.
-
 See also [PP_PMOD hardware reference](pp_pmod_reference.md).
