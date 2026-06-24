@@ -189,7 +189,7 @@ Onboard devices:
 
 External examples should describe `TMP117` as an external Qwiic module, not as the onboard temperature sensor.
 
-## LEDs, Testpoints, And Service Notes
+## LEDs, Test Points, And Service Notes
 
 Indicator LEDs include:
 
@@ -200,12 +200,12 @@ Indicator LEDs include:
 * `ACTIVITY`
 * `HEARTBEAT`
 
-Named testpoints:
+Named test points:
 
 * `Misc` sheet: `TP1`, `TP2`, `TP3`, `TP4`, `TP8`, `TP9`, `TP10`, `TP11`, `TP12`
 * `I2C` sheet: `TP5`, `TP6`, `TP7`
 
-Confirmed testpoint roles:
+Confirmed test point roles:
 
 | Ref | Sheet | Role |
 | --- | --- | --- |
@@ -230,4 +230,4 @@ When documenting a setup, record:
 * jumper and termination positions
 * signal source and cabling
 * exact commands used
-* observed LED and testpoint behavior
+* observed LED and test point behavior

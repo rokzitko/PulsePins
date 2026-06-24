@@ -1,6 +1,6 @@
 ## pptest
 
-``pptest`` is a tool for running a range of test protocols. Using the read-back interface, it allows to perform
+``pptest`` is a tool for running a range of test protocols. Using the read-back interface, it allows you to perform
 self-tests of the entire pulse generation system, including the advanced triggering. The source code of ``pptest``
 also serves as an example of the API use, as it covers most of the elementary use cases.
 
@@ -10,7 +10,7 @@ The basic syntax is
 
 ```pptool <nr> [args...]```
 
-``nr`` indicated the test number.
+``nr`` indicates the test number.
 
 Command line switches:
 
@@ -98,7 +98,7 @@ Fully randomized sequence testing (random values, random counts, random update o
 
 ### Test 9
 
-Test qout_override functionality: sends out a sequence, check the final qout value, then overrides it with a different
+Test qout_override functionality: sends out a sequence, checks the final qout value, then overrides it with a different
 value.
 
 ### Test 10
@@ -150,14 +150,14 @@ Additional parameters:
 
 ### Test 19
 
-Pseudorandom generator (xoroshift128+) test. If ``-c`` value is larger than 0, a given number of
+Pseudorandom generator (xoroshiro128+) test. If ``-c`` value is larger than 0, a given number of
 random variates is produced and output on all 32 output lines. If ``-c`` value is zero, an
 infinite stream is generated.
 
 ### Test 20
 
 Continuous test. Starts up two threads, one filling the decoder queue, one reading back from the readback encoder.
-The two are compared in real time. If ``-v`` is zero, the tests runs indefinitely. If ``-v`` is finite, the value
+The two are compared in real time. If ``-v`` is zero, the test runs indefinitely. If ``-v`` is finite, the value
 counts up from zero to this maximum value (excluded).
 
 Additional parameters:
@@ -182,7 +182,7 @@ Additional parameters:
 
 ### Test 42
 
-Stream out a sequence specified in a text file. The filename is provided using ``-f`` argument.
+Stream out a sequence specified in a text file. The filename is provided using the ``-f`` argument.
 
 Format:
 
@@ -225,7 +225,7 @@ Tool for testing multistreamer.
 
 ### Test 1
 
-The combiner mode is set with ``-mode``. The expected results is computed and compared with what
+The combiner mode is set with ``-mode``. The expected result is computed and compared with what
 is actually read back.
 
 ## ppdmatest
@@ -238,8 +238,8 @@ Same as test 4 in pptest, but using DMA for the data transfer.
 
 ### Test 21
 
-Test for a large number of elements. Note that the readback test is not performed here, this test
-only exercises memory transfers, no correctness testing of the generated bit pattern is implemented.
+Test for a large number of elements. Note that the readback test is not performed here; this test
+only exercises memory transfers, and no correctness testing of the generated bit pattern is implemented.
 
 ### Test 22
 

@@ -1,6 +1,6 @@
 ## Worked examples
 
-This page collects some useful concrete PulsePins examplesd. The goal is not to replace the per-command manual pages, but to show how the pieces fit together in practice.
+This page collects some useful concrete PulsePins examples. The goal is not to replace the per-command manual pages, but to show how the pieces fit together in practice.
 
 Unless stated otherwise, these examples assume the standard DE10-Nano PulsePins runtime environment described in [`INSTALL-quick_start.md`]({{ source_file("INSTALL-quick_start.md") }}) and [`getting_started_hardware.md`](getting_started_hardware.md) ([source]({{ source_file("docs/docs/getting_started_hardware.md") }})).
 

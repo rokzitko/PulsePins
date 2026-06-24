@@ -1,4 +1,4 @@
-# Testing the I2C interface exposed on GPIO port (Qwiic connector on ppshield_pmod)
+# Testing the I2C interface exposed on the GPIO port (Qwiic connector on ppshield_pmod)
 
 # https://emlogic.no/2025/06/accessing-i2c-devices-from-userspace-in-linux/
 

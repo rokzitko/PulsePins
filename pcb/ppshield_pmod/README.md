@@ -11,6 +11,6 @@ Features:
  -   QWIIC I2C connector for external modules
  -   Optional temperature monitor (I2C interface)
  -   Optional 16-bit DAC (I2C interface) with a separate low-noise power supply (a possible application is frequency tuning of an OCXO; in combination with the PPS input this can be turned into a simple GPSDO)
- -   Testpoints for troubleshooting
+ -   Test points for troubleshooting
 
 ![3D render](/pcb/ppshield_pmod/shield_render.jpg)

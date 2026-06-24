@@ -10,13 +10,13 @@ stands for micro, case insensitive; for example 20ms), default unit is seconds; 
 * ``-freq``: frequency (floating point value); the unit can be specified attached to the number with
 no space (accepted suffixes are: uHz, mHz, Hz, kHz, MHz, GHz, u stands for micro, case insensitive
 except for m/M; for example 5MHz), default unit is Hz; no default value
-* ``-duty``: duty cycle as percentage of 'on' signal, fractional values allows (floating point);
+* ``-duty``: duty cycle as a percentage of the 'on' signal; fractional values are allowed (floating point);
 default value is 50
 * ``-servo``: angle setting for testing [servo motors](#servo-motors) using pulse-width modulation (PWM);
 the angle argument is required when the switch is used
 * ``-v0``: output pattern for low state (default: ``0x00000000``)
 * ``-v1``: output pattern for high state (default: ``0xFFFFFFFF``)
-* ``-start0``: set the first pattern to be presented on output the low state (instead of high state; default: off)
+* ``-start0``: set the first pattern presented on the output to the low state (instead of high state; default: off)
 * ``-delay``: delay after trigger before generating the output sequence (in seconds, same syntax as for
 period; default: ``0``)
 * ``-p``: trigger pattern (default: ``0b00000001``)
@@ -56,5 +56,5 @@ Activated with ``-cont`` (default: off).
 
 ## Servo motors
 
-As a convenience, using the ``-servo`` switch ppfg can generate appropriate pulse-width modulation
+As a convenience, using the ``-servo`` switch, ppfg can generate an appropriate pulse-width modulation
 signal for testing servo motors.

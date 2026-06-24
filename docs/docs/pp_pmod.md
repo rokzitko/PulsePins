@@ -29,7 +29,7 @@ The reference design includes:
 * an onboard `MCP9808` temperature sensor
 * an onboard `AD5693` DAC with a separate low-noise regulator
 * status, activity, and heartbeat LEDs
-* testpoints and probe-grounding features
+* test points and probe-grounding features
 * optional oscillator-module footprints and optional input terminations
 
 The `QOUT`, `AUX`, and trigger connector groups use PMOD-style 2x6 mechanics; for the baseline mechanical/electrical convention, see the [Pmod Interface Specification](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf).
@@ -48,7 +48,7 @@ The KiCad hierarchy is already a good map of the board:
 * `I2C` contains the Qwiic connector, onboard `MCP9808`, and onboard `AD5693`
 * `AUX` brings out the auxiliary bus
 * `LEDs` drives the board indicators
-* `Misc` contains testpoints and grounding aids
+* `Misc` contains test points and grounding aids
 
 ## Optional features
 
@@ -64,7 +64,7 @@ When documenting or validating the board, record which optional parts are popula
 
 ## Hardware reference
 
-All board-level connectors, timing inputs, onboard peripherals, jumpers, and testpoints are documented on [PP_PMOD hardware reference](pp_pmod_reference.md).
+All board-level connectors, timing inputs, onboard peripherals, jumpers, and test points are documented on [PP_PMOD hardware reference](pp_pmod_reference.md).
 
 ## Connector index
 

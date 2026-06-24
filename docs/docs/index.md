@@ -79,7 +79,7 @@ The structure of each _element_ is as follows:
 
 * ``control_t y``: control parameter
 * ``count_t c``: counter payload
-* ``value_t v``: value payload (output data, trigger patern, etc.)
+* ``value_t v``: value payload (output data, trigger pattern, etc.)
 
 This list defines the standard order (as transmitted via Avalon-ST) and the standard variable names (``y``, ``c``, ``v``) of
 the three constituents. The types ``control_t``, ``count_t`` and ``value_t`` are unsigned integers, by default 32-bit,
@@ -352,7 +352,7 @@ Streaming is synchronous with the read clock which must be running continuously.
 Example of a successful decoding run of a short sequence (counter from 0 to 7). After the trigger is activated,
 streamer_qout_valid is asserted at the next rising edge of streamer_clk. The data can be read out in two ways:
 
-* at the rising edges of streamer_clk, when streamer_qoud_valid is asserted
+* at the rising edges of streamer_clk, when streamer_qout_valid is asserted
 * at the rising edges of streamer_strobe
 
 Streamer strobe is asserted in the middle of the period (i.e., when streamer_clk is deasserted,
@@ -361,7 +361,7 @@ thus out of phase with the clock).
 The first approach (using _valid_ semantics) is potentially more reliable at high frequencies,
 because the signal is guaranteed to be settled at the rising edges of streamer_clk; there is no
 guarantee for this to be the case at the rising edges of streamer_strobe (but in practice the
-signals are stablized by then at all frequencies of practical interest).
+signals are stabilized by then at all frequencies of practical interest).
 
 The second approach (using _strobe_ semantics) is potentially more reliable in slow digital logic
 systems which may have issues with high slew rates, i.e., those that require long hold times after
@@ -392,7 +392,7 @@ processed in the trigger combiner):
 | 25    | streamer_trig_force |
 | 26    | streamer_trig_reset |
 
-Use [pptrig](pptrig.md) fpr debugging the triggering subsystem.
+Use [pptrig](pptrig.md) for debugging the triggering subsystem.
 
 ## Auxiliary inputs (AUX)
 
@@ -402,7 +402,7 @@ software, see [ppaux](ppaux.md).
 ## Extensions
 
 PulsePins has been successfully extended to 64 output channels and to a 64-bit size of the count variable. Currently,
-only the 32-bit version (32-bit for both data and count registers) is distributed as a prebuild binary.
+only the 32-bit version (32-bit for both data and count registers) is distributed as a prebuilt binary.
 
 PulsePins is portable to other Altera/Intel FPGA solutions and it has been tested, for example, on Arria 10
 FPGAs for driving 10Gbps transceivers, specifically on [Terasic HAN

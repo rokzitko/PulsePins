@@ -445,7 +445,7 @@ public:
 
   // ****  Complex tests
   int test19() {
-    std::cout << "test19 - pseudorandom number test (xoroshift128+)" << std::endl;
+    std::cout << "test19 - pseudorandom number test (xoroshiro128+)" << std::endl;
     Sequence elements;
     auto c = parse_count(input, "-c", "1");
     if (c > 0) {

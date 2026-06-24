@@ -28,7 +28,7 @@ threshold voltage; optional 50-ohm terminator; monitoring LED
 is frequency tuning of an OCXO; in combination with the PPS input from a GPS receiver, PulsePins can
 serve as a simple GPSDO)
 * Footprints for optional CMOS oscillator modules for clocking the PulsePins system
-* Testpoints for troubleshooting
+* Test points for troubleshooting
 * GND connection bars for grounding oscilloscope probes
 
 ![PP_PMOD ppboard](img/IMG_0064.jpeg){: style="height:400px"}

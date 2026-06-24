@@ -10,7 +10,7 @@ This directory and its sibling combiner blocks contain the late-stage routing lo
 
 ## Architecture overview
 
-The combiner sits after the streamer outputs and before the final external-visible routing.
+The combiner sits after the streamer outputs and before the final externally visible routing.
 
 For each input path it can:
 
