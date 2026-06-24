@@ -33,7 +33,7 @@ ppfg -core_pll 10M -cont -trig -period 1ms -duty 5 -v1 0x1 -v0 0x0
 ppfg -core_pll 10M -burst 3 -period 1ms -trig -t 0x0 -v1 0x1 -v0 0x0
 ```
 
-See also: [`ppfg.md`](ppfg.md) and `recipes/ppfg`.
+See also: [`ppfg.md`](ppfg.md) and [`recipes/ppfg`]({{ source_file("recipes/ppfg") }}).
 
 ### Example 2: Use PulsePins as a triggered delay generator with `ppdelay`
 
@@ -58,7 +58,7 @@ What to expect:
 
 This is a good starting point for camera triggering, shutter delays, and simple time-resolved experiments.
 
-See also: [`ppdelay.md`](ppdelay.md) and `recipes/ppdelay`.
+See also: [`ppdelay.md`](ppdelay.md) and [`recipes/ppdelay`]({{ source_file("recipes/ppdelay") }}).
 
 ### Example 3: Capture a waveform and replay it exactly
 

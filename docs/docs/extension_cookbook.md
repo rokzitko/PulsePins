@@ -36,7 +36,7 @@ The `pptool` executable family is dispatched by program name. Most commands are 
     * or a new dedicated `.cc`/`.hh` pair if the command is large enough
 * [`c++/Makefile`]({{ source_file("c++/Makefile") }}) if the command needs a new symlink name on deployment
 * `docs/docs/<tool>.md` for the command reference page
-* optionally `recipes/<tool>` for reusable command examples
+* optionally [`recipes/<tool>`]({{ source_file("recipes/") }}) for reusable command examples
 
 ### Minimal implementation sequence
 
@@ -225,7 +225,7 @@ Typical places:
 
 * command reference page in `docs/docs/`
 * [`docs/mkdocs.yml`]({{ source_file("docs/mkdocs.yml") }}) navigation
-* `recipes/` if the feature benefits from reusable command examples
+* [`recipes/`]({{ source_file("recipes/") }}) if the feature benefits from reusable command examples
 * [`README.md`]({{ source_file("README.md") }}) if it materially changes the project’s discoverability
 
 If the feature is mainly for contributors, update:
