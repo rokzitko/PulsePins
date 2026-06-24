@@ -122,7 +122,7 @@ Community-contributed artifacts such as wiring diagrams, timing diagrams, screen
 
 ### Community direction
 
-Typical application areas where community examples would be especially appreciated include:
+Typical application areas where community examples would be appreciated include:
 
 * pulse sequencing for lasers, shutters, and detectors
 * synchronized triggering of cameras and instruments

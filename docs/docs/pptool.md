@@ -3,7 +3,8 @@
 ``pptool`` is a single executable for performing a range of tasks. Several symbolic links point to the same
 executable. The exact functionality depends on the executable called.
 
-The network-facing services and helper calculators are provided by separate standalone executables, not by ``pptool`` symlinks. Today those are ``ppscpi``, ``ppwebgui``, and ``pllcalc``.
+The network-facing services and helper calculators are provided by separate standalone
+executables, not by ``pptool`` symlinks. Those are ``ppscpi``, ``ppwebgui``, and ``pllcalc``.
 
 ## Dispatch model
 
