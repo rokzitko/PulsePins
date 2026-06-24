@@ -24,17 +24,17 @@ PulsePins is primarily a hardware-backed project. Host-side work is useful, but 
 If you want to...
 
 * bring up a board or run a live sanity check:
-  use [`getting_started_hardware.md`](getting_started_hardware.md), [`testing.md`](testing.md), `make board-smoke`, and [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
+    use [`getting_started_hardware.md`](getting_started_hardware.md), [`testing.md`](testing.md), `make board-smoke`, and [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
 * generate a quick digital pattern:
-  use [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), or [`pphelloworld`](pphelloworld.md)
+    use [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), or [`pphelloworld`](pphelloworld.md)
 * replay a saved sequence:
-  use [`ppplay`](ppplay.md)
+    use [`ppplay`](ppplay.md)
 * capture and inspect output:
-  use [`ppread`](ppread.md)
+    use [`ppread`](ppread.md)
 * validate clocks or PPS timing:
-  use [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md)
+    use [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md)
 * extend the project:
-  start with [`extension_cookbook.md`](extension_cookbook.md)
+    start with [`extension_cookbook.md`](extension_cookbook.md)
 
 ## What PulsePins is good for
 
@@ -352,8 +352,8 @@ Streaming is synchronous with the read clock which must be running continuously.
 Example of a successful decoding run of a short sequence (counter from 0 to 7). After the trigger is activated,
 streamer_qout_valid is asserted at the next rising edge of streamer_clk. The data can be read out in two ways:
 
- * at the rising edges of streamer_clk, when streamer_qoud_valid is asserted
- * at the rising edges of streamer_strobe
+* at the rising edges of streamer_clk, when streamer_qoud_valid is asserted
+* at the rising edges of streamer_strobe
 
 Streamer strobe is asserted in the middle of the period (i.e., when streamer_clk is deasserted,
 thus out of phase with the clock).

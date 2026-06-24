@@ -15,27 +15,27 @@ This page is a task-oriented guide for choosing the right entry point.
 If you want to...
 
 * generate a quick digital signal without writing a sequence file:
-  use [`ppfg`](ppfg.md) or [`ppdelay`](ppdelay.md)
+    use [`ppfg`](ppfg.md) or [`ppdelay`](ppdelay.md)
 * run or replay a saved sequence file:
-  use [`ppplay`](ppplay.md)
+    use [`ppplay`](ppplay.md)
 * capture what PulsePins produced and save it for inspection or replay:
-  use [`ppread`](ppread.md)
+    use [`ppread`](ppread.md)
 * verify board health or run built-in streaming tests:
-  use [`pptest`](pptest.md)
+    use [`pptest`](pptest.md)
 * inspect external clock or PPS timing:
-  use [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md)
+    use [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md)
 * troubleshoot trigger routing and trigger sources:
-  use [`pptrig`](pptrig.md)
+    use [`pptrig`](pptrig.md)
 * inspect or change combiner routing manually:
-  use [`ppqout`](ppqout.md)
+    use [`ppqout`](ppqout.md)
 * drive a workflow from scripts or notebooks:
-  use the [Python API](python.md)
+    use the [Python API](python.md)
 * build custom sequence-generation logic or hardware wrappers:
-  use the [C++ API](cpp.md)
+    use the [C++ API](cpp.md)
 * control the device remotely from automation software:
-  use [`ppscpi`](ppscpi.md)
+    use [`ppscpi`](ppscpi.md)
 * interact with the device from a browser:
-  use [`ppwebgui`](ppwebgui.md)
+    use [`ppwebgui`](ppwebgui.md)
 
 ### By task
 

@@ -30,10 +30,10 @@ The `pptool` executable family is dispatched by program name. Most commands are 
 * [`c++/pptool_commands.hh`]({{ source_file("c++/pptool_commands.hh") }}) - declare the handler
 * [`c++/pptool.cc`]({{ source_file("c++/pptool.cc") }}) - register the handler in the dispatch table
 * one implementation file under [`c++/`]({{ source_file("c++/") }}):
-  * often [`pptool.cc`]({{ source_file("c++/pptool.cc") }})
-  * or [`pptool_streaming.cc`]({{ source_file("c++/pptool_streaming.cc") }})
-  * or [`pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }})
-  * or a new dedicated `.cc`/`.hh` pair if the command is large enough
+    * often [`pptool.cc`]({{ source_file("c++/pptool.cc") }})
+    * or [`pptool_streaming.cc`]({{ source_file("c++/pptool_streaming.cc") }})
+    * or [`pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }})
+    * or a new dedicated `.cc`/`.hh` pair if the command is large enough
 * [`c++/Makefile`]({{ source_file("c++/Makefile") }}) if the command needs a new symlink name on deployment
 * `docs/docs/<tool>.md` for the command reference page
 * optionally `recipes/<tool>` for reusable command examples
@@ -73,14 +73,14 @@ If the new feature changes the meaning or representation of sequence elements, t
 ### What lives where
 
 * [`elements.hh`]({{ source_file("c++/elements.hh") }}) owns:
-  * the `el` representation
-  * control classification
-  * regular token mapping
-  * raw reconstruction helpers
-  * per-element text serialization
+    * the `el` representation
+    * control classification
+    * regular token mapping
+    * raw reconstruction helpers
+    * per-element text serialization
 * [`sequence.hh`]({{ source_file("c++/sequence.hh") }}) owns:
-  * stream/file conversion around `Sequence`
-  * parsing loops and sequence-level operations
+    * stream/file conversion around `Sequence`
+    * parsing loops and sequence-level operations
 
 ### Recommended order
 

@@ -11,12 +11,12 @@ Comments should explain intent. Avoid hard-coded parameters. Keep tests broad en
 
 The following symbols are used in project TODO lists:
 
- - ``!`` important, high-impact item
- - ``@`` complex task, might be time consuming or technically demanding
- - ``o`` recurring tasks, to be performed periodically (keep them on the list)
- - ``#`` major milestones, enabler for other tasks
- - ``-`` easy task
- - ``x`` low-impact, low-priority
+- ``!`` important, high-impact item
+- ``@`` complex task, might be time consuming or technically demanding
+- ``o`` recurring tasks, to be performed periodically (keep them on the list)
+- ``#`` major milestones, enabler for other tasks
+- ``-`` easy task
+- ``x`` low-impact, low-priority
 
 ### Source code layout
 

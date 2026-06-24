@@ -81,9 +81,9 @@ What it does:
 
 * `ppread` captures one second of readback data
 * the same capture is exported in three formats:
-  * `capture.vcd` for waveform viewing
-  * `capture.seq` for editable text form
-  * `capture.ppbin` for exact lossless replay
+    * `capture.vcd` for waveform viewing
+    * `capture.seq` for editable text form
+    * `capture.ppbin` for exact lossless replay
 * `ppplay` then replays the saved sequence
 
 When to use which format:

@@ -28,10 +28,10 @@ This makes the readback path the main verification seam between the generated FP
 
 Inputs:
 
-  * `qin`: observed data word, usually connected to streamer `qout`
-  * `qin_valid`: sampled-data validity qualifier
-  * `qin_clk`: sampled-data clock
-  * `qin_strobe`: strobe signal retained for the dormant `WEIRD_CLOCK` alternate mode
+* `qin`: observed data word, usually connected to streamer `qout`
+* `qin_valid`: sampled-data validity qualifier
+* `qin_clk`: sampled-data clock
+* `qin_strobe`: strobe signal retained for the dormant `WEIRD_CLOCK` alternate mode
 
 Important behavior:
 
@@ -65,13 +65,13 @@ During post-run checks, software compares the streamer-side CRC with the readbac
 The software interface is provided through class `readback` in [`c++/readback.hh`]({{ source_file("c++/readback.hh") }}).
 The key member functions are:
 
-  * `reset`: reset the encoder and discard stale FIFO contents
-  * `clear_fifo`: read and discard all queued elements
-  * `filled`: report whether encoded elements are available
-  * `check_fill_status`: print FIFO status/debug information
-  * `read`: read one encoded element
-  * `read_all`: dump the captured stream until timeout or external termination
-  * `check`: compare the captured stream against a reference `Sequence`
+* `reset`: reset the encoder and discard stale FIFO contents
+* `clear_fifo`: read and discard all queued elements
+* `filled`: report whether encoded elements are available
+* `check_fill_status`: print FIFO status/debug information
+* `read`: read one encoded element
+* `read_all`: dump the captured stream until timeout or external termination
+* `check`: compare the captured stream against a reference `Sequence`
 
 Captured deterministic waveforms can also be turned into VCD files through the `Sequence` export path in [`c++/sequence.hh`]({{ source_file("c++/sequence.hh") }}).
 
