@@ -16,7 +16,7 @@ pptemp [options]
 * `-addr A`: 7-bit I2C address, default `0x18`; decimal and hexadecimal values are accepted
 * `-wait T`: interval between samples, default `1s`; time units such as `ms`, `s`, `min`, and `h` are accepted
 * `-nr N`: number of samples to print, default `0`; `0` means run forever
-* `-timestamp`: prefix human-readable output lines with an ISO-8601 UTC timestamp
+* `-timestamp`: prefix human-readable output lines with an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC timestamp
 * `-csv`: print CSV output with a timestamp column and one column for each enabled temperature unit
 * `-celsius`: enable Celsius output; this is the default and is accepted for explicit scripts
 * `-fahrenheit`: also output Fahrenheit

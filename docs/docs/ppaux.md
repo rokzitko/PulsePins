@@ -19,7 +19,7 @@ Use `ppaux` when you want to:
 * `-mode`: output formatting, for example `hex`, `bin`, `dec`, or combined forms such as `hex:bin:dec`
 * `-file`: write to a file instead of standard output
 * `-ctr`: prefix each line with a 1-based sample counter
-* `-ts`: prefix each line with an ISO8601 timestamp
+* `-ts`: prefix each line with an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp
 
 ## Examples
 
