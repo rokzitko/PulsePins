@@ -2,7 +2,7 @@
 
 This page collects some useful concrete PulsePins examples. The goal is not to replace the per-command manual pages, but to show how the pieces fit together in practice.
 
-Unless stated otherwise, these examples assume the standard DE10-Nano PulsePins runtime environment described in [`INSTALL-quick_start.md`]({{ source_file("INSTALL-quick_start.md") }}) and [`getting_started_hardware.md`](getting_started_hardware.md) ([source]({{ source_file("docs/docs/getting_started_hardware.md") }})).
+Unless stated otherwise, these examples assume the standard DE10-Nano PulsePins runtime environment described in [`INSTALL-quick_start.md`]({{ source_file("INSTALL-quick_start.md") }}) and [Getting started with hardware](getting_started_hardware.md) ([source]({{ source_file("docs/docs/getting_started_hardware.md") }})).
 
 ### Example 1: Generate a continuous square wave with `ppfg`
 
@@ -33,7 +33,7 @@ ppfg -core_pll 10M -cont -trig -period 1ms -duty 5 -v1 0x1 -v0 0x0
 ppfg -core_pll 10M -burst 3 -period 1ms -trig -t 0x0 -v1 0x1 -v0 0x0
 ```
 
-See also: [`ppfg.md`](ppfg.md) and [`recipes/ppfg`]({{ source_file("recipes/ppfg") }}).
+See also: [ppfg - PulsePins Function Generator](ppfg.md) and [`recipes/ppfg`]({{ source_file("recipes/ppfg") }}).
 
 ### Example 2: Use PulsePins as a triggered delay generator with `ppdelay`
 
@@ -58,7 +58,7 @@ What to expect:
 
 This is a good starting point for camera triggering, shutter delays, and simple time-resolved experiments.
 
-See also: [`ppdelay.md`](ppdelay.md) and [`recipes/ppdelay`]({{ source_file("recipes/ppdelay") }}).
+See also: [ppdelay](ppdelay.md) and [`recipes/ppdelay`]({{ source_file("recipes/ppdelay") }}).
 
 ### Example 3: Capture a waveform and replay it exactly
 
@@ -94,7 +94,7 @@ When to use which format:
 
 If you are capturing external signals rather than internally generated ones, use the normal `ppread` external-capture path (`-oe 0` / default hardware input configuration).
 
-See also: [`ppread.md`](ppread.md), [`ppplay.md`](ppplay.md), and [`readback.md`](readback.md).
+See also: [ppread - readback tool](ppread.md), [ppplay](ppplay.md), and [Readback](readback.md).
 
 ### Example 4: Measure an external clock and inspect PPS timing
 
@@ -127,7 +127,7 @@ ppts -nopps -sigA -selA 3 -timeout 2
 
 These tools are useful during board bring-up, external-clock validation, and troubleshooting trigger/timestamp routing.
 
-See also: [`ppfreq.md`](ppfreq.md), [`ppts.md`](ppts.md), [`freq_meter.md`](freq_meter.md), and [`timestamp.md`](timestamp.md).
+See also: [ppfreq](ppfreq.md), [ppts](ppts.md), [Frequency meter](freq_meter.md), and [Timestamp capture](timestamp.md).
 
 ### Example 5: Read the onboard temperature sensor on `PP_PMOD`
 
@@ -152,7 +152,7 @@ What to expect:
 This is a good sanity check for the PP_PMOD I2C path before attempting DAC or external Qwiic
 interfacing.
 
-See also: [`pptemp.md`](pptemp.md), [`pp_pmod.md`](pp_pmod.md), and [`pp_pmod_reference.md`](pp_pmod_reference.md).
+See also: [pptemp - temperature reader](pptemp.md), [PP_PMOD Reference Shield](pp_pmod.md), and [PP_PMOD Hardware Reference](pp_pmod_reference.md).
 
 ### Example 6: Generate an SPI/DDS programming sequence from host-side helper code
 
@@ -276,7 +276,7 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 
 [`timeline_preview.py`]({{ source_file("python/examples/timeline_preview.py") }}) is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. [`timeline_stream.py`]({{ source_file("python/examples/timeline_stream.py") }}) uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. [`timeline_sweep.py`]({{ source_file("python/examples/timeline_sweep.py") }}) shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop. [`notebook_workflow.py`]({{ source_file("python/examples/notebook_workflow.py") }}) combines install notes, clock discovery, preview export, sweep generation, and optional live streaming with `--run`.
 
-See also: [`ppscpi.md`](ppscpi.md) and [`python.md`](python.md).
+See also: [ppscpi - network server](ppscpi.md) and [Python bindings](python.md).
 
 ### Choosing the right kind of example
 

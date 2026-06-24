@@ -172,7 +172,7 @@ It is also useful when you want to separate sequence generation from final outpu
 
 ### Related pages
 
-* [`ppqout.md`](ppqout.md)
-* [`pptrig.md`](pptrig.md)
-* [`latency.md`](latency.md)
-* [`cpp.md`](cpp.md)
+* [ppqout](ppqout.md)
+* [pptrig - trigger debugging tool](pptrig.md)
+* [RTL latency and timing](latency.md)
+* [C++ application programming interface](cpp.md)

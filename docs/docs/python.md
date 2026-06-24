@@ -218,4 +218,4 @@ See also:
 
 * [`python/README`]({{ source_file("python/README") }})
 * [`python/README.devel`]({{ source_file("python/README.devel") }})
-* [`build.md`](build.md)
+* [Build and deployment](build.md)

@@ -47,6 +47,6 @@ This makes `pphelloworld` useful as a quick scope-visible sanity check.
 
 ## Related pages
 
-* [`pptest.md`](pptest.md)
-* [`ppfg.md`](ppfg.md)
-* [`testing.md`](testing.md)
+* [pptest - self-tests](pptest.md)
+* [ppfg - PulsePins Function Generator](ppfg.md)
+* [Testing procedures](testing.md)

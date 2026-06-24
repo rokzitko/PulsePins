@@ -163,7 +163,7 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 
 ### Related pages
 
-* [`pptool.md`](pptool.md)
-* [`cpp.md`](cpp.md)
-* [`readback.md`](readback.md)
-* [`build.md`](build.md)
+* [pptool](pptool.md)
+* [C++ application programming interface](cpp.md)
+* [Readback](readback.md)
+* [Build and deployment](build.md)

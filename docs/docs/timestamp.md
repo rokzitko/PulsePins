@@ -118,6 +118,6 @@ Because the capture logic is edge-based and FIFO-backed, this subsystem is best 
 
 ### Related pages
 
-* [`ppts.md`](ppts.md)
-* [`ppgpsdo.md`](ppgpsdo.md)
-* [`cpp.md`](cpp.md)
+* [ppts](ppts.md)
+* [ppgpsdo](ppgpsdo.md)
+* [C++ application programming interface](cpp.md)

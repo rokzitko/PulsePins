@@ -109,7 +109,7 @@ Use:
 * [`pptemp`](pptemp.md) for the onboard temperature sensor path
 * [`ppaux`](ppaux.md) for AUX input sampling
 
-For PP_PMOD-specific hardware context, also see [`pp_pmod.md`](pp_pmod.md) and [`pp_pmod_reference.md`](pp_pmod_reference.md).
+For PP_PMOD-specific hardware context, also see [PP_PMOD Reference Shield](pp_pmod.md) and [PP_PMOD Hardware Reference](pp_pmod_reference.md).
 
 ### Choose the right interface layer
 

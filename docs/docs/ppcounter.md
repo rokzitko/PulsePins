@@ -62,6 +62,6 @@ The report typically includes:
 
 ## Related pages
 
-* [`counter.md`](counter.md)
-* [`pptest.md`](pptest.md)
+* [Counter subsystem](counter.md)
+* [pptest - self-tests](pptest.md)
 * [`ip/counter/README.md`]({{ source_file("ip/counter/README.md") }})

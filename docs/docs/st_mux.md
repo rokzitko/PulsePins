@@ -38,5 +38,5 @@ It is useful when two producers share one downstream Avalon-ST consumer and soft
 
 ### Related pages
 
-* [`cpp.md`](cpp.md)
-* [`build.md`](build.md)
+* [C++ application programming interface](cpp.md)
+* [Build and deployment](build.md)

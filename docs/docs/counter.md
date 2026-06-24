@@ -199,6 +199,6 @@ Use the counter subsystem for:
 
 ### Related pages
 
-* [`ppcounter.md`](ppcounter.md)
-* [`testing.md`](testing.md)
-* [`cpp.md`](cpp.md)
+* [ppcounter](ppcounter.md)
+* [Testing procedures](testing.md)
+* [C++ application programming interface](cpp.md)

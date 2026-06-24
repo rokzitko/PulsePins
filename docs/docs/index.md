@@ -24,7 +24,7 @@ PulsePins is primarily a hardware-backed project. Host-side work is useful, but 
 If you want to...
 
 * bring up a board or run a live sanity check:
-    use [`getting_started_hardware.md`](getting_started_hardware.md), [`testing.md`](testing.md), `make board-smoke`, and [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
+    use [Getting started with hardware](getting_started_hardware.md), [Testing procedures](testing.md), `make board-smoke`, and [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
 * generate a quick digital pattern:
     use [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), or [`pphelloworld`](pphelloworld.md)
 * replay a saved sequence:
@@ -34,7 +34,7 @@ If you want to...
 * validate clocks or PPS timing:
     use [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md)
 * extend the project:
-    start with [`extension_cookbook.md`](extension_cookbook.md)
+    start with [Extension cookbook](extension_cookbook.md)
 
 ## What PulsePins is good for
 

@@ -59,4 +59,4 @@ With `-veryverbose`, the generated sequence is printed before playback.
 
 * [`ppfg`](ppfg.md)
 * [`pptrig`](pptrig.md)
-* [`examples.md`](examples.md)
+* [Worked examples](examples.md)

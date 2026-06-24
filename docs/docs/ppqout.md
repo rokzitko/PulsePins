@@ -92,6 +92,6 @@ With `-veryverbose`, `ppqout` prints:
 
 ## Related pages
 
-* [`combiner.md`](combiner.md)
-* [`pptrig.md`](pptrig.md)
-* [`pp_pmod_reference.md`](pp_pmod_reference.md)
+* [Combiner subsystem](combiner.md)
+* [pptrig - trigger debugging tool](pptrig.md)
+* [PP_PMOD Hardware Reference](pp_pmod_reference.md)

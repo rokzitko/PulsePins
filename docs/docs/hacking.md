@@ -21,8 +21,8 @@ Start here:
 
 * [`README.md`]({{ source_file("README.md") }})
 * [`HACKING.md`]({{ source_file("HACKING.md") }})
-* [`build.md`](build.md) ([source]({{ source_file("docs/docs/build.md") }}))
-* [`testing.md`](testing.md) ([source]({{ source_file("docs/docs/testing.md") }}))
+* [Build and deployment](build.md) ([source]({{ source_file("docs/docs/build.md") }}))
+* [Testing procedures](testing.md) ([source]({{ source_file("docs/docs/testing.md") }}))
 
 #### C++ tools and API
 
@@ -38,8 +38,8 @@ Typical work:
 Start here:
 
 * [`c++/`]({{ source_file("c++/") }})
-* [`cpp.md`](cpp.md) ([source]({{ source_file("docs/docs/cpp.md") }}))
-* [`pptool.md`](pptool.md) ([source]({{ source_file("docs/docs/pptool.md") }}))
+* [C++ application programming interface](cpp.md) ([source]({{ source_file("docs/docs/cpp.md") }}))
+* [pptool](pptool.md) ([source]({{ source_file("docs/docs/pptool.md") }}))
 
 #### Python bindings
 
@@ -54,7 +54,7 @@ Typical work:
 Start here:
 
 * [`python/`]({{ source_file("python/") }})
-* [`python.md`](python.md) ([source]({{ source_file("docs/docs/python.md") }}))
+* [Python bindings](python.md) ([source]({{ source_file("docs/docs/python.md") }}))
 
 #### RTL and simulation
 
@@ -72,8 +72,8 @@ Simulation-only RTL work is useful. Test benches help with both verification and
 Start here:
 
 * [`ip/`]({{ source_file("ip/") }})
-* [`development.md`](development.md) ([source]({{ source_file("docs/docs/development.md") }}))
-* [`details.md`](details.md) ([source]({{ source_file("docs/docs/details.md") }}))
+* [Development](development.md) ([source]({{ source_file("docs/docs/development.md") }}))
+* [Implementation details](details.md) ([source]({{ source_file("docs/docs/details.md") }}))
 
 ### Without hardware
 
@@ -104,7 +104,7 @@ If you have a DE10-Nano and the PulsePins environment running, you can also work
 * board bring-up and shield documentation
 * PMOD, clocking, and instrument-integration writeups
 
-See also [`getting_started_hardware.md`](getting_started_hardware.md).
+See also [Getting started with hardware](getting_started_hardware.md).
 
 ### What makes a good first contribution?
 

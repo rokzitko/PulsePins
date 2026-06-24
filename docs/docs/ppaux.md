@@ -51,5 +51,5 @@ If `-file` is present, the output goes to the file instead of the terminal.
 
 ## Related pages
 
-* [`ppcounter.md`](ppcounter.md)
-* [`ppts.md`](ppts.md)
+* [ppcounter](ppcounter.md)
+* [ppts](ppts.md)

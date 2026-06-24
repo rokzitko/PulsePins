@@ -62,5 +62,5 @@ The [`ip/misc/`]({{ source_file("ip/misc/") }}) directory also contains dedicate
 
 ### Related pages
 
-* [`development.md`](development.md)
-* [`build.md`](build.md)
+* [Development](development.md)
+* [Build and deployment](build.md)

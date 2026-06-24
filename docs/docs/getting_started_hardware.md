@@ -105,9 +105,9 @@ Useful capabilities include:
 
 See also:
 
-* [`ppboards.md`](ppboards.md)
-* [`pp_pmod.md`](pp_pmod.md)
-* [`pp_pmod_reference.md`](pp_pmod_reference.md)
+* [ppboards - shields for the DE10-Nano board](ppboards.md)
+* [PP_PMOD Reference Shield](pp_pmod.md)
+* [PP_PMOD Hardware Reference](pp_pmod_reference.md)
 
 Documented/tested optional examples and checks include:
 
