@@ -48,24 +48,24 @@ ppwebgui -port 0
 
 The `ppwebgui` implementation is split into small layers with a strict hardware-ownership boundary:
 
-* `ppwebgui_main.cc`: process entry only
-* `ppwebgui_app.cc`: composition root; anchors the single `WebGuiController`
-* `ppwebgui_server.cc`: owns the embedded `httplib::Server` lifecycle, bind/listen flow, and startup URL reporting
-* `ppwebgui_http.cc`: request parsing, validation, error handling, and route registration
-* `ppwebgui_json.cc`: JSON/status rendering
-* `ppwebgui_assets.cc`: embedded browser HTML/CSS/JS
-* `ppwebgui_config.cc`: resolves CLI/input state into pure config values
-* `ppwebgui_service_api.cc`: non-owning service interface bridge used by the GUI/HTTP side
-* `ppwebgui_service.cc`: hardware-owning controller implementation
+* [`ppwebgui_main.cc`]({{ source_file("c++/ppwebgui_main.cc") }}): process entry only
+* [`ppwebgui_app.cc`]({{ source_file("c++/ppwebgui_app.cc") }}): composition root; anchors the single `WebGuiController`
+* [`ppwebgui_server.cc`]({{ source_file("c++/ppwebgui_server.cc") }}): owns the embedded `httplib::Server` lifecycle, bind/listen flow, and startup URL reporting
+* [`ppwebgui_http.cc`]({{ source_file("c++/ppwebgui_http.cc") }}): request parsing, validation, error handling, and route registration
+* [`ppwebgui_json.cc`]({{ source_file("c++/ppwebgui_json.cc") }}): JSON/status rendering
+* [`ppwebgui_assets.cc`]({{ source_file("c++/ppwebgui_assets.cc") }}): embedded browser HTML/CSS/JS
+* [`ppwebgui_config.cc`]({{ source_file("c++/ppwebgui_config.cc") }}): resolves CLI/input state into pure config values
+* [`ppwebgui_service_api.cc`]({{ source_file("c++/ppwebgui_service_api.cc") }}): non-owning service interface bridge used by the GUI/HTTP side
+* [`ppwebgui_service.cc`]({{ source_file("c++/ppwebgui_service.cc") }}): hardware-owning controller implementation
 
 The runtime flow is:
 
-1. `ppwebgui_main.cc` creates `HostRuntime` and resolves `WebGuiRuntimeConfig`
-2. `ppwebgui_app.cc` anchors `WebGuiController` and creates a non-owning `WebGuiService` adapter
-3. `ppwebgui_server.cc` builds `httplib::Server` and starts the listener
-4. `ppwebgui_http.cc` converts requests into value requests for the service layer
-5. `ppwebgui_service.cc` executes those requests against the hardware-owning wrapper graph
-6. `ppwebgui_json.cc` renders returned value snapshots/results into responses
+1. [`ppwebgui_main.cc`]({{ source_file("c++/ppwebgui_main.cc") }}) creates `HostRuntime` and resolves `WebGuiRuntimeConfig`
+2. [`ppwebgui_app.cc`]({{ source_file("c++/ppwebgui_app.cc") }}) anchors `WebGuiController` and creates a non-owning `WebGuiService` adapter
+3. [`ppwebgui_server.cc`]({{ source_file("c++/ppwebgui_server.cc") }}) builds `httplib::Server` and starts the listener
+4. [`ppwebgui_http.cc`]({{ source_file("c++/ppwebgui_http.cc") }}) converts requests into value requests for the service layer
+5. [`ppwebgui_service.cc`]({{ source_file("c++/ppwebgui_service.cc") }}) executes those requests against the hardware-owning wrapper graph
+6. [`ppwebgui_json.cc`]({{ source_file("c++/ppwebgui_json.cc") }}) renders returned value snapshots/results into responses
 
 
 ## Browser UI
@@ -82,7 +82,7 @@ The page exposes these main sections:
 * Timeline Composer: web-browser editor for simple multi-channel pulse timelines in raw cycles or absolute time units, with JSON draft and pulse-table CSV import/export
 * Sequence: a text-area for PulsePins sequence text, a force-trigger checkbox, a readback-check checkbox, and a start button
 
-The clocking form exposes preset PLL profile strings from `c++/pll_rules.hh` through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard PLL profile, the current value is shown in the menu so the browser state remains accurate. Non-preset frequency strings are accepted and resolved with the same Cyclone V PLL calculator as [`pllcalc`](pllcalc.md).
+The clocking form exposes preset PLL profile strings from [`c++/pll_rules.hh`]({{ source_file("c++/pll_rules.hh") }}) through pulldown menus for both `core_clk` and `int_clk`, with `100M` as the initial default choice. If `ppwebgui` starts from a nonstandard PLL profile, the current value is shown in the menu so the browser state remains accurate. Non-preset frequency strings are accepted and resolved with the same Cyclone V PLL calculator as [`pllcalc`](pllcalc.md).
 
 Applying clock settings reruns the same web-controller reset/bring-up path used by **Reset hardware**, then remeasures all four clocks and returns the updated snapshot. The displayed frequencies are therefore measurement snapshots, not live-polled readbacks. If startup used no explicit source request or a raw `-clk` selector, that current source is shown read-only until the user explicitly applies a managed `int_clk` or `ext_clk` choice.
 

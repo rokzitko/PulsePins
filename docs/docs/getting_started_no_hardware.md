@@ -4,10 +4,10 @@ PulsePins is primarily a hardware-backed project, but useful contribution work i
 
 ### Best entry points
 
-* documentation in `docs/` and top-level `README*` files
-* Python bindings in `python/`
-* C++ sequence handling and command-line behavior in `c++/`
-* RTL simulation and test benches in `ip/`
+* documentation in [`docs/`]({{ source_file("docs/") }}) and top-level [`README.md`]({{ source_file("README.md") }}) files
+* Python bindings in [`python/`]({{ source_file("python/") }})
+* C++ sequence handling and command-line behavior in [`c++/`]({{ source_file("c++/") }})
+* RTL simulation and test benches in [`ip/`]({{ source_file("ip/") }})
 
 ### Useful commands
 
@@ -23,7 +23,7 @@ Build and test the Python bindings on a host machine:
 make -C python USE_PREGENERATED=1 build test-host
 ```
 
-This host-side path uses the checked-in pregenerated HPS header from `c++/artifacts/` and intentionally skips tests marked as hardware-only. It is useful for syntax/import/API validation, but it is not a supported
+This host-side path uses the checked-in pregenerated HPS header from [`c++/artifacts/`]({{ source_file("c++/artifacts/") }}) and intentionally skips tests marked as hardware-only. It is useful for syntax/import/API validation, but it is not a supported
 replacement for building the production Python modules on the DE10-Nano. True Python
 cross-compilation is not supported.
 

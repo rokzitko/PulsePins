@@ -25,7 +25,7 @@ If no strict solution exists, `pllcalc` exits nonzero and does not print a subst
 ## CLI PLL Options
 
 The normal `-core_pll` and `-int_pll` options first examine existing preset names from
-`c++/pll_rules.hh` and raw `N,M,C` strings. If the value is neither a preset nor raw parameters,
+[`c++/pll_rules.hh`]({{ source_file("c++/pll_rules.hh") }}) and raw `N,M,C` strings. If the value is neither a preset nor raw parameters,
 the string is parsed as a requested frequency and the PLL calculator is used to obtain the N,M,C
 parameters.
 

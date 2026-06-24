@@ -22,7 +22,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install host check dependencies
-        run: python -m pip install --upgrade pip pytest nanobind cmake mkdocs
+        run: python -m pip install --upgrade pip pytest nanobind cmake mkdocs mkdocs-macros-plugin
 
       - name: Run consolidated host-side checks
         run: make dev-check

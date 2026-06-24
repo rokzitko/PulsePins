@@ -2,14 +2,14 @@
 
 PulsePins includes a dedicated timestamp-capture block for recording the clock-cycle position of selected events.
 
-The main hardware block is `ip/ts_core/ts_core.sv`, and the main software interface is `c++/timestamp.hh`.
+The main hardware block is [`ip/ts_core/ts_core.sv`]({{ source_file("ip/ts_core/ts_core.sv") }}), and the main software interface is [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }}).
 
-For a maintainer-oriented RTL map, see `ip/ts_core/README.md`.
+For a maintainer-oriented RTL map, see [`ip/ts_core/README.md`]({{ source_file("ip/ts_core/README.md") }}).
 
 For maintainers, the important split is:
 
-* `ip/ts_core/ts_core.sv` owns the free-running counter and edge-capture logic
-* `c++/timestamp.hh` owns source routing, FIFO draining, and reconstruction of 64-bit event records
+* [`ip/ts_core/ts_core.sv`]({{ source_file("ip/ts_core/ts_core.sv") }}) owns the free-running counter and edge-capture logic
+* [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }}) owns source routing, FIFO draining, and reconstruction of 64-bit event records
 
 ### Hardware model
 
@@ -54,7 +54,7 @@ The PPS input can be switched between:
 * external PPS input
 * crystal-derived PPS source
 
-The selector values exposed in `c++/timestamp.hh` are:
+The selector values exposed in [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }}) are:
 
 * `0` - streamer trigger activated
 * `1` - streamer trigger input 0
@@ -67,7 +67,7 @@ The selector values exposed in `c++/timestamp.hh` are:
 
 ### C++ interface
 
-The `timestamp` class in `c++/timestamp.hh` wraps two FIFOs and a configuration PIO block.
+The `timestamp` class in [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }}) wraps two FIFOs and a configuration PIO block.
 
 Important operations:
 
@@ -85,7 +85,7 @@ The timeout-based read functions poll until two FIFO words are available, then r
 
 The constructor clears both FIFOs on startup, which helps avoid stale samples after reset or reconfiguration.
 
-The main user-facing command implementations live in `c++/pptool_measurement.cc` (`ppts` and `ppgpsdo`).
+The main user-facing command implementations live in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}) (`ppts` and `ppgpsdo`).
 
 ### Timing semantics
 

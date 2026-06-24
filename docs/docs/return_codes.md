@@ -1,6 +1,6 @@
 # Return Codes
 
-PulsePins command-line tools use the shared return-code constants defined in `c++/definitions.hh`.
+PulsePins command-line tools use the shared return-code constants defined in [`c++/definitions.hh`]({{ source_file("c++/definitions.hh") }}).
 
 `0` means success. Non-zero values are bit flags, so a command can report more than one failure condition at the same time. For example, `68` means `RC_TIMEOUT | RC_ERROR_CHECK`.
 
@@ -15,7 +15,7 @@ PulsePins command-line tools use the shared return-code constants defined in `c+
 | `32` | `RC_ERROR_OVERFLOW` | A streamer input FIFO or readback path overflow was detected. |
 | `64` | `RC_TIMEOUT` | A bounded wait timed out, such as transport queueing, readback, streamer completion, or timestamp reads. |
 
-Streaming-oriented commands use the shared workflow in `c++/ppworkflow.hh`, so readback, CRC, FIFO, final-output, overflow, buffer, and timeout failures can be combined in one return code.
+Streaming-oriented commands use the shared workflow in [`c++/ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }}), so readback, CRC, FIFO, final-output, overflow, buffer, and timeout failures can be combined in one return code.
 
 Finite playback has an internal streamer-completion timeout. If the streamer does not report `done` within the internal limit, the command sets `RC_TIMEOUT`, reports `timed out waiting for streamer completion (10 s internal limit)`, and skips the normal post-completion checks.
 

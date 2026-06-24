@@ -2,7 +2,7 @@
 
 This page collects some useful concrete PulsePins examplesd. The goal is not to replace the per-command manual pages, but to show how the pieces fit together in practice.
 
-Unless stated otherwise, these examples assume the standard DE10-Nano PulsePins runtime environment described in `INSTALL-quick_start.md` and `getting_started_hardware.md`.
+Unless stated otherwise, these examples assume the standard DE10-Nano PulsePins runtime environment described in [`INSTALL-quick_start.md`]({{ source_file("INSTALL-quick_start.md") }}) and [`getting_started_hardware.md`](getting_started_hardware.md) ([source]({{ source_file("docs/docs/getting_started_hardware.md") }})).
 
 ### Example 1: Generate a continuous square wave with `ppfg`
 
@@ -156,7 +156,7 @@ See also: [`pptemp.md`](pptemp.md), [`pp_pmod.md`](pp_pmod.md), and [`pp_pmod_re
 
 ### Example 6: Generate an SPI/DDS programming sequence from host-side helper code
 
-Goal: use the standalone sequence generators in `tools/spi_payload/` to control a peripheral from PulsePins.
+Goal: use the standalone sequence generators in [`tools/spi_payload/`]({{ source_file("tools/spi_payload/") }}) to control a peripheral from PulsePins.
 
 For the AD9833 example:
 
@@ -180,7 +180,7 @@ When to use:
 * validating board wiring and pin assignments
 * prototyping peripheral-control sequences before integrating them elsewhere
 
-The exact qout wiring and module-specific notes live in `tools/spi_payload/README`.
+The exact qout wiring and module-specific notes live in [`tools/spi_payload/README`]({{ source_file("tools/spi_payload/README") }}).
 
 ### Example 7: Drive `ppscpi` from a host-side Python notebook
 
@@ -224,7 +224,7 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-The same minimal example is available as `python/examples/ppscpi_hello.py`:
+The same minimal example is available as [`python/examples/ppscpi_hello.py`]({{ source_file("python/examples/ppscpi_hello.py") }}):
 
 ```bash
 PYTHONPATH=python python3 python/examples/ppscpi_hello.py de10nano
@@ -274,7 +274,7 @@ pulsepins-timeline-stream de10nano --print-sequence
 pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ```
 
-`timeline_preview.py` is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. `timeline_stream.py` uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. `timeline_sweep.py` shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop. `notebook_workflow.py` combines install notes, clock discovery, preview export, sweep generation, and optional live streaming with `--run`.
+[`timeline_preview.py`]({{ source_file("python/examples/timeline_preview.py") }}) is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. [`timeline_stream.py`]({{ source_file("python/examples/timeline_stream.py") }}) uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. [`timeline_sweep.py`]({{ source_file("python/examples/timeline_sweep.py") }}) shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop. [`notebook_workflow.py`]({{ source_file("python/examples/notebook_workflow.py") }}) combines install notes, clock discovery, preview export, sweep generation, and optional live streaming with `--run`.
 
 See also: [`ppscpi.md`](ppscpi.md) and [`python.md`](python.md).
 
@@ -285,5 +285,4 @@ As a rule of thumb:
 * use `ppfg` and `ppdelay` for immediate signal-generation tasks
 * use `ppread` / `ppplay` when capture and replay matter more than manual signal description
 * use `ppfreq` and `ppts` for validation of timing sources and timing observability
-* use the `tools/` helpers when you want to prototype device-specific bus transactions or payload generation
-
+* use the [`tools/`]({{ source_file("tools/") }}) helpers when you want to prototype device-specific bus transactions or payload generation

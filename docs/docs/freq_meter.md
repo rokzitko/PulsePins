@@ -2,14 +2,14 @@
 
 PulsePins includes a multi-channel frequency meter for reporting the observed frequencies of important on-board clocks.
 
-The hardware implementation is in `ip/freq_meter/freq_meter.sv`, and the C++ interface is in `c++/freq_meter.hh`.
+The hardware implementation is in [`ip/freq_meter/freq_meter.sv`]({{ source_file("ip/freq_meter/freq_meter.sv") }}), and the C++ interface is in [`c++/freq_meter.hh`]({{ source_file("c++/freq_meter.hh") }}).
 
-For a maintainer-oriented RTL map, see `ip/freq_meter/README.md`.
+For a maintainer-oriented RTL map, see [`ip/freq_meter/README.md`]({{ source_file("ip/freq_meter/README.md") }}).
 
 For maintainers, the most important split is:
 
-* `ip/freq_meter/freq_meter.sv` owns the CDC-heavy hardware measurement pipeline
-* `c++/freq_meter.hh` owns gate configuration, Hz conversion, and PulsePins-specific channel naming
+* [`ip/freq_meter/freq_meter.sv`]({{ source_file("ip/freq_meter/freq_meter.sv") }}) owns the CDC-heavy hardware measurement pipeline
+* [`c++/freq_meter.hh`]({{ source_file("c++/freq_meter.hh") }}) owns gate configuration, Hz conversion, and PulsePins-specific channel naming
 
 ### Hardware model
 
@@ -72,9 +72,9 @@ The higher-level `pp_freq_meter` wrapper additionally:
 
 That last step is important because other software layers may rely on the measured streamer clock when converting counts to time-based values.
 
-The shared executable bootstrap in `c++/host_runtime.hh` constructs this wrapper during startup and reports the initial frequencies before command execution begins.
+The shared executable bootstrap in [`c++/host_runtime.hh`]({{ source_file("c++/host_runtime.hh") }}) constructs this wrapper during startup and reports the initial frequencies before command execution begins.
 
-The user-facing command implementation lives in `c++/pptool_measurement.cc`.
+The user-facing command implementation lives in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}).
 
 ### Standard channels
 
@@ -87,7 +87,7 @@ The C++ layer names the four channels as:
 
 The wrapper expects all four channels to be present.
 
-The standard channel IDs in `c++/freq_meter.hh` are:
+The standard channel IDs in [`c++/freq_meter.hh`]({{ source_file("c++/freq_meter.hh") }}) are:
 
 * `0` - external clock
 * `1` - internal clock

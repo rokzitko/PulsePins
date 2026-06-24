@@ -8,19 +8,19 @@ Besides verification, the readback path lets PulsePins act as a simple digital l
 
 The acquired sequence uses the same top-level element format as the streamer (`control`, `counter`, `value`), but in practice the control field is always zero and software interprets the readback as plain `BITLOAD` output states.
 
-The bus widths in ``ip/rl_encoder_if/rl_config.vh`` need to match those in ``ip/streamer/config.vh``.
+The bus widths in [`ip/rl_encoder_if/rl_config.vh`]({{ source_file("ip/rl_encoder_if/rl_config.vh") }}) need to match those in [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }}).
 
-For a maintainer-oriented RTL map, see `ip/rl_encoder_if/README.md`.
+For a maintainer-oriented RTL map, see [`ip/rl_encoder_if/README.md`]({{ source_file("ip/rl_encoder_if/README.md") }}).
 
 ## Architecture overview
 
 At a high level the flow is:
 
 1. sampled output values arrive on `qin`
-2. `rl_encoder.sv` groups consecutive equal samples into runs
+2. [`rl_encoder.sv`]({{ source_file("ip/rl_encoder_if/rl_encoder.sv") }}) groups consecutive equal samples into runs
 3. a dual-clock FIFO buffers those runs for software-side reads
-4. `rl_encoder_if.sv` exposes the encoded runs on Avalon-ST and adds control/status registers
-5. `c++/readback.hh` either dumps the captured stream or compares it against a reference `Sequence`
+4. [`rl_encoder_if.sv`]({{ source_file("ip/rl_encoder_if/rl_encoder_if.sv") }}) exposes the encoded runs on Avalon-ST and adds control/status registers
+5. [`c++/readback.hh`]({{ source_file("c++/readback.hh") }}) either dumps the captured stream or compares it against a reference `Sequence`
 
 This makes the readback path the main verification seam between the generated FPGA output and the host-side model.
 
@@ -45,7 +45,7 @@ For readback sampling and FIFO latency notes, see [RTL latency and timing](laten
 
 ## rl_encoder_if interface
 
-`rl_encoder_if.sv` provides:
+[`rl_encoder_if.sv`]({{ source_file("ip/rl_encoder_if/rl_encoder_if.sv") }}) provides:
 
 * Avalon-ST output carrying encoded readback elements
 * Avalon-MM control/status for reset, active-mode status, FIFO-empty state, overflow, observed pulse count, and CRC32
@@ -56,13 +56,13 @@ The pulse counter and CRC are computed in the sampled-input domain, which lets s
 
 PulsePins uses a streaming [cyclic redundancy check](https://en.wikipedia.org/wiki/Cyclic_redundancy_check) as a compact integrity check over the output words observed by the streamer and readback paths. A CRC is an error-detection value, not a cryptographic hash; here it is used to catch accidental data-path divergence alongside full readback comparison, FIFO accounting, overflow checks, and final-output checks.
 
-The RTL helper `ip/misc/crc32.sv` implements reflected CRC-32/Ethernet-style processing over 32-bit words: LSB-first, polynomial `0xEDB88320`, initial state `0xffffffff`, and final XOR `0xffffffff`. For CRC parameter naming, the [CRC RevEng catalogue](https://reveng.sourceforge.io/crc-catalogue/all.htm#crc.cat.crc-32-iso-hdlc) is a useful reference.
+The RTL helper [`ip/misc/crc32.sv`]({{ source_file("ip/misc/crc32.sv") }}) implements reflected CRC-32/Ethernet-style processing over 32-bit words: LSB-first, polynomial `0xEDB88320`, initial state `0xffffffff`, and final XOR `0xffffffff`. For CRC parameter naming, the [CRC RevEng catalogue](https://reveng.sourceforge.io/crc-catalogue/all.htm#crc.cat.crc-32-iso-hdlc) is a useful reference.
 
 During post-run checks, software compares the streamer-side CRC with the readback-side CRC. A mismatch means the transmitted stream and observed stream disagree at the compact integrity-check level and sets `RC_ERROR_CRC_MISMATCH`; it does not by itself identify which word differed.
 
 ## Software interface
 
-The software interface is provided through class `readback` in `c++/readback.hh`.
+The software interface is provided through class `readback` in [`c++/readback.hh`]({{ source_file("c++/readback.hh") }}).
 The key member functions are:
 
   * `reset`: reset the encoder and discard stale FIFO contents
@@ -73,7 +73,7 @@ The key member functions are:
   * `read_all`: dump the captured stream until timeout or external termination
   * `check`: compare the captured stream against a reference `Sequence`
 
-Captured deterministic waveforms can also be turned into VCD files through the `Sequence` export path in `c++/sequence.hh`.
+Captured deterministic waveforms can also be turned into VCD files through the `Sequence` export path in [`c++/sequence.hh`]({{ source_file("c++/sequence.hh") }}).
 
 At the CLI level, `ppread` can save captures as PulsePins text sequence files, as VCD waveforms, or as the exact binary sequence format.
 

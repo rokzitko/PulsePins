@@ -64,4 +64,4 @@ The report typically includes:
 
 * [`counter.md`](counter.md)
 * [`pptest.md`](pptest.md)
-* `ip/counter/README.md`
+* [`ip/counter/README.md`]({{ source_file("ip/counter/README.md") }})

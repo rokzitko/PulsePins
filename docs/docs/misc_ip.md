@@ -1,6 +1,6 @@
 ## Miscellaneous IP blocks
 
-The `ip/misc/` directory contains reusable support blocks that are shared across the design.
+The [`ip/misc/`]({{ source_file("ip/misc/") }}) directory contains reusable support blocks that are shared across the design.
 
 These blocks are generally not end-user features by themselves, but they are important for maintenance, integration, and understanding the overall system.
 
@@ -8,45 +8,45 @@ Several of them are specifically about [clock-domain crossing](clock_domain.md#c
 
 ### Common utility blocks
 
-* `sync.sv` - synchronization helpers for clock-domain crossing
-* `cdc_mailbox.sv` - mailbox-style CDC support
-* `reset.sv` - reset handling helpers
-* `sig_mux.sv` - simple signal-selection helper logic
-* `delay.sv` - delay-line style helper block
+* [`sync.sv`]({{ source_file("ip/misc/sync.sv") }}) - synchronization helpers for clock-domain crossing
+* [`cdc_mailbox.sv`]({{ source_file("ip/misc/cdc_mailbox.sv") }}) - mailbox-style CDC support
+* [`reset.sv`]({{ source_file("ip/misc/reset.sv") }}) - reset handling helpers
+* [`sig_mux.sv`]({{ source_file("ip/misc/sig_mux.sv") }}) - simple signal-selection helper logic
+* [`delay.sv`]({{ source_file("ip/misc/delay.sv") }}) - delay-line style helper block
 
 More detail:
 
-* `sync.sv` provides two-stage and three-stage single-bit synchronizers with Quartus/Altera synchronization attributes so CDC intent remains visible to tools; multi-bit values should use a mailbox, FIFO, or handshake-style protocol instead
-* `cdc_mailbox.sv` transfers a multi-bit word between clock domains using a toggle-based notification path plus a hold/request handshake from the output side
-* `reset.sv` provides `reset_sync2_hold`, a reset combiner/synchronizer with asynchronous assertion, synchronous release, and programmable hold time after release
-* `sig_mux.sv` is a small parameterized bit selector that safely handles non-power-of-two input counts
-* `delay.sv` contains `delay_or4`, a simple two-stage register/OR helper for combining delayed trigger-like signals
+* [`sync.sv`]({{ source_file("ip/misc/sync.sv") }}) provides two-stage and three-stage single-bit synchronizers with Quartus/Altera synchronization attributes so CDC intent remains visible to tools; multi-bit values should use a mailbox, FIFO, or handshake-style protocol instead
+* [`cdc_mailbox.sv`]({{ source_file("ip/misc/cdc_mailbox.sv") }}) transfers a multi-bit word between clock domains using a toggle-based notification path plus a hold/request handshake from the output side
+* [`reset.sv`]({{ source_file("ip/misc/reset.sv") }}) provides `reset_sync2_hold`, a reset combiner/synchronizer with asynchronous assertion, synchronous release, and programmable hold time after release
+* [`sig_mux.sv`]({{ source_file("ip/misc/sig_mux.sv") }}) is a small parameterized bit selector that safely handles non-power-of-two input counts
+* [`delay.sv`]({{ source_file("ip/misc/delay.sv") }}) contains `delay_or4`, a simple two-stage register/OR helper for combining delayed trigger-like signals
 
 ### Observability and diagnostics
 
-* `activity_monitor.sv` - activity indication / observation support
-* `heartbeat.sv` - periodic heartbeat generation
-* `crc32.sv` - reflected CRC-32 calculation logic used for integrity checks and diagnostics
+* [`activity_monitor.sv`]({{ source_file("ip/misc/activity_monitor.sv") }}) - activity indication / observation support
+* [`heartbeat.sv`]({{ source_file("ip/misc/heartbeat.sv") }}) - periodic heartbeat generation
+* [`crc32.sv`]({{ source_file("ip/misc/crc32.sv") }}) - reflected CRC-32 calculation logic used for integrity checks and diagnostics
 
 More detail:
 
-* `activity_monitor.sv` blinks an output when the observed signal has changed recently; the same file also contains `presence_detector_async_posedge`, which latches asynchronous positive edges and holds an `active` indication for a programmable time window
-* `heartbeat.sv` generates a repeated double-pulse heartbeat pattern from a single input clock
-* `crc32.sv` implements a streaming reflected CRC-32 over 32-bit words with one word consumed per clock and a valid pulse aligned to the registered result; see [CRC32 integrity checks](readback.md#crc32-integrity-checks) for how the value is used by software
+* [`activity_monitor.sv`]({{ source_file("ip/misc/activity_monitor.sv") }}) blinks an output when the observed signal has changed recently; the same file also contains `presence_detector_async_posedge`, which latches asynchronous positive edges and holds an `active` indication for a programmable time window
+* [`heartbeat.sv`]({{ source_file("ip/misc/heartbeat.sv") }}) generates a repeated double-pulse heartbeat pattern from a single input clock
+* [`crc32.sv`]({{ source_file("ip/misc/crc32.sv") }}) implements a streaming reflected CRC-32 over 32-bit words with one word consumed per clock and a valid pulse aligned to the registered result; see [CRC32 integrity checks](readback.md#crc32-integrity-checks) for how the value is used by software
 
 ### Signal-generation helpers
 
-* `pulse_gen_timebase.sv` - generated pulse timing helper
-* `rand_signal_gen.sv` - random-signal generation helper
-* `tik.sv` - small timing utility block
+* [`pulse_gen_timebase.sv`]({{ source_file("ip/misc/pulse_gen_timebase.sv") }}) - generated pulse timing helper
+* [`rand_signal_gen.sv`]({{ source_file("ip/misc/rand_signal_gen.sv") }}) - random-signal generation helper
+* [`tik.sv`]({{ source_file("ip/misc/tik.sv") }}) - small timing utility block
 
 More detail:
 
-* `pulse_gen_timebase.sv` derives one-clock-wide pulses at `1 ms`, `10 ms`, `100 ms`, and `1 s` intervals from a single base clock
-* `rand_signal_gen.sv` generates pseudo-random test activity including baseline flips, short glitches, and multi-segment bursts, with output-enable based pausing
-* `tik.sv` is a compact periodic pulse generator that asserts once every configured number of cycles
-* `level_to_pulse.v` contains several level-to-pulse converters, including variants with extra delay and built-in synchronizer stages
-* `endianness.sv` contains a 96-bit byte-order swapper used where fixed-layout word packing needs explicit reordering
+* [`pulse_gen_timebase.sv`]({{ source_file("ip/misc/pulse_gen_timebase.sv") }}) derives one-clock-wide pulses at `1 ms`, `10 ms`, `100 ms`, and `1 s` intervals from a single base clock
+* [`rand_signal_gen.sv`]({{ source_file("ip/misc/rand_signal_gen.sv") }}) generates pseudo-random test activity including baseline flips, short glitches, and multi-segment bursts, with output-enable based pausing
+* [`tik.sv`]({{ source_file("ip/misc/tik.sv") }}) is a compact periodic pulse generator that asserts once every configured number of cycles
+* [`level_to_pulse.v`]({{ source_file("ip/misc/level_to_pulse.v") }}) contains several level-to-pulse converters, including variants with extra delay and built-in synchronizer stages
+* [`endianness.sv`]({{ source_file("ip/misc/endianness.sv") }}) contains a 96-bit byte-order swapper used where fixed-layout word packing needs explicit reordering
 
 ### Notes for developers
 
@@ -58,7 +58,7 @@ When modifying these blocks, pay particular attention to:
 
 For the CDC-oriented blocks in particular, preserving the synchronizer structure is usually more important than micro-optimizing the RTL.
 
-The `ip/misc/` directory also contains dedicated test benches for several of these blocks.
+The [`ip/misc/`]({{ source_file("ip/misc/") }}) directory also contains dedicated test benches for several of these blocks.
 
 ### Related pages
 

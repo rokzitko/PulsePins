@@ -4,17 +4,17 @@ PulsePins can combine the outputs of multiple streamer instances before they rea
 
 The main hardware blocks are:
 
-* `ip/combiner/combiner.sv` - output-data combiner
-* `ip/combiner_trig/combiner_trig.sv` - trigger-signal combiner
-* `ip/combiner_comb/` - combinational variant of the output combiner
+* [`ip/combiner/combiner.sv`]({{ source_file("ip/combiner/combiner.sv") }}) - output-data combiner
+* [`ip/combiner_trig/combiner_trig.sv`]({{ source_file("ip/combiner_trig/combiner_trig.sv") }}) - trigger-signal combiner
+* [`ip/combiner_comb/`]({{ source_file("ip/combiner_comb/") }}) - combinational variant of the output combiner
 
 The main C++ interfaces are:
 
-* `c++/combiner.hh`
-* `c++/qout.hh`
-* `c++/trigger.hh`
+* [`c++/combiner.hh`]({{ source_file("c++/combiner.hh") }})
+* [`c++/qout.hh`]({{ source_file("c++/qout.hh") }})
+* [`c++/trigger.hh`]({{ source_file("c++/trigger.hh") }})
 
-For a maintainer-oriented RTL map, see `ip/combiner/README.md`.
+For a maintainer-oriented RTL map, see [`ip/combiner/README.md`]({{ source_file("ip/combiner/README.md") }}).
 
 ### Output combiner
 
@@ -45,7 +45,7 @@ The output combiner modes are:
 | `SUM1234` | arithmetic sum of all four inputs |
 | `DIFF12` | arithmetic difference of inputs 1 and 2 |
 
-Both inputs and outputs are registered in `ip/combiner/combiner.sv`, so the datapath is intentionally not purely combinational.
+Both inputs and outputs are registered in [`ip/combiner/combiner.sv`]({{ source_file("ip/combiner/combiner.sv") }}), so the datapath is intentionally not purely combinational.
 
 The registered design has two practical consequences:
 
@@ -84,7 +84,7 @@ The most important config-bit groups are:
 | `B_FORCE*` | choose forced value instead of normal datapath input/output |
 | `B_RB*` | choose live port readback instead of stored forced value |
 
-The C++ `combiner` class in `c++/combiner.hh` exposes the main operations:
+The C++ `combiner` class in [`c++/combiner.hh`]({{ source_file("c++/combiner.hh") }}) exposes the main operations:
 
 * `mode()` - choose the combination mode
 * `invert()` - configure inversion masks
@@ -121,7 +121,7 @@ That ordering is important when debugging: if a value looks wrong at the output,
 
 ### High-level output control
 
-`c++/qout.hh` wraps the output combiner for use from command-line tools.
+[`c++/qout.hh`]({{ source_file("c++/qout.hh") }}) wraps the output combiner for use from command-line tools.
 
 It maps command-line switches to combiner configuration, for example:
 
@@ -146,7 +146,7 @@ Its inputs are used as logical trigger groups rather than full-width waveform bu
 * external trigger inputs
 * miscellaneous trigger sources
 
-`c++/trigger.hh` maps command-line switches such as:
+[`c++/trigger.hh`]({{ source_file("c++/trigger.hh") }}) maps command-line switches such as:
 
 * `-trig_int`, `-trig_ext`, `-trig_misc`
 * `-trig_any`, `-trig_all`

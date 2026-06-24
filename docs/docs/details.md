@@ -8,7 +8,7 @@ For the maintainer-oriented architectural view of the output engine, start with 
 
 ### Configuration file
 
-`ip/streamer/config.vh` - this file defines the bit widths of various registers (data, counter, control)
+[`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }}) - this file defines the bit widths of various registers (data, counter, control)
 
 `WIDTH_COUNTER`: number of bits of the integer variable that specifies the length of runs in run-length encoding. Defaults to 32. A version with 64-bit counters is available
 for high-speed systems and for allowing extremely long delays.
@@ -27,10 +27,10 @@ complex serial trigger sequences.
 `P_FIFO_IN1`, `P_FIFO_IN2`: exponents p that fix the lengths 2^p of the two input FIFO buffers for
 (counter,data,control) triplets received from the software. These buffers should be large enough so that they
 never underflow during the streaming process. Underflows are possible if there are long sequences of elements with
-very short lengths. Used in `input_fifo.sv`.
+very short lengths. Used in [`input_fifo.sv`]({{ source_file("ip/streamer/input_fifo.sv") }}).
 
 `P_FIFO_OUT`: exponent p that fixes the length 2^p of the output FIFO buffer for the output data. This size is not
-critical. Used in `output_fifo.sv`.
+critical. Used in [`output_fifo.sv`]({{ source_file("ip/streamer/output_fifo.sv") }}).
 
 `MEMORY_POSITIONS`: number of elements that can be stored in the preprocessor for replays
 
@@ -102,7 +102,7 @@ Signals in the control (write) register
 
 ### Simple trigger
 
-Implemented in ``ip/streamer/and_trigger.sv``. The masked bits are compared against the trigger pattern. The high bits
+Implemented in [`ip/streamer/and_trigger.sv`]({{ source_file("ip/streamer/and_trigger.sv") }}). The masked bits are compared against the trigger pattern. The high bits
 in the mask indicate the active positions in the input port. The trigger is synchronous with the output clock, i.e.,
 the trigger inputs are compared against the pattern when the clock is asserted.
 

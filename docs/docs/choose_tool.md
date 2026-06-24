@@ -188,7 +188,7 @@ Suggested order:
 
 1. validate base outputs with [`pptest`](pptest.md)
 2. validate routing with [`ppqout`](ppqout.md) if needed
-3. prototype the transaction with helper tools under `tools/`
+3. prototype the transaction with helper tools under [`tools/`]({{ source_file("tools/") }})
 4. replay the generated sequence with [`ppplay`](ppplay.md) or `pptest -f`
 
 ### When to move beyond the CLI

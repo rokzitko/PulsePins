@@ -9,7 +9,7 @@ The IVI Foundation maintains the SCPI standard and hosts the [SCPI-99 specificat
 
 `ppscpi` is also convenient for controlling PulsePins from remote computers through Python/Jupyter notebooks (or any programming language/environment that can talk to socket interfaces).
 
-The implementation is in `c++/ppscpi.cc` and the SCPI session/server helpers are in `c++/scpi_server.hh`.
+The implementation is in [`c++/ppscpi.cc`]({{ source_file("c++/ppscpi.cc") }}) and the SCPI session/server helpers are in [`c++/scpi_server.hh`]({{ source_file("c++/scpi_server.hh") }}).
 
 ### Transport and startup
 
@@ -73,7 +73,7 @@ PulsePins-specific commands:
 
 Jupyter should normally run on the host computer, not on the DE10-Nano. The board only needs to run `ppscpi`; the notebook talks to it over Ethernet.
 
-The lightweight host-side Python client lives in `python/pulsepins/` and uses only the Python standard library. From a checkout, make that directory importable first:
+The lightweight host-side Python client lives in [`python/pulsepins/`]({{ source_file("python/pulsepins/") }}) and uses only the Python standard library. From a checkout, make that directory importable first:
 
 ```bash
 export PYTHONPATH=/path/to/PulsePins/python

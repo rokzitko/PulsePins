@@ -82,7 +82,7 @@ The recommended update flow is:
 FPGA-writeConfig -f pulsepins.rbf
 ```
 
-5. run `run_all_tests`
+5. run [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
 
 Treat the FPGA reload step as required after `make copy_all`.
 
@@ -111,9 +111,9 @@ See also:
 
 Documented/tested optional examples and checks include:
 
-* LED PMODs driven with `pptest` and various scripts in `tests/`
-* onboard `MCP9808` via `pptemp` or `I2C/mcp9808.py`
-* external `TMP117` via `I2C/tmp117.py` on the Qwiic connector
+* LED PMODs driven with `pptest` and various scripts in [`tests/`]({{ source_file("tests/") }})
+* onboard `MCP9808` via `pptemp` or [`I2C/mcp9808.py`]({{ source_file("I2C/mcp9808.py") }})
+* external `TMP117` via [`I2C/tmp117.py`]({{ source_file("I2C/tmp117.py") }}) on the Qwiic connector
 * [PMOD DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) for fixed-voltage DAC output
 * external clock checks with `ppfreq`
 * PPS checks with `ppts`

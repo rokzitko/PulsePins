@@ -2,9 +2,9 @@
 
 The `st_mux` block is a small [Avalon-ST](https://www.intel.com/content/www/us/en/docs/programmable/683091/22-3/avalon-streaming-interfaces.html) routing helper used to select between two streaming sources.
 
-The hardware implementation is `ip/st_mux/st_mux_if.sv`, and the C++ control wrapper is `c++/st_mux.hh`.
+The hardware implementation is [`ip/st_mux/st_mux_if.sv`]({{ source_file("ip/st_mux/st_mux_if.sv") }}), and the C++ control wrapper is [`c++/st_mux.hh`]({{ source_file("c++/st_mux.hh") }}).
 
-For a maintainer-oriented RTL map, see `ip/st_mux/README.md`.
+For a maintainer-oriented RTL map, see [`ip/st_mux/README.md`]({{ source_file("ip/st_mux/README.md") }}).
 
 ### Hardware behavior
 

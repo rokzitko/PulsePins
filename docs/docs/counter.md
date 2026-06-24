@@ -2,29 +2,29 @@
 
 The counter subsystem provides on-chip measurement blocks for statistics, sequence analysis, and timing analysis of streamed or externally supplied digital signals.
 
-The main integration block is `ip/counter/counter_if.sv`, with the software interface in `c++/counter.hh`.
+The main integration block is [`ip/counter/counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}), with the software interface in [`c++/counter.hh`]({{ source_file("c++/counter.hh") }}).
 
-For a maintainer-oriented map of the RTL directory, see `ip/counter/README.md`.
+For a maintainer-oriented map of the RTL directory, see [`ip/counter/README.md`]({{ source_file("ip/counter/README.md") }}).
 
 At a high level, `counter_if` acts as a measurement backplane: one Avalon-MM slave selects an instrument, chooses channel indices, optionally latches or resets all counters, and returns the selected result word.
 
 ### Main RTL blocks
 
-`ip/counter/counter_if.sv` multiplexes selected input channels into several instruments and exposes them through a single Avalon-MM control/readout interface.
+[`ip/counter/counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) multiplexes selected input channels into several instruments and exposes them through a single Avalon-MM control/readout interface.
 
 The main instruments are:
 
-* `basic_counter.sv` - totals, low/high occupancy, and edge counts
-* `runs_counter.sv` - run-length statistics for low and high runs
-* `packet_stats.sv` - valid/idle accounting and packet-length statistics
-* `time_counter.sv` - elapsed-time capture between asynchronous start/stop events
-* `seq_counter.sv` - short-sequence histogramming
-* `autocorrelation.sv` - short-depth autocorrelation counters
-* `crosscorrelation.sv` - correlation between two selected channels
+* [`basic_counter.sv`]({{ source_file("ip/counter/basic_counter.sv") }}) - totals, low/high occupancy, and edge counts
+* [`runs_counter.sv`]({{ source_file("ip/counter/runs_counter.sv") }}) - run-length statistics for low and high runs
+* [`packet_stats.sv`]({{ source_file("ip/counter/packet_stats.sv") }}) - valid/idle accounting and packet-length statistics
+* [`time_counter.sv`]({{ source_file("ip/counter/time_counter.sv") }}) - elapsed-time capture between asynchronous start/stop events
+* [`seq_counter.sv`]({{ source_file("ip/counter/seq_counter.sv") }}) - short-sequence histogramming
+* [`autocorrelation.sv`]({{ source_file("ip/counter/autocorrelation.sv") }}) - short-depth autocorrelation counters
+* [`crosscorrelation.sv`]({{ source_file("ip/counter/crosscorrelation.sv") }}) - correlation between two selected channels
 
 The wrapper is intentionally backplane-like: the instruments run in parallel, but software sees them through one compact selector-based Avalon-MM interface instead of through separate bus wrappers.
 
-The instrument selector in `counter_if.sv` maps these numeric IDs:
+The instrument selector in [`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) maps these numeric IDs:
 
 | ID | Instrument |
 | -- | ---------- |
@@ -44,7 +44,7 @@ The subsystem explicitly bridges between:
 * a system/control clock domain (`clk`)
 * a data clock domain (`d_clk`)
 
-`counter_if.sv` synchronizes global reset and latch operations into the data domain before they are consumed by the individual counters.
+[`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) synchronizes global reset and latch operations into the data domain before they are consumed by the individual counters.
 
 This matters because the counters are designed to inspect signals that may be produced by the streamer clock rather than the Avalon control clock.
 
@@ -59,7 +59,7 @@ For counter CDC and readout latency notes, see [RTL latency and timing](latency.
 
 ### Avalon-MM programming model
 
-The write-side control registers in `counter_if.sv` are:
+The write-side control registers in [`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) are:
 
 | Address | Meaning |
 | ------- | ------- |
@@ -84,7 +84,7 @@ The `high_low` control bit is reused by several instruments to switch between st
 
 ### C++ interface
 
-The `counter` class in `c++/counter.hh` groups the hardware instruments into convenient sub-objects:
+The `counter` class in [`c++/counter.hh`]({{ source_file("c++/counter.hh") }}) groups the hardware instruments into convenient sub-objects:
 
 * `bc` - `basic_counter`
 * `rc` - `runs_counter`
@@ -142,7 +142,7 @@ The packet-statistics block is useful for streams that carry an explicit valid/i
 
 `seq_counter` builds a histogram of short bit patterns. In the integrated design it is configured for 4-bit sequences, which is why the C++ wrapper prints 16 bins.
 
-The implementation supports both overlapping and non-overlapping windows, although the integrated instance in `counter_if.sv` uses non-overlapping windows.
+The implementation supports both overlapping and non-overlapping windows, although the integrated instance in [`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) uses non-overlapping windows.
 
 `autocorrelation` and `crosscorrelation` expose compact lag-based correlation counts. Address 0 reports the total number of valid samples, and higher addresses report per-lag match counts. The C++ wrapper instantiates them with 16 result bins.
 
@@ -183,7 +183,7 @@ It can:
 * latch and report the resulting statistics
 * verify a known-good reference case with `-check`
 
-The built-in `-test1` path uses a short deterministic sequence from `c++/counter.hh`, while `-test2` can drive a longer pseudo-random sequence.
+The built-in `-test1` path uses a short deterministic sequence from [`c++/counter.hh`]({{ source_file("c++/counter.hh") }}), while `-test2` can drive a longer pseudo-random sequence.
 
 `-check` validates the deterministic reference case by comparing several instrument outputs against expected values.
 

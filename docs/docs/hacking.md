@@ -19,10 +19,10 @@ Worked examples are especially encouraged.
 
 Start here:
 
-* `README.md`
-* `HACKING.md`
-* `docs/docs/build.md`
-* `docs/docs/testing.md`
+* [`README.md`]({{ source_file("README.md") }})
+* [`HACKING.md`]({{ source_file("HACKING.md") }})
+* [`build.md`](build.md) ([source]({{ source_file("docs/docs/build.md") }}))
+* [`testing.md`](testing.md) ([source]({{ source_file("docs/docs/testing.md") }}))
 
 #### C++ tools and API
 
@@ -37,9 +37,9 @@ Typical work:
 
 Start here:
 
-* `c++/`
-* `docs/docs/cpp.md`
-* `docs/docs/pptool.md`
+* [`c++/`]({{ source_file("c++/") }})
+* [`cpp.md`](cpp.md) ([source]({{ source_file("docs/docs/cpp.md") }}))
+* [`pptool.md`](pptool.md) ([source]({{ source_file("docs/docs/pptool.md") }}))
 
 #### Python bindings
 
@@ -53,8 +53,8 @@ Typical work:
 
 Start here:
 
-* `python/`
-* `docs/docs/python.md`
+* [`python/`]({{ source_file("python/") }})
+* [`python.md`](python.md) ([source]({{ source_file("docs/docs/python.md") }}))
 
 #### RTL and simulation
 
@@ -71,9 +71,9 @@ Simulation-only RTL work is useful. Test benches help with both verification and
 
 Start here:
 
-* `ip/`
-* `docs/docs/development.md`
-* `docs/docs/details.md`
+* [`ip/`]({{ source_file("ip/") }})
+* [`development.md`](development.md) ([source]({{ source_file("docs/docs/development.md") }}))
+* [`details.md`](details.md) ([source]({{ source_file("docs/docs/details.md") }}))
 
 ### Without hardware
 

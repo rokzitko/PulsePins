@@ -16,8 +16,8 @@ Command-line switches:
 
 Implementation notes:
 
-* timestamp capture and pairing live in `c++/pptool_measurement.cc`
-* timestamp routing comes from `c++/timestamp.hh`
+* timestamp capture and pairing live in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }})
+* timestamp routing comes from [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }})
 * DAC control is handled through the I2C-backed helper used in the same command implementation
 
 See also [PP_PMOD hardware reference](pp_pmod_reference.md).

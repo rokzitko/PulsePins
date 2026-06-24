@@ -39,4 +39,4 @@ Detailed board documentation:
 * [PP_PMOD hardware reference](pp_pmod_reference.md)
 
 KiCad schematics and PCB layouts, as well as the Gerber files for producing the boards, are [available
-on the GitHub repository](https://github.com/rokzitko/PulsePins/tree/main/pcb/ppshield_pmod).
+on the GitHub repository]({{ source_file("pcb/ppshield_pmod/") }}).

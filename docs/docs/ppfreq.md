@@ -6,7 +6,7 @@ For the underlying measurement block and API, see `freq_meter.md`.
 
 The tool creates the shared `pp_freq_meter` wrapper, optionally reprograms the gate settings, waits one full measurement interval, and then prints formatted readings in a loop.
 
-It uses the interface in `c++/freq_meter.hh`, and the command implementation lives in `c++/pptool_measurement.cc`.
+It uses the interface in [`c++/freq_meter.hh`]({{ source_file("c++/freq_meter.hh") }}), and the command implementation lives in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}).
 
 Common options:
 

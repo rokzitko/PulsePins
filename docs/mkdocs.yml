@@ -1,6 +1,9 @@
 site_name: PulsePins Pulse Sequencer
 repo_url: https://github.com/rokzitko/pulsepins
 edit_uri: edit/main/docs/docs/
+extra:
+  source_repo: https://github.com/rokzitko/PulsePins
+  source_ref: "2026.06"
 nav:
   - Sequencer: index.md
   - Hardware:
@@ -58,6 +61,9 @@ nav:
 theme:
    name: readthedocs
    favicon: img/favicon.ico
+plugins:
+  - search
+  - macros
 markdown_extensions:
   - attr_list
 extra_css:

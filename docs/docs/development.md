@@ -20,19 +20,19 @@ The following symbols are used in project TODO lists:
 
 ### Source code layout
 
-    ip/              # Verilog descriptions of circuitry
-      combiner/      # IP for the advanced multiplexer
-      combiner_comb/ # Combinational version of the advanced multiplexer
-      combiner_trig/ # Trigger-signal multiplexer
-      counter/       # Event counters and test/measurement logic
-      freq_meter/    # Frequency-meter core
-      misc/          # Small reusable support blocks
-      st_mux/        # Avalon-ST multiplexer (implemented in st_mux_if.sv)
-      streamer/      # IP for the run-length decoder engine
-      rl_encoder_if/ # IP for the run-length encoder engine
-      ts_core/       # IP for timestamp capture / time tagging
-    c++/             # C++ source code for API, pptool
-    python/          # Python binding
+* [`ip/`]({{ source_file("ip/") }}) - Verilog descriptions of circuitry
+* [`ip/combiner/`]({{ source_file("ip/combiner/") }}) - IP for the advanced multiplexer
+* [`ip/combiner_comb/`]({{ source_file("ip/combiner_comb/") }}) - combinational version of the advanced multiplexer
+* [`ip/combiner_trig/`]({{ source_file("ip/combiner_trig/") }}) - trigger-signal multiplexer
+* [`ip/counter/`]({{ source_file("ip/counter/") }}) - event counters and test/measurement logic
+* [`ip/freq_meter/`]({{ source_file("ip/freq_meter/") }}) - frequency-meter core
+* [`ip/misc/`]({{ source_file("ip/misc/") }}) - small reusable support blocks
+* [`ip/st_mux/`]({{ source_file("ip/st_mux/") }}) - Avalon-ST multiplexer, implemented in [`st_mux_if.sv`]({{ source_file("ip/st_mux/st_mux_if.sv") }})
+* [`ip/streamer/`]({{ source_file("ip/streamer/") }}) - IP for the run-length decoder engine
+* [`ip/rl_encoder_if/`]({{ source_file("ip/rl_encoder_if/") }}) - IP for the run-length encoder engine
+* [`ip/ts_core/`]({{ source_file("ip/ts_core/") }}) - IP for timestamp capture / time tagging
+* [`c++/`]({{ source_file("c++/") }}) - C++ source code for API, pptool
+* [`python/`]({{ source_file("python/") }}) - Python binding
 
 
 ### Documentation

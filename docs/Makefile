@@ -2,7 +2,7 @@ ALL: site
 
 SITE ?= auger:/var/www/html/pulsepins/
 
-site: mkdocs.yml $(shell find docs)
+site: mkdocs.yml main.py $(shell find docs)
 	mkdocs build
 
 upload: site

@@ -7,7 +7,7 @@ PulsePins has two Python-facing surfaces:
 
 ## Host-side SCPI client
 
-The host-side client lives in `python/pulsepins/` and has no dependency beyond the Python standard library. It is the recommended Python entry point for notebooks running on a laptop or workstation while the DE10-Nano runs `ppscpi`.
+The host-side client lives in [`python/pulsepins/`]({{ source_file("python/pulsepins/") }}) and has no dependency beyond the Python standard library. It is the recommended Python entry point for notebooks running on a laptop or workstation while the DE10-Nano runs `ppscpi`.
 
 In this project, SCPI is used as a lightweight ASCII command protocol over TCP for PulsePins-specific commands rather than as a complete SCPI instrument-class implementation.
 
@@ -87,7 +87,7 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 
 PulsePins uses [nanobind](https://nanobind.readthedocs.io/en/latest/) to provide Python bindings for the underlying C++ interface.
 
-The Python binding tree lives in `python/` and builds two modules:
+The Python binding tree lives in [`python/`]({{ source_file("python/") }}) and builds two modules:
 
 * `pp`
 * `pp_impl`
@@ -139,7 +139,7 @@ The recommended host-side command is:
 make -C python USE_PREGENERATED=1 build test-host
 ```
 
-`USE_PREGENERATED=1` uses the checked-in `c++/artifacts/hps_0.h` header instead of the top-level generated `hps_0.h`, which is ignored and normally produced by the Quartus/Qsys hardware build. `test-host` intentionally skips tests marked `hardware`, which require `/dev/mem`, board-backed MMIO, or a live PulsePins runtime.
+`USE_PREGENERATED=1` uses the checked-in [`c++/artifacts/hps_0.h`]({{ source_file("c++/artifacts/hps_0.h") }}) header instead of the top-level generated [`hps_0.h`]({{ source_file("hps_0.h") }}), which is ignored and normally produced by the Quartus/Qsys hardware build. `test-host` intentionally skips tests marked `hardware`, which require `/dev/mem`, board-backed MMIO, or a live PulsePins runtime.
 
 ## Sequence I/O examples
 
@@ -205,17 +205,17 @@ assert decoded.sequence_record() == "xr 7 0x55"
 
 Bindings that wrap MMIO-backed hardware objects own long-lived board resources. The module keeps the immediate `mm`/`FPGA` constructor arguments alive for the wrapper object.
 
-The small helper scripts in `python/pptool.py` and `tests/test2.py` use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` disabling the readback timeout.
+The small helper scripts in [`python/pptool.py`]({{ source_file("python/pptool.py") }}) and [`tests/test2.py`]({{ source_file("tests/test2.py") }}) use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` disabling the readback timeout.
 
 ## Testing expectations
 
-`make -C python test` runs the Python test files listed in `python/Makefile`: `test.py`, `test_cli.py`, `test_scpi_client.py`, and `test_timeline.py`.
+`make -C python test` runs the Python test files listed in [`python/Makefile`]({{ source_file("python/Makefile") }}): [`test.py`]({{ source_file("python/test.py") }}), [`test_cli.py`]({{ source_file("python/test_cli.py") }}), [`test_scpi_client.py`]({{ source_file("python/test_scpi_client.py") }}), and [`test_timeline.py`]({{ source_file("python/test_timeline.py") }}).
 
 Some Python tests exercise board-backed MMIO/FPGA behavior, so they should not be treated as a
 strictly hardware-free test battery.
 
 See also:
 
-* `python/README`
-* `python/README.devel`
+* [`python/README`]({{ source_file("python/README") }})
+* [`python/README.devel`]({{ source_file("python/README.devel") }})
 * [`build.md`](build.md)

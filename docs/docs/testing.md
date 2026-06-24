@@ -3,11 +3,11 @@
 PulsePins was designed from the start to support a high degree of internal self-testing. For this
 reason, the FPGA fabric includes a run-length encoder for reading back the generated stream and
 comparing it against expected results. These tests are performed with the [pptest](pptest.md)
-tool. A collection of shell scripts can be found in the `tests/` subdirectory. To start one sweep
-of the test battery, run ``run_all_tests``. If any error is encountered, testing stops immediately.
+tool. A collection of shell scripts can be found in the [`tests/`]({{ source_file("tests/") }}) subdirectory. To start one sweep
+of the test battery, run [`run_all_tests`]({{ source_file("tests/run_all_tests") }}). If any error is encountered, testing stops immediately.
 Successful completion is reported by printing the message ``SUCCESS``.
 
-One can run the tests continuously using ``run_all_tests_forever`` to perform intensive
+One can run the tests continuously using [`run_all_tests_forever`]({{ source_file("tests/run_all_tests_forever") }}) to perform intensive
 stress testing. The main report is written in the current directory as `report`, and per-test
 logs are collected under `/var/volatile` for inspection. Pass `-no-report-files` to avoid
 writing the accumulating `/var/volatile/report.run_N` files during long burn-in runs. Reports
@@ -17,7 +17,7 @@ of the run.
 ## Wiring up for testing
 
 Recommended color coding for connecting the DE10-Nano to a Saleae logic analyzer is provided in
-the comments in the ``pulsepins.sv`` design file.
+the comments in the [`pulsepins.sv`]({{ source_file("pulsepins.sv") }}) design file.
 
 The image below shows a testing jig. It uses custom cables to connect the logic
 analyzer to both GPIO ports. Eight bits of qout on the Arduino port are connected to LEDs.
@@ -52,7 +52,7 @@ For a quick hand-run live-board regression check from the repository root, use:
 make board-smoke
 ```
 
-This is intentionally smaller and faster than `run_all_tests`: it redeploys the local board artifacts, reloads the FPGA, runs a few finite `pptool` checks, and exercises both `ppscpi` and `ppwebgui` over the network. Override the target board with `TARGETHOST=...` if needed.
+This is intentionally smaller and faster than [`run_all_tests`]({{ source_file("tests/run_all_tests") }}): it redeploys the local board artifacts, reloads the FPGA, runs a few finite `pptool` checks, and exercises both `ppscpi` and `ppwebgui` over the network. Override the target board with `TARGETHOST=...` if needed.
 
 For the host-side precursor check before touching the board, run:
 
@@ -64,7 +64,7 @@ Use the three levels like this:
 
 * `make dev-check` - host-side sanity pass
 * `make board-smoke` - fast manual live-board regression test
-* `run_all_tests` - intensive on-board validation sweep
+* [`run_all_tests`]({{ source_file("tests/run_all_tests") }}) - intensive on-board validation sweep
 
 ### Random number generator
 

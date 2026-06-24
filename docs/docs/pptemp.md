@@ -2,7 +2,7 @@
 
 `pptemp` reads temperature samples from an MCP9808 I2C temperature sensor and prints them periodically.
 
-The implementation is in `c++/pptool_measurement.cc` and uses the MCP9808 helper in `c++/MCP9808.hh`.
+The implementation is in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}) and uses the MCP9808 helper in [`c++/MCP9808.hh`]({{ source_file("c++/MCP9808.hh") }}).
 
 ### Syntax
 

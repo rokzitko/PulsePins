@@ -1,6 +1,6 @@
 https://www.mkdocs.org/getting-started/
 
-pip install mkdocs
+pip install mkdocs mkdocs-macros-plugin
 mkdocs new NAME
 cd NAME
 

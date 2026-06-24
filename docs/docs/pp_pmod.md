@@ -6,13 +6,13 @@ It is an optional hardware profile rather than a required baseline. The board is
 
 ## Revision and source
 
-The top-level KiCad project is `pcb/ppshield_pmod/shield.kicad_sch` with title `PP_PMOD: GPIO shield for DE10-Nano`, revision `1`, and date `2025-09-20`.
+The top-level KiCad project is [`pcb/ppshield_pmod/shield.kicad_sch`]({{ source_file("pcb/ppshield_pmod/shield.kicad_sch") }}) with title `PP_PMOD: GPIO shield for DE10-Nano`, revision `1`, and date `2025-09-20`.
 
 Project files:
 
-* KiCad sources: [`pcb/ppshield_pmod/`](https://github.com/rokzitko/PulsePins/tree/main/pcb/ppshield_pmod)
-* Top-level schematic: [`shield.kicad_sch`](https://github.com/rokzitko/PulsePins/blob/main/pcb/ppshield_pmod/shield.kicad_sch)
-* PCB layout: [`shield.kicad_pcb`](https://github.com/rokzitko/PulsePins/blob/main/pcb/ppshield_pmod/shield.kicad_pcb)
+* KiCad sources: [`pcb/ppshield_pmod/`]({{ source_file("pcb/ppshield_pmod/") }})
+* Top-level schematic: [`shield.kicad_sch`]({{ source_file("pcb/ppshield_pmod/shield.kicad_sch") }})
+* PCB layout: [`shield.kicad_pcb`]({{ source_file("pcb/ppshield_pmod/shield.kicad_pcb") }})
 
 ![PP_PMOD board](img/IMG_0064.jpeg){: style="height:400px"}
 
@@ -90,9 +90,9 @@ Quick reference for the board's main external interfaces:
 Examples worth documenting or reproducing on this board include:
 
 * LED PMOD output checks with [`pptest`](pptest.md)
-* onboard `MCP9808` reads with [`pptemp`](pptemp.md) or `I2C/mcp9808.py`
-* external Qwiic `TMP117` reads with `I2C/tmp117.py`
-* DAC output checks with `I2C/ad5693_set_vout.py`
+* onboard `MCP9808` reads with [`pptemp`](pptemp.md) or [`I2C/mcp9808.py`]({{ source_file("I2C/mcp9808.py") }})
+* external Qwiic `TMP117` reads with [`I2C/tmp117.py`]({{ source_file("I2C/tmp117.py") }})
+* DAC output checks with [`I2C/ad5693_set_vout.py`]({{ source_file("I2C/ad5693_set_vout.py") }})
 * PPS validation with [`ppts`](ppts.md)
 * external clock validation with [`ppfreq`](ppfreq.md)
 * trigger experiments with [`pptrig`](pptrig.md)

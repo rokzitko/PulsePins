@@ -4,7 +4,7 @@ The streamer is the core PulsePins output engine.
 
 It accepts a compact sequence of encoded elements on the control side, expands them into timed output updates, waits for the configured trigger program, and emits the final `qout` stream in the active `streamer_clk` domain.
 
-The main integration wrapper is `ip/streamer/st_interface.sv`, and the main internal glue module is `ip/streamer/streamer.sv`.
+The main integration wrapper is [`ip/streamer/st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }}), and the main internal glue module is [`ip/streamer/streamer.sv`]({{ source_file("ip/streamer/streamer.sv") }}).
 
 ## Why this block exists
 
@@ -23,7 +23,7 @@ The streamer uses Intel Avalon interfaces: [Avalon-ST](https://www.intel.com/con
 
 ### Avalon-ST sequence ingress
 
-The data ingress port on `st_interface.sv` receives encoded `{control, counter, data}` elements.
+The data ingress port on [`st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }}) receives encoded `{control, counter, data}` elements.
 
 Conceptually each regular element says:
 
@@ -35,7 +35,7 @@ Trigger elements reuse the same ingress path but are diverted into the trigger-p
 
 ### Avalon-MM control/status interface
 
-`st_interface.sv` provides a small register map for:
+[`st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }}) provides a small register map for:
 
 * trigger control
 * output override and initial output value
@@ -44,7 +44,7 @@ Trigger elements reuse the same ingress path but are diverted into the trigger-p
 * CRC readback
 * live output visibility
 
-The register constants live in `ip/streamer/config.vh`.
+The register constants live in [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }}).
 
 ### Runtime signals
 
@@ -68,36 +68,36 @@ The streamer is intentionally split into control-side and output-side stages.
 
 ### 1. Control-side buffering
 
-`input_fifo.sv` buffers incoming encoded elements in the `clk` domain.
+[`input_fifo.sv`]({{ source_file("ip/streamer/input_fifo.sv") }}) buffers incoming encoded elements in the `clk` domain.
 
 This decouples host-side burstiness from the decode path and allows the software interface to rely on normal backpressure through `asi_ready` rather than cycle-perfect pacing.
 
 ### 2. Element classification
 
-`streamer.sv` examines the incoming control word:
+[`streamer.sv`]({{ source_file("ip/streamer/streamer.sv") }}) examines the incoming control word:
 
-* regular elements go to `rl_decoder.sv`
-* trigger elements go to `chain_trigger.sv`
+* regular elements go to [`rl_decoder.sv`]({{ source_file("ip/streamer/rl_decoder.sv") }})
+* trigger elements go to [`chain_trigger.sv`]({{ source_file("ip/streamer/chain_trigger.sv") }})
 
 This split is one of the most important maintenance facts in the subsystem: the trigger program is carried in the same encoded transport format as data elements, but it is not part of the normal decode/output stream.
 
 ### 3. Decode and preprocessing
 
-`rl_decoder.sv` expands regular elements into output updates.
+[`rl_decoder.sv`]({{ source_file("ip/streamer/rl_decoder.sv") }}) expands regular elements into output updates.
 
-The supported operations are defined by the control-bit layout and operation enum in `config.vh`. These include direct loads, bitwise updates, replay-related control, retrigger behavior, and PRNG-backed output generation.
+The supported operations are defined by the control-bit layout and operation enum in [`config.vh`]({{ source_file("ip/streamer/config.vh") }}). These include direct loads, bitwise updates, replay-related control, retrigger behavior, and PRNG-backed output generation.
 
-`preprocessor.sv` exists to support second-level compression features such as short stored subsequences and replay.
+[`preprocessor.sv`]({{ source_file("ip/streamer/preprocessor.sv") }}) exists to support second-level compression features such as short stored subsequences and replay.
 
 ### 4. Output-domain crossing
 
-Decoded output updates are written into `output_fifo.sv` in the control clock domain and read out in `streamer_clk`.
+Decoded output updates are written into [`output_fifo.sv`]({{ source_file("ip/streamer/output_fifo.sv") }}) in the control clock domain and read out in `streamer_clk`.
 
 This FIFO is the key CDC boundary in the subsystem. It is also where underrun behavior and completion tracking become visible through `buffer_error` and `done`.
 
 ### 5. Trigger and gating policy
 
-`chain_trigger.sv` runs in the output domain and controls when streaming is allowed to start.
+[`chain_trigger.sv`]({{ source_file("ip/streamer/chain_trigger.sv") }}) runs in the output domain and controls when streaming is allowed to start.
 
 Once triggered, output advancement is additionally qualified by:
 
@@ -105,7 +105,7 @@ Once triggered, output advancement is additionally qualified by:
 * `stop`
 * optional stop-on-buffer-error policy
 
-In `streamer.sv`, the output FIFO read request is gated by:
+In [`streamer.sv`]({{ source_file("ip/streamer/streamer.sv") }}), the output FIFO read request is gated by:
 
 * trigger active
 * gate open
@@ -118,7 +118,7 @@ For the concise trigger, gate, and output-valid timing summary, see [RTL latency
 
 The trigger subsystem supports more than a single mask/pattern comparison.
 
-`chain_trigger.sv` loads a trigger program from the same ingress stream used for regular sequence elements. Each trigger stage contains a pattern and mask, and the chain advances through those stages until the final condition is satisfied.
+[`chain_trigger.sv`]({{ source_file("ip/streamer/chain_trigger.sv") }}) loads a trigger program from the same ingress stream used for regular sequence elements. Each trigger stage contains a pattern and mask, and the chain advances through those stages until the final condition is satisfied.
 
 Important behavioral facts:
 
@@ -129,14 +129,14 @@ Important behavioral facts:
 
 On the host side there are two related trigger-control paths:
 
-* `c++/trigger.hh` configures the trigger combiner that selects and conditions the upstream trigger sources
-* `c++/trigger_int.hh` and `c++/trigger_ext.hh` provide direct software control and status visibility for the low-level trigger PIOs
+* [`c++/trigger.hh`]({{ source_file("c++/trigger.hh") }}) configures the trigger combiner that selects and conditions the upstream trigger sources
+* [`c++/trigger_int.hh`]({{ source_file("c++/trigger_int.hh") }}) and [`c++/trigger_ext.hh`]({{ source_file("c++/trigger_ext.hh") }}) provide direct software control and status visibility for the low-level trigger PIOs
 
 For lower-level trigger implementation details, see `details.md`.
 
 ## Gating and output override
 
-`st_interface.sv` adds two important runtime control features on top of the raw streamer core.
+[`st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }}) adds two important runtime control features on top of the raw streamer core.
 
 ### Gating
 
@@ -157,9 +157,9 @@ This is mainly useful for debugging, bring-up, and simple manual output control 
 
 ## Register summary
 
-The authoritative register enums live in `ip/streamer/config.vh`.
+The authoritative register enums live in [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }}).
 
-Write-side registers in `st_interface.sv`:
+Write-side registers in [`st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }}):
 
 | Name | Address | Purpose |
 | ---- | ------- | ------- |
@@ -199,10 +199,10 @@ For the broader system clock tree and ownership model, see `clock_domain.md`.
 
 On the host side, the main C++ entry points are:
 
-* `c++/streamer_control.hh` - control/status wrapper for `st_interface.sv`
-* `c++/streamer_fifo.hh` and [DMA](https://en.wikipedia.org/wiki/Direct_memory_access)-backed streamer wrappers - sequence transport into the ingress FIFO or memory-backed path
-* `c++/ppworkflow.hh` - shared send/trigger/check flow used by multiple tools
-* `c++/sequence.hh` and `c++/elements.hh` - host-side sequence representation
+* [`c++/streamer_control.hh`]({{ source_file("c++/streamer_control.hh") }}) - control/status wrapper for [`st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }})
+* [`c++/streamer_fifo.hh`]({{ source_file("c++/streamer_fifo.hh") }}) and [DMA](https://en.wikipedia.org/wiki/Direct_memory_access)-backed streamer wrappers - sequence transport into the ingress FIFO or memory-backed path
+* [`c++/ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }}) - shared send/trigger/check flow used by multiple tools
+* [`c++/sequence.hh`]({{ source_file("c++/sequence.hh") }}) and [`c++/elements.hh`]({{ source_file("c++/elements.hh") }}) - host-side sequence representation
 
 The DMA-backed path stages encoded sequence data in SDRAM and lets the FPGA-side [Intel/Altera Modular Scatter-Gather DMA](https://www.intel.com/content/www/us/en/docs/programmable/683130/21-4/modular-scatter-gather-dma-core.html) engine feed the streamer path. This is mainly useful for longer or repeated transfers where CPU-driven FIFO writes would add avoidable host-side overhead.
 
@@ -212,19 +212,19 @@ CLI tools such as `ppfg`, `ppdelay`, `ppplay`, and `pptest` all eventually progr
 
 If you want to modify the streamer for long-term maintainability, the safest entry points are:
 
-* external programming model changes - start with `st_interface.sv` and `config.vh`
-* new element semantics - update `config.vh`, `rl_decoder.sv`, and the host-side sequence model together
-* trigger behavior - update `chain_trigger.sv` and verify software assumptions about arming/forcing/retriggering
-* throughput or buffering changes - review both FIFO sizing in `config.vh` and the completion/overflow checks exposed to software
+* external programming model changes - start with [`st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }}) and [`config.vh`]({{ source_file("ip/streamer/config.vh") }})
+* new element semantics - update [`config.vh`]({{ source_file("ip/streamer/config.vh") }}), [`rl_decoder.sv`]({{ source_file("ip/streamer/rl_decoder.sv") }}), and the host-side sequence model together
+* trigger behavior - update [`chain_trigger.sv`]({{ source_file("ip/streamer/chain_trigger.sv") }}) and verify software assumptions about arming/forcing/retriggering
+* throughput or buffering changes - review both FIFO sizing in [`config.vh`]({{ source_file("ip/streamer/config.vh") }}) and the completion/overflow checks exposed to software
 
-When changing behavior, update both the hardware docs and the host-side assumptions in `c++/` at the same time.
+When changing behavior, update both the hardware docs and the host-side assumptions in [`c++/`]({{ source_file("c++/") }}) at the same time.
 
 ## Related files and docs
 
-* `ip/streamer/README.md`
-* `ip/streamer/st_interface.sv`
-* `ip/streamer/streamer.sv`
-* `ip/streamer/config.vh`
+* [`ip/streamer/README.md`]({{ source_file("ip/streamer/README.md") }})
+* [`ip/streamer/st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }})
+* [`ip/streamer/streamer.sv`]({{ source_file("ip/streamer/streamer.sv") }})
+* [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }})
 * [`latency.md`](latency.md)
 * [`readback.md`](readback.md)
 * [`clock_domain.md`](clock_domain.md)

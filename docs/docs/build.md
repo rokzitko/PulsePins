@@ -2,20 +2,20 @@
 
 PulsePins is built as a combined FPGA hardware, ARM-side software, and optional image-assembly project.
 
-The main entry point is the repository root `Makefile`.
+The main entry point is the repository root [`Makefile`]({{ source_file("Makefile") }}).
 
 ### Top-level build flow
 
 Running `make` at the repository root performs these steps:
 
-1. Generate `base_hps.sopcinfo` from `base_hps.qsys`
-2. Generate the HPS header `hps_0.h`
+1. Generate `base_hps.sopcinfo` from [`base_hps.qsys`]({{ source_file("base_hps.qsys") }})
+2. Generate the HPS header [`hps_0.h`]({{ source_file("hps_0.h") }})
 3. Compile the [Quartus Prime](https://www.altera.com/products/development-tools/quartus) project into `pulsepins.sof`
 4. Run the Quartus timing/report checker
 5. Convert the SOF bitstream into `pulsepins.rbf`
-6. Build the ARM-side C++ programs in `c++/`
+6. Build the ARM-side C++ programs in [`c++/`]({{ source_file("c++/") }})
 
-Relevant targets in `Makefile`:
+Relevant targets in [`Makefile`]({{ source_file("Makefile") }}):
 
 * `all` - full hardware + C++ build
 * `dev-check` - consolidated host-side sanity pass
@@ -29,7 +29,7 @@ Relevant targets in `Makefile`:
 * `lint` - run Verible lint on top-level Verilog/SystemVerilog
 * `clean` - remove generated artifacts across subprojects
 
-For a quick manual live-board regression pass after the build artifacts already exist, use `make board-smoke`. That target wraps `scripts/board_smoke.sh`, redeploys the local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, and runs a small finite smoke sequence against the board plus the two network services, including a few selected failure-path checks (`ppscpi` error queue, `ppwebgui` HTTP `400`, and `ppwebgui` HTTP `504`). It does not rebuild the artifacts first. Override the target host with `TARGETHOST=...` when needed.
+For a quick manual live-board regression pass after the build artifacts already exist, use `make board-smoke`. That target wraps [`scripts/board_smoke.sh`]({{ source_file("scripts/board_smoke.sh") }}), redeploys the local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, and runs a small finite smoke sequence against the board plus the two network services, including a few selected failure-path checks (`ppscpi` error queue, `ppwebgui` HTTP `400`, and `ppwebgui` HTTP `504`). It does not rebuild the artifacts first. Override the target host with `TARGETHOST=...` when needed.
 
 For the normal host-side contributor sanity pass, use:
 
@@ -45,31 +45,31 @@ The FPGA build depends on:
 
 * top-level project files at the repository root
 * generated Platform Designer/Qsys outputs
-* IP sources under `ip/`
+* IP sources under [`ip/`]({{ source_file("ip/") }})
 * `*_hw.tcl` integration files used by the Quartus system description
 
 Platform Designer/Qsys is Intel/Altera's system-integration tool for assembling FPGA IP blocks, interconnects, clocks, resets, and HPS-to-FPGA interfaces into the generated hardware system.
 
 Important outputs:
 
-* `base_hps.sopcinfo` - system description generated from `base_hps.qsys`
-* `hps_0.h` - HPS/FPGA address map header consumed by the C++ build
+* `base_hps.sopcinfo` - system description generated from [`base_hps.qsys`]({{ source_file("base_hps.qsys") }})
+* [`hps_0.h`]({{ source_file("hps_0.h") }}) - HPS/FPGA address map header consumed by the C++ build
 * `pulsepins.sof` - SRAM Object File; Quartus-generated volatile FPGA programming image used for direct FPGA programming/debug loading
 * `pulsepins.rbf` - Raw Binary File; compact FPGA configuration bitstream used for boot/runtime deployment, including `FPGA-writeConfig` and boot-partition workflows
 
-`QDIR` can be overridden to point to a local Quartus `bin` directory, and `Makefile.local` can provide local overrides without changing the tracked build file. Qsys tools are resolved from the sibling `sopc_builder/bin` directory through `QUARTUS_ROOT` and `QSYS_DIR`, so the FPGA build does not rely on global `PATH` for Quartus tools. The top-level FPGA build runs `scripts/check_quartus_timing.py` after Quartus compilation by default. Use `make CHECK_QUARTUS_TIMING=0` only for local/debug builds where timing signoff should be skipped deliberately.
+`QDIR` can be overridden to point to a local Quartus `bin` directory, and `Makefile.local` can provide local overrides without changing the tracked build file. Qsys tools are resolved from the sibling `sopc_builder/bin` directory through `QUARTUS_ROOT` and `QSYS_DIR`, so the FPGA build does not rely on global `PATH` for Quartus tools. The top-level FPGA build runs [`scripts/check_quartus_timing.py`]({{ source_file("scripts/check_quartus_timing.py") }}) after Quartus compilation by default. Use `make CHECK_QUARTUS_TIMING=0` only for local/debug builds where timing signoff should be skipped deliberately.
 
 Clocking is a central part of the hardware build. The hardware design uses PLL-generated `core_clk` and `int_clk`, a
-selectable `streamer_clk` path, and explicit top-level timing constraints in `pulsepins.sdc`. For the detailed clocking
+selectable `streamer_clk` path, and explicit top-level timing constraints in [`pulsepins.sdc`]({{ source_file("pulsepins.sdc") }}). For the detailed clocking
 model and software-side clock control, see `clock_domain.md`.
 
 After a Quartus build, run `make timing-check` from the repository root to re-check existing reports without rebuilding. The checker parses the Quartus reports and fails on ignored project SDC constraints, missing streamer generated clocks, PLL clock cross-check warnings, unconstrained paths, or negative timing slack. Use `make timing-sdc-check` for the narrower project-SDC-only check.
 
 ### C++ build
 
-The ARM-side software lives in `c++/`.
+The ARM-side software lives in [`c++/`]({{ source_file("c++/") }}).
 
-Key targets in `c++/Makefile`:
+Key targets in [`c++/Makefile`]({{ source_file("c++/Makefile") }}):
 
 * `build` - build `pptool`, `ppscpi`, `ppwebgui`, `pllcalc`, and `unit_tests`
 * `copy` - copy the executables to the target host and create the usual symlinks to `pptool`
@@ -78,11 +78,11 @@ Key targets in `c++/Makefile`:
 
 The build expects:
 
-* `hps_0.h` from the top-level hardware build
+* [`hps_0.h`]({{ source_file("hps_0.h") }}) from the top-level hardware build
 * SoC EDS / hwlib headers
-* the Lua sources vendored under `c++/third_party/lua`
+* the Lua sources vendored under [`c++/third_party/lua`]({{ source_file("c++/third_party/lua/") }})
 
-The DMA-backed streamer uses the FPGA design's Intel/Altera Modular Scatter-Gather DMA block through the host-side `streamer_dma.hh` wrapper, so DMA support depends on both the generated hardware address map and the SoC EDS / hwlib-facing build environment.
+The DMA-backed streamer uses the FPGA design's Intel/Altera Modular Scatter-Gather DMA block through the host-side [`streamer_dma.hh`]({{ source_file("c++/streamer_dma.hh") }}) wrapper, so DMA support depends on both the generated hardware address map and the SoC EDS / hwlib-facing build environment.
 
 By default the build is cross-compiling for ARM, but the sources are also structured so they can be copied to the board and built there.
 
@@ -94,20 +94,20 @@ boundary rather than a purely RTL concern.
 
 The host-side ownership split is deliberate:
 
-* `c++/startup.hh` applies the common startup policy
-* `c++/options.hh` resolves CLI/environment clocking choices into typed policy objects
-* `c++/fpga.hh` owns top-level source switching and shared hardware state
-* `c++/pll_clk.hh` owns PLL reconfiguration wrappers
+* [`c++/startup.hh`]({{ source_file("c++/startup.hh") }}) applies the common startup policy
+* [`c++/options.hh`]({{ source_file("c++/options.hh") }}) resolves CLI/environment clocking choices into typed policy objects
+* [`c++/fpga.hh`]({{ source_file("c++/fpga.hh") }}) owns top-level source switching and shared hardware state
+* [`c++/pll_clk.hh`]({{ source_file("c++/pll_clk.hh") }}) owns PLL reconfiguration wrappers
 
 ### Python bindings
 
-The Python bindings live in `python/` and are built with CMake and nanobind.
+The Python bindings live in [`python/`]({{ source_file("python/") }}) and are built with CMake and nanobind.
 
 Production Python builds are expected to happen on the DE10-Nano board itself.
 Host-side builds are useful for syntax/import/API testing, but true Python cross-
 compilation is not supported.
 
-The `python/Makefile` provides:
+The [`python/Makefile`]({{ source_file("python/Makefile") }}) provides:
 
 * `build` - configure and build the extension modules under `python/build`
 * `test` - run the full Python test suite, including board-backed tests
@@ -120,11 +120,11 @@ The CMake configuration builds two modules:
 * `pp`
 * `pp_impl`
 
-The `pp` module is split across multiple translation units: `python/pp.cc` contains the nanobind module entry point, while the actual bindings live in `python/pp_bind_*.cc`.
+The `pp` module is split across multiple translation units: [`python/pp.cc`]({{ source_file("python/pp.cc") }}) contains the nanobind module entry point, while the actual bindings live in [`python/pp_bind_*.cc`]({{ source_file("python/") }}).
 
 ### IP-level simulation/test benches
 
-`ip/Makefile` delegates to IP subdirectories and is mainly used for HDL-level test benches.
+[`ip/Makefile`]({{ source_file("ip/Makefile") }}) delegates to IP subdirectories and is mainly used for HDL-level test benches.
 
 Running `make -C ip test` executes the integrated per-IP test targets for directories such as:
 
@@ -187,7 +187,7 @@ Build only the Python bindings:
 make -C python USE_PREGENERATED=1 build
 ```
 
-`USE_PREGENERATED=1` is the host-side path used when the top-level generated `hps_0.h` is not available.
+`USE_PREGENERATED=1` is the host-side path used when the top-level generated [`hps_0.h`]({{ source_file("hps_0.h") }}) is not available.
 
 Run HDL test benches:
 

@@ -2,10 +2,10 @@
 
 ## Scope
 
-- top-level clocks in `pulsepins.sv`
-- clock switching and PLL control in `c++/`
+- top-level clocks in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})
+- clock switching and PLL control in [`c++/`]({{ source_file("c++/") }})
 - subsystem clock ownership
-- timing constraints in `pulsepins.sdc`
+- timing constraints in [`pulsepins.sdc`]({{ source_file("pulsepins.sdc") }})
 
 ## CDC background terms
 
@@ -21,16 +21,16 @@ Use single-bit synchronizers for individual flags or toggles. Use a dual-clock F
 
 | Name | RTL name / location | Function | Typical nominal value |
 | ---- | ------------------- | -------- | --------------------- |
-| `ref_clk` | `pulsepins.sv` | board reference clock from `FPGA_CLK1_50` | 50 MHz |
-| `core_clk` | `pulsepins.sv`, Qsys/Platform Designer | main system/control clock | 100 MHz default |
-| `int_clk` | `pulsepins.sv`, PLL output | internal candidate streaming clock | 100 MHz default |
-| `streamer_clk` | `pulsepins.sv`, streamer path | active output/streaming clock | selected source |
+| `ref_clk` | [`pulsepins.sv`]({{ source_file("pulsepins.sv") }}) | board reference clock from `FPGA_CLK1_50` | 50 MHz |
+| `core_clk` | [`pulsepins.sv`]({{ source_file("pulsepins.sv") }}), Qsys/Platform Designer | main system/control clock | 100 MHz default |
+| `int_clk` | [`pulsepins.sv`]({{ source_file("pulsepins.sv") }}), PLL output | internal candidate streaming clock | 100 MHz default |
+| `streamer_clk` | [`pulsepins.sv`]({{ source_file("pulsepins.sv") }}), streamer path | active output/streaming clock | selected source |
 | `ext_clk` | concept in C++; physical `EXT_CLKp` in RTL | external candidate source for `streamer_clk` | user supplied |
-| `clean_clk` | `pulsepins.sv` | regenerated external clock from simple PLL cleaner | depends on external clock |
+| `clean_clk` | [`pulsepins.sv`]({{ source_file("pulsepins.sv") }}) | regenerated external clock from simple PLL cleaner | depends on external clock |
 | `d_clk` | counter IP blocks | counter data/update clock | tied to `streamer_clk` at top level |
-| `cnt_clk` | `freq_meter.sv` | frequency-meter reference/gate clock | tied to `ref_clk` |
-| `avs_clk` | `freq_meter.sv` | frequency-meter Avalon-MM clock | system integration defined |
-| `clk` in `ts_core` | `ts_core.sv` | timestamp timebase clock | integration defined |
+| `cnt_clk` | [`freq_meter.sv`]({{ source_file("ip/freq_meter/freq_meter.sv") }}) | frequency-meter reference/gate clock | tied to `ref_clk` |
+| `avs_clk` | [`freq_meter.sv`]({{ source_file("ip/freq_meter/freq_meter.sv") }}) | frequency-meter Avalon-MM clock | system integration defined |
+| `clk` in `ts_core` | [`ts_core.sv`]({{ source_file("ip/ts_core/ts_core.sv") }}) | timestamp timebase clock | integration defined |
 
 ## Top-level clock tree
 
@@ -93,20 +93,20 @@ Clock-select control at top level:
 
 Files:
 
-- `c++/pll_clk.hh`
-- `c++/fpga.hh`
-- `c++/ppwebgui_service.cc`
-- `c++/ppwebgui_http.cc`
+- [`c++/pll_clk.hh`]({{ source_file("c++/pll_clk.hh") }})
+- [`c++/fpga.hh`]({{ source_file("c++/fpga.hh") }})
+- [`c++/ppwebgui_service.cc`]({{ source_file("c++/ppwebgui_service.cc") }})
+- [`c++/ppwebgui_http.cc`]({{ source_file("c++/ppwebgui_http.cc") }})
 
 The intended split is:
 
-- `pll_clk.hh` owns PLL reconfiguration policy and reporting
-- `fpga.hh` owns the top-level clock-select GPIO path and reset sequencing around source changes
-- `ppwebgui_service.cc` owns the tracked web-GUI clock state and applies it through the same hardware wrappers
+- [`pll_clk.hh`]({{ source_file("c++/pll_clk.hh") }}) owns PLL reconfiguration policy and reporting
+- [`fpga.hh`]({{ source_file("c++/fpga.hh") }}) owns the top-level clock-select GPIO path and reset sequencing around source changes
+- [`ppwebgui_service.cc`]({{ source_file("c++/ppwebgui_service.cc") }}) owns the tracked web-GUI clock state and applies it through the same hardware wrappers
 
 ### Streamer clock source switching
 
-`FPGA::set_clk()` in `c++/fpga.hh` handles source selection for `streamer_clk`.
+`FPGA::set_clk()` in [`c++/fpga.hh`]({{ source_file("c++/fpga.hh") }}) handles source selection for `streamer_clk`.
 
 | Operation | CLI switch | Environment variable |
 | --------- | ---------- | -------------------- |
@@ -132,8 +132,8 @@ PLL programming and clock-source selection are separate operations.
 
 Source:
 
-- `pp_freq_meter` in `c++/freq_meter.hh`
-- `ppwebgui` clocking routes via `c++/ppwebgui_service.cc` and `c++/ppwebgui_http.cc`
+- `pp_freq_meter` in [`c++/freq_meter.hh`]({{ source_file("c++/freq_meter.hh") }})
+- `ppwebgui` clocking routes via [`c++/ppwebgui_service.cc`]({{ source_file("c++/ppwebgui_service.cc") }}) and [`c++/ppwebgui_http.cc`]({{ source_file("c++/ppwebgui_http.cc") }})
 
 Uses:
 
@@ -146,8 +146,8 @@ Uses:
 
 | Block | Control-side clock | Output-side clock | Main crossing |
 | ----- | ------------------ | ----------------- | ------------- |
-| `ip/streamer/streamer.sv` | `clk` | `streamer_clk` | dual-clock output FIFO |
-| `ip/streamer/st_interface.sv` | `clk` | `streamer_clk` | control registers feeding streamer/output behavior |
+| [`ip/streamer/streamer.sv`]({{ source_file("ip/streamer/streamer.sv") }}) | `clk` | `streamer_clk` | dual-clock output FIFO |
+| [`ip/streamer/st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }}) | `clk` | `streamer_clk` | control registers feeding streamer/output behavior |
 
 Streamer facts:
 
@@ -159,13 +159,13 @@ Streamer facts:
 
 Host-side trigger routing and software-controlled trigger bits are configured from:
 
-- `c++/trigger.hh`
-- `c++/trigger_int.hh`
-- `c++/trigger_ext.hh`
+- [`c++/trigger.hh`]({{ source_file("c++/trigger.hh") }})
+- [`c++/trigger_int.hh`]({{ source_file("c++/trigger_int.hh") }})
+- [`c++/trigger_ext.hh`]({{ source_file("c++/trigger_ext.hh") }})
 
 ### Readback and counters at top level
 
-Top-level assignments in `pulsepins.sv`:
+Top-level assignments in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }}):
 
 - `rl_qin_clk = streamer_clk`
 - `counter_q_input_clock = streamer_clk`
@@ -176,7 +176,7 @@ Readback and counter sampling follow the selected `streamer_clk` source.
 
 | Block | Control/readout clock | Data/update clock |
 | ----- | --------------------- | ----------------- |
-| `ip/counter/counter_if.sv` | `clk` | `d_clk` |
+| [`ip/counter/counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) | `clk` | `d_clk` |
 | integrated top level | `clk` | `streamer_clk` via `counter_q_input_clock` |
 
 Current CDC facts:
@@ -191,7 +191,7 @@ Current CDC facts:
 
 | Block | Timebase clock | CDC type |
 | ----- | -------------- | -------- |
-| `ip/ts_core/ts_core.sv` | `clk` | asynchronous input capture on `sig` and `sigA` |
+| [`ip/ts_core/ts_core.sv`]({{ source_file("ip/ts_core/ts_core.sv") }}) | `clk` | asynchronous input capture on `sig` and `sigA` |
 
 Current behavior:
 
@@ -211,7 +211,7 @@ Current behavior:
 | measured channel 2 | `streamer_clk` |
 | measured channel 3 | `core_clk` |
 
-CDC structure in `ip/freq_meter/freq_meter.sv`:
+CDC structure in [`ip/freq_meter/freq_meter.sv`]({{ source_file("ip/freq_meter/freq_meter.sv") }}):
 
 - Avalon control changes -> `cnt_clk` by synchronized toggles
 - each measured input clock increments its own counter in its own clock domain
@@ -233,9 +233,9 @@ Reset release is domain-specific.
 
 | File | Function |
 | ---- | -------- |
-| `ip/misc/sync.sv` | single-bit synchronizers |
-| `ip/misc/reset.sv` | async-assert / sync-release reset synchronizer with hold time |
-| `ip/misc/cdc_mailbox.sv` | mailbox-style multi-bit CDC helper |
+| [`ip/misc/sync.sv`]({{ source_file("ip/misc/sync.sv") }}) | single-bit synchronizers |
+| [`ip/misc/reset.sv`]({{ source_file("ip/misc/reset.sv") }}) | async-assert / sync-release reset synchronizer with hold time |
+| [`ip/misc/cdc_mailbox.sv`]({{ source_file("ip/misc/cdc_mailbox.sv") }}) | mailbox-style multi-bit CDC helper |
 
 ## [Cyclone V](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html) clocking facts used by this design
 
@@ -267,7 +267,7 @@ PulsePins usage:
 - PLL-generated `core_clk`
 - PLL-generated `int_clk`
 - external-clock cleaning PLL generating `clean_clk`
-- software PLL reconfiguration through `c++/pll_clk.hh`
+- software PLL reconfiguration through [`c++/pll_clk.hh`]({{ source_file("c++/pll_clk.hh") }})
 
 ### Manual PLL switchover
 
@@ -281,7 +281,7 @@ PulsePins uses:
 - optional PLL cleaning for the external clock
 - `altclkctrl` at top level for active `streamer_clk` selection
 
-## Timing constraints in `pulsepins.sdc`
+## Timing constraints in [`pulsepins.sdc`]({{ source_file("pulsepins.sdc") }})
 
 ### Declared clocks and generated clocks
 
@@ -340,7 +340,7 @@ Examples covered by those groups include:
 | board/user/HPS peripheral ports | external port timing is excepted; internal post-buffer and pre-output-buffer logic remains timed |
 | control-path timing | clock-select and PLL-reconfiguration paths are marked false |
 
-If the top-level clock tree changes, `pulsepins.sdc` must be reviewed together with the RTL.
+If the top-level clock tree changes, [`pulsepins.sdc`]({{ source_file("pulsepins.sdc") }}) must be reviewed together with the RTL.
 
 Changes that trigger SDC review:
 
@@ -356,7 +356,7 @@ Changes that trigger SDC review:
 - check reset assertion and release per domain
 - check `streamer_clk` behavior under both internal and external source selection
 - check whether software timing uses measured `streamer_clk` or a nominal assumption
-- check whether `pulsepins.sdc` matches the top-level clock tree
+- check whether [`pulsepins.sdc`]({{ source_file("pulsepins.sdc") }}) matches the top-level clock tree
 - run `make timing-check` after a Quartus build and resolve reported SDC, unconstrained-path, or negative-slack failures
 
 ## Summary table

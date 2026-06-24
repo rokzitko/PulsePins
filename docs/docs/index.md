@@ -24,7 +24,7 @@ PulsePins is primarily a hardware-backed project. Host-side work is useful, but 
 If you want to...
 
 * bring up a board or run a live sanity check:
-  use [`getting_started_hardware.md`](getting_started_hardware.md), [`testing.md`](testing.md), `make board-smoke`, and `run_all_tests`
+  use [`getting_started_hardware.md`](getting_started_hardware.md), [`testing.md`](testing.md), `make board-smoke`, and [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
 * generate a quick digital pattern:
   use [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), or [`pphelloworld`](pphelloworld.md)
 * replay a saved sequence:
@@ -92,7 +92,7 @@ replay).
 
 ### Composition of the control parameter
 
-Defined in ``ip/streamer/config.vh`` (bit fields, 0 is LSB):
+Defined in [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }}) (bit fields, 0 is LSB):
 
 | Name               | Bit        | Description |
 | -------           | ----------- | ----------- |
@@ -189,7 +189,7 @@ The active `streamer_clk` can be switched between the internal clock path and an
 external clock is a 3.3 V CMOS signal applied to the `EXT_CLKp` input pin.
 
 The most important boundary between the main control side and the output side is the dual-clock output FIFO in
-`ip/streamer/output_fifo.sv`.
+[`ip/streamer/output_fifo.sv`]({{ source_file("ip/streamer/output_fifo.sv") }}).
 
 For a fuller description of clock relationships, software clock switching, and timing constraints, see
 `clock_domain.md`.
@@ -214,7 +214,7 @@ Color code in the schematic:
 | <font color="red">red</font>        | output data ports |
 
 In the reference implementation for the DE10 Nano FPGA development board, the signals are present on the following GPIO
-pins (defined in ``pulsepins.sv``):
+pins (defined in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})):
 
 | Connector | Index | Debug port | Name        | Description |
 | --------- | ----- | ----       | ----------- | -------- |
