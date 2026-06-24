@@ -16,12 +16,13 @@ For continuously repeating signals, use [`ppfg`](ppfg.md) instead.
 
 ## Common options
 
-* `-p`, `-m`: trigger pattern and trigger mask
-* `-delay`: delay between trigger and pulse start
-* `-duration`: pulse width
-* `-v1`: value during the pulse
-* `-v0`: value immediately after the pulse
-* `-t`: final persistent output value after completion
+* `-p`: trigger pattern (default: `0b00000001`)
+* `-m`: trigger mask (default: `0b00000001`)
+* `-delay`: delay between trigger and pulse start (default: `0`)
+* `-duration`: pulse width (default: `0`; resulting width is at least one output-clock cycle)
+* `-v1`: value during the pulse (default: `0xFFFFFFFF`)
+* `-v0`: value immediately after the pulse (default: `0x00000000`)
+* `-t`: final persistent output value after completion (default: `0`)
 
 All standard trigger-combiner and clock-selection options are also accepted.
 
