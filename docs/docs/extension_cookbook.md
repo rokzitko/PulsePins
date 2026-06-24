@@ -19,8 +19,6 @@ Before adding new functionality:
 * update docs for user-visible tools and APIs
 * prefer existing shared helpers over new one-off parsing or formatting logic
 
-The project has increasingly moved toward centralized semantics in the core types. When extending sequence behavior or tool behavior, it is usually better to add one shared helper in the right place than to duplicate logic in several command handlers.
-
 ## Recipe 1: add a new `pp...` CLI tool
 
 The `pptool` executable family is dispatched by program name. Most commands are symlink-style entry points into the same binary.
@@ -170,7 +168,7 @@ Recommended structure:
 * include exact qout wiring or hardware assumptions
 * if the helper emits PulsePins sequences, document the expected playback command
 
-The recent [`tools/spi_payload/`]({{ source_file("tools/spi_payload/") }}) work is a good example of this pattern.
+The tool [`tools/spi_payload/`]({{ source_file("tools/spi_payload/") }}) is a good example of this pattern.
 
 ## Recipe 6: add tests in the right place
 
@@ -269,4 +267,3 @@ When in doubt:
 * add tests before broad refactors
 * prefer one shared semantic helper over repeated switch statements in multiple files
 
-That approach has worked well for the recent [`elements.hh`]({{ source_file("c++/elements.hh") }}), Python binding, and `ppwebgui` cleanup work.
