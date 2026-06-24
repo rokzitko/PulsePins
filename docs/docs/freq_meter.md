@@ -120,6 +120,6 @@ The correction factor is especially useful when the nominal reference clock is k
 
 ### Related pages
 
-* `ppfreq.md`
-* `cpp.md`
-* `build.md`
+* [`ppfreq.md`](ppfreq.md)
+* [`cpp.md`](cpp.md)
+* [`build.md`](build.md)

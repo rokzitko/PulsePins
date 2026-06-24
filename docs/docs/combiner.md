@@ -172,7 +172,7 @@ It is also useful when you want to separate sequence generation from final outpu
 
 ### Related pages
 
-* `ppqout.md`
-* `pptrig.md`
-* `latency.md`
-* `cpp.md`
+* [`ppqout.md`](ppqout.md)
+* [`pptrig.md`](pptrig.md)
+* [`latency.md`](latency.md)
+* [`cpp.md`](cpp.md)

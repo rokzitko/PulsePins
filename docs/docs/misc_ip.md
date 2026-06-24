@@ -62,5 +62,5 @@ The `ip/misc/` directory also contains dedicated test benches for several of the
 
 ### Related pages
 
-* `development.md`
-* `build.md`
+* [`development.md`](development.md)
+* [`build.md`](build.md)

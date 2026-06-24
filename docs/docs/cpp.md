@@ -333,9 +333,9 @@ The preferred approach is to preserve the top-level command names and high-level
 
 For subsystem-level details, see also:
 
-* `counter.md`
-* `combiner.md`
-* `timestamp.md`
-* `freq_meter.md`
-* `st_mux.md`
-* `build.md`
+* [`counter.md`](counter.md)
+* [`combiner.md`](combiner.md)
+* [`timestamp.md`](timestamp.md)
+* [`freq_meter.md`](freq_meter.md)
+* [`st_mux.md`](st_mux.md)
+* [`build.md`](build.md)

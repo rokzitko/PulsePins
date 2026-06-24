@@ -225,7 +225,7 @@ When changing behavior, update both the hardware docs and the host-side assumpti
 * `ip/streamer/st_interface.sv`
 * `ip/streamer/streamer.sv`
 * `ip/streamer/config.vh`
-* `latency.md`
-* `readback.md`
-* `clock_domain.md`
-* `cpp.md`
+* [`latency.md`](latency.md)
+* [`readback.md`](readback.md)
+* [`clock_domain.md`](clock_domain.md)
+* [`cpp.md`](cpp.md)

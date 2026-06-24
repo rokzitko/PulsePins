@@ -104,7 +104,7 @@ If you have a DE10-Nano and the PulsePins environment running, you can also work
 * board bring-up and shield documentation
 * PMOD, clocking, and instrument-integration writeups
 
-See also `getting_started_hardware.md`.
+See also [`getting_started_hardware.md`](getting_started_hardware.md).
 
 ### What makes a good first contribution?
 

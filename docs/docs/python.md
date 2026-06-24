@@ -218,4 +218,4 @@ See also:
 
 * `python/README`
 * `python/README.devel`
-* `docs/docs/build.md`
+* [`build.md`](build.md)

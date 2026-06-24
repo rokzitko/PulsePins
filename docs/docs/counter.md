@@ -199,6 +199,6 @@ Use the counter subsystem for:
 
 ### Related pages
 
-* `ppcounter.md`
-* `testing.md`
-* `cpp.md`
+* [`ppcounter.md`](ppcounter.md)
+* [`testing.md`](testing.md)
+* [`cpp.md`](cpp.md)

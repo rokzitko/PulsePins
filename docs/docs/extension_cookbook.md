@@ -4,11 +4,11 @@ This page is a practical guide for extending PulsePins. It is intentionally proc
 
 For build and onboarding background, also see:
 
-* `build.md`
-* `development.md`
-* `hacking.md`
-* `cpp.md`
-* `python.md`
+* [`build.md`](build.md)
+* [`development.md`](development.md)
+* [`hacking.md`](hacking.md)
+* [`cpp.md`](cpp.md)
+* [`python.md`](python.md)
 
 ### General advice
 
