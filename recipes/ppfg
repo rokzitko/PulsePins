@@ -53,7 +53,7 @@
  ./ppfg -core_pll 10M -cont -trig -veryverbose -servo 135
 
 # Gating
-./ppfg -cont -trig -veryverbose -period 1us -gate t:b11111111 -trig_misc
+./ppfg -cont -trig -veryverbose -period 1us -gate 1:0:0xff -trig_misc
 
 # Gating debug mode
 ./ppfg -cont -trig -veryverbose -period 1us -gate 1:0:"'hff" -gate_debug -trig_misc
