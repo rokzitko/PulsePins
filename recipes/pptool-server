@@ -1,0 +1,3 @@
+# start Lua line server
+pptool -server -tcp -wait
+pptool -server -udp -wait

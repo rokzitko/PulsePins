@@ -1,2 +1,2 @@
-pptool -server -tcp -wait
-pptool -server -udp -wait
+# Start SCPI server on port 5025
+ppscpi
