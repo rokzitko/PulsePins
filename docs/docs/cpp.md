@@ -24,7 +24,7 @@ The most important host-side layers are:
 * [`fpga.hh`]({{ source_file("c++/fpga.hh") }}) - top-level ownership of memory maps, PLL helpers, trigger monitors, and GPIO-backed control paths
 * [`startup.hh`]({{ source_file("c++/startup.hh") }}) - common process bootstrap and default FPGA startup policy
 * [`host_runtime.hh`]({{ source_file("c++/host_runtime.hh") }}) - shared bootstrap/runtime object used by the main host-side executables
-* [`options.hh`]({{ source_file("c++/options.hh") }}), [`pll_rules.hh`]({{ source_file("c++/pll_rules.hh") }}), [`pll_calc.hh`]({{ source_file("c++/pll_calc.hh") }}) - typed option resolution, symbolic PLL presets, and strict calculated PLL profiles shared by multiple tools
+* [`options.hh`]({{ source_file("c++/options.hh") }}), [`pll_rules.hh`]({{ source_file("c++/pll_rules.hh") }}), [`pll_calc.hh`]({{ source_file("c++/pll_calc.hh") }}) - typed option resolution, symbolic PLL presets, and calculated PLL profiles shared by multiple tools
 * [`pptool_streaming.cc`]({{ source_file("c++/pptool_streaming.cc") }}), [`pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}) - user-facing command implementations
 * [`ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }}) - shared streaming workflow used by commands that send sequences, arm/force triggers, and optionally validate readback
 * [`elements.hh`]({{ source_file("c++/elements.hh") }}), [`sequence.hh`]({{ source_file("c++/sequence.hh") }}) - host-side representation of pulse programs and trigger programs
@@ -115,7 +115,8 @@ The corresponding ``Value`` helper hierarchy is exposed in [`elements.hh`]({{ so
 * ``BitSrl``
 * ``TriggerCondition``
 
-These helper types are lightweight tags and inspectors for authored elements. The ``el`` object itself stores flattened raw ``control``, ``count``, and ``value`` fields without internal ``std::shared_ptr`` wrappers.
+These helper types are lightweight tags and inspectors for authored elements. The ``el`` object
+itself stores flattened raw ``control``, ``count``, and ``value`` fields.
 
 Interface of ``Value`` objects:
 
