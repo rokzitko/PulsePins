@@ -40,10 +40,6 @@
 # Bursts forever...
 ./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 0 -delay 10ms
 
-# Trigger contol
-./ppfg -veryverbose -trig_misc -pio 0b000_0000_0000 -core_pll 10M -burst 3 -freq 1000Hz -trig
-./ppfg -veryverbose -trig_std -pio 0b001_0000_0000 -core_pll 10M -cont -trig -freq 100kHz
-
 # Burst, pb trigger (right button)
 ./ppfg -veryverbose -trig_misc -core_pll 10M -burst 3 -period 1ms
 
