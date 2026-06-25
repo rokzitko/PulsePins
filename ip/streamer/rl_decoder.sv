@@ -10,7 +10,7 @@
 module rl_decoder
 (
   input  wire                     clk,
-  input  wire                     reset,          // active-high async reset
+  input  wire                     reset,          // active-high reset
 
   // Input FIFO (show-ahead semantics)
   input  wire                     in_valid,       // tuple valid (not empty)

@@ -37,7 +37,7 @@ The following symbols are used in project TODO lists:
 
 ### Documentation
 
-These manual pages are built with [MkDocs](https://www.mkdocs.org/). For testing the generated web site, we use
+These manual pages are built with [MkDocs](https://www.mkdocs.org/), using macros plugin. For testing the generated web site, we use
 [caddy](https://caddyserver.com/).
 
 Useful starting points for the codebase:

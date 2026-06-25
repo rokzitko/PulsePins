@@ -10,7 +10,7 @@ This directory contains the on-chip measurement blocks used to inspect streamed 
 - `packet_stats.sv` - valid/idle and packet-length statistics
 - `seq_counter.sv` - histogram of short bit sequences
 - `autocorrelation.sv` - lag-based autocorrelation counters for one channel
-- `crosscorrelation.sv` - lag-based correlation counters for two selected channels
+- `crosscorrelation.sv` - lag-based correlation counters for two selected channels (enabled if COUNTER_CC is defined)
 - `time_counter.sv` - elapsed-time capture between start and stop edges
 - `mux32to1.sv`, `mux32to2.sv` - channel selectors used by the wrapper
 - `cdc.v` - local CDC helpers

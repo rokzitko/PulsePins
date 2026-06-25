@@ -224,11 +224,11 @@ pins (defined in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})):
 |           | 3     | D3         | <font color="orange">streamer_qout_valid</font> | Valid/enable signal for data output (qout) |
 |           | 4     |            | <font color="orange">activity</font>            | Activity detected (high when data is being streamed out) |
 |           | 5     |            | <font color="orange">heartbeat</font>           | Pulses when FPGA bitstream is loaded |
-|           | 6     | D8         | <font color="green">trigger_armed</font>        | PinPulse is waiting for the trigger event to occur |
+|           | 6     | D8         | <font color="green">trigger_armed</font>        | PulsePins is waiting for the trigger event to occur |
 |           | 7     | D9         | <font color="green">trigger_activated</font>    | Triggered and data is being streamed out |
 |           | 8     | D10        | <font color="green">done</font>                 | Streaming out has completed without any underflow errors |
 |           | 9     | D11        | <font color="green">buffer_error</font>         | Buffer underflow error detected |
-|           | 10    |            | <font color="darkblue">ext_trigger_enable</font>    | Trigger enable (make PinPulse sensitive to trigger signals) |
+|           | 10    |            | <font color="darkblue">ext_trigger_enable</font>    | Trigger enable (make PulsePins sensitive to trigger signals) |
 |           | 11    |            | <font color="darkblue">ext_trigger_force</font>     | External trigger force (unconditional) |
 |           | 12    |            | <font color="darkblue">ext_trigger_reset</font>     | Reset the trigger circuit |
 |           | 13    |            | <font color="darkblue">gate_in</font>               | Gate signal |

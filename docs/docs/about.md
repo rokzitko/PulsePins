@@ -1,4 +1,4 @@
-# PulsePins RLE-Decoder
+# PulsePins Pulse Sequencer
 
 ## Project summary
 

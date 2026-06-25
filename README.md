@@ -1,4 +1,4 @@
-# PulsePins RLE-Decoder
+# PulsePins Pulse Sequencer
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17903233.svg)](https://doi.org/10.5281/zenodo.17903233)
 [![CI](https://github.com/rokzitko/PulsePins/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rokzitko/PulsePins/actions/workflows/ci.yml)
@@ -75,7 +75,7 @@ PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit 
 * General-purpose operation as a delay generator or function generator.
 * Clean, well-documented Verilog implementation with test benches and high test coverage.
 * KiCad schematics and layouts for interface cards that provide easy interfacing (PMOD, SMA), buffering (50&nbsp;Ω drivers), ESD protection, status LEDs, external clock input with threshold control, and pads for CMOS crystal oscillators.
-* Proven stability: no lockups or errors observed during five days of continuous stress testing at 100&nbsp;MHz streamer clock without a heatsink on the FPGA.
+* Proven stability: no lockups or errors observed during 20 days of continuous stress testing at 100&nbsp;MHz streamer clock without a heatsink on the FPGA.
 * Configurable widths for the output data bus (32 or 64 bits) and for the run-length counter (32 or 64 bits).
 * Reference and user manuals (these web pages).
 * Liberal MIT license, requiring only attribution.

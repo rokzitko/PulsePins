@@ -27,7 +27,7 @@ using port_t = uint32_t;          // corresponding C++ type
 static_assert(sizeof(bus_t)*8 == WIDTH_AVS_BUS);
 static_assert(sizeof(port_t)*8 == WIDTH_PORT);
 
-// These must be consistent with ip/streamer/config.v
+// These must be consistent with ip/streamer/config.vh
 
 constexpr int WIDTH_CONTROL = 32;
 constexpr int WIDTH_COUNTER = 32;
@@ -159,7 +159,7 @@ static_assert((MODEBITS & BITSET)   == BITSET);
 static_assert((MODEBITS & BITCLEAR) == BITCLEAR);
 static_assert((MODEBITS & BITFLIP)  == BITFLIP);
 
-// must be consistent with ip/streamer/st_interface.v
+// must be consistent with ip/streamer/st_interface.vh
 // status bits
 constexpr port_t BUFFER_ERROR = 0x01;
 constexpr port_t DONE         = 0x02;

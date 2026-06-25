@@ -26,7 +26,7 @@ The Avalon-MM register file exposes:
 
 - control register - enable and clear-pulse control
 - gate-length register - measurement window in `cnt_clk` cycles
-- number-of-channels register
+- number-of-channels register (4)
 - one result register per channel
 
 The hardware continuously produces per-gate edge counts while enabled. Software converts those counts into Hz using the known gate length and nominal counter-clock frequency.
