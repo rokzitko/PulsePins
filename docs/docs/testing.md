@@ -69,6 +69,6 @@ Use the three levels like this:
 ### Random number generator
 
 The built-in random number generator can be tested by running ``pptest 19``. By connecting
-any of the output pins to a spectrum analyzer, one can examine the whiteness of the spectrum.
-(For spectrum analyzers with 50 ohm input impedance, one can use the 50 ohm output driver of the [PP_PMOD
-board](ppboards.md)).
+an output signal to a spectrum analyzer, one can examine the whiteness of the spectrum.
+When Q0 or Q1 is suitable, use the buffered SMA outputs on the [PP_PMOD board](ppboards.md);
+use appropriate external buffering or probing for other outputs.

@@ -5,7 +5,7 @@ Features:
  -   all signals on connectors have ESD protection diodes
  -   SMA connectors for external clock and for pulse-per-second (PPS) signals; monitoring LED for PPS signal; optional built-in 50-ohm terminators
  -   SMA connector for one trigger signal; it is connected to a fast comparator with a tunable reference voltage; optional 50-ohm terminator; monitoring LED
- -   two output signals are wired to SMA connectors with 50-ohm line drivers; monitoring LEDs
+ -   two output signals, Q0 and Q1, are buffered and wired to SMA connectors; monitoring LEDs
  -   Status LEDs: trigger armed, trigger activated, done, buffer error
  -   Activity & heartbeat LEDs
  -   QWIIC I2C connector for external modules

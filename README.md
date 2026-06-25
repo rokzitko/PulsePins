@@ -74,7 +74,7 @@ PulsePins is a flexible run-length–encoded (RLE) pattern generator for 32-bit 
 * Time-stamping circuit for synchronization and timing purposes.
 * General-purpose operation as a delay generator or function generator.
 * Clean, well-documented Verilog implementation with test benches and high test coverage.
-* KiCad schematics and layouts for interface cards that provide easy interfacing (PMOD, SMA), buffering (50&nbsp;Ω drivers), ESD protection, status LEDs, external clock input with threshold control, and pads for CMOS crystal oscillators.
+* KiCad schematics and layouts for interface cards that provide easy interfacing (PMOD, SMA), two buffered PP_PMOD SMA outputs for Q0 and Q1, ESD protection, status LEDs, external clock input with threshold control, and pads for CMOS crystal oscillators.
 * Proven stability: no lockups or errors observed during 20 days of continuous stress testing at 100&nbsp;MHz streamer clock without a heatsink on the FPGA.
 * Configurable widths for the output data bus (32 or 64 bits) and for the run-length counter (32 or 64 bits).
 * Reference and user manuals (these web pages).
