@@ -159,7 +159,7 @@ static_assert((MODEBITS & BITSET)   == BITSET);
 static_assert((MODEBITS & BITCLEAR) == BITCLEAR);
 static_assert((MODEBITS & BITFLIP)  == BITFLIP);
 
-// must be consistent with ip/streamer/st_interface.vh
+// must be consistent with ip/streamer/st_interface.sv
 // status bits
 constexpr port_t BUFFER_ERROR = 0x01;
 constexpr port_t DONE         = 0x02;

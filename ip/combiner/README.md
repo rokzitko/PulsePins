@@ -6,7 +6,7 @@ This directory and its sibling combiner blocks contain the late-stage routing lo
 
 - `combiner/combiner.sv` - registered output-data combiner used in the timed datapath
 - `combiner_comb/combiner_comb.sv` - purely combinational output-data variant
-- `combiner_trig/combiner_trig.sv` - trigger-group combiner with the same programming model
+- `combiner_trig/combiner_trig.sv` - trigger-group combiner
 
 ## Architecture overview
 

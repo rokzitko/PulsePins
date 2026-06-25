@@ -69,23 +69,3 @@ For the main PulsePins data path, start with:
 
 That sequence follows the same path a host-generated sequence takes through the hardware and back through the observability path.
 
-## Good future additions
-
-High-value future streamer tests would include:
-
-* explicit top-level gating behavior tests
-* output underrun / buffer-error tests
-* trigger + replay interaction tests
-* top-level `NOSTROBE` behavior tests
-* `st_interface` reset/default register readback checks
-
-Those areas are where the remaining subtle integration risks are most likely to live.
-
-Recent additions in the streamer family now cover:
-
-* delayed-start gating
-* mid-stream gate pause/resume
-* underrun / `buffer_error`
-* trigger + replay interaction
-* wrapper-level `gate_in` gating
-* wrapper-level trigger-mask gating
