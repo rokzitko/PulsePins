@@ -203,6 +203,10 @@ time_counter tc2 (
 
 logic [width_bus-1:0] result_ac;
 
+// Integrated autocorrelation/crosscorrelation lag depth. Address 0 reports the total,
+// addresses 1..c_len report lag accumulators. Keep this synchronized with
+// `integrated_correlation_lag_depth` in c++/counter.hh and the notes in
+// docs/docs/counter.md and ip/counter/README.md.
 localparam c_len = 3;
 localparam c_width = $clog2(c_len+1); // 4 -> 2
 

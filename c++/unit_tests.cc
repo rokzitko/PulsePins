@@ -353,6 +353,20 @@ TEST_CASE("packet_stats uses completed packets for averages") {
   CHECK(contains(report, "avg_len=5"));
 }
 
+TEST_CASE("integrated correlation reports match RTL lag depth") {
+  auto read_corr = [](uint32_t half, uint32_t addr) -> uint32_t {
+    return half == 0 ? addr + 10 : 0;
+  };
+  autocorrelation ac(integrated_correlation_result_bins, read_corr);
+  crosscorrelation cc(integrated_correlation_result_bins, read_corr);
+  const std::string expected = "[0] 10\n[1] 11\n[2] 12\n[3] 13\n";
+
+  CHECK(integrated_correlation_lag_depth == 3);
+  CHECK(integrated_correlation_result_bins == 4);
+  CHECK(ac.str() == expected);
+  CHECK(cc.str() == expected);
+}
+
 TEST_CASE("chars_to_uint32 preserves high-bit bytes") {
   const char bytes[4] = {char(0x80), char(0xFF), char(0x01), char(0x02)};
   CHECK(chars_to_uint32(bytes) == 0x80FF0102u);

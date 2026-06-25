@@ -41,6 +41,12 @@ Software controls the subsystem by programming a small set of selector registers
 
 This model is shared by the C++ wrapper in `c++/counter.hh` and by the `ppcounter` command documented in `docs/docs/ppcounter.md`.
 
+## Correlation depth
+
+The integrated `counter_if.sv` instance currently sets autocorrelation/crosscorrelation lag depth to `c_len = 3`.
+Software-visible correlation addresses are therefore address 0 for the total valid-sample count and addresses 1..3 for lag accumulators.
+The standalone correlation modules are parameterized, but changing the integrated depth requires keeping `counter_if.sv`, `c++/counter.hh`, and `docs/docs/counter.md` synchronized.
+
 ## Channel selection model
 
 The wrapper exposes three channel selectors:

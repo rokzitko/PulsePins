@@ -34,6 +34,11 @@ static_assert(address_map::contains(address_map::h2f::counter_q, 7*4));
 
 using readfnc = std::function<uint32_t(uint32_t, uint32_t)>;
 
+// Must match `c_len` in `ip/counter/counter_if.sv` and the descriptions in
+// `docs/docs/counter.md` and `ip/counter/README.md`.
+constexpr size_t integrated_correlation_lag_depth = 3;
+constexpr size_t integrated_correlation_result_bins = integrated_correlation_lag_depth + 1; // total + lags
+
 class basic_counter {
 private:
   readfnc rd;
@@ -357,8 +362,8 @@ public:
     rc(readfnc([&](uint32_t part, uint32_t addr) { return read(2, part, addr); })),
     ps(readfnc([&](uint32_t part, uint32_t addr) { return read(5, part, addr); })),
     sc(16, readfnc([&](uint32_t part, uint32_t addr) { return read(3, part, addr); })),
-    ac(16, readfnc([&](uint32_t part, uint32_t addr) { return read(6, part, addr); })),
-    cc(16, readfnc([&](uint32_t part, uint32_t addr) { return read(7, part, addr); }))
+    ac(integrated_correlation_result_bins, readfnc([&](uint32_t part, uint32_t addr) { return read(6, part, addr); })),
+    cc(integrated_correlation_result_bins, readfnc([&](uint32_t part, uint32_t addr) { return read(7, part, addr); }))
   {
     sel0 = 0;
     sel1 = 0;
