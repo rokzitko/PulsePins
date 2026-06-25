@@ -29,7 +29,11 @@ every 100ms (default: off)
 * ``-core_pll``, ``-core_pll_charge_pump``, ``-core_pll_bandwidth``: core-clock PLL settings, as explained [here](pptest.md#pll-settings)
 * ``-int_pll``, ``-int_pll_charge_pump``, ``-int_pll_bandwidth``: internal streamer-clock PLL settings, as explained [here](pptest.md#pll-settings)
 
-Specify one positive timing source with ``-period``, ``-freq``, or ``-servo``.
+Specify one positive waveform timing source with ``-period`` or ``-freq``; these two options are mutually exclusive.
+In servo mode, ``-servo`` supplies the pulse width from the requested angle. If neither ``-period`` nor
+``-freq`` is supplied, servo mode uses the standard 20 ms / 50 Hz servo PWM period. If ``-period`` or
+``-freq`` is supplied together with ``-servo``, that explicit timing is used and the duty cycle is
+recomputed to preserve the servo pulse width.
 
 There are two modes of operation, burst mode and continuous mode.
 
@@ -58,3 +62,13 @@ Activated with ``-cont`` (default: off).
 
 As a convenience, using the ``-servo`` switch, ppfg can generate an appropriate pulse-width modulation
 signal for testing servo motors.
+
+By default, ``-servo`` uses a 20 ms / 50 Hz PWM period and maps angles from 0 to 180 degrees onto 1 ms
+to 2 ms high pulses. For example, ``-servo 90`` produces a 1.5 ms high pulse, i.e. 7.5% duty cycle at
+the default 20 ms period.
+
+If ``-period`` or ``-freq`` is also supplied, ppfg keeps the servo pulse width and applies it to the
+explicit period. For example, ``-servo 90 -freq 100Hz`` uses a 10 ms period with the same 1.5 ms high
+pulse, i.e. 15% duty cycle.
+
+In servo mode the duty cycle is derived from the angle, so ``-duty`` is ignored.

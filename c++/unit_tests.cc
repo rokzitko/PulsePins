@@ -371,6 +371,30 @@ TEST_CASE("servo_pwm_params returns duty in percent") {
   CHECK(duty_max == doctest::Approx(10.0));
 }
 
+TEST_CASE("resolve_ppfg_timing lets explicit period or frequency override servo period") {
+  {
+    const auto [period, duty] = resolve_ppfg_timing(make_input({"-servo", "90"}));
+    CHECK(period == doctest::Approx(20e-3));
+    CHECK(duty == doctest::Approx(7.5));
+  }
+  {
+    const auto [period, duty] = resolve_ppfg_timing(make_input({"-servo", "90", "-period", "10ms"}));
+    CHECK(period == doctest::Approx(10e-3));
+    CHECK(duty == doctest::Approx(15.0));
+  }
+  {
+    const auto [period, duty] = resolve_ppfg_timing(make_input({"-servo", "90", "-freq", "100Hz"}));
+    CHECK(period == doctest::Approx(10e-3));
+    CHECK(duty == doctest::Approx(15.0));
+  }
+  {
+    const auto [period, duty] = resolve_ppfg_timing(make_input({"-period", "1ms", "-duty", "25"}));
+    CHECK(period == doctest::Approx(1e-3));
+    CHECK(duty == doctest::Approx(25.0));
+  }
+  CHECK_THROWS_AS(resolve_ppfg_timing(make_input({"-period", "1ms", "-freq", "1kHz"})), std::runtime_error);
+}
+
 TEST_CASE("strobe class") {
   count_t c = 10;
   Strobe c1(c);

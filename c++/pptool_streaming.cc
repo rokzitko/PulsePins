@@ -108,14 +108,7 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
 {
   streamer s(input, fpga); // must be called first to setup the PLL
 
-  auto period_req = parse_period(input);                 // period (requested) [s]
-  auto duty = input.get_double("-duty", 50.0);          // duty cycle [percentage]
-  if (input.exists("-servo")) {                         // for testing servo motors...
-    const double angle = input.get_double("-servo", 90); // rotation angle
-    const auto [f, d] = servo_pwm_params(angle);
-    period_req = 1.0/f;
-    duty = d;
-  }
+  const auto [period_req, duty] = resolve_ppfg_timing(input);
   const double output_clk = fpga.pll_int.int_clk.get_freq(0);
   if (v.verbose)
     std::cout << "output_clk=" << pretty_frequency(output_clk) << " output_clk_period="

@@ -15,7 +15,7 @@
 #include "elements.hh"
 #include "sequence.hh"
 
-// Determine the requested period from -period or -freq settinh
+// Determine the requested period from -period or -freq setting.
 inline double parse_period(const InputParser &input)
 {
   double period_req = 0;
@@ -28,6 +28,7 @@ inline double parse_period(const InputParser &input)
   return period_req;
 }
 constexpr double default_output_clk = 100 * 1000 * 1000.0; // default output clock frequency [Hz]
+constexpr double servo_pwm_default_period = 20e-3; // 20 ms / 50 Hz
 
 inline std::pair<uint64_t, uint64_t> calc_pos_neg(const double period_req,
                                                   const double duty,
@@ -132,28 +133,51 @@ inline auto seq_once(trigger_t p, trigger_t m, count_t nr_delay, count_t nr_pos,
   return elements;
 }
 
-// Map target servo angle (degrees) to PWM frequency and duty cycle
+// Map target servo angle (degrees) to pulse width.
 // angle_min, angle_max define the servo range (deg)
 // pulse_min, pulse_max define the pulse width range (s)
-inline std::pair<double, double> servo_pwm_params(double angle,
-                                                  double angle_min = 0.0,
-                                                  double angle_max = 180.0,
-                                                  double pulse_min = 1e-3,    // 1.0 ms
-                                                  double pulse_max = 2e-3)    // 2.0 ms
+inline double servo_pwm_pulse_width(double angle,
+                                    double angle_min = 0.0,
+                                    double angle_max = 180.0,
+                                    double pulse_min = 1e-3,    // 1.0 ms
+                                    double pulse_max = 2e-3)    // 2.0 ms
 {
-  constexpr double period = 20e-3;   // 20 ms
-  constexpr double frequency = 1.0 / period; // 50 Hz
-
   // Clamp input angle
   if (angle < angle_min) angle = angle_min;
   if (angle > angle_max) angle = angle_max;
 
   // Linear interpolation
   double t = (angle - angle_min) / (angle_max - angle_min);
-  double pulse_width = pulse_min + t * (pulse_max - pulse_min);
+  return pulse_min + t * (pulse_max - pulse_min);
+}
+
+// Map target servo angle (degrees) to PWM frequency and duty cycle.
+inline std::pair<double, double> servo_pwm_params(double angle,
+                                                  double angle_min = 0.0,
+                                                  double angle_max = 180.0,
+                                                  double pulse_min = 1e-3,    // 1.0 ms
+                                                  double pulse_max = 2e-3)    // 2.0 ms
+{
+  constexpr double frequency = 1.0 / servo_pwm_default_period; // 50 Hz
+  double pulse_width = servo_pwm_pulse_width(angle, angle_min, angle_max, pulse_min, pulse_max);
 
   // Duty cycle as percent, matching calc_pos_neg() and the -duty option.
-  double duty_cycle = 100.0 * pulse_width / period;
+  double duty_cycle = 100.0 * pulse_width / servo_pwm_default_period;
 
   return {frequency, duty_cycle};
+}
+
+inline std::pair<double, double> resolve_ppfg_timing(const InputParser &input)
+{
+  const bool explicit_timing = input.exists("-period") || input.exists("-freq");
+  double period_req = parse_period(input);
+  double duty = input.get_double("-duty", 50.0);
+  if (input.exists("-servo")) {
+    const double angle = input.get_double("-servo", 90);
+    const double pulse_width = servo_pwm_pulse_width(angle);
+    if (!explicit_timing)
+      period_req = servo_pwm_default_period;
+    duty = 100.0 * pulse_width / period_req;
+  }
+  return {period_req, duty};
 }
