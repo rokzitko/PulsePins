@@ -211,7 +211,7 @@ inline void activate_trigger(streamer_control &sc,
       std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
     if (input.exists("-delay")) {
       const double delay = parse_time(input, "-delay", "0");
-      sleep(delay);
+      sleepd(delay);
     }
     sc.trigger_force();
     sc.status_report();

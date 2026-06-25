@@ -14,6 +14,7 @@
 
 #include "pptool_commands.hh"
 #include "address_map.hh"
+#include "delay.hh"
 #include "ppmisc.hh"
 #include "pptest.hh"
 
@@ -136,7 +137,7 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
   const double delay_between_readings = 0.1;
   if (input.exists("-gate_debug")) {
     for (;;) {
-      sleep(delay_between_readings);
+      sleepd(delay_between_readings);
       std::cout << "Gate: " << s.sc.gate_status_string() << std::endl;
     }
   }
@@ -413,7 +414,7 @@ int ppaux(FPGA &fpga,
     } else {
       std::cout << s << std::endl;
     }
-    sleep(wait);
+    sleepd(wait);
   }
   if (file != "") {
     F.close();

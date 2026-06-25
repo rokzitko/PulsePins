@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
       exit_delay = envDouble("PP_EXIT_DELAY").value_or(1.0);
     if (input.exists("-exit_delay"))
       exit_delay = parse_time(input, "-exit_delay", "1.0");
-    sleep(exit_delay);
+    sleepd(exit_delay);
 
     if (input.exists("-ignore-errors") && (rc != 0)) {
       std::cout << "WARNING: Ignoring errors, return code reset to zero." << std::endl;

@@ -25,6 +25,7 @@
 #include "pptool_commands.hh"
 #include "address_map.hh"
 #include "counter.hh"
+#include "delay.hh"
 #include "timestamp.hh"
 #include "format_with_dispatch.hh"
 #include "format.hh"
@@ -443,7 +444,7 @@ int pptemp(FPGA &, const InputParser &input, const Verbosity &)
     }
     ++n;
     if (args.count && n >= args.count) break;
-    if (args.delay > 0.0) sleep(args.delay);
+    if (args.delay > 0.0) sleepd(args.delay);
   }
   return RC_OK;
 }
