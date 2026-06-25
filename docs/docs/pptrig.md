@@ -20,4 +20,9 @@ internally pulled up, thus shorting a signal to ground produces a logical 0)
 * ``-mask_ext m``: uses m as the mask for input EXT (only signals marked with 1 are passed through)
 * ``-mask_misc m``: uses m as the mask for input MISC (only signals marked with 1 are passed through)
 
+Diagnostic switches:
+
+* ``-pio v``: write ``v`` to the internal trigger PIO before reading back trigger state; default is ``0``
+* ``-debug``: continuously print streamer external-trigger input/control state for live debugging
+
 See also [PP_PMOD hardware reference](pp_pmod_reference.md).

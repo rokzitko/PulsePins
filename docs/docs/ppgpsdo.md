@@ -12,7 +12,33 @@ Requirements:
 
 Command-line switches:
 
-* ``-kp``: coefficient for proportional part of PID
+Timestamp routing and run control:
+
+* ``-pps_in``: use the external PPS input for the PPS timestamp stream
+* ``-pps_xtal``: use the crystal-derived PPS source for the PPS timestamp stream
+* ``-selA N``: select the source routed to the secondary ``sigA`` timestamp stream
+* ``-timeout T``: timeout for waiting on new timestamp samples; ``0`` disables timeout protection
+* ``-nr N``: number of timestamp samples to read per stream; ``0`` means run continuously
+
+PID and filtering:
+
+* ``-kp``: proportional gain, default ``0.01``
+* ``-ki``: integral gain, default ``0.1``
+* ``-dp``: proportional deadband, default ``0``
+* ``-di``: integral deadband, default ``0``
+* ``-eps``: leaky-integrator epsilon, default ``0.0``
+* ``-clip N``: clip accepted timing-error deltas to ``+/-N`` before averaging, default ``1000``
+* ``-reject N``: reject timing-error deltas with magnitude greater than or equal to ``N``, default ``10000``
+* ``-avg N``: average ``N`` accepted deltas before updating the PID/DAC output, default ``1``
+
+DAC output mapping:
+
+* ``-k K``: slope for converting PID control value to DAC voltage, default ``2.6``
+* ``-l L``: offset for converting PID control value to DAC voltage, default ``-0.01``
+* ``-vmin V``: minimum DAC output voltage after clamping, default ``0.0``
+* ``-vmax V``: maximum DAC output voltage after clamping, default ``5.0``
+
+`ppgpsdo` always reads both the PPS and ``sigA`` timestamp streams and pairs samples from those two paths.
 
 Implementation notes:
 

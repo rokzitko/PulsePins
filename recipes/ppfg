@@ -1,10 +1,7 @@
-POZOR: At 100M-100M: buffer_error, because of 1-bubble implementation
-
-# Generate f_clk/2=500kHz, e.g. for f_clk=1MHz:
-./ppfg -core_pll 1M -cont -trig
+./ppfg -core_pll 1M -cont -trig -period 1ms
 
 # 5MHz
-./ppfg -core_pll 10M -cont -trig
+./ppfg -core_pll 10M -cont -trig -period 200ns
 
 # 2.5MHz
 ./ppfg -core_pll 10M -cont -trig -veryverbose -period 400ns
@@ -17,9 +14,9 @@ POZOR: At 100M-100M: buffer_error, because of 1-bubble implementation
 ./ppfg -core_pll 10M -cont -trig -veryverbose -period 1ms -duty 5
 
 # Different base frequencies
-./ppfg -veryverbose -core_pll 1M -cont -trig
-./ppfg -veryverbose -core_pll 50M -cont -trig
-./ppfg -veryverbose -core_pll 10M -cont -trig
+./ppfg -veryverbose -core_pll 1M -cont -trig -period 1ms
+./ppfg -veryverbose -core_pll 50M -cont -trig -period 1ms
+./ppfg -veryverbose -core_pll 10M -cont -trig -period 1ms
 
 10Hz flashing:
 ./ppfg -veryverbose -core_pll 10M -cont -trig -freq 10Hz

@@ -1,2 +1,2 @@
 # Frequency measurement with correction factor
-ppfreq -gate_time 1s -freqmeter_rescale 0.99995
+ppfreq -gate_time 1s -freq_rescale 0.99995

@@ -90,7 +90,7 @@ Signals in the control (write) register
 
 | Bit   | Name | Description |
 | ----- | ---- | ----------- |
-| 0     | stop               | NOT IMPLEMENTED                                                                      |
+| 0     | stop               | Interrupt streaming                                                                  |
 | 1     | trigger_force_int  | Forces triggering from software (this is or'd with an external force trigger signal) |
 | 2     | trigger_enable_int | Enables trigger circuit                                                              |
 | 3     | reset_streamer     | Forces reset of the streamer circuit, erases FIFO buffers                            |

@@ -1,15 +1,15 @@
 # Python bindings
 
-PulsePins has two Python-facing surfaces:
+PulsePins has two Python interfaces:
 
 * `pulsepins` - a pure-Python, host-side [SCPI](https://www.ivifoundation.org/About-IVI/scpi.html) client for scripts and Jupyter notebooks talking to a board running `ppscpi`
-* `pp` / `pp_impl` - nanobind extension modules for the underlying C++ interface
+* `pp` - nanobind extension module for the underlying C++ interface
 
 ## Host-side SCPI client
 
 The host-side client lives in [`python/pulsepins/`]({{ source_file("python/pulsepins/") }}) and has no dependency beyond the Python standard library. It is the recommended Python entry point for notebooks running on a laptop or workstation while the DE10-Nano runs `ppscpi`.
 
-In this project, SCPI is used as a lightweight ASCII command protocol over TCP for PulsePins-specific commands rather than as a complete SCPI instrument-class implementation.
+SCPI is here used as a lightweight ASCII command protocol over TCP for PulsePins-specific commands rather than as a complete SCPI instrument-class implementation.
 
 From a repository checkout, either set `PYTHONPATH`:
 
@@ -45,7 +45,7 @@ The `f` line requests forced triggering; it does not choose the final output val
 
 The client exposes `idn()`, `reset()`, `clear_status()`, `streamer_clock_hz()`, `timeline(...)`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so the uploaded command must fit within the `ppscpi` 64 KiB SCPI line limit.
 
-The same package also includes a dependency-free `Timeline` builder for simple named-channel pulse programs:
+The same package also includes a `Timeline` builder for simple named-channel pulse programs:
 
 ```python
 from pulsepins import PulsePins
@@ -130,8 +130,6 @@ make PY_DEBUG=1
 ## Host-side testing
 
 Host-side builds are useful for checking that the binding code compiles and imports cleanly.
-That is helpful for contributor workflows without a board, but it should not be treated as a
-replacement for the board build.
 
 The recommended host-side command is:
 

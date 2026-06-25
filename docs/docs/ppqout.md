@@ -18,6 +18,9 @@ Use `ppqout` when you want to:
 Streamer values:
 
 * `-q1`, `-q2`, `-q3`, `-q4`: set the direct qout value for each streamer
+* `-i1`, `-i2`, `-i3`, `-i4`: set each streamer's initial output value before the per-streamer reset
+
+The `-iN` switches configure the idle/initial streamer state. The `-qN` switches write the direct qout override value inspected by the combiner path.
 
 Combiner mode:
 

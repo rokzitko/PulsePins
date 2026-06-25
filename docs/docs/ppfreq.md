@@ -13,6 +13,7 @@ Common options:
 * `-gate_time T`: set the measurement gate time, for example `1s`
 * `-gate_len N`: set the measurement gate length directly in clock cycles
 * `-nr N`: number of measurements to print; `0` means run continuously
+* `-freq_rescale X`: apply correction factor `X` to the reported frequencies; can also be set with `PP_FREQ_RESCALE`
 
 Gate configuration follows this order:
 
@@ -57,4 +58,10 @@ Print 20 measurements and stop:
 
 ```bash
 ppfreq -nr 20
+```
+
+Apply a correction factor:
+
+```bash
+ppfreq -gate_time 1s -freq_rescale 0.99995
 ```

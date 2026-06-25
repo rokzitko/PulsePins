@@ -8,7 +8,7 @@ also serves as an example of the API use, as it covers most of the elementary us
 
 The basic syntax is
 
-```pptool <nr> [args...]```
+```pptest <nr> [args...]```
 
 ``nr`` indicates the test number.
 
@@ -39,7 +39,7 @@ If neither ``-t`` nor an explicit ``final V`` sequence record is provided, the s
 
 ### Integer parameter parsing
 
-The numeric parameters can be expressed in decimal (42), hexadecimal (0x2A), octal (052) or binary (b101010). The
+The numeric parameters can be expressed in decimal (42), hexadecimal (0x2A), octal (052) or binary (0b101010). The
 parser is implemented in [`tidbit/misc.hh`]({{ source_file("tidbit/misc.hh") }}). Look for functions ``parse_uint8_t``, ``parse_uint32_t`` and
 ``parse_uint64_t``. Underscores are ignored; this allows large input values to be easier to read, e.g. 1_000_000_000.
 Finally, Verilog literals are also parsed correctly (e.g. ``8`b1111_1111``, ``32`hFF_FF_FF_FF`` and similar).
@@ -163,7 +163,7 @@ counts up from zero to this maximum value (excluded).
 Additional parameters:
 
 * ``-quiet``: do not dump each element
-* ``-end``: randomize values
+* ``-rnd``: randomize values
 * ``-report N``: report statistics at most every N seconds; this shows total run time, the total number of elements (size), and the total duration of the sequence so far (length)
 
 ### Test 21
