@@ -8,8 +8,8 @@
 0         streamer_trigger_activated } ),
 
 -nopps: disable reference timestamping (pulse-per-second)
--pps_in   : use the PPS input (default)
--pps_xtal : use the internally generated PPS clock
+-pps_in   : use the external PPS input
+-pps_xtal : use the internally generated PPS clock (default)
 
 -sigA : enable timestamping for input A
 -selA : choose source for input A

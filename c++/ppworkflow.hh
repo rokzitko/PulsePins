@@ -69,22 +69,44 @@ inline constexpr double default_readback_first_element_timeout_s = 2.0;
 inline constexpr double default_readback_idle_timeout_s = 2.0;
 
 inline ReadbackTimeoutPolicy readback_timeout_policy(const InputParser &input) {
-  if (!input.exists("-timeout")) {
+  const bool has_timeout = input.exists("-timeout");
+  const bool has_hard_timeout = input.exists("-hard-timeout");
+  if (!has_timeout && !has_hard_timeout) {
     return {default_readback_first_element_timeout_s, default_readback_idle_timeout_s, 0.0};
   }
 
-  const double timeout = parse_double(input, "-timeout", "0");
-  if (timeout == 0.0) {
+  double idle_timeout = 0.0;
+  double hard_timeout = 0.0;
+  bool timeout_disabled = false;
+
+  if (has_timeout) {
+    const double timeout = parse_double(input, "-timeout", "0");
+    if (timeout == 0.0) {
+      timeout_disabled = true;
+    } else if (timeout > 0.0) {
+      idle_timeout = timeout;
+    } else {
+      if (has_hard_timeout)
+        throw std::runtime_error("Use either negative -timeout or -hard-timeout, not both.");
+      hard_timeout = std::abs(timeout);
+    }
+  }
+
+  if (has_hard_timeout) {
+    hard_timeout = parse_time(input, "-hard-timeout", "0");
+    if (hard_timeout <= 0.0)
+      throw std::runtime_error("-hard-timeout must be greater than zero.");
+  }
+
+  if (timeout_disabled && idle_timeout == 0.0 && hard_timeout == 0.0) {
     std::cout << "readback timeout disabled" << std::endl;
     return {};
   }
-  if (timeout > 0.0) {
-    std::cout << "readback timeout=" << timeout << "s [after last read]" << std::endl;
-    return {0.0, timeout, 0.0};
-  }
-
-  std::cout << "readback timeout=" << std::abs(timeout) << "s [after start]" << std::endl;
-  return {0.0, 0.0, std::abs(timeout)};
+  if (idle_timeout > 0.0)
+    std::cout << "readback timeout=" << idle_timeout << "s [after last read]" << std::endl;
+  if (hard_timeout > 0.0)
+    std::cout << "readback hard-timeout=" << hard_timeout << "s [after start]" << std::endl;
+  return {0.0, idle_timeout, hard_timeout};
 }
 
 inline std::optional<value_t> explicit_final_output(const Sequence &elements)

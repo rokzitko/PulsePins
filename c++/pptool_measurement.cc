@@ -273,7 +273,10 @@ private:
   std::function<void(T)> fnc;
 
 public:
-  Averager(size_t _nr, std::function<void(T)> _fnc) : nr(_nr), fnc(std::move(_fnc)) {}
+  Averager(size_t _nr, std::function<void(T)> _fnc) : nr(_nr), fnc(std::move(_fnc)) {
+    if (nr == 0)
+      throw std::runtime_error("Averager window must be greater than zero.");
+  }
 
   void add(T x) {
     sum += x;
@@ -482,7 +485,7 @@ int ppfreq(FPGA &fpga, const InputParser &input, const Verbosity &v) {
   d['e'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(0), t); };
   d['i'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(1), t); };
   d['s'] = [&fm](std::string_view t) { return setw_l(fm.meter.read_freq_str(2), t); };
-  std::string fmt = "%t %e";
+  std::string fmt = input.get_string("-format", "%t %e");
   const auto nr = parse_uint64(input, "-nr", "0");
   for (ctr = 0; nr == 0 || ctr < nr; ctr++) {
     fm.meter.wait_one_gate_time();

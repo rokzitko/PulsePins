@@ -31,13 +31,13 @@ All standard trigger-combiner and clock-selection options are also accepted.
 Immediate 1 ms pulse after the selected trigger source:
 
 ```bash
-ppdelay -veryverbose -trig_misc -core_pll 10M -duration 1ms
+ppdelay -veryverbose -trig_misc -int_pll 10M -duration 1ms
 ```
 
 1 ms pulse delayed by 20 ms after the trigger:
 
 ```bash
-ppdelay -veryverbose -trig_misc -core_pll 10M -duration 1ms -delay 20ms
+ppdelay -veryverbose -trig_misc -int_pll 10M -duration 1ms -delay 20ms
 ```
 
 Pulse with explicit on/off/final values:

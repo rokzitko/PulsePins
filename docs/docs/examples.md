@@ -11,7 +11,7 @@ Goal: make `qout[0]` toggle continuously without writing any sequence files.
 Command:
 
 ```bash
-ppfg -core_pll 10M -cont -trig -freq 10Hz -v1 0x1 -v0 0x0
+ppfg -int_pll 10M -cont -trig -freq 10Hz -v1 0x1 -v0 0x0
 ```
 
 What it does:
@@ -29,8 +29,8 @@ What to expect:
 Useful variations:
 
 ```bash
-ppfg -core_pll 10M -cont -trig -period 1ms -duty 5 -v1 0x1 -v0 0x0
-ppfg -core_pll 10M -burst 3 -period 1ms -trig -t 0x0 -v1 0x1 -v0 0x0
+ppfg -int_pll 10M -cont -trig -period 1ms -duty 5 -v1 0x1 -v0 0x0
+ppfg -int_pll 10M -burst 3 -period 1ms -trig -t 0x0 -v1 0x1 -v0 0x0
 ```
 
 See also: [ppfg - PulsePins Function Generator](ppfg.md) and [`recipes/ppfg`]({{ source_file("recipes/ppfg") }}).
@@ -42,7 +42,7 @@ Goal: wait for a trigger, then emit one pulse after a controlled delay.
 Command:
 
 ```bash
-ppdelay -veryverbose -trig_misc -core_pll 10M -duration 1ms -delay 20ms
+ppdelay -veryverbose -trig_misc -int_pll 10M -duration 1ms -delay 20ms
 ```
 
 What it does:
@@ -67,7 +67,7 @@ Goal: use the readback path as a simple logic-analyzer capture, then replay the 
 Capture commands:
 
 ```bash
-ppread -timeout 1 -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
+ppread -hard-timeout 1s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
 ```
 
 Replay commands:

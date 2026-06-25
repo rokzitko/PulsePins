@@ -1253,7 +1253,9 @@ TEST_CASE("resolve_sequence_file_format uses forced default") {
 
 TEST_CASE("resolve_sequence_file_format rejects ambiguous filename") {
   auto input = make_input({});
-  CHECK_THROWS_AS(resolve_sequence_file_format(input, "capture"), std::runtime_error);
+  CHECK_THROWS_WITH_AS(resolve_sequence_file_format(input, "capture"),
+                       "Cannot infer sequence file format from extension; use -format vcd|text|binary",
+                       std::runtime_error);
 }
 
 TEST_CASE("validate_sequence_file_options enforces VCD-only options") {
@@ -1468,10 +1470,30 @@ TEST_CASE("readback_timeout_policy respects explicit timeout overrides") {
   CHECK(total_policy.idle_timeout_s == doctest::Approx(0.0));
   CHECK(total_policy.total_timeout_s == doctest::Approx(1.5));
 
+  const auto hard_policy = readback_timeout_policy(make_input({"-hard-timeout", "500ms"}));
+  CHECK(hard_policy.first_element_timeout_s == doctest::Approx(0.0));
+  CHECK(hard_policy.idle_timeout_s == doctest::Approx(0.0));
+  CHECK(hard_policy.total_timeout_s == doctest::Approx(0.5));
+
+  const auto combined_policy = readback_timeout_policy(make_input({"-timeout", "0.25", "-hard-timeout", "1s"}));
+  CHECK(combined_policy.first_element_timeout_s == doctest::Approx(0.0));
+  CHECK(combined_policy.idle_timeout_s == doctest::Approx(0.25));
+  CHECK(combined_policy.total_timeout_s == doctest::Approx(1.0));
+
+  const auto hard_only_policy = readback_timeout_policy(make_input({"-timeout", "0", "-hard-timeout", "1s"}));
+  CHECK(hard_only_policy.first_element_timeout_s == doctest::Approx(0.0));
+  CHECK(hard_only_policy.idle_timeout_s == doctest::Approx(0.0));
+  CHECK(hard_only_policy.total_timeout_s == doctest::Approx(1.0));
+
+  CHECK_THROWS_AS(readback_timeout_policy(make_input({"-hard-timeout", "0"})), std::runtime_error);
+  CHECK_THROWS_AS(readback_timeout_policy(make_input({"-timeout", "-1", "-hard-timeout", "1s"})), std::runtime_error);
+
   const auto output = capture.str();
   CHECK(contains(output, "readback timeout=0.25s [after last read]"));
   CHECK(contains(output, "readback timeout disabled"));
-  CHECK(contains(output, "readback timeout=1.5s [after start]"));
+  CHECK(contains(output, "readback hard-timeout=1.5s [after start]"));
+  CHECK(contains(output, "readback hard-timeout=0.5s [after start]"));
+  CHECK(contains(output, "readback hard-timeout=1s [after start]"));
 }
 
 TEST_CASE("freq_meter normalizes zero-length gate requests") {

@@ -42,7 +42,7 @@ inline SequenceFileFormat infer_sequence_file_format_from_filename(const std::st
     return SequenceFileFormat::binary;
   if (filename.size() >= 6 && filename.substr(filename.size() - 6) == ".ppbin")
     return SequenceFileFormat::binary;
-  throw std::runtime_error("Cannot infer sequence file format from extension; use -format vcd|text");
+  throw std::runtime_error("Cannot infer sequence file format from extension; use -format vcd|text|binary");
 }
 
 inline SequenceFileFormat resolve_sequence_file_format(const InputParser &input,

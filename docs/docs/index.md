@@ -367,7 +367,7 @@ The second approach (using _strobe_ semantics) is potentially more reliable in s
 systems which may have issues with high slew rates, i.e., those that require long hold times after
 the rising edge of the clock signal in order for flip-flips to function reliably.
 
-[ ![Timing](img/seq1.png){: style="width:600px:height:600px"} ](img/seq1.png)
+[ ![Timing](img/seq1.png){: style="width:600px;height:600px"} ](img/seq1.png)
 
 
 ## Trigger monitoring

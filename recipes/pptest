@@ -1,14 +1,14 @@
 Counter:
-./pptest 3 -c 1 -v 42 -check -core_pll 1M
+./pptest 3 -c 1 -v 42 -check -int_pll 1M
 
 Generate pseudo-random numbers using xoroshiro128++:
-./pptest 19 -c 0 -core_pll 1M
+./pptest 19 -c 0 -int_pll 1M
 
 Generate one pulse on qout[0]:
 ./pptest 2 -c 1000 -v 1 -t 0 -veryverbose
 
 Test of PB trigger (push right button):
-./pptest 12 -check -veryverbose -trig_std -c 100 -core_pll 10M
+./pptest 12 -check -veryverbose -trig_std -c 100 -int_pll 10M
 
 Verbose checks:
 ./pptest 10 -v 8 -c 10000 -repetitions 7 -nr_replays 4 -check -veryverbose -verbosecheck
@@ -16,4 +16,4 @@ Verbose checks:
 Trigger delay:
 ./pptest 10 -v 8 -c 10000 -repetitions 10 -nr_replays 10 -check -verbosecheck -veryverbose -post -o 2 -mid -m 2 -delay 3.0 -sep
 
-./pptest 3 -v 15 -veryverbose -core_pll 10M -check
+./pptest 3 -v 15 -veryverbose -int_pll 10M -check

@@ -29,7 +29,7 @@ PID and filtering:
 * ``-eps``: leaky-integrator epsilon, default ``0.0``
 * ``-clip N``: clip accepted timing-error deltas to ``+/-N`` before averaging, default ``1000``
 * ``-reject N``: reject timing-error deltas with magnitude greater than or equal to ``N``, default ``10000``
-* ``-avg N``: average ``N`` accepted deltas before updating the PID/DAC output, default ``1``
+* ``-avg N``: average ``N`` accepted deltas before updating the PID/DAC output, default ``1``; must be greater than zero
 
 DAC output mapping:
 

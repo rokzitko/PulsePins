@@ -1,52 +1,52 @@
-./ppfg -core_pll 1M -cont -trig -period 1ms
+./ppfg -int_pll 1M -cont -trig -period 1ms
 
 # 5MHz
-./ppfg -core_pll 10M -cont -trig -period 200ns
+./ppfg -int_pll 10M -cont -trig -period 200ns
 
 # 2.5MHz
-./ppfg -core_pll 10M -cont -trig -veryverbose -period 400ns
+./ppfg -int_pll 10M -cont -trig -veryverbose -period 400ns
 
 # 1MHz
-./ppfg -core_pll 10M -cont -trig -veryverbose -period 1ms
+./ppfg -int_pll 10M -cont -trig -veryverbose -period 1ms
 
 # Duty cycle
-./ppfg -core_pll 10M -cont -trig -veryverbose -period 1ms -duty 1
-./ppfg -core_pll 10M -cont -trig -veryverbose -period 1ms -duty 5
+./ppfg -int_pll 10M -cont -trig -veryverbose -period 1ms -duty 1
+./ppfg -int_pll 10M -cont -trig -veryverbose -period 1ms -duty 5
 
 # Different base frequencies
-./ppfg -veryverbose -core_pll 1M -cont -trig -period 1ms
-./ppfg -veryverbose -core_pll 50M -cont -trig -period 1ms
-./ppfg -veryverbose -core_pll 10M -cont -trig -period 1ms
+./ppfg -veryverbose -int_pll 1M -cont -trig -period 1ms
+./ppfg -veryverbose -int_pll 50M -cont -trig -period 1ms
+./ppfg -veryverbose -int_pll 10M -cont -trig -period 1ms
 
 10Hz flashing:
-./ppfg -veryverbose -core_pll 10M -cont -trig -freq 10Hz
+./ppfg -veryverbose -int_pll 10M -cont -trig -freq 10Hz
 
 # Burst mode
 ./ppreset
-./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose
+./ppfg -veryverbose -int_pll 10M -burst 3 -period 1ms -trig -veryverbose
 
 # -start0
-./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -start0
+./ppfg -veryverbose -int_pll 10M -burst 3 -period 1ms -trig -veryverbose -start0
 
 # -t (final value)
-./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -t 0xFF
+./ppfg -veryverbose -int_pll 10M -burst 3 -period 1ms -trig -veryverbose -t 0xFF
 
 # -n_max; with auto trigger just two repetitions of the same burst
-./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 2
+./ppfg -veryverbose -int_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 2
 
 # Delay between trigger and burst; here autotriggered, thus time-separated burst sequences
-./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 2 -delay 100ms
+./ppfg -veryverbose -int_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 2 -delay 100ms
 
 # Bursts forever...
-./ppfg -veryverbose -core_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 0 -delay 10ms
+./ppfg -veryverbose -int_pll 10M -burst 3 -period 1ms -trig -veryverbose -n_max 0 -delay 10ms
 
 # Burst, pb trigger (right button)
-./ppfg -veryverbose -trig_misc -core_pll 10M -burst 3 -period 1ms
+./ppfg -veryverbose -trig_misc -int_pll 10M -burst 3 -period 1ms
 
 # Burst, external trigger
 
 # servo pwm, angle to 135o
- ./ppfg -core_pll 10M -cont -trig -veryverbose -servo 135
+ ./ppfg -int_pll 10M -cont -trig -veryverbose -servo 135
 
 # Gating
 ./ppfg -cont -trig -veryverbose -period 1us -gate 1:0:0xff -trig_misc

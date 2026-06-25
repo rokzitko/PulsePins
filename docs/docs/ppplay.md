@@ -22,7 +22,7 @@ The binary format is exact and lossless: it preserves the full internal sequence
 * `-format vcd|text|binary`: explicitly select the file format
 * `-force`: force triggering after loading the sequence; for text input this overrides the in-file `f` flag
 
-Shared playback options such as `-check`, `-read`, `-timeout`, `-t`, `-random_final`, and `-dont_wait` behave as they do for the other streaming tools. With `-dont_wait`, playback returns after queueing the sequence, activating or arming the trigger, and completing any requested readback phase; it skips the normal wait and post-run cleanup, so forced or armed trigger state may remain active until reset, reconfiguration, or explicit deactivation. If neither `-t`, `-random_final`/`PP_RANDOM_FINAL`, nor an explicit `final V` record is provided, playback appends a no-modify final terminator and leaves outputs at the last sequence value. Like the other finite playback commands, `ppplay` also enforces an internal 10 s streamer-completion timeout after the sequence has been queued.
+Shared playback options such as `-check`, `-read`, `-timeout`, `-hard-timeout`, `-t`, `-random_final`, and `-dont_wait` behave as they do for the other streaming tools. With `-dont_wait`, playback returns after queueing the sequence, activating or arming the trigger, and completing any requested readback phase; it skips the normal wait and post-run cleanup, so forced or armed trigger state may remain active until reset, reconfiguration, or explicit deactivation. If neither `-t`, `-random_final`/`PP_RANDOM_FINAL`, nor an explicit `final V` record is provided, playback appends a no-modify final terminator and leaves outputs at the last sequence value. Like the other finite playback commands, `ppplay` also enforces an internal 10 s streamer-completion timeout after the sequence has been queued.
 
 ## VCD-specific options
 
@@ -50,7 +50,7 @@ If the extension is ambiguous, `ppplay` exits with an error and asks for `-forma
 Record a capture in all replayable formats:
 
 ```bash
-ppread -timeout 1 -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
+ppread -hard-timeout 1s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
 ```
 
 Replay one of the saved files:
