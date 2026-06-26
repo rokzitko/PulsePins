@@ -60,7 +60,8 @@ dut(
 integer queue[$];
 
 logic want_write;
-assign wrreq = want_write & ~full;  // actual FIFO wrreq
+logic saw_backpressure;
+assign wrreq = want_write;  // valid signal, held until accepted by !full
 
 task automatic feed;
   input int nr;
@@ -76,7 +77,9 @@ task automatic feed;
       data       <= i;
       want_write <= 1;         // propose to write
       @(posedge clk);
-      if (wrreq) begin
+      if (full) begin
+        saw_backpressure = 1'b1;
+      end else begin
         // successful write this cycle
         if (verbose) $display("W %0d %0d", nr, i);
         i = i + 1;
@@ -130,7 +133,7 @@ task automatic producer;
 integer i;
 begin
   for (i = 0; i < loops; i = i + 1) begin
-    feed($urandom_range(0, 100));  // generate random int
+    feed(i == 0 ? 40 : $urandom_range(0, 100));  // first burst must hit backpressure
 //    #10; // spacing between feeds
     #($urandom_range(10, 50));
   end
@@ -153,6 +156,7 @@ integer fh;
 initial begin
   data <= 96'b0;
   want_write <= 0;
+  saw_backpressure = 1'b0;
   rdreq <= 0;
   #5;
 
@@ -161,6 +165,9 @@ initial begin
     producer();
     consumer();
   join
+  assert(saw_backpressure) else $fatal(1, "backpressure was not exercised");
+  assert(!dut.overflow_in) else $fatal(1, "legal input backpressure set overflow_in");
+  assert(!dut.overflow_out) else $fatal(1, "legal output backpressure set overflow_out");
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);

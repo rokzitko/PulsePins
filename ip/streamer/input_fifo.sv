@@ -174,12 +174,12 @@ inst2
  .usedw   (used2)
 );
 
-// Detect overflows (latch)
+// Detect true FIFO overflows (latch). almost_full is normal backpressure, not an error.
 always_ff @(posedge clk) begin
   if (reset) begin
     overflow_in <= 0;
   end else begin
-    if (wrreq & almost_full1) begin
+    if (wrreq1 && full1) begin
       overflow_in <= 1;
     end
   end
@@ -189,7 +189,7 @@ always_ff @(posedge clk) begin
   if (reset) begin
     overflow_out <= 0;
   end else begin
-    if (dout_valid & almost_full2) begin
+    if (wrreq2 && full2) begin
       overflow_out <= 1;
     end
   end
