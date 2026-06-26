@@ -74,15 +74,15 @@ module cdc_bus_update #(
   logic src_ack_sync_d;
   logic dst_ack_tgl;
 
-  wire src_ack_event = src_ack_sync ^ src_ack_sync_d;
-  wire src_can_send = !src_inflight || src_ack_event;
-
   (*
   altera_attribute = {
     "-name SYNCHRONIZER_IDENTIFICATION \"FORCED IF ASYNCHRONOUS\"; ",
     "-name DONT_MERGE_REGISTER ON; ",
     "-name PRESERVE_REGISTER ON" }
   *) logic src_ack_meta, src_ack_sync;
+
+  wire src_ack_event = src_ack_sync ^ src_ack_sync_d;
+  wire src_can_send = !src_inflight || src_ack_event;
 
   always_ff @(posedge src_clk) begin
     if (src_reset) begin
