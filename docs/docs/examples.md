@@ -252,7 +252,7 @@ with PulsePins("de10nano") as pp:
     timeline.pulse("laser", start=10, duration=5)
     timeline.pulse("camera", start=20, duration=10)
     pp.reset()
-    pp.run(timeline, force_trigger=True)
+    pp.run(timeline, force_trigger=True, include_final=True)
 ```
 
 Two runnable Timeline examples are included:
@@ -274,7 +274,7 @@ pulsepins-timeline-stream de10nano --print-sequence
 pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ```
 
-[`timeline_preview.py`]({{ source_file("python/examples/timeline_preview.py") }}) is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. [`timeline_stream.py`]({{ source_file("python/examples/timeline_stream.py") }}) uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. [`timeline_sweep.py`]({{ source_file("python/examples/timeline_sweep.py") }}) shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop. [`notebook_workflow.py`]({{ source_file("python/examples/notebook_workflow.py") }}) combines install notes, clock discovery, preview export, sweep generation, and optional live streaming with `--run`.
+[`timeline_preview.py`]({{ source_file("python/examples/timeline_preview.py") }}) is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. [`timeline_stream.py`]({{ source_file("python/examples/timeline_stream.py") }}) uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. These Timeline examples include an explicit final value so owned channels return to their resting value after the last pulse. [`timeline_sweep.py`]({{ source_file("python/examples/timeline_sweep.py") }}) shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop. [`notebook_workflow.py`]({{ source_file("python/examples/notebook_workflow.py") }}) combines install notes, clock discovery, preview export, sweep generation, and optional live streaming with `--run`.
 
 See also: [ppscpi - network server](ppscpi.md) and [Python bindings](python.md).
 

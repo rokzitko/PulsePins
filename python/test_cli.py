@@ -25,6 +25,7 @@ def test_timeline_preview_cli_writes_sidecar_files(tmp_path, capsys):
 
     output = capsys.readouterr().out
     assert "d 1000 0x4" in output
+    assert "final 0x0\nf\n" in output
     assert svg_path.read_text(encoding="utf-8").startswith(
         '<svg xmlns="http://www.w3.org/2000/svg"'
     )
@@ -43,7 +44,47 @@ def test_timeline_sweep_cli_dry_run(capsys):
     output = capsys.readouterr().out
     assert "# camera delay: 0.0 us" in output
     assert "# camera delay: 5.0 us" in output
+    assert output.count("final 0x0\n") == 2
     assert output.count("f\n") == 2
+
+
+def test_timeline_stream_cli_uploads_final(monkeypatch, capsys):
+    calls = []
+
+    class FakePulsePins:
+        def __init__(self, host, port=5025):
+            calls.append(("init", host, port))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def idn(self):
+            return "PulsePins,TEST"
+
+        def reset(self):
+            calls.append(("reset",))
+
+        def check(self, enabled):
+            calls.append(("check", enabled))
+
+        def load(self, sequence, **options):
+            calls.append(("load", sequence.to_sequence(**options), options))
+
+        def stream(self):
+            return "SUCCESS"
+
+    monkeypatch.setattr(cli, "PulsePins", FakePulsePins)
+    cli.timeline_stream_main(["board.local", "--port", "1234", "--print-sequence"])
+
+    output = capsys.readouterr().out
+    assert "final 0x0\nf\n" in output
+    load_calls = [call for call in calls if call[0] == "load"]
+    assert len(load_calls) == 1
+    assert load_calls[0][2] == {"force_trigger": True, "include_final": True}
+    assert "final 0x0\nf\n" in load_calls[0][1]
 
 
 def test_notebook_workflow_cli_dry_run(tmp_path, capsys):
@@ -58,6 +99,7 @@ def test_notebook_workflow_cli_dry_run(tmp_path, capsys):
     assert "# Dry run using clock_hz=100000000" in output
     assert "# Generated sequence:" in output
     assert "# Sweep camera delay: 5.0 us" in output
+    assert output.count("final 0x0\n") == 3
     assert (output_dir / "timeline.svg").exists()
     assert (output_dir / "timeline.csv").exists()
     assert (output_dir / "timeline.json").exists()

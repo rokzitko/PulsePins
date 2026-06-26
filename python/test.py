@@ -483,6 +483,20 @@ def test_sequence_vcd_roundtrip_bitload():
       seq2.load_VCD(str(path), "outs", 1)
       assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
 
+def test_sequence_vcd_roundtrip_defaults():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(3, 0x1))
+   seq.push_back(pp.el(2, 0x3))
+   seq.push_back(pp.el(4, 0x0))
+
+   with tempfile.TemporaryDirectory() as tmpdir:
+      path = Path(tmpdir) / "roundtrip-defaults.vcd"
+      seq.write_VCD_file(str(path))
+      assert "$timescale 10ns $end" in path.read_text()
+      seq2 = pp.Sequence()
+      seq2.load_VCD(str(path))
+      assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
+
 def test_sequence_vcd_export_rejects_trigger():
    seq = pp.Sequence()
    seq.push_back(pp.el(0x1, 0x3, True))

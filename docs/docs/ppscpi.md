@@ -122,10 +122,10 @@ with PulsePins("de10nano") as pp:
     timeline.pulse("laser", start=10, duration=5)
     timeline.pulse("camera", start=20, duration=10)
     pp.reset()
-    pp.run(timeline, force_trigger=True)
+    pp.run(timeline, force_trigger=True, include_final=True)
 ```
 
-`Timeline.to_sequence(...)` returns the generated text sequence, `Timeline.to_csv()` writes browser-compatible Timeline CSV, `Timeline.to_draft_json()` writes browser-compatible draft JSON, `Timeline.to_vcd(...)` writes a scalar waveform trace, and notebooks render a lightweight SVG preview when the timeline object is evaluated.
+`Timeline.to_sequence(...)` returns the generated text sequence, `Timeline.to_csv()` writes browser-compatible Timeline CSV, `Timeline.to_draft_json()` writes browser-compatible draft JSON, `Timeline.to_vcd(...)` writes a scalar waveform trace, and notebooks render a lightweight SVG preview when the timeline object is evaluated. Use `include_final=True` when streaming finite Timeline pulses so owned channels return to their resting value after the last pulse.
 
 The same workflow is available as runnable examples:
 

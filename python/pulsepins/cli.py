@@ -148,7 +148,7 @@ def timeline_preview_main(argv=None):
     args = parser.parse_args(argv)
 
     timeline = build_example_timeline(args.clock_hz)
-    print(timeline.to_sequence(force_trigger=True), end="")
+    print(timeline.to_sequence(force_trigger=True, include_final=True), end="")
 
     if args.svg:
         with open(args.svg, "w", encoding="utf-8") as output:
@@ -200,13 +200,13 @@ def timeline_stream_main(argv=None):
 
     timeline = build_example_timeline(args.clock_hz)
     if args.print_sequence:
-        print(timeline.to_sequence(force_trigger=True), end="")
+        print(timeline.to_sequence(force_trigger=True, include_final=True), end="")
 
     with PulsePins(args.host, port=args.port) as pp:
         print(pp.idn())
         pp.reset()
         pp.check(args.check)
-        pp.load(timeline, force_trigger=True)
+        pp.load(timeline, force_trigger=True, include_final=True)
         print(pp.stream())
 
 
@@ -258,7 +258,7 @@ def timeline_sweep_main(argv=None):
     if args.dry_run:
         for delay, timeline in timelines:
             print("# camera delay: {} us".format(delay))
-            print(timeline.to_sequence(force_trigger=True), end="")
+            print(timeline.to_sequence(force_trigger=True, include_final=True), end="")
         return
 
     with PulsePins(args.host, port=args.port) as pp:
@@ -266,7 +266,7 @@ def timeline_sweep_main(argv=None):
         pp.reset()
         for delay, timeline in timelines:
             print("camera delay: {} us".format(delay))
-            print(pp.run(timeline, check=args.check, force_trigger=True))
+            print(pp.run(timeline, check=args.check, force_trigger=True, include_final=True))
 
 
 def notebook_workflow_main(argv=None):
@@ -335,7 +335,7 @@ def notebook_workflow_main(argv=None):
 
     def show_sequence(timeline):
         print("# Generated sequence:")
-        print(timeline.to_sequence(force_trigger=True), end="")
+        print(timeline.to_sequence(force_trigger=True, include_final=True), end="")
 
     if not args.run:
         print("# Dry run using clock_hz={:.17g}".format(args.clock_hz))
@@ -346,7 +346,8 @@ def notebook_workflow_main(argv=None):
             print("# Sweep camera delay: {} us".format(delay))
             print(
                 build_sweep_timeline(args.clock_hz, delay).to_sequence(
-                    force_trigger=True
+                    force_trigger=True,
+                    include_final=True,
                 ),
                 end="",
             )
@@ -362,7 +363,7 @@ def notebook_workflow_main(argv=None):
         show_sequence(timeline)
         pp.reset()
         print("# Stream example:")
-        print(pp.run(timeline, check=args.check, force_trigger=True))
+        print(pp.run(timeline, check=args.check, force_trigger=True, include_final=True))
         for delay in args.delays_us:
             print("# Stream sweep camera delay: {} us".format(delay))
             print(
@@ -370,5 +371,6 @@ def notebook_workflow_main(argv=None):
                     build_sweep_timeline(clock_hz, delay),
                     check=args.check,
                     force_trigger=True,
+                    include_final=True,
                 )
             )

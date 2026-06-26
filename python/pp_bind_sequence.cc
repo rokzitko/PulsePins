@@ -174,7 +174,7 @@ void bind_sequence(nb::module_ &m) {
     .def("write_VCD_file", &Sequence::write_VCD_file,
          "filename"_a,
          "target_name"_a = "outs",
-         "timescale"_a = "1ns")
+         "timescale"_a = default_vcd_timescale)
     .def("write_binary_file", &Sequence::write_binary_file,
          "filename"_a,
          "force_trigger"_a = false);

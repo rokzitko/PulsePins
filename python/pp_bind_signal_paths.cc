@@ -65,7 +65,7 @@ void bind_signal_paths(nb::module_ &m) {
          "dev"_a,
          "base"_a,
          nb::keep_alive<1, 2>())
-    .def("mode", &combiner::mode)
+    .def("mode", &combiner_trig::mode)
     .def("invert_int", &combiner_trig::invert_int)
     .def("invert_ext", &combiner_trig::invert_ext)
     .def("invert_misc", &combiner_trig::invert_misc)

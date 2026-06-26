@@ -3,6 +3,7 @@
 
 #include <cstddef>
 
+#include <nanobind/stl/function.h>
 #include <nanobind/stl/string.h>
 
 #include "pp_bind.hh"

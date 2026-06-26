@@ -57,12 +57,12 @@ with PulsePins("de10nano") as pp:
     timeline.pulse("laser", start=10, duration=5)
     timeline.pulse("camera", start=20, duration=10)
     pp.reset()
-    pp.run(timeline, force_trigger=True)
+    pp.run(timeline, force_trigger=True, include_final=True)
 
 timeline
 ```
 
-In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns the generated PulsePins text sequence for inspection or manual editing. `Timeline.to_csv()` / `Timeline.from_csv(...)` use the same `channel,bit,start,duration,color` pulse-table CSV format as the browser Timeline Composer. `Timeline.to_draft_json()` / `Timeline.from_draft_json(...)` use the browser draft JSON format. `Timeline.to_vcd(...)` exports a scalar [Value Change Dump (VCD)](cpp.md#data-types-for-sequence-representation) trace for waveform viewers. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
+In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns the generated PulsePins text sequence for inspection or manual editing; pass `include_final=True` for upload-ready finite pulse programs that return owned channels to their resting value. `Timeline.to_csv()` / `Timeline.from_csv(...)` use the same `channel,bit,start,duration,color` pulse-table CSV format as the browser Timeline Composer. `Timeline.to_draft_json()` / `Timeline.from_draft_json(...)` use the browser draft JSON format. `Timeline.to_vcd(...)` exports a scalar [Value Change Dump (VCD)](cpp.md#data-types-for-sequence-representation) trace for waveform viewers. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
 
 Runnable examples:
 
