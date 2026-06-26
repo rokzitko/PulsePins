@@ -176,7 +176,8 @@ integer sample_idx = 0;
 
 // Check that no payload advances while gate_in keeps gate_enable low.
 initial begin
-  #12;
+  wait(dut.gating_streamer == 1);
+  #4;
   avmm_read(GATING_R);
   assert(avs_s0_readdata[1:0] == 2'b11) else $fatal;
 
@@ -191,7 +192,8 @@ end
 // Once the gate opens, wrapper-level status and output progression should change together.
 initial begin
   wait(gate_in == 1);
-  #2;
+  wait(dut.gate_enable == 1);
+  #4;
   avmm_read(GATING_R);
   assert(dut.gate_enable == 1) else $fatal;
   assert(avs_s0_readdata[12:10] == 3'b111) else $fatal;

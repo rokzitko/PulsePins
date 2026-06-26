@@ -155,6 +155,11 @@ This is useful when the output should be paused by an external signal without re
 
 This is mainly useful for debugging, bring-up, and simple manual output control without rebuilding a full sequence.
 
+Output override and gating configuration are static streamer configuration. Writes are accepted by
+the Avalon-MM register file immediately, but the streamer-clock shadow configuration is updated only
+while the streamer is idle or held in streamer reset. Writes made during active playback therefore
+take effect on the next idle/reset window, not in the middle of the current output sequence.
+
 ## Register summary
 
 The authoritative register enums live in [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }}).
@@ -184,6 +189,11 @@ Read-side registers:
 
 The addresses above are register word indices as used by the integrated Avalon-MM interface.
 
+Readback registers that observe `streamer_clk` state (`IF_STATUS`, `QOUT`, `QOUT_STREAMER`,
+`CRC32`, `GATING_R`, trigger input visibility, and output-FIFO read counters) return synchronized
+snapshots in the Avalon/control clock domain. They are coherent CDC samples with a small crossing
+latency, not cycle-exact instantaneous taps.
+
 ## Clocking and reset
 
 The streamer spans two important domains:
@@ -191,7 +201,10 @@ The streamer spans two important domains:
 * `clk` - control-side logic, ingress buffering, decode path, register programming
 * `streamer_clk` - trigger evaluation, output pacing, output-valid/strobe timing
 
-The main reset crossing is `streamer_rst`, which is synchronized from the top-level `reset` signal into `streamer_clk`.
+The main reset crossing is `streamer_rst`, which is synchronized from the top-level reset and the
+software streamer-reset request into `streamer_clk`. Runtime trigger, stop, gate, and trigger-input
+levels are synchronized into `streamer_clk`; static output/gating configuration crosses through a
+latest-value CDC update helper and commits only while idle/reset.
 
 For the broader system clock tree and ownership model, see `clock_domain.md`.
 

@@ -52,6 +52,10 @@ Important behavioral points:
 - `gate_enable` controls whether the output-side FIFO is allowed to advance once triggering has started
 - `done` reflects successful completion of the buffered output stream
 - `buffer_error` indicates output-side underrun
+- static output/gating configuration written from Avalon-MM crosses into `streamer_clk` as a
+  coherent CDC bundle and is applied only while the streamer is idle or in streamer reset
+- live status, CRC, output value, and output-side counter readbacks are control-domain snapshots
+  of `streamer_clk` state, not direct asynchronous samples
 
 ## Key customization points
 

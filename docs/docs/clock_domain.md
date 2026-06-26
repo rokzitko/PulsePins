@@ -153,9 +153,14 @@ Streamer facts:
 
 - input FIFO write side: `clk`
 - output FIFO read side: `streamer_clk`
-- `streamer_rst`: synchronized from `reset` into `streamer_clk`
+- `streamer_rst`: synchronized from top-level reset and software streamer reset into `streamer_clk`
 - trigger chain: `streamer_clk`
 - output read request: `trigger_activated && gate_enable`
+- Avalon-written static output/gating configuration crosses into `streamer_clk` through a coherent
+  latest-value CDC update and is applied only while the streamer is idle or held in streamer reset
+- runtime trigger, stop, gate, and trigger-input levels are synchronized before use in `streamer_clk`
+- software-visible streamer-domain status/data readbacks are synchronized snapshots in the Avalon
+  clock domain
 
 Host-side trigger routing and software-controlled trigger bits are configured from:
 
@@ -234,6 +239,7 @@ Reset release is domain-specific.
 | File | Function |
 | ---- | -------- |
 | [`ip/misc/sync.sv`]({{ source_file("ip/misc/sync.sv") }}) | single-bit synchronizers |
+| [`ip/misc/cdc.sv`]({{ source_file("ip/misc/cdc.sv") }}) | reusable bit synchronizer, latest-value bus update, and snapshot CDC helpers |
 | [`ip/misc/reset.sv`]({{ source_file("ip/misc/reset.sv") }}) | async-assert / sync-release reset synchronizer with hold time |
 | [`ip/misc/cdc_mailbox.sv`]({{ source_file("ip/misc/cdc_mailbox.sv") }}) | mailbox-style multi-bit CDC helper |
 

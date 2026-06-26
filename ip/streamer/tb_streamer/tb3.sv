@@ -39,7 +39,8 @@ always @(posedge clk) begin
 );
 end
 
-streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value);
+streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
+  .initial_value, .initial_value_streamer(initial_value));
 
 localparam [31:0] PASS = 0;
 localparam [31:0] NOPASS = 1 << BIT_NOPASS;

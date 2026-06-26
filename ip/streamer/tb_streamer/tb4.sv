@@ -49,7 +49,7 @@ end
 logic gate_enable;
 assign gate_enable = 1'b1;
 
-streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value, .trigger_enable, .trigger_force,
+streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value, .initial_value_streamer(initial_value), .trigger_enable, .trigger_force,
              .streamer_clk, .qout, .qout_valid(valid), .gate_enable, .stop(0),
              .stop_on_buffer_error(0)
              );

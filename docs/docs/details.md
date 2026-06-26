@@ -74,6 +74,11 @@ Read:
 | ST_OUTF_OUT_L | b10010      | Output FIFO output stats, low word |
 | ST_OUTF_OUT_H | b10011      | Output FIFO output stats, high word |
 
+Streamer-domain readback registers are synchronized snapshots in the Avalon/control clock domain.
+Static output/gating writes (`INIT_VAL`, `QOUT_OVERRIDE`, `QOUT_SELECT` through `IF_CTRL`, and
+`GATING_W`) update the active streamer-clock shadow configuration only while the streamer is idle or
+held in streamer reset.
+
 
 
 Signals in the status (read) register

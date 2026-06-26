@@ -602,6 +602,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/level_to_pulse.v
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/endianness.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/delay.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/sync.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/cdc.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/heartbeat.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/activity_monitor.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ip/misc/reset.sv

@@ -44,6 +44,7 @@ add_fileset_file st_interface.sv SYSTEMVERILOG PATH ip/streamer/st_interface.sv 
 add_fileset_file endianness.sv SYSTEMVERILOG PATH ip/misc/endianness.sv
 add_fileset_file crc32.sv SYSTEMVERILOG PATH ip/misc/crc32.sv
 add_fileset_file sync.sv SYSTEMVERILOG PATH ip/misc/sync.sv
+add_fileset_file cdc.sv SYSTEMVERILOG PATH ip/misc/cdc.sv
 add_fileset_file input_fifo.sv SYSTEMVERILOG PATH ip/streamer/input_fifo.sv
 add_fileset_file preprocessor.sv SYSTEMVERILOG PATH ip/streamer/preprocessor.sv
 add_fileset_file level_to_pulse.sv SYSTEMVERILOG PATH ip/streamer/level_to_pulse.sv
@@ -62,6 +63,7 @@ add_fileset_file st_interface.sv SYSTEMVERILOG PATH ip/streamer/st_interface.sv
 add_fileset_file endianness.sv SYSTEMVERILOG PATH ip/misc/endianness.sv
 add_fileset_file crc32.sv SYSTEMVERILOG PATH ip/misc/crc32.sv
 add_fileset_file sync.sv SYSTEMVERILOG PATH ip/misc/sync.sv
+add_fileset_file cdc.sv SYSTEMVERILOG PATH ip/misc/cdc.sv
 add_fileset_file input_fifo.sv SYSTEMVERILOG PATH ip/streamer/input_fifo.sv
 add_fileset_file preprocessor.sv SYSTEMVERILOG PATH ip/streamer/preprocessor.sv
 add_fileset_file level_to_pulse.sv SYSTEMVERILOG PATH ip/streamer/level_to_pulse.sv

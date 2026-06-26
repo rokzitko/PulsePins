@@ -24,8 +24,9 @@ module streamer
  input wire input_valid,                    // enable for loading data into FIFO
  output wire input_ready,                   // FIFO ready (i.e., not full)
 
- input wire gate_enable,                    // enable signal
- input wire [WIDTH_DATA-1:0] initial_value, // initial value for qout
+ input wire gate_enable,                    // streamer_clk-domain gate enable
+ input wire [WIDTH_DATA-1:0] initial_value, // clk-domain initial value for decoder state
+ input wire [WIDTH_DATA-1:0] initial_value_streamer, // streamer_clk-domain pre-trigger output value
 
  input wire streamer_clk,                     // clock for data streaming
  output wire [WIDTH_DATA-1:0] qout,         // output stream
@@ -36,14 +37,14 @@ module streamer
  output wire done,                          // goes high when streaming is complete
 
  input wire [WIDTH_TRIGGER-1:0] trigger_in, // trigger inputs
- input wire trigger_enable,                 // enable trigger
- input wire trigger_force,                  // manual external trigger signal (overrides everything!)
- input wire trigger_reset,                  // manually resets the trigger logic
+ input wire trigger_enable,                 // streamer_clk-domain trigger enable
+ input wire trigger_force,                  // streamer_clk-domain manual trigger force
+ input wire trigger_reset,                  // streamer_clk-domain trigger reset
  output wire trigger_armed,                 // high if waiting for a trigger event
  output wire trigger_activated,             // high if trigger had been activated and we are streaming out
 
- input wire stop,
- input wire stop_on_buffer_error,
+ input wire stop,                           // streamer_clk-domain stop control
+ input wire stop_on_buffer_error,           // streamer_clk-domain buffer-error policy
 
  // Statistics
  output wire [WIDTH_STAT-1:0] input_fifo1_ctr_in,
@@ -187,7 +188,7 @@ always_ff @(posedge streamer_clk) begin
   end
 end
 
-assign qout = trigger_latch ? qout_fifo : initial_value;
+assign qout = trigger_latch ? qout_fifo : initial_value_streamer;
 
 wire trigger_o;
 
