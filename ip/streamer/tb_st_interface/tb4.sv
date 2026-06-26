@@ -29,6 +29,8 @@ end
 wire [95:0] asi_data;
 wire        asi_valid;
 wire        asi_ready;
+wire        src_sop;
+wire        src_eop;
 
 logic [4:0] avs_s0_address;
 logic       avs_s0_read;
@@ -88,7 +90,9 @@ avalon_st_source_bfm #(
   .reset,
   .src_data(asi_data),
   .src_valid(asi_valid),
-  .src_ready(asi_ready)
+  .src_ready(asi_ready),
+  .src_sop,
+  .src_eop
 );
 
 // Trace the software-visible gating state and the resulting output activity.
@@ -111,21 +115,39 @@ end
 
 // Helper modeling a single Avalon-MM register write.
 task avmm_write(input logic [4:0] addr, input logic [31:0] data);
+  @(negedge clk);
   avs_s0_address = addr;
   avs_s0_writedata = data;
-  avs_s0_write = 1;
-  #1;
-  avs_s0_write = 0;
-  #1;
+  avs_s0_write = 1'b1;
+  @(negedge clk);
+  avs_s0_write = 1'b0;
 endtask
 
 // Helper modeling a single Avalon-MM register read.
 task avmm_read(input logic [4:0] addr);
+  @(negedge clk);
   avs_s0_address = addr;
-  avs_s0_read = 1;
-  #1;
-  avs_s0_read = 0;
-  #1;
+  avs_s0_read = 1'b1;
+  @(posedge clk);
+  @(negedge clk);
+  avs_s0_read = 1'b0;
+endtask
+
+task automatic wait_gating_readback(input logic [31:0] expected, input logic [31:0] mask);
+  integer i;
+  bit matched;
+  begin
+    matched = 1'b0;
+    i = 0;
+    while ((i < 40) && !matched) begin
+      avmm_read(GATING_R);
+      matched = ((avs_s0_readdata & mask) == expected);
+      if (!matched)
+        @(posedge clk);
+      i = i + 1;
+    end
+    assert(matched) else $fatal(1, "GATING_R did not reach expected value");
+  end
 endtask
 
 // Program gate_in-based gating and feed a short deterministic stream.
@@ -177,9 +199,7 @@ integer sample_idx = 0;
 // Check that no payload advances while gate_in keeps gate_enable low.
 initial begin
   wait(dut.gating_streamer == 1);
-  #4;
-  avmm_read(GATING_R);
-  assert(avs_s0_readdata[1:0] == 2'b11) else $fatal;
+  wait_gating_readback(32'h00000003, 32'h00000003);
 
   #18;
   assert(trigger_activated == 1) else $fatal;
@@ -193,10 +213,8 @@ end
 initial begin
   wait(gate_in == 1);
   wait(dut.gate_enable == 1);
-  #4;
-  avmm_read(GATING_R);
   assert(dut.gate_enable == 1) else $fatal;
-  assert(avs_s0_readdata[12:10] == 3'b111) else $fatal;
+  wait_gating_readback(32'h00001c00, 32'h00001c00);
 end
 
 always @(posedge clk) begin
@@ -224,7 +242,9 @@ initial begin
   #120 $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef VERILATOR
   $set_coverage_db_name("run_st_if_4.ucdb");
+`endif
   $finish;
 end
 
