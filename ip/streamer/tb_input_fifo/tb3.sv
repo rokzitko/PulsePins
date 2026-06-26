@@ -32,6 +32,12 @@ logic rdreq;
 logic [WIDTH_TOTAL-1:0] q;
 logic full;
 logic empty;
+logic [WIDTH_STAT-1:0] ctr1_in;
+logic [WIDTH_STAT-1:0] ctr1_out;
+logic [WIDTH_STAT-1:0] ctr2_in;
+logic [WIDTH_STAT-1:0] ctr2_out;
+logic overflow_in;
+logic overflow_out;
 
 bit verbose = 0;
 
@@ -54,7 +60,14 @@ dut(
 
 .rdreq,
 .q,
-.empty
+.empty,
+
+.ctr1_in,
+.ctr1_out,
+.ctr2_in,
+.ctr2_out,
+.overflow_in,
+.overflow_out
 );
 
 integer queue[$];
@@ -66,6 +79,7 @@ assign wrreq = want_write;  // valid signal, held until accepted by !full
 task automatic feed;
   input int nr;
   integer i;
+  bit accepted;
   begin
     queue.push_back(nr);
     $display("[%0t] Feed: %0d", $time, nr);
@@ -74,19 +88,22 @@ task automatic feed;
     want_write = 0;
 
     while (i <= nr) begin
-      data       <= i;
-      want_write <= 1;         // propose to write
+      @(negedge clk);
+      data = WIDTH_TOTAL'(i);
+      want_write = 1'b1;       // propose to write
+      accepted = !full;
       @(posedge clk);
-      if (full) begin
-        saw_backpressure = 1'b1;
-      end else begin
+      if (accepted) begin
         // successful write this cycle
         if (verbose) $display("W %0d %0d", nr, i);
         i = i + 1;
+      end else begin
+        saw_backpressure = 1'b1;
       end
     end
 
-    want_write <= 0;
+    @(negedge clk);
+    want_write = 1'b0;
   end
 endtask
 
@@ -105,25 +122,27 @@ task automatic read;
 
     j = 1;
     while (j <= nr) begin
-      @(posedge clk);
+      @(negedge clk);
       if (!empty) begin
-        rdreq <= 1;       // request advance
-        @(posedge clk);   // wait one more cycle for q to update
-        word = q;         // now q is valid
-        rdreq <= 0;
+        word = q;         // show-ahead FIFO: current word is already visible
 
         if (verbose) $display("R %0d %0d > %0d", nr, j, word);
-        assert(word == j) else $fatal;
+        assert(word == WIDTH_TOTAL'(j)) else $fatal;
+
+        rdreq = 1'b1;     // consume the visible word on the next edge
+        @(posedge clk);
+        @(negedge clk);
+        rdreq = 1'b0;
 
         j = j + 1;
       end else begin
-        rdreq <= 0;
+        rdreq = 1'b0;
       end
     end
 
     // clean deassertion after last read
-    @(posedge clk);
-    rdreq <= 0;
+    @(negedge clk);
+    rdreq = 1'b0;
   end
 endtask
 
@@ -166,12 +185,14 @@ initial begin
     consumer();
   join
   assert(saw_backpressure) else $fatal(1, "backpressure was not exercised");
-  assert(!dut.overflow_in) else $fatal(1, "legal input backpressure set overflow_in");
-  assert(!dut.overflow_out) else $fatal(1, "legal output backpressure set overflow_out");
+  assert(!overflow_in) else $fatal(1, "legal input backpressure set overflow_in");
+  assert(!overflow_out) else $fatal(1, "legal output backpressure set overflow_out");
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef VERILATOR
   $set_coverage_db_name("run_input_3.ucdb");
+`endif
   $finish;
 end
 
