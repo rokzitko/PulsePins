@@ -27,12 +27,34 @@ end
 reg [cfg::WIDTH_DATA-1:0] qin;
 reg qin_valid;
 wire qin_clk = clk;
+reg qin_strobe;
 
-rl_encoder_if dut(.clk, .reset, .qin, .qin_valid, .qin_clk);
+wire [cfg::WIDTH_TOTAL-1:0] aso_data;
+wire aso_valid;
+reg aso_ready;
+
+reg [1:0] avs_s0_address;
+reg avs_s0_read;
+reg avs_s0_write;
+wire [cfg::WIDTH_AVS-1:0] avs_s0_readdata;
+reg [cfg::WIDTH_AVS-1:0] avs_s0_writedata;
+
+rl_encoder_if dut(
+  .clk, .reset,
+  .aso_data, .aso_valid, .aso_ready,
+  .avs_s0_address, .avs_s0_read, .avs_s0_write, .avs_s0_readdata, .avs_s0_writedata,
+  .qin, .qin_valid, .qin_strobe, .qin_clk
+);
 
 initial begin
   qin <= 32'b0;
   qin_valid <= 0;
+  qin_strobe <= 0;
+  aso_ready <= 0;
+  avs_s0_address <= '0;
+  avs_s0_read <= 0;
+  avs_s0_write <= 0;
+  avs_s0_writedata <= '0;
   #10
   qin <= { 32'h11 };
   qin_valid <= 1;
@@ -58,10 +80,21 @@ initial begin
   qin_valid <= 0;
 end
 
+initial begin
+  wait (aso_valid == 1'b1);
+  repeat (3) begin
+    @(posedge clk);
+    assert(aso_valid == 1'b1) else $fatal;
+    assert(dut.rdreq == 1'b0) else $fatal;
+  end
+  aso_ready <= 1'b1;
+  #1step assert(dut.rdreq == 1'b1) else $fatal;
+end
+
 integer fh;
 
 initial begin
-  #30 $display("SUCCESS");
+  #50 $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $finish;

@@ -108,16 +108,16 @@ module tb1;
   endtask
 
   // Address map (must match DUT)
-  localparam [ADDR_W-1:0] A_CTRL     = 8'h00;
-  localparam [ADDR_W-1:0] A_GATE_LEN = 8'h01;
-  localparam [ADDR_W-1:0] A_NCH      = 8'h02;
-  localparam [ADDR_W-1:0] A_RES_BASE = 8'h04;
+  localparam [ADDR_W-1:0] A_CTRL     = 4'd0;
+  localparam [ADDR_W-1:0] A_GATE_LEN = 4'd1;
+  localparam [ADDR_W-1:0] A_NCH      = 4'd2;
+  localparam [ADDR_W-1:0] A_RES_BASE = 4'd4;
 
   // --------------------------------------------------------------------------
   // Stimulus / checks
   // --------------------------------------------------------------------------
   int unsigned gate_len;
-  int unsigned r0, r1, r2;
+  int unsigned r0, r1, r2, r_nch, r_oob;
   int unsigned exp0, exp1, exp2;
   integer fh;
 
@@ -150,9 +150,11 @@ module tb1;
     #(gate_len * CNT_PER * 2);
 
     // Read results
+    avs_read32(A_NCH, r_nch);
     avs_read32(A_RES_BASE + 0, r0);
     avs_read32(A_RES_BASE + 1, r1);
     avs_read32(A_RES_BASE + 2, r2);
+    avs_read32(A_RES_BASE + 3, r_oob);
 
     // Expected rising edges per gate:
     // - ch0 same as cnt_clk: one rising per cnt_clk period => ~gate_len edges
@@ -169,6 +171,9 @@ module tb1;
     $display("RESULT0=%0d (exp ~%0d)", r0, exp0);
     $display("RESULT1=%0d (exp ~%0d)", r1, exp1);
     $display("RESULT2=%0d (exp ~%0d)", r2, exp2);
+
+    if (r_nch != N_CH) $fatal(1, "N_CH readback mismatch");
+    if (r_oob != 0) $fatal(1, "out-of-range channel readback should be zero");
 
     // Tolerance (boundary +/-1..2 possible due to async resets / phase)
     if ((r0 < exp0-2) || (r0 > exp0+2)) $fatal(1, "ch0 out of range");

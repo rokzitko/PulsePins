@@ -179,7 +179,7 @@ always_ff @(posedge clk) begin
   if (reset) begin
     overflow_in <= 0;
   end else begin
-    if (full1 & wrreq1) begin
+    if (wrreq & almost_full1) begin
       overflow_in <= 1;
     end
   end
@@ -189,7 +189,7 @@ always_ff @(posedge clk) begin
   if (reset) begin
     overflow_out <= 0;
   end else begin
-    if (full2 & wrreq2) begin
+    if (dout_valid & almost_full2) begin
       overflow_out <= 1;
     end
   end

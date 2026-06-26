@@ -107,6 +107,9 @@ initial begin
   @(posedge din_ready);
   #1
   din_valid <= 1;
+  din <= { REPLAY, 32'h0001, 32'h09 }; // invalid replay length; consume as no-op
+  #1
+  din_valid <= 1;
   din <= { PASS, 32'h00ff, 32'h0aff }; // pass
   #1
   din_valid <= 1;

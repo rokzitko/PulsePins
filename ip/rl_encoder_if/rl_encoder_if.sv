@@ -62,8 +62,8 @@ rl_encoder rl0 (
 
 assign aso_data = { {cfg::WIDTH_CONTROL{1'b0}}, j };
 
-assign rdreq = aso_ready && ~empty; // only dequeue when the downstream reader can accept data
-assign aso_valid = rdreq;
+assign aso_valid = ~empty;
+assign rdreq = aso_valid && aso_ready; // dequeue only when downstream accepts valid data
 
 // Clock selection for the auxiliary pulse counter and CRC path.
 logic input_clk;
@@ -113,6 +113,7 @@ always_ff @(posedge clk) begin
     unique case (avs_s0_address)
       2'b00: {reset_counter} <= avs_s0_writedata[0];
       2'b01: {mode}          <= avs_s0_writedata[0];
+      default: ;
     endcase
   end
 end
@@ -123,9 +124,10 @@ always_ff @(posedge clk) begin
   end else if (avs_s0_read) begin
     // Software can inspect FIFO-empty state, encoder mode, overflow, observed sample count, and CRC.
     unique case (avs_s0_address)
-      2'b00: avs_s0_readdata <= { overflow, mode, reset_counter, empty };
+      2'b00: avs_s0_readdata <= $bits(avs_s0_readdata)'({ overflow, mode, reset_counter, empty });
       2'b01: avs_s0_readdata <= counter;
       2'b10: avs_s0_readdata <= crc_out;
+      default: avs_s0_readdata <= 0;
     endcase
   end
 end

@@ -121,11 +121,22 @@ always_ff @(posedge rdclk) begin
     retrig_requested <= 0;
 end
 
+// Once output consumption has started, an empty read before the terminator is a true
+// underrun. Empty reads before the first decoded word are just startup priming latency.
+logic stream_started;
+
+always_ff @(posedge rdclk) begin
+  if (rdrst)
+    stream_started <= 0;
+  else if (rdreq && !empty)
+    stream_started <= 1;
+end
+
 // 'buffer_error' signal logic: triggered if the output FIFO buffer is emptied before the completion of the RL decoding process
 always_ff @(posedge rdclk) begin
   if (rdrst)
     buffer_error <= 0;
-  else if (rdreq && is_data && !done && empty)
+  else if (stream_started && rdreq && is_data && !done && empty)
     buffer_error <= 1;
 end
 
@@ -172,7 +183,7 @@ logic strobe_clk;
 assign strobe_clk = ~rdclk;
 assign strobe = qout_valid & strobe_clk;
 
-localparam fifo_threshold = length-16;
+localparam logic [widthu-1:0] fifo_threshold = widthu'(length-16);
 
 // wrusedw is in the wrclk clock domain
 always_ff @(posedge wrclk) begin

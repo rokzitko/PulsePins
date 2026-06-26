@@ -82,10 +82,20 @@ module freq_meter_avalon_gray #(
   // 0x08 N_CH (RO)
   // 0x10 RESULT[i] (RO), consecutive words
   // --------------------------
-  localparam int A_CTRL     = 0;
-  localparam int A_GATE_LEN = 1;
-  localparam int A_NCH      = 2;
-  localparam int A_RES_BASE = 4;
+  localparam logic [3:0] A_CTRL     = 4'd0;
+  localparam logic [3:0] A_GATE_LEN = 4'd1;
+  localparam logic [3:0] A_NCH      = 4'd2;
+  localparam logic [3:0] A_RES_BASE = 4'd4;
+  localparam logic [4:0] A_RES_LIMIT = 5'(A_RES_BASE) + 5'(N_CH);
+  localparam int RESULT_INDEX_W = (N_CH <= 1) ? 1 : $clog2(N_CH);
+  logic [RESULT_INDEX_W-1:0] result_index;
+
+  always @(*) begin
+    result_index = avs_address[RESULT_INDEX_W-1:0] - A_RES_BASE[RESULT_INDEX_W-1:0];
+  end
+
+  initial assert (A_RES_LIMIT <= 5'd16)
+    else $error("N_CH exceeds the Avalon address map");
 
   always @(posedge avs_clk or posedge avs_reset) begin
     if (avs_reset) begin
@@ -119,17 +129,16 @@ module freq_meter_avalon_gray #(
 
   always @(*) begin
     avs_readdata = 32'h0;
-    unique case (avs_address)
+    if ({1'b0, avs_address} >= {1'b0, A_RES_BASE} && {1'b0, avs_address} < A_RES_LIMIT) begin
+      avs_readdata = result_avs[result_index];
+    end else unique case (avs_address)
       A_CTRL: begin
         avs_readdata[0] = reg_enable;
         avs_readdata[1] = 1'b0;
       end
       A_GATE_LEN: avs_readdata = reg_gate_len;
       A_NCH:      avs_readdata = N_CH[31:0];
-      4: avs_readdata = result_avs[0];
-      5: avs_readdata = result_avs[1];
-      6: avs_readdata = result_avs[2];
-      7: avs_readdata = result_avs[3];
+      default:    avs_readdata = 32'h0;
     endcase
   end
 

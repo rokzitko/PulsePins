@@ -77,42 +77,35 @@ module cdc_mailbox #(
   end
   assign new_sample_pulse = (in_toggle_out_ff2 ^ in_toggle_out_prev);
 
-  // Bring the data across: because in_buf changes only when out_req is low
-  // and we only *latch* into out_data when out_req is low, this avoids
-  // changing out_data while held. The latching edge occurs after the toggle
-  // is synchronized, giving time for in_buf to be stable.
-  logic [WIDTH-1:0] in_buf_sampled;
-
-  // Optional: register a sampled version of in_buf in out_clk domain.
-  // This reads the bus directly; stability is provided by the handshake:
-  // in_buf only changes when out_req is low (which is exactly when we allow updates).
-  always_ff @(posedge out_clk) begin
-    if (out_reset) begin
-      in_buf_sampled <= '0;
-    end else begin
-      // keep it simple: capture whenever a new sample is announced
-      if (new_sample_pulse) begin
-        in_buf_sampled <= in_buf;
-      end
-    end
-  end
+  // Capture newly announced data even while the output is held, then commit it once the
+  // consumer releases out_req.
+  logic [WIDTH-1:0] pending_data;
+  logic             pending_valid;
 
   // Output data/valid with hold behavior
   always_ff @(posedge out_clk) begin
     if (out_reset) begin
-      out_data  <= '0;
-      out_valid <= 1'b0;
+      out_data      <= '0;
+      out_valid     <= 1'b0;
+      pending_data  <= '0;
+      pending_valid <= 1'b0;
     end else begin
-      // out_valid becomes true once we have at least one sample
-      if (new_sample_pulse)
-        out_valid <= 1'b1;
+      if (new_sample_pulse) begin
+        pending_data  <= in_buf;
+        pending_valid <= 1'b1;
+      end
 
       // Update out_data only when NOT held
       if (!out_req) begin
-        // If a new sample arrived, commit it to out_data.
-        // If no new sample, keep out_data unchanged.
-        if (new_sample_pulse)
-          out_data <= in_buf_sampled;
+        if (new_sample_pulse) begin
+          out_data      <= in_buf;
+          out_valid     <= 1'b1;
+          pending_valid <= 1'b0;
+        end else if (pending_valid) begin
+          out_data      <= pending_data;
+          out_valid     <= 1'b1;
+          pending_valid <= 1'b0;
+        end
       end
       // else: out_req==1 => hold out_data constant
     end

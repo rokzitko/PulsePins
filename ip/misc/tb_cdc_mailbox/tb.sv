@@ -110,8 +110,8 @@ module tb;
     @(posedge out_clk);
     out_req <= 1'b0;
 
-    // 1) Send first word and verify it appears
-    send_word_n(32'h1111_0001, 3);
+    // 1) Send a one-cycle word and verify it appears
+    send_word_n(32'h1111_0001, 1);
 
     wait_out_valid(TMO_VALID, ok);
     if (!ok) $fatal(1, "[TB] TIMEOUT: out_valid did not assert within %0d out_clk cycles", TMO_VALID);
@@ -135,15 +135,18 @@ module tb;
                held, out_data, $time);
     end
 
-    // 3) Release hold, send another word, verify output eventually changes
+    // 3) Release hold and verify the sample captured during hold is committed
     @(posedge out_clk);
     out_req <= 1'b0;
 
-    held = out_data;
-    send_word_n(32'h3333_0003, 3);
+    wait_out_data_eq(32'h2222_0002, TMO_UPDATE, ok);
+    if (!ok) $fatal(1, "[TB] TIMEOUT: pending sample did not commit after releasing hold");
 
-    wait_out_data_changes(held, TMO_UPDATE, ok);
-    if (!ok) $fatal(1, "[TB] TIMEOUT: out_data did not change within %0d out_clk cycles after releasing hold", TMO_UPDATE);
+    // 4) Send another one-cycle word and verify the exact value, not just any change
+    send_word_n(32'h3333_0003, 1);
+
+    wait_out_data_eq(32'h3333_0003, TMO_UPDATE, ok);
+    if (!ok) $fatal(1, "[TB] TIMEOUT: one-cycle update did not reach out_data");
 
     $display("[TB] PASS (out_data=0x%08x out_valid=%0b)", out_data, out_valid);
     fh = $fopen("SUCCESS", "w");

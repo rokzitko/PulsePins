@@ -79,14 +79,19 @@ module preprocessor
 
   // length: number of positions to replay (1..MEMORY_POSITIONS); 0 => no replay
   logic [WIDTH_POSITION:0]  length;
-  logic [WIDTH_POSITION:0]  req_len;
+  localparam logic [WIDTH_POSITION:0] MAX_REPLAY_LENGTH = (WIDTH_POSITION+1)'(MEMORY_POSITIONS);
+  localparam logic [WIDTH_POSITION-1:0] FIRST_POSITION = '0;
+  wire [WIDTH_POSITION:0] req_len = data[WIDTH_POSITION:0];
+  wire req_len_valid = (req_len != '0) && (req_len <= MAX_REPLAY_LENGTH);
   logic [WIDTH_COUNTER-1:0] repetitions;
 
   // current index and repetition counter
   logic [WIDTH_POSITION-1:0] i;   // 0 .. length-1
   logic [WIDTH_COUNTER-1:0]  j;   // 0 .. repetitions-1
 
-  wire last_elem  = (i == length-1);
+  wire [WIDTH_POSITION:0] i_ext = {1'b0, i};
+  wire [WIDTH_POSITION:0] length_minus_one = length - {{WIDTH_POSITION{1'b0}}, 1'b1};
+  wire last_elem  = (i_ext == length_minus_one);
   wire last_cycle = (j == repetitions-1);
 
   // replay active flag and infinite replay flag
@@ -120,11 +125,9 @@ module preprocessor
       if (!active) begin
         // Idle: check for new replay command
         if (replay) begin
-          req_len = data[WIDTH_POSITION:0];
-          length      <= req_len;
-          repetitions <= counter;
-
-          if (req_len != '0) begin
+          if (req_len_valid) begin
+            length      <= req_len;
+            repetitions <= counter;
             active   <= 1'b1;
             infinite <= (counter == '0);
 
@@ -132,12 +135,15 @@ module preprocessor
             j <= '0;
 
             // first element to output
-            dout_replay_reg <= memory['0];
+            dout_replay_reg <= memory[FIRST_POSITION];
           end else begin
-            // zero length: remain idle
-            infinite <= 1'b0;
-            i        <= '0;
-            j        <= '0;
+            // zero or out-of-range length: consume the replay command as a no-op
+            length      <= '0;
+            repetitions <= '0;
+            active      <= 1'b0;
+            infinite    <= 1'b0;
+            i           <= '0;
+            j           <= '0;
           end
         end
       end else begin
@@ -146,17 +152,17 @@ module preprocessor
           if (infinite) begin
             // Infinite replay: cycle 0..length-1 forever
             if (length > 1) begin
-              if (i < length-1) begin
+              if (i_ext < length_minus_one) begin
                 i               <= i + 1;
                 dout_replay_reg <= memory[i + 1];
               end else begin
                 i               <= '0;
-                dout_replay_reg <= memory['0];
+                dout_replay_reg <= memory[FIRST_POSITION];
               end
             end else begin
               // length == 1: repeat same element
               i               <= '0;
-              dout_replay_reg <= memory['0];
+              dout_replay_reg <= memory[FIRST_POSITION];
             end
           end else begin
             if (!last_elem) begin
@@ -168,7 +174,7 @@ module preprocessor
                 // start next cycle
                 i               <= '0;
                 j               <= j + 1;
-                dout_replay_reg <= memory['0];
+                dout_replay_reg <= memory[FIRST_POSITION];
               end else begin
                 // finished all repetitions
                 active <= 1'b0;

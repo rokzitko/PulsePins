@@ -98,12 +98,15 @@ localparam S_IDLE = 0, S_LOAD = 1, S_WAIT = 2, S_TRIGGERED = 3;
 // WAIT = pattern and mask defined, trigger is armed, we are waiting for the trigger event
 // TRIGGERED = all events were detected (or the trigger has been forced), output is 1
 
-always_ff @(state) begin
+always_comb begin
+  o = 0;
+  rdreq = 0;
+  and_trigger_reset = 1;
   unique case (state)
-    S_IDLE:      begin o <= 0; rdreq <= 0; and_trigger_reset <= 1; end
-    S_LOAD:      begin o <= 0; rdreq <= 1; and_trigger_reset <= 1; end
-    S_WAIT:      begin o <= 0; rdreq <= 0; and_trigger_reset <= 0; end
-    S_TRIGGERED: begin o <= 1; rdreq <= 0; and_trigger_reset <= 0; end
+    S_IDLE:      begin o = 0; rdreq = 0; and_trigger_reset = 1; end
+    S_LOAD:      begin o = 0; rdreq = 1; and_trigger_reset = 1; end
+    S_WAIT:      begin o = 0; rdreq = 0; and_trigger_reset = 0; end
+    S_TRIGGERED: begin o = 1; rdreq = 0; and_trigger_reset = 0; end
   endcase
 end
 
