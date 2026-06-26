@@ -53,13 +53,18 @@ module tb;
     $dumpvars(0, tb);
   end
 
-  // Drive one input word for N in_clk cycles (N>=2 recommended for first word)
+  // Drive one input word for N sampled in_clk cycles.
   task automatic send_word_n(input logic [WIDTH-1:0] w, input int ncycles);
-    @(posedge in_clk);
-    in_data  <= w;
-    in_valid <= 1'b1;
-    repeat (ncycles-1) @(posedge in_clk);
-    in_valid <= 1'b0;
+    if (ncycles < 1) $fatal(1, "ncycles must be >= 1");
+
+    @(negedge in_clk);
+    in_data = w;
+    in_valid = 1'b1;
+
+    repeat (ncycles) @(posedge in_clk);
+
+    @(negedge in_clk);
+    in_valid = 1'b0;
   endtask
 
   // Wait for out_valid with timeout
