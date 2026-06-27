@@ -49,9 +49,19 @@ public:
      if (verbose)
        f << "size=" << std::dec << size << std::endl;
    }
-   ram_block chunk(const int i, const int nr_chunks) {
-     const size_t chunk_size = size/nr_chunks;
-     return ram_block(addr+i*chunk_size, chunk_size);
+   ram_block chunk(const int i, const int nr_chunks) const {
+     if (nr_chunks <= 0)
+       throw std::invalid_argument("ram_block chunk count must be positive");
+     if (i < 0 || i >= nr_chunks)
+       throw std::out_of_range("ram_block chunk index is outside chunk range");
+     const size_t chunk_count = static_cast<size_t>(nr_chunks);
+     const size_t chunk_index = static_cast<size_t>(i);
+     const size_t chunk_size = size/chunk_count;
+     if (chunk_size == 0)
+       throw std::invalid_argument("ram_block chunk size must be nonzero");
+     if (chunk_index > (UINTPTR_MAX - addr)/chunk_size)
+       throw std::out_of_range("ram_block chunk address overflows uintptr_t");
+     return ram_block(addr + chunk_index*chunk_size, chunk_size);
    }
    auto get_addr() const {
      return addr;

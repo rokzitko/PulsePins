@@ -323,7 +323,11 @@ inline uint32_t random_log_uniform(uint32_t min_len, uint32_t max_len) {
 }
 
 inline uint32_t random_lin_uniform(uint32_t min_len, uint32_t max_len) {
-  return std::max(random_u32() % (max_len+1), min_len);
+  if (max_len < min_len)
+    throw std::invalid_argument("Require min_len <= max_len.");
+  const uint64_t span = static_cast<uint64_t>(max_len) - static_cast<uint64_t>(min_len) + 1;
+  const auto offset = static_cast<uint32_t>(static_cast<uint64_t>(random_u32()) % span);
+  return min_len + offset;
 }
 
 // Shift Left Logical (SLL)

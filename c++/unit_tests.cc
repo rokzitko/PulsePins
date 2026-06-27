@@ -230,6 +230,28 @@ TEST_CASE("parse_uint helpers reject malformed input") {
   CHECK_THROWS_AS(parse_uint64_t("-1"), std::runtime_error);
 }
 
+TEST_CASE("ram_block chunk validation rejects invalid chunk requests") {
+  const ram_block block(0x1000, 1024);
+  CHECK(block.chunk(1, 4).get_addr() == 0x1100);
+  CHECK(block.chunk(1, 4).get_size() == 256);
+  CHECK_THROWS_AS(block.chunk(0, 0), std::invalid_argument);
+  CHECK_THROWS_AS(block.chunk(-1, 4), std::out_of_range);
+  CHECK_THROWS_AS(block.chunk(4, 4), std::out_of_range);
+  CHECK_THROWS_AS(block.chunk(0, 2048), std::invalid_argument);
+}
+
+TEST_CASE("random linear range helper validates and stays in range") {
+  CHECK(random_lin_uniform(7, 7) == 7);
+  CHECK_THROWS_AS(random_lin_uniform(8, 7), std::invalid_argument);
+  for (int i = 0; i < 32; i++) {
+    const auto value = random_lin_uniform(3, 9);
+    CHECK(value >= 3);
+    CHECK(value <= 9);
+  }
+  const auto full_range_value = random_lin_uniform(0, UINT32_MAX);
+  CHECK(full_range_value <= UINT32_MAX);
+}
+
 TEST_CASE("strict numeric helpers reject partial and non-finite doubles") {
   CHECK(parse_strict_finite_double(" 1.25 ", "test") == doctest::Approx(1.25));
   CHECK_THROWS_AS(parse_strict_finite_double("1.25abc", "test"), std::runtime_error);
