@@ -73,8 +73,8 @@ ppread -hard-timeout 1s -save-vcd capture.vcd -save-text capture.seq -save-binar
 Replay commands:
 
 ```bash
-ppplay -file capture.seq
-ppplay -file capture.ppbin
+ppplay -force -file capture.seq
+ppplay -force -file capture.ppbin
 ```
 
 What it does:
@@ -84,7 +84,7 @@ What it does:
     * `capture.vcd` for waveform viewing
     * `capture.seq` for editable text form
     * `capture.ppbin` for exact lossless replay
-* `ppplay` then replays the saved sequence
+* `ppplay -force` then immediately replays the saved sequence; omit `-force` to arm the trigger and wait for the configured trigger condition
 
 When to use which format:
 

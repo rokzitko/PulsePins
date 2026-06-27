@@ -58,15 +58,15 @@ _pulsepins_ppqout_opts="
 "
 
 _pulsepins_ppvcd_opts="
--file -target -scale -force -check -read -timeout -t -dont_wait
+-file -target -scale -force -check -read -timeout -hard-timeout -t -dont_wait
 "
 
 _pulsepins_ppplay_opts="
--file -format -force -target -scale -check -read -timeout -t -dont_wait
+-file -format -force -target -scale -check -read -timeout -hard-timeout -t -dont_wait
 "
 
 _pulsepins_pptest_opts="
--c -v -v0 -v1 -t -i -iv -trig -p -m -r -n -check -timeout -dump-converted
+-c -v -v0 -v1 -t -i -iv -trig -p -m -r -n -check -timeout -hard-timeout -dump-converted
 -rnd -cycles -delay -repetitions -nr_replays -pre -mid -sep -post -report
 -vmin -vmax -vstep -dwell -spi_clock -f
 "
@@ -76,7 +76,7 @@ _pulsepins_ppcounter_opts="
 "
 
 _pulsepins_ppread_opts="
--oe -timeout -rbmode -save-vcd -save-text -save-binary
+-oe -timeout -hard-timeout -rbmode -save-vcd -save-text -save-binary
 "
 
 _pulsepins_ppts_opts="
@@ -88,7 +88,7 @@ _pulsepins_ppgpsdo_opts="
 "
 
 _pulsepins_ppfreq_opts="
--gate_time -gate_len -nr
+-gate_time -gate_len -nr -format
 "
 
 _pulsepins_ppaux_opts="

@@ -140,6 +140,10 @@ Values shown in the browser are rendered in hexadecimal by default. Input fields
 
 ## API summary
 
+All `POST` endpoints require an `application/x-www-form-urlencoded` request, including bodyless
+actions such as measurement and reset. The browser UI sends an empty `URLSearchParams` body for
+those actions.
+
 * `GET /api/status` returns JSON status for AUX, trigger state, trigger-combiner settings, active streamer qout state, combiner state, and recent action/error text
 * `POST /api/clocking` expects an `application/x-www-form-urlencoded` body with managed `source` (`int_clk` or `ext_clk`), `core_profile`, and `int_profile`; malformed requests or invalid preset/raw/frequency profile strings return HTTP `400`, while valid requests rerun the web-controller reset/bring-up path and then remeasure all clocks
 * `POST /api/clocking/measure` reruns the frequency-meter measurement path without changing tracked clock settings

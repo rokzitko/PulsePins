@@ -10,7 +10,8 @@ default `outs` signal and `$timescale 10ns`, matching `ppplay`'s default VCD tar
 Command line arguments:
 
 * ``-oe``: output enable (bool). If true, we are reading internally generated data. If false, we are
-reading external data on the device I/O pins. If unspecified, use the hardware default (false).
+reading external data on the device I/O pins. If unspecified, leave the current hardware setting
+unchanged; after reset the default is false.
 * ``-timeout``: controls readback idle wait bounds. If omitted, `ppread` uses a conservative default timeout: 2s waiting for the first readback element and 2s for later idle gaps. A positive value is interpreted as time after the last element read. ``-timeout 0`` disables idle-timeout protection. For compatibility, a negative value is interpreted as an absolute timeout from tool start, in seconds; prefer ``-hard-timeout`` for new commands.
 * ``-hard-timeout T``: absolute readback timeout from tool start. Time units such as ``ms``, ``s``, and ``min`` are accepted. This is the preferred way to say "capture for at most T".
 * ``-save-vcd <file>``: capture the readback stream and save it as a VCD waveform file. The default C++ VCD export uses ``$timescale 10ns`` so captures replay through ``ppplay`` with its default VCD scale.
@@ -53,13 +54,14 @@ Capture once, save all replayable formats, then replay the capture with `ppplay`
 
 ```bash
 ppread -hard-timeout 1s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
-ppplay -file capture.vcd
-ppplay -file capture.seq
-ppplay -file capture.ppbin
+ppplay -force -file capture.vcd
+ppplay -force -file capture.seq
+ppplay -force -file capture.ppbin
 ```
 
 Use `capture.vcd` when you want waveform viewing as well as replay, `capture.seq` when you want
-an editable text sequence, and `capture.ppbin` when you want exact lossless replay.
+an editable text sequence, and `capture.ppbin` when you want exact lossless replay. Omit `-force`
+when you want playback to arm the trigger and wait for the configured trigger condition.
 
 For a fuller workflow, see [Example 3: Capture a waveform and replay it exactly](examples.md#example-3-capture-a-waveform-and-replay-it-exactly).
 

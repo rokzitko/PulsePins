@@ -3,14 +3,14 @@
 ## Project summary
 
 PulsePins is a [run-length–encoded (RLE)](index.md#run-length-encoding) pattern generator for
-parallel data buses with 10&nbsp;ns timing resolution and advanced triggering capabilities. It is
+parallel data buses, with a 32-bit distributed reference build, 10&nbsp;ns timing resolution, and advanced triggering capabilities. It is
 designed for reliable operation with self-testing.
 
 ## Main features
 
-* High-speed RLE decoding core: zero-wait-state decoding (one update per clock period), limited only by the clock frequency. At 100&nbsp;MHz this provides 10&nbsp;ns timing resolution for pulse durations and separations.
+* High-speed RLE decoding core: one decoded update per clock while the decoder is active and not backpressured. At 100&nbsp;MHz this provides 10&nbsp;ns timing resolution for pulse durations and separations.
 * Two data sources: streaming from the hard processor system (ARM core) through a FIFO queue, or from predefined sequences in memory (buffer size up to 512&nbsp;MB, streamed from RAM via DMA).
-* Output FIFO with throttling for loss-free streaming.
+* Output FIFO with throttling and underrun detection for robust hardware-paced streaming when the FIFO remains fed.
 * Preprocessor implementing a second level of run-length decoding (repetitions of short sequences of RLE elements), enabling compact representation of periodic signals.
 * Internal clock (PLL-generated) or external clock input.
 * Rich set of data-path update operations: load, set, clear, toggle, shift left/right, NOT, AND, OR, XOR, XNOR.
@@ -38,7 +38,7 @@ designed for reliable operation with self-testing.
 * Well-documented Verilog implementation with test benches.
 * KiCad schematics and layouts for interface cards (PMOD, SMA) that provide buffered outputs, ESD protection, status LEDs, a trigger SMA input with threshold control, external clock and PPS inputs, and optional CMOS oscillator modules.
 * High stability: no lockups or errors observed during 20 days of continuous stress testing at 100&nbsp;MHz streamer clock even without a heatsink on the FPGA.
-* Configurable widths for the output data bus (32 or 64 bits) and for the run-length counter (32 or 64 bits).
+* Configurable design widths for the output data bus and run-length counter; the distributed reference build uses 32-bit data and count registers.
 * Reference and user manuals (these web pages).
 * Liberal MIT license, requiring only attribution.
 

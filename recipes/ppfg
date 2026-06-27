@@ -6,7 +6,7 @@
 # 2.5MHz
 ./ppfg -int_pll 10M -cont -trig -veryverbose -period 400ns
 
-# 1MHz
+# 1kHz
 ./ppfg -int_pll 10M -cont -trig -veryverbose -period 1ms
 
 # Duty cycle

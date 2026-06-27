@@ -20,7 +20,7 @@ The main instruments are:
 * [`time_counter.sv`]({{ source_file("ip/counter/time_counter.sv") }}) - elapsed-time capture between asynchronous start/stop events
 * [`seq_counter.sv`]({{ source_file("ip/counter/seq_counter.sv") }}) - short-sequence histogramming
 * [`autocorrelation.sv`]({{ source_file("ip/counter/autocorrelation.sv") }}) - short-depth autocorrelation counters
-* [`crosscorrelation.sv`]({{ source_file("ip/counter/crosscorrelation.sv") }}) - correlation between two selected channels
+* [`crosscorrelation.sv`]({{ source_file("ip/counter/crosscorrelation.sv") }}) - optional correlation between two selected channels when `COUNTER_CC` is enabled
 
 The wrapper is intentionally backplane-like: the instruments run in parallel, but software sees them through one compact selector-based Avalon-MM interface instead of through separate bus wrappers.
 
@@ -33,7 +33,7 @@ The instrument selector in [`counter_if.sv`]({{ source_file("ip/counter/counter_
 | `3` | short-sequence counter |
 | `5` | packet statistics |
 | `6` | autocorrelation |
-| `7` | crosscorrelation |
+| `7` | crosscorrelation, if `COUNTER_CC` is enabled |
 | `8` | time counter 1 |
 | `9` | time counter 2 |
 
@@ -51,7 +51,7 @@ This matters because the counters are designed to inspect signals that may be pr
 The interface also supports three channel selectors:
 
 * `sel0` - main single-bit channel used by `basic_counter`, `runs_counter`, `packet_stats`, `seq_counter`, and `autocorrelation`
-* `sel1`, `sel2` - second pair of selected channels used for two-input measurements such as `crosscorrelation` and asynchronous timing capture
+* `sel1`, `sel2` - second pair of selected channels used for optional two-input measurements such as `crosscorrelation` and for asynchronous timing capture
 
 For timing measurements, `counter_if` synchronizes the selected channel levels into the system clock domain before edge detection, then feeds the resulting start/stop pulses into two `time_counter` instances.
 
@@ -91,7 +91,7 @@ The `counter` class in [`c++/counter.hh`]({{ source_file("c++/counter.hh") }}) g
 * `ps` - `packet_stats`
 * `sc` - `seq_counter`
 * `ac` - `autocorrelation`
-* `cc` - `crosscorrelation`
+* `cc` - `crosscorrelation` helper for builds that enable `COUNTER_CC`
 
 Important operations:
 
@@ -144,7 +144,7 @@ The packet-statistics block is useful for streams that carry an explicit valid/i
 
 The implementation supports both overlapping and non-overlapping windows, although the integrated instance in [`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) uses non-overlapping windows.
 
-`autocorrelation` and `crosscorrelation` expose compact lag-based correlation counts. In the integrated design, [`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) sets `c_len = 3`, so address 0 reports the total number of valid samples and addresses 1 through 3 report lag-1 through lag-3 match counts. The standalone RTL modules are parameterized for other depths, but the current PulsePins integration exposes this short depth. If `c_len` changes, update the matching constants in [`c++/counter.hh`]({{ source_file("c++/counter.hh") }}) and the maintenance note in [`ip/counter/README.md`]({{ source_file("ip/counter/README.md") }}).
+`autocorrelation` exposes compact lag-based correlation counts. In the integrated design, [`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) sets `c_len = 3`, so address 0 reports the total number of valid samples and addresses 1 through 3 report lag-1 through lag-3 match counts. The standalone RTL modules are parameterized for other depths, but the current PulsePins integration exposes this short depth. If `c_len` changes, update the matching constants in [`c++/counter.hh`]({{ source_file("c++/counter.hh") }}) and the maintenance note in [`ip/counter/README.md`]({{ source_file("ip/counter/README.md") }}). `crosscorrelation` follows the same address pattern only in builds that enable the `COUNTER_CC` integration path.
 
 The time-counter path is slightly different from the other instruments: it measures elapsed system-clock ticks between start and stop edges derived from selected channels, and exposes ready flags separately.
 
@@ -169,7 +169,7 @@ This latch-then-read model is important because several counters are continuousl
 | `packet_stats` | how much valid traffic exists, and what are the packet lengths? |
 | `seq_counter` | which short bit patterns occur most often? |
 | `autocorrelation` | how strongly does the signal correlate with delayed versions of itself? |
-| `crosscorrelation` | how strongly do two selected channels correlate? |
+| `crosscorrelation` | how strongly do two selected channels correlate, if `COUNTER_CC` is enabled? |
 | `time_counter` | how many system-clock ticks elapsed between start and stop events? |
 
 ### Tool integration

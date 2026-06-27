@@ -82,9 +82,9 @@ The structure of each _element_ is as follows:
 * ``value_t v``: value payload (output data, trigger pattern, etc.)
 
 This list defines the standard order (as transmitted via Avalon-ST) and the standard variable names (``y``, ``c``, ``v``) of
-the three constituents. The types ``control_t``, ``count_t`` and ``value_t`` are unsigned integers, by default 32-bit,
-i.e., ``uint32_t``; both the hardware description and the software library are written in such a way that expansion
-(to e.g. 64-bit values) or narrowing (to e.g. 16-bit values) is easily accomplished. The control register contains
+the three constituents. In the distributed reference build, the types ``control_t``, ``count_t`` and ``value_t`` are
+32-bit unsigned integers, i.e., ``uint32_t``; both the hardware description and the software library are written in such a way that expansion
+(to e.g. 64-bit values) or narrowing (to e.g. 16-bit values) is possible with a matching build configuration. The control register contains
 information about the exact meaning of the information contained in the two payload items: data updates ("regular
 elements", also known as "symbols"), trigger patterns and masks ("trigger elements", "trigger conditions", or simply
 "triggers"), sequence termination ("final elements", also known as "terminators"), preprocessor instructions (store,
@@ -214,7 +214,8 @@ Color code in the schematic:
 | <font color="red">red</font>        | output data ports |
 
 In the reference implementation for the DE10 Nano FPGA development board, the signals are present on the following GPIO
-pins (defined in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})):
+pins (defined in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})). GPIO0[25:22] reflects the currently selected
+`EXTRA_SETB` debug mux; the alternate `EXTRA_SETA` build exposes streamer trigger visibility on those pins instead:
 
 | Connector | Index | Debug port | Name        | Description |
 | --------- | ----- | ----       | ----------- | -------- |
@@ -233,10 +234,10 @@ pins (defined in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})):
 |           | 12    |            | <font color="darkblue">ext_trigger_reset</font>     | Reset the trigger circuit |
 |           | 13    |            | <font color="darkblue">gate_in</font>               | Gate signal |
 |           | 21:14 |            | <font color="darkblue">ext_trigger_in[7:0]</font>   | Trigger inputs |
-|           | 22    | D12        | <font color="lightskyblue">streamer_trigger_enable</font> (out)  | Trigger enable (as seen by the streamer core) |
-|           | 23    | D13        | <font color="lightskyblue">streamer_trigger_force</font> (out)   | Trigger force (as seen by the streamer core) |
-|           | 24    | D14        | <font color="lightskyblue">streamer_trigger_reset</font> (out)   | Trigger reset (as seen by thestreamer core) |
-|           | 25    | D15        | <font color="lightskyblue">streamer_trigger_in[0]</font> (out)   | Trigger input (as seen by the streamer core) |
+|           | 22    | D12        | <font color="lightskyblue">rnd1</font>                            | Synthetic random debug signal (`EXTRA_SETB`) |
+|           | 23    | D13        | <font color="lightskyblue">rnd2</font>                            | Synthetic random debug signal (`EXTRA_SETB`) |
+|           | 24    | D14        | <font color="lightskyblue">0</font>                               | Constant low debug output (`EXTRA_SETB`) |
+|           | 25    | D15        | <font color="lightskyblue">0</font>                               | Constant low debug output (`EXTRA_SETB`) |
 |           | 26    |            | <font color="DimGrey">I2C SDA</font>            | I2C interface data |
 |           | 27    |            | <font color="DimGrey">I2C SCL</font>            | I2C interface clock |
 |           | 35:28 |            | <font color="#FFD580">AUX</font>            | Auxiliary inputs |

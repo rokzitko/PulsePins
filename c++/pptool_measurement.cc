@@ -529,7 +529,10 @@ std::pair<Sequence, bool> load_sequence_from_file(const InputParser &input,
     }
     case SequenceFileFormat::binary:
       try {
-        return Sequence::read_binary_file(filename);
+        auto [seq, force_trigger] = Sequence::read_binary_file(filename);
+        if (input.exists("-force"))
+          force_trigger = true;
+        return {seq, force_trigger};
       }
       catch (const std::exception &e) {
         throw std::runtime_error("Error reading binary sequence file '" + filename + "': " + e.what());

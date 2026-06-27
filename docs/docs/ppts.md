@@ -64,8 +64,11 @@ The PPS path has a separate two-way source selector:
 
 | Option | PPS Source |
 |---|---|
-| default or `-pps_xtal` | crystal-derived PPS source |
+| `-pps_xtal` | crystal-derived PPS source |
 | `-pps_in` | external PPS input |
+
+After reset, the hardware default is the crystal-derived PPS source. If both `-pps_in` and
+`-pps_xtal` are omitted, `ppts` leaves the current PPS selector unchanged.
 
 If both `-pps_in` and `-pps_xtal` are supplied, the later command-handler check selects `-pps_xtal` because `ppts` applies `-pps_xtal` after `-pps_in`.
 

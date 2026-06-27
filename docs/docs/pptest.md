@@ -143,7 +143,7 @@ another set by ``-r`` and ``-n`` pair.
 
 Additional parameters:
 
-* ``-cycles``: number of such two-step trigger units
+* ``-cycles``: number of alternating retrigger stages
 * ``-delay``: time delay between each trigger signal in microseconds, for testing with ``-trig``; default is
 100000 (100ms)
 * ``-r``: second trigger pattern

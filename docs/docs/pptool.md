@@ -24,6 +24,18 @@ The clock-selection and PLL choices consumed during startup are resolved by [`c+
 
 By default, startup does not pulse the FPGA reset manager. Use `-reset_FPGA` or set `PP_RESET_FPGA` when a process-startup FPGA S2F reset is required.
 
+## Advanced/debug knobs
+
+These switches are intended for bring-up, diagnostics, and controlled test environments. They can
+change timing or mask hardware-check failures, so avoid them in normal automated pass/fail runs
+unless the caller deliberately wants that behavior.
+
+* `-exit_delay T` or `PP_EXIT_DELAY`: sleep for the requested time after the command has finished its main work, keeping outputs and status stable briefly before process exit.
+* `-rbmode 1` or `PP_RBMODE=1`: select the supported readback valid/clock mode. Other readback strobe modes are not available in the current build.
+* `-stop_on_buffer_error` or `-sobe`: request streamer stop-on-buffer-error behavior when a command constructs the shared streamer helper.
+* `-pp_ignore_qout_final` or `PP_IGNORE_QOUT_FINAL`: do not fail a streaming command solely because the final observed `qout` differs from the inferred expected final value.
+* `-ignore_rb_error_if_crc_ok` or `PP_IGNORE_RB_ERROR_IF_CRC_OK`: clear the readback-check error bit when the readback path reported an error but the streamer and readback CRC values still match.
+
 The command catalog itself is declared in [`c++/pptool_commands.hh`]({{ source_file("c++/pptool_commands.hh") }}) and implemented mainly in:
 
 * [`c++/pptool_streaming.cc`]({{ source_file("c++/pptool_streaming.cc") }})

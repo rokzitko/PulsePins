@@ -9,7 +9,7 @@
 
 -nopps: disable reference timestamping (pulse-per-second)
 -pps_in   : use the external PPS input
--pps_xtal : use the internally generated PPS clock (default)
+-pps_xtal : use the internally generated PPS clock (hardware reset default; omitted option preserves current selector)
 
 -sigA : enable timestamping for input A
 -selA : choose source for input A
