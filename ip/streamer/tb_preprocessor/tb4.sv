@@ -121,6 +121,7 @@ end
 
 // checker for expected output
 integer i;
+logic checker_done = 1'b0;
 initial begin
   @(posedge clk iff dout_valid);
   assert(dout == 'h00000000000000ff000001ff) else $fatal;
@@ -140,6 +141,7 @@ initial begin
   assert(dout == 'h00000000000000ff00000aff) else $fatal;
   @(posedge clk iff dout_valid);
   assert(dout == 'h00000000000000ff00000bff) else $fatal;
+  checker_done = 1'b1;
 end
 
 initial begin
@@ -154,11 +156,18 @@ end
 integer fh;
 
 initial begin
-  #40 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef VERILATOR
   $set_coverage_db_name("run_pre_4.ucdb");
+`endif
   $finish;
+end
+
+initial begin
+  #100 $fatal(1, "timeout");
 end
 
 endmodule: tb_pre_4

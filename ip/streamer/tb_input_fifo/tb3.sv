@@ -74,6 +74,7 @@ integer queue[$];
 
 logic want_write;
 logic saw_backpressure;
+logic producer_done;
 assign wrreq = want_write;  // valid signal, held until accepted by !full
 
 task automatic feed;
@@ -156,16 +157,20 @@ begin
 //    #10; // spacing between feeds
     #($urandom_range(10, 50));
   end
+  producer_done = 1'b1;
 end
 endtask
 
 task automatic consumer;
-integer i;
 begin
-  for (i = 0; i < loops; i = i + 1) begin
+  while (!producer_done || (queue.size() > 0)) begin
 //    #10; // spacing between reads
-    #($urandom_range(2, 50));
-    read();
+    if (queue.size() > 0) begin
+      #($urandom_range(2, 50));
+      read();
+    end else begin
+      @(posedge clk);
+    end
   end
 end
 endtask
@@ -176,6 +181,7 @@ initial begin
   data <= 96'b0;
   want_write <= 0;
   saw_backpressure = 1'b0;
+  producer_done = 1'b0;
   rdreq <= 0;
   #5;
 
@@ -184,7 +190,12 @@ initial begin
     producer();
     consumer();
   join
+  repeat (2) @(posedge clk);
   assert(saw_backpressure) else $fatal(1, "backpressure was not exercised");
+  assert(queue.size() == 0) else $fatal(1, "consumer did not drain burst queue");
+  assert(empty) else $fatal(1, "output FIFO was not drained");
+  assert(ctr1_in == ctr1_out) else $fatal(1, "input FIFO stage 1 counters did not drain");
+  assert(ctr2_in == ctr2_out) else $fatal(1, "input FIFO stage 2 counters did not drain");
   assert(!overflow_in) else $fatal(1, "legal input backpressure set overflow_in");
   assert(!overflow_out) else $fatal(1, "legal output backpressure set overflow_out");
   $display("SUCCESS");
@@ -194,6 +205,10 @@ initial begin
   $set_coverage_db_name("run_input_3.ucdb");
 `endif
   $finish;
+end
+
+initial begin
+  #200000 $fatal(1, "timeout");
 end
 
 endmodule: tb3_input

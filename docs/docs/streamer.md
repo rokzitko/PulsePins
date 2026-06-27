@@ -155,10 +155,11 @@ This is useful when the output should be paused by an external signal without re
 
 This is mainly useful for debugging, bring-up, and simple manual output control without rebuilding a full sequence.
 
-Output override and gating configuration are static streamer configuration. Writes are accepted by
-the Avalon-MM register file immediately, but the streamer-clock shadow configuration is updated only
-while the streamer is idle or held in streamer reset. Writes made during active playback therefore
-take effect on the next idle/reset window, not in the middle of the current output sequence.
+Output override, initial output value, gating configuration, and the stop-on-buffer-error policy are
+static streamer configuration. Writes are accepted by the Avalon-MM register file immediately, but the
+streamer-clock shadow configuration is updated only while the streamer is idle or held in streamer
+reset. Writes made during active playback therefore take effect on the next idle/reset window, not in
+the middle of the current output sequence.
 
 ## Register summary
 
@@ -182,7 +183,7 @@ Read-side registers:
 | `QOUT_STREAMER` | `2` | raw streamer output before override mux |
 | `EXT_TRIG_CTRL` | `3` | external trigger-control inputs |
 | `QOUT` | `4` | final visible output word |
-| `OVERFLOW` | `5` | input FIFO overflow flags |
+| `OVERFLOW` | `5` | input FIFO invariant/overflow flags |
 | `CRC32` | `6` | output-stream CRC |
 | `GATING_R` | `7` | live gating state and selected signals |
 | `ST_INF1_*`, `ST_INF2_*`, `ST_OUTF_*` | `8`-`19` | FIFO traffic counters |
@@ -193,6 +194,10 @@ Readback registers that observe `streamer_clk` state (`IF_STATUS`, `QOUT`, `QOUT
 `CRC32`, `GATING_R`, trigger input visibility, and output-FIFO read counters) return synchronized
 snapshots in the Avalon/control clock domain. They are coherent CDC samples with a small crossing
 latency, not cycle-exact instantaneous taps.
+
+The `OVERFLOW` bits are diagnostics for conditions that should be impossible by construction during
+normal operation. Legal `valid && !ready` input backpressure and output FIFO `almost_full`
+backpressure are expected flow-control states and do not indicate overflow.
 
 ## Clocking and reset
 

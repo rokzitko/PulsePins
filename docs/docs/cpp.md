@@ -241,12 +241,14 @@ Class ``streamer_control`` (defined in [`streamer_control.hh`]({{ source_file("c
 
 * ``status()``: read the status register (buffer error, done, triggered, armed); these are outputs from the
 core
-* ``get_control()``: returns the control register (stop, internal trigger force, internal trigger enable, reset,
-internal trigger reset); these are inputs to the core
-* ``get_qout()``: current value at the output (on the "device pins", if there is no postprocessing)
-* ``get_qout_streamer()``: current value at the streamer output (which may be overridden, see below)
-* ``qout_select()``: determine what data is presented at the output (streamer output or override value)
-* ``qout_set()``: override the output with the chosen value
+* ``get_control()``: returns the software-side control shadow (stop, internal trigger force, internal trigger enable,
+  reset, internal trigger reset, qout select, stop-on-buffer-error)
+* ``get_qout()``: synchronized snapshot of the current value at the output (on the "device pins", if there is no postprocessing)
+* ``get_qout_streamer()``: synchronized snapshot of the streamer output before the optional override mux
+* ``qout_select()``: select whether the streamer output or override value is presented; the active streamer-clock
+  shadow updates only while the streamer is idle or reset
+* ``qout_set()``: write the override value and select it; active output visibility follows the same idle/reset
+  commit rule and readback snapshot latency
 * ``monitor_ext_trig()``: debugging tool for external trigger signals
 * ``set_initial_value()``: set the value that is present at the streamer data output before triggering
 * ``buffer_error()``: buffer error detected

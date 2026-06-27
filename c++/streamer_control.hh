@@ -117,7 +117,7 @@ public:
     return crc32.read();
   }
 
-  // Current value visible on the actual output pins after any qout override muxing.
+  // Synchronized snapshot of the value visible on the actual output pins after any qout override muxing.
   value_t get_qout() {
     if constexpr (std::is_same<value_t, uint32_t>::value) {
       return qout.read();
@@ -125,7 +125,7 @@ public:
     static_assert(std::is_same<value_t, uint32_t>::value, "Only uint32_t value_t is currently supported");
   }
 
-  // Raw streamer output value before the optional qout override path.
+  // Synchronized snapshot of the raw streamer output value before the optional qout override path.
   value_t get_qout_streamer() {
     if constexpr (std::is_same<value_t, uint32_t>::value) {
       return qout_streamer.read();
@@ -211,6 +211,7 @@ public:
   }
 
   // State of the output bits before the streamer has triggered and begun advancing.
+  // The active streamer-clock shadow updates only while the streamer is idle or reset.
   void set_initial_value(const value_t iv) {
     if constexpr (std::is_same<value_t, uint32_t>::value) {
       initial_value.write(iv);
@@ -219,6 +220,7 @@ public:
   }
 
   // Value presented on the outputs when the qout override path is selected.
+  // The active streamer-clock shadow updates only while the streamer is idle or reset.
   void set_qout_override(const value_t v) {
     if constexpr (std::is_same<value_t, uint32_t>::value) {
       qout_override.write(v);
@@ -344,6 +346,7 @@ public:
   }
 
   // If buffer_error goes high, trigger_activated is deasserted (and streaming stops).
+  // The active streamer-clock shadow updates only while the streamer is idle or reset.
   // This function also modifies control_initial_value, so the setting is persistent across
   // streamer resets through the reset() member function.
   void stop_on_buffer_error(bool s) {
@@ -358,7 +361,8 @@ public:
     sc.write(control);
   }
 
-  // Convenience helper: update the override register and make it visible immediately.
+  // Convenience helper: update the override register and select it. The active output path follows
+  // the streamer idle/reset commit rule, and readback is a synchronized snapshot.
   void qout_set(const value_t v) {
     set_qout_override(v);
     qout_select(true); // must come *after* set_qout_override()

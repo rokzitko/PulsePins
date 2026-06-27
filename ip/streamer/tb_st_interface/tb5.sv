@@ -96,6 +96,9 @@ avalon_st_source_bfm #(
 );
 
 integer sample_idx = 0;
+logic gate_closed_checked = 1'b0;
+logic gate_open_checked = 1'b0;
+logic done_checked = 1'b0;
 
 // Trace the software-visible gating state and resulting output activity.
 always @(posedge clk) begin
@@ -210,6 +213,7 @@ initial begin
   assert(dut.gate_enable == 0) else $fatal;
   assert(qout_valid == 0) else $fatal;
   assert(done == 0) else $fatal;
+  gate_closed_checked = 1'b1;
 end
 
 // Once the selected trigger bit goes high, the gate should open and playback should resume.
@@ -219,6 +223,7 @@ initial begin
   wait_gating_readback(32'h00001800, 32'h00001800);
   assert(dut.gate_signal == 1) else $fatal;
   assert(dut.gate_enable == 1) else $fatal;
+  gate_open_checked = 1'b1;
 end
 
 always @(posedge clk) begin
@@ -237,18 +242,24 @@ initial begin
   assert(sample_idx == 5) else $fatal;
   assert(qout == 32'h00000033) else $fatal;
   assert(buffer_error == 0) else $fatal;
+  done_checked = 1'b1;
 end
 
 integer fh;
 
 initial begin
-  #120 $display("SUCCESS");
+  wait(gate_closed_checked && gate_open_checked && done_checked);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
 `ifndef VERILATOR
   $set_coverage_db_name("run_st_if_5.ucdb");
 `endif
   $finish;
+end
+
+initial begin
+  #300 $fatal(1, "timeout");
 end
 
 endmodule: tb_st_if_5

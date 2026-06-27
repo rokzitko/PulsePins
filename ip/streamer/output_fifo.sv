@@ -37,6 +37,11 @@ wire [widthu-1:0] used; // Keep this port! Useful for debugging.
 logic rdreq_nrr; // rdreq if no retrig_requested
 assign rdreq_nrr = rdreq && ~retrig_requested;
 
+logic [WIDTH_DATACTRL-1:0] qc; // combined output from FIFO (data+control)
+logic empty;
+logic read_fire;
+assign read_fire = rdreq_nrr && !empty;
+
 // Statistics counters
 always_ff @(posedge wrclk) begin
   if (reset) begin
@@ -52,14 +57,11 @@ always_ff @(posedge rdclk) begin
   if (rdrst) begin
     ctr_out <= '0;
   end else begin
-    if (rdreq_nrr) begin  // all reads
+    if (read_fire) begin  // actual FIFO element reads
       ctr_out <= ctr_out + 1;
     end
   end
 end
-
-logic [WIDTH_DATACTRL-1:0] qc; // combined output from FIFO (data+control)
-logic empty;
 
 dcfifo #(
  .intended_device_family("CycloneV"), // only relevant for functional simulation
@@ -106,7 +108,7 @@ assign is_prng      = control[BIT_PRNG];           // randomize the output value
 always_ff @(posedge rdclk) begin
   if (rdrst)
     done <= 0;
-  else if (rdreq && is_last && !buffer_error)
+  else if (read_fire && is_last && !buffer_error)
     // 'done' is asserted when the terminator event is encountered at the output of the FIFO, but only if there was no buffer underflow.
     // This is different from the behaviour of 'strobe_enable' which is deasserted irrespective of the error status.
     done <= 1;
@@ -115,7 +117,7 @@ end
 always_ff @(posedge rdclk) begin
   if (rdrst)
     retrig_requested <= 0;
-  else if (rdreq && is_retrig)
+  else if (read_fire && is_retrig)
     retrig_requested <= 1;
   else
     retrig_requested <= 0;
@@ -128,7 +130,7 @@ logic stream_started;
 always_ff @(posedge rdclk) begin
   if (rdrst)
     stream_started <= 0;
-  else if (rdreq && !empty)
+  else if (read_fire)
     stream_started <= 1;
 end
 
@@ -136,7 +138,7 @@ end
 always_ff @(posedge rdclk) begin
   if (rdrst)
     buffer_error <= 0;
-  else if (stream_started && rdreq && is_data && !done && empty)
+  else if (stream_started && rdreq_nrr && !done && empty)
     buffer_error <= 1;
 end
 
@@ -153,8 +155,8 @@ prng_xoroshiro128plus prng(
 logic valid, wr_last;
 // `retrig_requested` blocks normal output advancement while the streamer is waiting to re-arm on
 // a later trigger event, so valid data writes are suppressed in that state.
-assign valid   = rdreq && is_data && !empty && !done && !retrig_requested && !is_no_strobe;
-assign wr_last = rdreq && is_last && !empty && !done;
+assign valid   = read_fire && is_data && !done && !is_no_strobe;
+assign wr_last = read_fire && is_last && !done;
 
 always_ff @(posedge rdclk) begin
   if (rdrst) begin
@@ -173,7 +175,7 @@ end
 // 'strobe_enable' logic: asserted when data are requested (rdreq=1) and available (empty!=1). Deasserted when
 // the terminating element of the sequence is encountered (done=1) or if reset is triggered (rdrst=1).
 always_ff @(posedge rdclk) begin
-  if (rdreq && !empty && !rdrst && !done)
+  if (read_fire && !rdrst && !done)
     strobe_enable <= 1'b1;
   else
     strobe_enable <= 1'b0;

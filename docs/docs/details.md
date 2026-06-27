@@ -75,9 +75,12 @@ Read:
 | ST_OUTF_OUT_H | b10011      | Output FIFO output stats, high word |
 
 Streamer-domain readback registers are synchronized snapshots in the Avalon/control clock domain.
-Static output/gating writes (`INIT_VAL`, `QOUT_OVERRIDE`, `QOUT_SELECT` through `IF_CTRL`, and
-`GATING_W`) update the active streamer-clock shadow configuration only while the streamer is idle or
-held in streamer reset.
+Static streamer configuration writes (`INIT_VAL`, `QOUT_OVERRIDE`, `QOUT_SELECT` and
+`STOP_ON_BUFFER_ERROR` through `IF_CTRL`, and `GATING_W`) update the active streamer-clock shadow
+configuration only while the streamer is idle or held in streamer reset.
+
+The `OVERFLOW` readback bits are invariant diagnostics for input FIFO conditions that should be
+impossible by construction. Normal ready/backpressure behavior must not set them.
 
 
 
@@ -101,6 +104,7 @@ Signals in the control (write) register
 | 3     | reset_streamer     | Forces reset of the streamer circuit, erases FIFO buffers                            |
 | 4     | trigger_reset_int  | Resets the trigger circuit; the trigger will be deactivated and streaming will stop  |
 | 5     | qout_select        | Select the output: streamer or override value                                        |
+| 6     | stop_on_buffer_error | Stop output advancement if `buffer_error` is set; commits only while idle/reset    |
 
 
 ## Triggering mechanism
