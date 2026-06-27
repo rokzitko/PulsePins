@@ -25,6 +25,8 @@ end
 wire [95:0] asi_data;
 wire        asi_valid;
 wire        asi_ready;
+wire        src_sop;
+wire        src_eop;
 
 logic [4:0] avs_s0_address;
 logic       avs_s0_read;
@@ -81,27 +83,47 @@ avalon_st_source_bfm #(
   .reset,
   .src_data(asi_data),
   .src_valid(asi_valid),
-  .src_ready(asi_ready)
+  .src_ready(asi_ready),
+  .src_sop,
+  .src_eop
 );
 
 task avmm_write(input logic [4:0] addr, input logic [31:0] data);
   begin
-    @(posedge clk);
-    avs_s0_address <= addr;
-    avs_s0_writedata <= data;
-    avs_s0_write <= 1'b1;
-    @(posedge clk);
-    avs_s0_write <= 1'b0;
+    @(negedge clk);
+    avs_s0_address = addr;
+    avs_s0_writedata = data;
+    avs_s0_write = 1'b1;
+    @(negedge clk);
+    avs_s0_write = 1'b0;
   end
 endtask
 
 task avmm_read(input logic [4:0] addr);
   begin
+    @(negedge clk);
+    avs_s0_address = addr;
+    avs_s0_read = 1'b1;
     @(posedge clk);
-    avs_s0_address <= addr;
-    avs_s0_read <= 1'b1;
-    @(posedge clk);
-    avs_s0_read <= 1'b0;
+    @(negedge clk);
+    avs_s0_read = 1'b0;
+  end
+endtask
+
+task automatic wait_qout_readback(input logic [31:0] expected);
+  integer i;
+  bit matched;
+  begin
+    matched = 1'b0;
+    i = 0;
+    while ((i < 40) && !matched) begin
+      avmm_read(QOUT);
+      matched = (avs_s0_readdata == expected);
+      if (!matched)
+        @(posedge clk);
+      i = i + 1;
+    end
+    assert(matched) else $fatal(1, "QOUT readback did not snapshot override");
   end
 endtask
 
@@ -168,8 +190,7 @@ initial begin
   assert(qout == 32'ha5a5_a5a5) else $fatal(1, "pending override did not commit when idle");
 
   repeat (20) @(posedge clk);
-  avmm_read(QOUT);
-  assert(avs_s0_readdata == 32'ha5a5_a5a5) else $fatal(1, "QOUT readback did not snapshot override");
+  wait_qout_readback(32'ha5a5_a5a5);
 
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
