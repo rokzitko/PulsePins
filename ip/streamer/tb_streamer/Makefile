@@ -1,6 +1,6 @@
-.PHONY: test1 test2 test3 test4 test5 test5a test6 test7 test8 test9 test10 clean merge report
+.PHONY: test1 test2 test3 test4 test5 test5a test6 test7 test8 test9 test10 test11 clean merge report
 
-all: test1 test2 test3 test4 test5 test5a test6 test7 test8 test9 test10
+all: test1 test2 test3 test4 test5 test5a test6 test7 test8 test9 test10 test11
 
 test1:
 	./run1
@@ -44,6 +44,10 @@ test9:
 
 test10:
 	./run10
+	@[ -f "SUCCESS" ]
+
+test11:
+	./run11
 	@[ -f "SUCCESS" ]
 
 clean:

@@ -152,18 +152,18 @@ prng_xoroshiro128plus prng(
  .seed(128'd123456789) // fixed seed
 );
 
-logic valid, wr_last;
-// `retrig_requested` blocks normal output advancement while the streamer is waiting to re-arm on
-// a later trigger event, so valid data writes are suppressed in that state.
-assign valid   = read_fire && is_data && !done && !is_no_strobe;
-assign wr_last = read_fire && is_last && !done;
+logic data_update, valid, wr_last;
+// No-strobe elements still update qout; only qout_valid/strobe are suppressed.
+assign data_update = read_fire && is_data && !done;
+assign valid       = data_update && !is_no_strobe;
+assign wr_last     = read_fire && is_last && !done;
 
 always_ff @(posedge rdclk) begin
   if (rdrst) begin
     qout <= 0;
     qout_valid <= 0;
   end else begin
-    if (valid || wr_last) begin
+    if (data_update || wr_last) begin
       qout <= (is_prng ? rnd[WIDTH_DATA-1:0] : q);
      end else begin
       qout <= qout; // this allows to keep the "final value" in the output register
