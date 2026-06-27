@@ -14,18 +14,26 @@ This directory contains the low-rate event timestamping core used to record the 
 2. each asynchronous input is synchronized through a short flip-flop chain
 3. a rising edge on `sig` or `sigA` captures the current counter value
 4. the captured value is presented on the corresponding Avalon-ST output
-5. if the downstream FIFO is not ready in that cycle, that event is dropped rather than retried
+5. Avalon-ST `valid` remains asserted until the downstream FIFO accepts the timestamp
+6. if another event arrives while the path already has a pending timestamp, the later event is dropped and the path's overflow latch/counter is updated
 
 This design is therefore best suited to sparse timing events such as PPS pulses, trigger markers, and low-rate diagnostic signals.
 
 ## Programming model
 
-The core itself has no register file. Configuration happens outside the block through the routing PIO controlled by `c++/timestamp.hh`, which chooses:
+The core exposes a small Avalon-MM status/control register file for pending and overflow reporting. Routing configuration happens outside the block through the routing PIO controlled by `c++/timestamp.hh`, which chooses:
 
 - whether PPS comes from the external input or the crystal-derived source
 - which source is routed to the auxiliary `sigA` capture path
 
 The captured timestamps are emitted as raw counter values on two separate Avalon-ST streams.
+
+Register map, word offsets:
+
+- `0`: status, read-only; bit 0 = PPS pending, bit 1 = sigA pending, bit 8 = PPS overflow, bit 9 = sigA overflow
+- `1`: control, write-only; bit 0 clears PPS overflow latch/count, bit 1 clears sigA overflow latch/count
+- `2`: PPS overflow count, read-only saturating 32-bit counter
+- `3`: sigA overflow count, read-only saturating 32-bit counter
 
 ## Reading order for maintainers
 

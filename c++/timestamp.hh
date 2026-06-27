@@ -35,10 +35,18 @@ constexpr int TS_SEL_STREAMER_TRIGGER_ACTIVATED = 0;
 constexpr int CFG_TS_SEL_PPS = 1;
 constexpr int CFG_TS_SEL_SIGA_MUX_OFFSET = 2;
 
+constexpr uint32_t TS_STATUS_PPS_PENDING = 1u << 0;
+constexpr uint32_t TS_STATUS_SIGA_PENDING = 1u << 1;
+constexpr uint32_t TS_STATUS_PPS_OVERFLOW = 1u << 8;
+constexpr uint32_t TS_STATUS_SIGA_OVERFLOW = 1u << 9;
+constexpr uint32_t TS_CONTROL_CLEAR_PPS_OVERFLOW = 1u << 0;
+constexpr uint32_t TS_CONTROL_CLEAR_SIGA_OVERFLOW = 1u << 1;
+
 static_assert(address_map::contains(address_map::h2f::fifo_ts_pps_out, 0));
 static_assert(address_map::contains(address_map::h2f::fifo_ts_pps_in_csr, fifo_event_shift));
 static_assert(address_map::contains(address_map::h2f::fifo_ts_siga_out, 0));
 static_assert(address_map::contains(address_map::h2f::fifo_ts_siga_in_csr, fifo_event_shift));
+static_assert(address_map::contains(address_map::h2f::ts_core_pps, 3*sizeof(uint32_t)));
 static_assert(address_map::contains(address_map::lw::pio_cfg, 0x04*5));
 
 inline std::string sel_str(int sel)
@@ -69,6 +77,10 @@ class timestamp {
 private:
   fifo ff;
   fifo ffA;
+  loc ts_status;
+  loc ts_control;
+  loc ts_overflow_count;
+  loc ts_overflowA_count;
   pio_out_bits pio_cfg;
 
   // Busy-wait until one 32-bit FIFO word is available on the PPS path.
@@ -85,15 +97,21 @@ private:
 public:
   timestamp(mm &dev_h2f,
             mm &dev_lw,
+            const address_map::H2fRegion ts_core_base,
             const address_map::H2fRegion base, const address_map::H2fRegion in_csr_base,
             const address_map::H2fRegion baseA, const address_map::H2fRegion in_csr_baseA,
             const address_map::LwRegion pio_cfg_base) :
     ff(dev_h2f, base.base, in_csr_base.base),
     ffA(dev_h2f, baseA.base, in_csr_baseA.base),
+    ts_status(dev_h2f, ts_core_base.base, 0*sizeof(uint32_t), "ts_core/status"),
+    ts_control(dev_h2f, ts_core_base.base, 1*sizeof(uint32_t), "ts_core/control"),
+    ts_overflow_count(dev_h2f, ts_core_base.base, 2*sizeof(uint32_t), "ts_core/overflow_count"),
+    ts_overflowA_count(dev_h2f, ts_core_base.base, 3*sizeof(uint32_t), "ts_core/overflowA_count"),
     pio_cfg(dev_lw, pio_cfg_base.base)
     {
       clear_fifo();
       clear_fifoA();
+      clear_overflow();
     }
 
     // Select the crystal-derived PPS source.
@@ -132,6 +150,48 @@ public:
     return ffA.fill() > 0;
   }
 
+  uint32_t status() {
+    return ts_status.read();
+  }
+
+  bool pending() {
+    return status() & TS_STATUS_PPS_PENDING;
+  }
+
+  bool pendingA() {
+    return status() & TS_STATUS_SIGA_PENDING;
+  }
+
+  bool overflow() {
+    return status() & TS_STATUS_PPS_OVERFLOW;
+  }
+
+  bool overflowA() {
+    return status() & TS_STATUS_SIGA_OVERFLOW;
+  }
+
+  uint32_t overflow_count() {
+    return ts_overflow_count.read();
+  }
+
+  uint32_t overflowA_count() {
+    return ts_overflowA_count.read();
+  }
+
+  void clear_overflow(uint32_t mask = TS_CONTROL_CLEAR_PPS_OVERFLOW | TS_CONTROL_CLEAR_SIGA_OVERFLOW) {
+    ts_control.write(mask);
+  }
+
+  void throw_if_overflow() {
+    if (overflow())
+      throw std::runtime_error("Timestamp PPS overflow.");
+  }
+
+  void throw_if_overflowA() {
+    if (overflowA())
+      throw std::runtime_error("Timestamp sigA overflow.");
+  }
+
   void clear_fifo() {
     while (filled())
       ff.read(); // ignore return value
@@ -153,12 +213,14 @@ public:
     uint64_t read_with_timeout(const double timeout = 2.0) {
     std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
     while (ff.fill() < 2) {
+      throw_if_overflow();
       auto now = std::chrono::steady_clock::now();
       auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
       if (timeout > 0.0 && elapsed.count() > abs(timeout))
         throw std::runtime_error("Timeout.");
       usleep(100); // don't hose CPU in poll loop
     }
+    throw_if_overflow();
     return read();
   }
 
@@ -166,12 +228,14 @@ public:
   uint64_t readA_with_timeout(const double timeout = 2.0) {
     std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
     while (ffA.fill() < 2) {
+      throw_if_overflowA();
       auto now = std::chrono::steady_clock::now();
       auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
       if (timeout > 0.0 && elapsed.count() > abs(timeout))
         throw std::runtime_error("Timeout.");
       usleep(100); // don't hose CPU in poll loop
     }
+    throw_if_overflowA();
     return readA();
   }
 };

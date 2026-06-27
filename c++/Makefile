@@ -241,6 +241,8 @@ copy_sources: ../hps_0.h
 	ssh $(SCP_TARGET) "cd c++/third_party && ln -fs lua-5.5.0 lua"
 	scp -r third_party/asio $(SCP_TARGET):$(CPPDIR)/third_party
 	scp third_party/httplib.h $(SCP_TARGET):$(CPPDIR)/third_party
+	ssh $(SCP_TARGET) "mkdir -p $(CPPDIR)/third_party/hwlib"
+	scp -r third_party/hwlib/include $(SCP_TARGET):$(CPPDIR)/third_party/hwlib
 	scp -r include/ $(SCP_TARGET):$(CPPDIR)
 	scp -r unit_tests_input/ $(SCP_TARGET):$(CPPDIR)
 
@@ -254,5 +256,7 @@ copy_sources_img: ../hps_0.h
 	ln -sfn lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party/lua
 	cp -r third_party/asio $(IMGROOT)/$(CPPDIR)/third_party
 	cp third_party/httplib.h $(IMGROOT)/$(CPPDIR)/third_party
+	mkdir -p $(IMGROOT)/$(CPPDIR)/third_party/hwlib
+	cp -r third_party/hwlib/include $(IMGROOT)/$(CPPDIR)/third_party/hwlib
 	cp -r include/ $(IMGROOT)/$(CPPDIR)
 	cp -r unit_tests_input/ $(IMGROOT)/$(CPPDIR)

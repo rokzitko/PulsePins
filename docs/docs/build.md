@@ -101,7 +101,7 @@ The host-side ownership split is deliberate:
 
 ### Python bindings
 
-The Python bindings live in [`python/`]({{ source_file("python/") }}) and are built with CMake and nanobind.
+The Python bindings live in [`python/`]({{ source_file("python/") }}) and are built with CMake and nanobind. A board-native build needs both `pytest` and `nanobind` installed in the active Python environment.
 
 Production Python builds are expected to happen on the DE10-Nano board itself.
 Host-side builds are useful for syntax/import/API testing, but true Python cross-

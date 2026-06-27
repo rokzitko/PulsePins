@@ -41,4 +41,4 @@ report: merge
 SITE ?= auger:/var/www/html/pulsepins/
 
 upload: report
-	scp -r report_dir @${SITE}
+	scp -r report_dir ${SITE}

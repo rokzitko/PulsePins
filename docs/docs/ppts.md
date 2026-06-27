@@ -94,7 +94,7 @@ If both paths are enabled, the tool reads them concurrently using separate threa
 
 Because the two streams are read independently, the printed lines from PPS and `sigA` may interleave.
 
-Because the hardware capture core drops events that arrive when the downstream FIFO is not ready, `ppts` is intended for sparse timing signals rather than dense pulse trains.
+Because the hardware capture core has one pending slot per path and reports overflow if later events arrive before that slot is accepted, `ppts` is intended for sparse timing signals rather than dense pulse trains.
 
 Use [Timestamp capture](timestamp.md) for counter-width, edge-capture, FIFO, and timing-semantics details.
 

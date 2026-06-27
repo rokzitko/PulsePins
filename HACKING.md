@@ -29,12 +29,11 @@ Good first commands:
 
 ```bash
 make dev-check
-make board-smoke
 make -C ip test
 ```
 
 `dev-check` is the default host-side contributor sanity pass.
-`board-smoke` is the fast live-board regression check against the current local artifacts.
+`make -C ip test` runs HDL simulation test benches if the required simulator tools are installed.
 
 For Python specifically:
 

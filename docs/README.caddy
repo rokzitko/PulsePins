@@ -10,7 +10,7 @@ chmod o+r /etc/apt/sources.list.d/caddy-stable.list
 sudo apt update
 sudo apt install caddy
 
-edit /etc/caddy/CaddyFile
+edit /etc/caddy/Caddyfile
 systemctl status caddy
 journalctl --no-pager -u caddy
 

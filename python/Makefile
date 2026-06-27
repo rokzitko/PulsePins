@@ -59,7 +59,7 @@ PY_PACKAGE=pulsepins
 PY_PACKAGE_FILES=$(wildcard $(PY_PACKAGE)/*.py)
 PY_EXAMPLE_DIR=examples
 PY_EXAMPLE_FILES=$(wildcard $(PY_EXAMPLE_DIR)/*.py)
-MISCFILES=CMakeLists.txt Makefile pyproject.toml pytest.ini test.py test_cli.py test_scpi_client.py test_timeline.py
+MISCFILES=CMakeLists.txt Makefile README pyproject.toml pytest.ini test.py test_cli.py test_scpi_client.py test_timeline.py
 copy_sources:
 	ssh $(SCP_TARGET) mkdir -p $(PYDIR) $(PYDIR)/$(PY_PACKAGE) $(PYDIR)/$(PY_EXAMPLE_DIR)
 	scp $(SOURCES) $(MISCFILES) $(SCP_TARGET):$(PYDIR)

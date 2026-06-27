@@ -7,8 +7,9 @@
 // own Avalon-ST output so software can consume the PPS path and the auxiliary path
 // independently.
 //
-// The design intentionally stays simple: synchronize input, detect edge, copy counter,
-// emit one event if the downstream FIFO is ready.
+// Captured events are held until the downstream FIFO accepts them. If a second event arrives
+// while a previous event on the same path is still pending, the event is dropped and reported
+// through the Avalon-MM overflow status/count registers.
 
 module ts_core #(
   parameter CTR_W = 64                 // counter width
@@ -21,15 +22,31 @@ module ts_core #(
   input  wire              sig,        // edge-detected input (asynchronous)
   input  wire              sigA,       // edge-detected input (asynchronous)
 
+  // Avalon-MM status/control interface
+  input  wire [1:0]        avs_s0_address,
+  input  wire              avs_s0_read,
+  input  wire              avs_s0_write,
+  output reg  [31:0]       avs_s0_readdata,
+  input  wire [31:0]       avs_s0_writedata,
+
   // Avalon-ST output interface
-  output wire              aso_valid,  // 1-cycle pulse per captured event
+  output wire              aso_valid,  // asserted while a captured event is pending
   output wire [CTR_W-1:0]  aso_data,   // captured counter value
   input wire aso_ready,
 
-  output wire              asoA_valid, // 1-cycle pulse per captured event
+  output wire              asoA_valid, // asserted while a captured event is pending
   output wire [CTR_W-1:0]  asoA_data,  // captured counter value
   input wire asoA_ready
 );
+
+  localparam logic [1:0] A_STATUS = 2'd0;
+  localparam logic [1:0] A_CONTROL = 2'd1;
+  localparam logic [1:0] A_OVERFLOW_COUNT = 2'd2;
+  localparam logic [1:0] A_OVERFLOWA_COUNT = 2'd3;
+
+  function automatic logic [31:0] saturated_increment(input logic [31:0] value);
+    saturated_increment = (value == 32'hffff_ffff) ? value : value + 32'd1;
+  endfunction
 
   // ============================================================
   // Free-running counter
@@ -76,46 +93,115 @@ module ts_core #(
   wire signalA_rise = sA2 & ~sA3;
 
   // ============================================================
-  // Capture the current counter value on each detected rising edge.
+  // Capture and hold events until the downstream Avalon-ST sink accepts them.
   // ============================================================
-  reg [CTR_W-1:0] ctr_cap;
-  reg             cap_valid;
+  logic [CTR_W-1:0] aso_data_r, aso_data_next;
+  logic             aso_valid_r, aso_valid_next;
+  logic             overflow_r, overflow_next;
+  logic [31:0]      overflow_count_r, overflow_count_next;
 
-  always_ff @(posedge clk) begin
-    if (reset) begin
-      ctr_cap   <= '0;
-      cap_valid <= 1'b0;
-    end else begin
-      cap_valid <= signal_rise;
-      if (signal_rise)
-        ctr_cap <= ctr;
+  logic [CTR_W-1:0] asoA_data_r, asoA_data_next;
+  logic             asoA_valid_r, asoA_valid_next;
+  logic             overflowA_r, overflowA_next;
+  logic [31:0]      overflowA_count_r, overflowA_count_next;
+
+  wire aso_accept = aso_valid_r && aso_ready;
+  wire asoA_accept = asoA_valid_r && asoA_ready;
+  wire clear_overflow = avs_s0_write && avs_s0_address == A_CONTROL && avs_s0_writedata[0];
+  wire clear_overflowA = avs_s0_write && avs_s0_address == A_CONTROL && avs_s0_writedata[1];
+
+  always_comb begin
+    aso_data_next = aso_data_r;
+    aso_valid_next = aso_valid_r;
+    overflow_next = clear_overflow ? 1'b0 : overflow_r;
+    overflow_count_next = clear_overflow ? 32'd0 : overflow_count_r;
+
+    if (signal_rise) begin
+      if (aso_valid_r && !aso_ready) begin
+        overflow_next = 1'b1;
+        overflow_count_next = saturated_increment(overflow_count_next);
+      end else begin
+        aso_data_next = ctr;
+        aso_valid_next = 1'b1;
+      end
+    end else if (aso_accept) begin
+      aso_valid_next = 1'b0;
     end
   end
 
-  reg [CTR_W-1:0] ctr_capA;
-  reg             cap_validA;
+  always_comb begin
+    asoA_data_next = asoA_data_r;
+    asoA_valid_next = asoA_valid_r;
+    overflowA_next = clear_overflowA ? 1'b0 : overflowA_r;
+    overflowA_count_next = clear_overflowA ? 32'd0 : overflowA_count_r;
 
-  always_ff @(posedge clk) begin
-    if (reset) begin
-      ctr_capA   <= '0;
-      cap_validA <= 1'b0;
-    end else begin
-      cap_validA <= signalA_rise;
-      if (signalA_rise)
-        ctr_capA <= ctr;
+    if (signalA_rise) begin
+      if (asoA_valid_r && !asoA_ready) begin
+        overflowA_next = 1'b1;
+        overflowA_count_next = saturated_increment(overflowA_count_next);
+      end else begin
+        asoA_data_next = ctr;
+        asoA_valid_next = 1'b1;
+      end
+    end else if (asoA_accept) begin
+      asoA_valid_next = 1'b0;
     end
   end
 
-  // ============================================================
-  // Avalon-ST output.
-  // If the downstream FIFO is not ready in that cycle, the one-cycle capture pulse is not
-  // retried, so this core is intended for sparse event streams rather than dense traffic.
-  // ============================================================
-  assign aso_valid = cap_valid & aso_ready; // do not assert valid if the FIFO is not ready
-  assign aso_data  = ctr_cap;
+  always_ff @(posedge clk) begin
+    if (reset) begin
+      aso_data_r <= '0;
+      aso_valid_r <= 1'b0;
+      overflow_r <= 1'b0;
+      overflow_count_r <= 32'd0;
 
-  assign asoA_valid = cap_validA & asoA_ready; // do not assert valid if the FIFO is not ready
-  assign asoA_data  = ctr_capA;
+      asoA_data_r <= '0;
+      asoA_valid_r <= 1'b0;
+      overflowA_r <= 1'b0;
+      overflowA_count_r <= 32'd0;
+    end else begin
+      aso_data_r <= aso_data_next;
+      aso_valid_r <= aso_valid_next;
+      overflow_r <= overflow_next;
+      overflow_count_r <= overflow_count_next;
+
+      asoA_data_r <= asoA_data_next;
+      asoA_valid_r <= asoA_valid_next;
+      overflowA_r <= overflowA_next;
+      overflowA_count_r <= overflowA_count_next;
+    end
+  end
+
+  assign aso_valid = aso_valid_r;
+  assign aso_data  = aso_data_r;
+
+  assign asoA_valid = asoA_valid_r;
+  assign asoA_data  = asoA_data_r;
+
+  // ============================================================
+  // Avalon-MM status/control register file.
+  // ============================================================
+  logic [31:0] status_word;
+  always_comb begin
+    status_word = 32'd0;
+    status_word[0] = aso_valid_r;
+    status_word[1] = asoA_valid_r;
+    status_word[8] = overflow_r;
+    status_word[9] = overflowA_r;
+  end
+
+  always_ff @(posedge clk) begin
+    if (reset) begin
+      avs_s0_readdata <= 32'd0;
+    end else if (avs_s0_read) begin
+      unique case (avs_s0_address)
+        A_STATUS:          avs_s0_readdata <= status_word;
+        A_CONTROL:         avs_s0_readdata <= 32'd0;
+        A_OVERFLOW_COUNT:  avs_s0_readdata <= overflow_count_r;
+        A_OVERFLOWA_COUNT: avs_s0_readdata <= overflowA_count_r;
+      endcase
+    end
+  end
 
 endmodule
 

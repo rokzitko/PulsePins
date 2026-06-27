@@ -63,7 +63,7 @@ PYTHONPATH=python python3 python/examples/notebook_workflow.py de10nano --output
 On the DE10-Nano, do the following:
 
 cd python
-pip3 install pytest
+python3 -m pip install pytest nanobind
 make
 make test
 

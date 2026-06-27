@@ -364,6 +364,17 @@
 #define FIFO_TS_SIGA_IN_CSR_USE_WRITE_CONTROL 1
 
 /*
+ * Macros for device 'ts_core_pps', class 'ts_core'
+ * The macros are prefixed with 'TS_CORE_PPS_'.
+ * The prefix is the slave descriptor.
+ */
+#define TS_CORE_PPS_COMPONENT_TYPE ts_core
+#define TS_CORE_PPS_COMPONENT_NAME ts_core_pps
+#define TS_CORE_PPS_BASE 0x120
+#define TS_CORE_PPS_SPAN 16
+#define TS_CORE_PPS_END 0x12f
+
+/*
  * Macros for device 'pio_elapsed', class 'altera_avalon_pio'
  * The macros are prefixed with 'PIO_ELAPSED_'.
  * The prefix is the slave descriptor.

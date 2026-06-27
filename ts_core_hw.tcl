@@ -90,6 +90,43 @@ add_interface_port reset reset reset Input 1
 
 
 #
+# connection point s0
+#
+add_interface s0 avalon end
+set_interface_property s0 addressUnits WORDS
+set_interface_property s0 associatedClock clock
+set_interface_property s0 associatedReset reset
+set_interface_property s0 bitsPerSymbol 8
+set_interface_property s0 burstOnBurstBoundariesOnly false
+set_interface_property s0 burstcountUnits WORDS
+set_interface_property s0 explicitAddressSpan 0
+set_interface_property s0 holdTime 0
+set_interface_property s0 linewrapBursts false
+set_interface_property s0 maximumPendingReadTransactions 0
+set_interface_property s0 maximumPendingWriteTransactions 0
+set_interface_property s0 readLatency 0
+set_interface_property s0 readWaitTime 1
+set_interface_property s0 setupTime 0
+set_interface_property s0 timingUnits Cycles
+set_interface_property s0 writeWaitTime 0
+set_interface_property s0 ENABLED true
+set_interface_property s0 EXPORT_OF ""
+set_interface_property s0 PORT_NAME_MAP ""
+set_interface_property s0 CMSIS_SVD_VARIABLES ""
+set_interface_property s0 SVD_ADDRESS_GROUP ""
+
+add_interface_port s0 avs_s0_address address Input 2
+add_interface_port s0 avs_s0_read read Input 1
+add_interface_port s0 avs_s0_write write Input 1
+add_interface_port s0 avs_s0_readdata readdata Output 32
+add_interface_port s0 avs_s0_writedata writedata Input 32
+set_interface_assignment s0 embeddedsw.configuration.isFlash 0
+set_interface_assignment s0 embeddedsw.configuration.isMemoryDevice 0
+set_interface_assignment s0 embeddedsw.configuration.isNonVolatileStorage 0
+set_interface_assignment s0 embeddedsw.configuration.isPrintableDevice 0
+
+
+#
 # connection point avalon_streaming_source_0
 #
 add_interface avalon_streaming_source_0 avalon_streaming start

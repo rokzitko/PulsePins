@@ -335,6 +335,12 @@ with connect_ready_socket() as sock:
     assert "unknown token 'BADCMD'" in error_text
     assert ask("SYST:ERR?") == '0, "No error"'
 
+    print("subcheck: malformed query form returns ERROR")
+    assert ask("STREAM?") == "ERROR"
+    error_text = ask("SYST:ERR?")
+    assert "not queryable" in error_text
+    assert ask("SYST:ERR?") == '0, "No error"'
+
     ask("TERMINATE")
 PY
 

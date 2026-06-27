@@ -29,11 +29,12 @@ Internally the block:
 * synchronizes each asynchronous input through a short flip-flop chain
 * detects a rising edge
 * copies the current free-running counter value into a capture register
-* asserts an Avalon-ST valid pulse for one cycle when the downstream FIFO is ready
+* holds Avalon-ST `valid` high until the downstream FIFO accepts the captured timestamp
+* latches and counts overflow if another event arrives while the previous event on that path is still pending
 
 This makes the block simple and deterministic, but it also means that timestamps are quantized to the `ts_core` clock.
 
-One important constraint is that the core does not retry a capture if the downstream FIFO is not ready in the cycle where the edge is detected. In practice that is fine for sparse timing events, but it is not intended for dense event streams.
+Each capture path has one pending-event slot in front of its FIFO. Backpressure for one event is handled without data loss. If another edge arrives before that pending event is accepted, the later edge is dropped, the per-path overflow latch is set, and the per-path overflow counter increments.
 
 For synchronizer and capture latency notes, see [RTL latency and timing](latency.md).
 
@@ -67,7 +68,7 @@ The selector values exposed in [`c++/timestamp.hh`]({{ source_file("c++/timestam
 
 ### C++ interface
 
-The `timestamp` class in [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }}) wraps two FIFOs and a configuration PIO block.
+The `timestamp` class in [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }}) wraps two FIFOs, the `ts_core` status/control register block, and a configuration PIO block.
 
 Important operations:
 
@@ -75,13 +76,17 @@ Important operations:
 * `selA()` - choose the `sigA` source
 * `get_cfg()` - return a readable summary of the current routing
 * `filled()` / `filledA()` - report whether FIFO data is available
+* `status()` - read pending and overflow status from `ts_core`
+* `overflow()` / `overflowA()` - report per-path overflow latches
+* `overflow_count()` / `overflowA_count()` - read per-path overflow counters
+* `clear_overflow()` - clear timestamp overflow latches and counters
 * `clear_fifo()` / `clear_fifoA()` - drain old samples
 * `read()` / `readA()` - read one 64-bit timestamp from each path
 * `read_with_timeout()` / `readA_with_timeout()` - wait for a sample with timeout handling
 
 Each timestamp is assembled from two 32-bit FIFO words into a 64-bit counter value.
 
-The timeout-based read functions poll until two FIFO words are available, then reconstruct the full 64-bit timestamp. This is why the timeout is applied to a complete event record rather than to a single 32-bit transfer.
+The timeout-based read functions poll until two FIFO words are available, then reconstruct the full 64-bit timestamp. This is why the timeout is applied to a complete event record rather than to a single 32-bit transfer. They also fail if the relevant timestamp overflow latch is set.
 
 The constructor clears both FIFOs on startup, which helps avoid stale samples after reset or reconfiguration.
 
@@ -114,7 +119,7 @@ Use the timestamp block for:
 * debugging trigger routing
 * building higher-level closed-loop timing tools such as `ppgpsdo`
 
-Because the capture logic is edge-based and FIFO-backed, this subsystem is best suited to sparse event streams such as PPS pulses, trigger events, and derived low-rate timing markers rather than dense arbitrary waveforms.
+Because the capture logic is edge-based and has only one pending slot per path ahead of the FIFO, this subsystem is best suited to sparse event streams such as PPS pulses, trigger events, and derived low-rate timing markers rather than dense arbitrary waveforms.
 
 ### Related pages
 

@@ -36,6 +36,7 @@ inline constexpr H2fRegion fifo_ts_pps_out {FIFO_TS_PPS_OUT_BASE, FIFO_TS_PPS_OU
 inline constexpr H2fRegion fifo_ts_pps_in_csr {FIFO_TS_PPS_IN_CSR_BASE, FIFO_TS_PPS_IN_CSR_SPAN};
 inline constexpr H2fRegion fifo_ts_siga_out {FIFO_TS_SIGA_OUT_BASE, FIFO_TS_SIGA_OUT_SPAN};
 inline constexpr H2fRegion fifo_ts_siga_in_csr {FIFO_TS_SIGA_IN_CSR_BASE, FIFO_TS_SIGA_IN_CSR_SPAN};
+inline constexpr H2fRegion ts_core_pps {TS_CORE_PPS_BASE, TS_CORE_PPS_SPAN};
 inline constexpr H2fRegion msgdma_1_csr {MSGDMA_1_CSR_BASE, MSGDMA_1_CSR_SPAN};
 inline constexpr H2fRegion st_mux_1 {ST_MUX_1_BASE, ST_MUX_1_SPAN};
 inline constexpr H2fRegion msgdma_1_descriptor_slave {MSGDMA_1_DESCRIPTOR_SLAVE_BASE, MSGDMA_1_DESCRIPTOR_SLAVE_SPAN};

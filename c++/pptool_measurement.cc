@@ -61,6 +61,8 @@ int timestamp_reader_rc(const std::exception_ptr &eptr) {
   if (!eptr)
     return RC_OK;
   const auto msg = exception_message(eptr);
+  if (msg.find("overflow") != std::string::npos)
+    return RC_ERROR_OVERFLOW;
   return msg.find("Timeout") != std::string::npos ? RC_TIMEOUT : RC_EXCEPTION;
 }
 
@@ -71,6 +73,7 @@ struct TimestampSession {
   TimestampSession(FPGA &fpga, const InputParser &input, const Verbosity &v) :
     ts(fpga.dev_h2f,
       fpga.dev_lw,
+      address_map::h2f::ts_core_pps,
       address_map::h2f::fifo_ts_pps_out, address_map::h2f::fifo_ts_pps_in_csr,
       address_map::h2f::fifo_ts_siga_out, address_map::h2f::fifo_ts_siga_in_csr,
       address_map::lw::pio_cfg),

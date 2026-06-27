@@ -58,10 +58,10 @@ timing-sdc-check:
 	python3 scripts/check_quartus_timing.py --root . --sdc-only
 
 ${SOPC}: ${QSYSIN} ${IPSOURCE} $(wildcard *_hw.tcl)
-	${QSYS} --synthesis=VERILOG ${QSYSIN} 2>&1 | tee build-log-qsys
+	bash -o pipefail -c '${QSYS} --synthesis=VERILOG ${QSYSIN} 2>&1 | tee build-log-qsys'
 
 ${SOF}: ${SOPC} ${SOURCE} ${PREFIX}.qsf ${PREFIX}.sdc scripts/check_quartus_timing.py
-	${QSH} --flow compile ${QPF} 2>&1 | tee build-log-compile
+	bash -o pipefail -c '${QSH} --flow compile ${QPF} 2>&1 | tee build-log-compile'
 ifeq ($(CHECK_QUARTUS_TIMING),1)
 	python3 scripts/check_quartus_timing.py --root .
 endif

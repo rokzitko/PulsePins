@@ -6,7 +6,7 @@ site: mkdocs.yml main.py $(shell find docs)
 	mkdocs build
 
 upload: site
-	scp -r site @${SITE}
+	scp -r site ${SITE}
 
 clean:
 	rm -rf site/

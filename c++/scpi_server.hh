@@ -15,6 +15,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include <cstdint>
 
 using asio::ip::tcp;
 
@@ -111,6 +112,7 @@ protected:
     uint8_t ese_mask_ = 0;
     uint8_t sre_mask_ = 0;
     uint8_t stb_ = 0;
+    uint64_t error_generation_ = 0;
     bool write_in_progress_ = false;
 
     // For derived classes: add commands to tree
@@ -140,6 +142,7 @@ protected:
         if (error_queue_.size() > 10) error_queue_.pop_front();
         error_queue_.push_back(err);
         sesr_ |= bit;
+        ++error_generation_;
     }
 
     void clear_status() {
@@ -198,6 +201,7 @@ protected:
 
         if (verbose) std::cout << "Executing [" << line << "]" << std::endl;
 
+        const auto error_generation_before = error_generation_;
         std::string resp;
         try {
             if (is_query) {
@@ -224,6 +228,7 @@ protected:
             return SessionAction::continue_reading;
         }
 
+        if (resp.empty() && error_generation_ != error_generation_before) resp = "ERROR";
         if (verbose) std::cout << "Responding [" << resp << "]" << std::endl;
         if (!resp.empty()) write(resp);
         return SessionAction::continue_reading;

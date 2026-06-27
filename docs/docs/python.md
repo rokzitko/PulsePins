@@ -115,7 +115,7 @@ On the DE10-Nano, the normal workflow is:
 
 ```bash
 cd python
-pip3 install pytest
+python3 -m pip install pytest nanobind
 make
 make test
 ```
