@@ -113,7 +113,10 @@ int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
   rc |= transmit_sequence_checked(s.fifo, s.sc, seq, v);
   if (rc & RC_TIMEOUT)
     return rc;
-  s.sc.trigger_force();
+  const int trigger_rc = force_trigger_when_output_fifo_ready(s.sc, v);
+  rc |= trigger_rc;
+  if (trigger_rc != RC_OK)
+    return rc;
   rc |= s.sc.wait_to_complete(v);
   if (rc & RC_TIMEOUT)
     return rc;
@@ -465,10 +468,12 @@ int pphelloworld(FPGA &fpga, const InputParser &input, const Verbosity &v)
   seq.push_back(el(Replay{}, 0, 2));
   if (v.veryverbose)
     seq.dump(std::cout, "| ");
-  const auto rc = transmit_sequence_checked(s.fifo, s.sc, seq, v);
+  int rc = transmit_sequence_checked(s.fifo, s.sc, seq, v);
   if (rc != RC_OK)
     return rc;
-  s.sc.trigger_force();
+  rc |= force_trigger_when_output_fifo_ready(s.sc, v);
+  if (rc != RC_OK)
+    return rc;
   std::cout << "All outputs are now toggling with frequency f_clk/1000." << std::endl;
   return RC_OK;
 }

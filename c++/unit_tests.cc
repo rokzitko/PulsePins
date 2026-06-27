@@ -1680,6 +1680,33 @@ TEST_CASE("transmit_sequence rejects oversized sequences before writes") {
   CHECK(transport.send_calls == 0);
 }
 
+TEST_CASE("guarded force trigger helper waits for output FIFO data") {
+  FakeTriggerActivationControl control{{{0, 0}, {1, 0}}};
+  Verbosity verbosity;
+  verbosity.verbose = false;
+
+  const auto rc = force_trigger_when_output_fifo_ready(control, verbosity, 5);
+
+  CHECK(rc == RC_OK);
+  CHECK(control.output_counter_reads == 2);
+  CHECK(control.trigger_force_calls == 1);
+  CHECK(control.trigger_enable_calls == 0);
+  CHECK(control.status_reports == 1);
+}
+
+TEST_CASE("guarded force trigger helper timeout does not assert trigger") {
+  FakeTriggerActivationControl control{{{0, 0}}};
+  Verbosity verbosity;
+  verbosity.verbose = false;
+
+  const auto rc = force_trigger_when_output_fifo_ready(control, verbosity, 0);
+
+  CHECK(rc == RC_TIMEOUT);
+  CHECK(control.output_counter_reads == 1);
+  CHECK(control.trigger_force_calls == 0);
+  CHECK(control.trigger_enable_calls == 0);
+}
+
 TEST_CASE("force trigger waits for output FIFO data") {
   FakeTriggerActivationControl control{{{0, 0}, {0, 0}, {1, 0}}};
   Verbosity verbosity;

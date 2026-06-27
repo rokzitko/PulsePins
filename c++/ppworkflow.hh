@@ -264,6 +264,21 @@ inline int wait_for_output_fifo_data(StreamerControl &sc,
 }
 
 template<typename StreamerControl>
+inline int force_trigger_when_output_fifo_ready(StreamerControl &sc,
+                                               const Verbosity &v,
+                                               const uint64_t output_fifo_ready_timeout_ms = default_output_fifo_ready_timeout_ms)
+{
+  const int rc = wait_for_output_fifo_data(sc, v, output_fifo_ready_timeout_ms);
+  if (rc != RC_OK)
+    return rc;
+  if (v.verbose)
+    std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
+  sc.trigger_force();
+  sc.status_report();
+  return RC_OK;
+}
+
+template<typename StreamerControl>
 inline int activate_trigger(StreamerControl &sc,
                             const InputParser &input,
                             const bool force_trigger,
@@ -275,13 +290,7 @@ inline int activate_trigger(StreamerControl &sc,
       const double delay = parse_time(input, "-delay", "0");
       sleepd(delay);
     }
-    const int rc = wait_for_output_fifo_data(sc, v, output_fifo_ready_timeout_ms);
-    if (rc != RC_OK)
-      return rc;
-    if (v.verbose)
-      std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
-    sc.trigger_force();
-    sc.status_report();
+    return force_trigger_when_output_fifo_ready(sc, v, output_fifo_ready_timeout_ms);
   } else {
     if (v.verbose)
       std::cout << cyan << " --->  Arming trigger." << rst << std::endl;

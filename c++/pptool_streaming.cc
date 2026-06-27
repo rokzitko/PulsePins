@@ -141,13 +141,16 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
     auto seq = seq_continuous(p, m, nr_delay, nr_pos, nr_neg, v1, v0, start0);
     if (v.veryverbose)
       seq.dump(std::cout, "| ");
-    const auto rc = transmit_sequence_checked(s.fifo, s.sc, seq, v);
+    int rc = transmit_sequence_checked(s.fifo, s.sc, seq, v);
     if (rc != RC_OK)
       return rc;
-    if (autotrig)
-      s.sc.trigger_force();
-    else
+    if (autotrig) {
+      rc = force_trigger_when_output_fifo_ready(s.sc, v);
+      if (rc != RC_OK)
+        return rc;
+    } else {
       s.sc.trigger_enable();
+    }
     for (;;)
       pause();
   }
@@ -173,10 +176,14 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
       if (rc & RC_TIMEOUT)
         return rc;
       if (n == 0) {
-        if (autotrig)
-          s.sc.trigger_force();
-        else
+        if (autotrig) {
+          const int trigger_rc = force_trigger_when_output_fifo_ready(s.sc, v);
+          rc |= trigger_rc;
+          if (trigger_rc != RC_OK)
+            return rc;
+        } else {
           s.sc.trigger_enable();
+        }
       }
     }
   }
