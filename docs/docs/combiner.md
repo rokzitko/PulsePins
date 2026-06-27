@@ -136,6 +136,8 @@ This is the layer used by tools such as `ppqout`.
 
 The helper also defaults to `SEL1` if no explicit output mode is requested, which keeps the single-streamer case simple.
 
+Single-stream tools that construct the normal C++ `streamer` helper also restore the qout combiner to the hardware-reset pass-through state before playback: `SEL1`, no inversion, all masks enabled, and no forced input or output values. This prevents a previous multistreamer or `ppqout` command from leaving a combiner mode such as `DIFF12` active for later single-stream readback checks.
+
 ### Trigger combiner
 
 The trigger combiner applies the same general pattern to trigger sources.

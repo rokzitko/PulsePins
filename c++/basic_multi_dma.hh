@@ -26,6 +26,7 @@
 #include "streamer.hh"
 #include "parser.hh"
 #include "st_mux.hh"
+#include "combiner.hh"
 
 // Minimal host-side view of one streamer instance plus its FIFO transport.
 class basic_streamer {
@@ -90,10 +91,12 @@ public:
       //   1. program the idle output value
       //   2. ensure physical outputs are enabled
       //   3. select the FIFO transport path; the mux state can persist across commands
-      //   4. reset the streamer core so it starts from that known idle state
+      //   4. restore the single-stream output combiner route
+      //   5. reset the streamer core so it starts from that known idle state
       basic_streamer::set_initial_value_opts(opts);
       fpga.output_enable(true);
       mux.channel(1);
+      combiner(fpga.dev_h2f, address_map::h2f::combiner_qout, "combiner_qout").reset_passthrough();
       sc.reset();
     }
 

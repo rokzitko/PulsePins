@@ -169,6 +169,18 @@ public:
     return lcfg.read();
   }
 
+  // Restore the hardware-reset equivalent: input 1 passes through unchanged and no
+  // stored force/readback settings affect the output path.
+  void reset_passthrough() {
+    constexpr Value all_bits = static_cast<Value>(~Value{0});
+    cfg(static_cast<Value>(comb_mode::SEL1));
+    for (int i = 0; i <= NR; i++) {
+      invert(i, 0);
+      mask(i, all_bits);
+      value(i, 0);
+    }
+  }
+
   // Invert selected bits. `n=0` targets the output, `1..4` target inputs.
   void invert(const int n, const Value v) {
     validate_port_index(n, "invert");
