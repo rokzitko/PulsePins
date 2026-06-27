@@ -12,12 +12,16 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <exception>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 #include "colors.hh"
 #include "address_map.hh"
@@ -28,6 +32,65 @@
 #include "streamer.hh"
 
 static_assert(address_map::contains(address_map::h2f::rl_encoder_if, 8));
+
+namespace readback_detail {
+
+constexpr std::size_t ceil_div(const std::size_t numerator, const std::size_t denominator) {
+  return (numerator + denominator - 1) / denominator;
+}
+
+inline constexpr std::size_t fifo_word_bits = WIDTH_AVS_BUS;
+inline constexpr std::size_t element_bits = WIDTH_TOTAL;
+// FIFO fill is reported in bus-width slices; a readback element spans the full encoded element width.
+inline constexpr std::size_t fifo_words_per_element = ceil_div(element_bits, fifo_word_bits);
+
+static_assert(fifo_word_bits > 0);
+static_assert(element_bits == WIDTH_CONTROL + WIDTH_COUNTER + WIDTH_DATA);
+static_assert(FIFO_RL_OUT_AVALONMM_AVALONMM_DATA_WIDTH == WIDTH_AVS_BUS);
+static_assert(FIFO_RL_OUT_AVALONMM_AVALONST_DATA_WIDTH == WIDTH_AVS_BUS);
+static_assert(std::numeric_limits<bus_t>::digits == WIDTH_AVS_BUS);
+static_assert(std::numeric_limits<decltype(std::declval<fifo&>().read())>::digits >= WIDTH_AVS_BUS,
+              "fifo::read() must return the complete readback FIFO bus word");
+
+template <typename T>
+constexpr T low_bits_mask(const std::size_t bits) {
+  static_assert(std::is_unsigned_v<T>);
+  constexpr auto width = std::numeric_limits<T>::digits;
+  if (bits == 0)
+    return T{0};
+  if (bits >= width)
+    return ~T{0};
+  return static_cast<T>((T{1} << bits) - T{1});
+}
+
+template <typename Field, std::size_t width_bits, typename ReadWord>
+Field read_fifo_field(bus_t &word, std::size_t &bits_available, ReadWord &&read_word) {
+  static_assert(std::is_unsigned_v<Field>);
+  static_assert(width_bits <= std::numeric_limits<Field>::digits);
+  using unsigned_bus_t = std::make_unsigned_t<bus_t>;
+  using unsigned_field_t = std::make_unsigned_t<Field>;
+
+  unsigned_field_t result = 0;
+  std::size_t remaining = width_bits;
+  while (remaining > 0) {
+    if (bits_available == 0) {
+      word = static_cast<bus_t>(read_word());
+      bits_available = fifo_word_bits;
+    }
+    const auto take = remaining < bits_available ? remaining : bits_available;
+    const auto shift = bits_available - take;
+    const auto chunk = (static_cast<unsigned_bus_t>(word) >> shift) & low_bits_mask<unsigned_bus_t>(take);
+    if (take == std::numeric_limits<unsigned_field_t>::digits)
+      result = static_cast<unsigned_field_t>(chunk);
+    else
+      result = static_cast<unsigned_field_t>((result << take) | static_cast<unsigned_field_t>(chunk));
+    bits_available -= take;
+    remaining -= take;
+  }
+  return static_cast<Field>(result);
+}
+
+}
 
 class ReadbackException : public std::exception {
   std::string msg;
@@ -114,6 +177,12 @@ private:
     sleep_1ms();
   }
 
+  template <typename Field, std::size_t width_bits>
+  Field read_fifo_field(bus_t &word, std::size_t &bits_available) {
+    // The FIFO width adapter presents the encoded element MSB-first: control, then count, then value.
+    return readback_detail::read_fifo_field<Field, width_bits>(word, bits_available, [this]() { return f.read(); });
+  }
+
 public:
   readback(FPGA &_fpga,
             const mm &dev,
@@ -154,7 +223,7 @@ public:
 
   // Returns true if there are elements to be read back.
   bool filled() {
-    return f.fill() > 0;
+    return f.fill() >= readback_detail::fifo_words_per_element;
   }
 
   void clear_fifo() {
@@ -221,9 +290,15 @@ public:
   }
 
   el read() {
-    [[maybe_unused]] control_t control = f.read();
-    count_t count = f.read();
-    value_t value = f.read();
+    const auto current_fill = f.fill();
+    if (current_fill < readback_detail::fifo_words_per_element)
+      throw ReadbackException("Incomplete readback FIFO element: fill=" + std::to_string(current_fill) +
+                              " required=" + std::to_string(readback_detail::fifo_words_per_element));
+    bus_t word = 0;
+    std::size_t bits_available = 0;
+    [[maybe_unused]] const control_t control = read_fifo_field<control_t, WIDTH_CONTROL>(word, bits_available);
+    const count_t count = read_fifo_field<count_t, WIDTH_COUNTER>(word, bits_available);
+    const value_t value = read_fifo_field<value_t, WIDTH_DATA>(word, bits_available);
     return el{count, value}; // regular element
   }
 

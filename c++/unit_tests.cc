@@ -8,6 +8,7 @@
 
 #include <fstream>
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
@@ -36,6 +37,7 @@
 #include "ppwebgui_http.hh"
 #include "ppwebgui_service_api.hh"
 #include "ppworkflow.hh"
+#include "readback.hh"
 #include "sequence_file_format.hh"
 #include "sequence.hh"
 #include "stall_timeout.hh"
@@ -96,6 +98,19 @@ struct ScopedEnvVar {
       setenv(name.c_str(), old_value->c_str(), 1);
     else
       unsetenv(name.c_str());
+  }
+};
+
+struct TestReadbackWordReader {
+  std::vector<bus_t> words;
+  size_t index = 0;
+
+  explicit TestReadbackWordReader(std::initializer_list<bus_t> words_) : words(words_) {}
+
+  bus_t operator()() {
+    if (index >= words.size())
+      throw std::runtime_error("test readback word reader exhausted");
+    return words[index++];
   }
 };
 
@@ -1260,6 +1275,40 @@ TEST_CASE("resolve_readback_options hides unsupported strobe mode") {
   CHECK(resolve_readback_options(make_input({})).mode == readback_mode_valid_clk);
   CHECK(resolve_readback_options(make_input({"-rbmode", "1"})).mode == readback_mode_valid_clk);
   CHECK_THROWS_AS(resolve_readback_options(make_input({"-rbmode", "0"})), std::runtime_error);
+}
+
+TEST_CASE("readback FIFO field reader extracts 16-bit fields") {
+  TestReadbackWordReader reader{bus_t{0xabcd1234u}};
+  bus_t word = 0;
+  std::size_t bits_available = 0;
+
+  CHECK(readback_detail::read_fifo_field<std::uint16_t, 16>(word, bits_available, reader) == std::uint16_t{0xabcd});
+  CHECK(bits_available == 16);
+  CHECK(reader.index == 1);
+  CHECK(readback_detail::read_fifo_field<std::uint16_t, 16>(word, bits_available, reader) == std::uint16_t{0x1234});
+  CHECK(bits_available == 0);
+  CHECK(reader.index == 1);
+}
+
+TEST_CASE("readback FIFO field reader extracts 32-bit fields") {
+  TestReadbackWordReader reader{bus_t{0x89abcdefu}};
+  bus_t word = 0;
+  std::size_t bits_available = 0;
+
+  CHECK(readback_detail::read_fifo_field<std::uint32_t, 32>(word, bits_available, reader) == std::uint32_t{0x89abcdefu});
+  CHECK(bits_available == 0);
+  CHECK(reader.index == 1);
+}
+
+TEST_CASE("readback FIFO field reader extracts 64-bit fields") {
+  TestReadbackWordReader reader{bus_t{0x01234567u}, bus_t{0x89abcdefu}};
+  bus_t word = 0;
+  std::size_t bits_available = 0;
+
+  CHECK(readback_detail::read_fifo_field<std::uint64_t, 64>(word, bits_available, reader) ==
+        std::uint64_t{0x0123456789abcdefULL});
+  CHECK(bits_available == 0);
+  CHECK(reader.index == 2);
 }
 
 TEST_CASE("resolve_streamer_options reports explicit initial value") {
