@@ -74,8 +74,8 @@ struct FreqMeterOptions {
   std::optional<double> correction_factor;
 };
 
-inline bool resolve_reset_FPGA(const InputParser &input) {
-  bool reset_FPGA = false; // default
+inline bool resolve_reset_FPGA(const InputParser &input, const bool force_reset = false) {
+  bool reset_FPGA = force_reset; // default: no reset unless requested or forced by command policy
   if (envVarExists("PP_RESET_FPGA"))
     reset_FPGA = true;
   if (input.exists("-reset_FPGA"))

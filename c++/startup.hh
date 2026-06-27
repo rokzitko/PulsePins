@@ -14,6 +14,7 @@
 
 #include <cerrno>
 #include <iostream>
+#include <string>
 #include <system_error>
 #include <sys/mman.h>
 
@@ -36,6 +37,11 @@ inline RealtimeScheduler enable_realtime_process_mode(const Verbosity &v)
   if (v.veryverbose)
     std::cout << "Scheduler: " << rt.report() << std::endl;
   return rt;
+}
+
+inline bool command_forces_startup_reset(const std::string &progname)
+{
+  return progname == "ppreset";
 }
 
 inline void apply_fpga_startup_policy(FPGA &fpga,
@@ -68,11 +74,13 @@ inline void apply_fpga_startup_policy(FPGA &fpga,
   }
 }
 
-inline void apply_fpga_startup_policy(FPGA &fpga, const InputParser &input)
+inline void apply_fpga_startup_policy(FPGA &fpga,
+                                      const InputParser &input,
+                                      const bool force_reset_FPGA = false)
 {
   apply_fpga_startup_policy(
     fpga,
-    resolve_reset_FPGA(input),
+    resolve_reset_FPGA(input, force_reset_FPGA),
     resolve_dark_mode(input),
     resolve_clock_selection_options(input),
     resolve_core_pll_options(input),

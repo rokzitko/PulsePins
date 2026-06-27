@@ -34,7 +34,7 @@ struct HostRuntime {
     about(progname);
     realtime_scheduler.emplace(enable_realtime_process_mode(verbosity));
     fpga.emplace(verbosity, version);
-    apply_fpga_startup_policy(*fpga, input);
+    apply_fpga_startup_policy(*fpga, input, command_forces_startup_reset(progname));
     freq_meter.emplace(input, *fpga);
     freq_meter->report();
   }

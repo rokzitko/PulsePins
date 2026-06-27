@@ -1,6 +1,6 @@
 # ppreset
 
-`ppreset` resets streamer 1 through the normal single-streamer bring-up path.
+`ppreset` pulses the FPGA S2F reset and resets streamer 1 through the normal single-streamer bring-up path.
 
 Use it when you want to return the primary streamer to a known idle state after an aborted run, an infinite/retriggered sequence, a manual trigger experiment, or a command that intentionally skipped normal cleanup.
 
@@ -17,7 +17,7 @@ ppreset [options]
 The command:
 
 * applies the normal host startup policy, including any requested clock or PLL changes
-* optionally performs an FPGA S2F reset if `-reset_FPGA` or `PP_RESET_FPGA` is set
+* always performs an FPGA S2F reset during startup, equivalent to passing `-reset_FPGA`
 * programs the streamer initial output value, defaulting to `0`
 * enables the physical outputs
 * restores the streamer's software-visible control word to its persistent defaults
@@ -38,7 +38,7 @@ Shared startup options that are often relevant before a reset:
 * `-int_clk`: select the internal streamer clock path
 * `-ext_clk`: select the external streamer clock path
 * `-clk N`: select a raw clock mux value
-* `-reset_FPGA`: pulse the FPGA S2F reset during startup before the streamer reset
+* `-reset_FPGA`: accepted for consistency; `ppreset` performs this reset even when the option is omitted
 * `-dark_mode`: disable status LEDs during startup
 
 ## Expected Output
@@ -55,7 +55,7 @@ If `-i` is set to a non-zero value, the command also reports the configured init
 
 Use `ppreset` when trigger force/enable state, qout override state, or streamer status appears stale after manual experiments.
 
-If the streamer still does not return to a usable state, try `ppreset -reset_FPGA` or reload the FPGA image with `FPGA-writeConfig -f pulsepins.rbf`.
+If the streamer still does not return to a usable state, reload the FPGA image with `FPGA-writeConfig -f pulsepins.rbf`.
 
 If outputs come up at the wrong idle value, pass the intended pattern explicitly with `-i VALUE`.
 

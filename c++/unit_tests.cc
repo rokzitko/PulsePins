@@ -39,6 +39,7 @@
 #include "sequence_file_format.hh"
 #include "sequence.hh"
 #include "stall_timeout.hh"
+#include "startup.hh"
 #include "streamer.hh"
 #include "third_party/httplib.h"
 #include "vcd_parser.hh"
@@ -1116,6 +1117,16 @@ TEST_CASE("parseuint32_t") {
   CHECK(parse_uint32_t("8'hFF") == 255);
   CHECK(parse_uint32_t("12'o777") == 511);
   CHECK(parse_uint32_t("'b1010") == 10);
+}
+
+TEST_CASE("startup reset policy handles ppreset") {
+  ScopedEnvVar reset_env("PP_RESET_FPGA", std::nullopt);
+
+  CHECK(!resolve_reset_FPGA(make_input({})));
+  CHECK(resolve_reset_FPGA(make_input({"-reset_FPGA"})));
+  CHECK(resolve_reset_FPGA(make_input({}), true));
+  CHECK(command_forces_startup_reset("ppreset"));
+  CHECK(!command_forces_startup_reset("pptest"));
 }
 
 TEST_CASE("resolve_clock_selection_options prefers raw -clk") {
