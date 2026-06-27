@@ -89,9 +89,11 @@ public:
       // Bring-up order matters:
       //   1. program the idle output value
       //   2. ensure physical outputs are enabled
-      //   3. reset the streamer core so it starts from that known idle state
+      //   3. select the FIFO transport path; the mux state can persist across commands
+      //   4. reset the streamer core so it starts from that known idle state
       basic_streamer::set_initial_value_opts(opts);
       fpga.output_enable(true);
+      mux.channel(1);
       sc.reset();
     }
 
