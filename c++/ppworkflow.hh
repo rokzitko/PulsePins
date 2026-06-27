@@ -67,6 +67,9 @@ inline void convert_for_readback_check(Sequence &s) {
 
 inline constexpr double default_readback_first_element_timeout_s = 2.0;
 inline constexpr double default_readback_idle_timeout_s = 2.0;
+inline constexpr uint64_t default_output_fifo_ready_timeout_ms = 2'000;
+inline constexpr const char *output_fifo_ready_timeout_text =
+  "timed out waiting for streamer output FIFO data before force trigger";
 
 inline ReadbackTimeoutPolicy readback_timeout_policy(const InputParser &input) {
   const bool has_timeout = input.exists("-timeout");
@@ -223,18 +226,60 @@ inline int transmit_sequence_checked(Transport &tr,
   }
 }
 
-inline void activate_trigger(streamer_control &sc,
+template<typename StreamerControl>
+inline bool output_fifo_has_pending_data(StreamerControl &sc,
+                                         uint64_t &ctr_in,
+                                         uint64_t &ctr_out)
+{
+  ctr_in = sc.get_output_fifo_ctr_in();
+  ctr_out = sc.get_output_fifo_ctr_out();
+  return ctr_in > ctr_out;
+}
+
+template<typename StreamerControl>
+inline int wait_for_output_fifo_data(StreamerControl &sc,
+                                     const Verbosity &v,
+                                     const uint64_t max_cnt = default_output_fifo_ready_timeout_ms)
+{
+  if (v.veryverbose)
+    std::cout << "Waiting for streamer output FIFO data before force trigger" << std::endl;
+
+  uint64_t ctr_in = 0;
+  uint64_t ctr_out = 0;
+  for (uint64_t cnt = 0; ; cnt++) {
+    if (output_fifo_has_pending_data(sc, ctr_in, ctr_out))
+      return RC_OK;
+    if (cnt >= max_cnt)
+      break;
+    sleep_1ms();
+  }
+
+  if (v.verbose) {
+    std::cout << red << "activate_trigger(): " << output_fifo_ready_timeout_text
+              << " (ctr_in=" << with_underscores(ctr_in)
+              << " ctr_out=" << with_underscores(ctr_out) << ")." << rst << std::endl;
+    sc.status_report();
+  }
+  return RC_TIMEOUT;
+}
+
+template<typename StreamerControl>
+inline int activate_trigger(StreamerControl &sc,
                             const InputParser &input,
                             const bool force_trigger,
-                            const Verbosity &v)
+                            const Verbosity &v,
+                            const uint64_t output_fifo_ready_timeout_ms = default_output_fifo_ready_timeout_ms)
 {
   if (force_trigger) {
-    if (v.verbose)
-      std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
     if (input.exists("-delay")) {
       const double delay = parse_time(input, "-delay", "0");
       sleepd(delay);
     }
+    const int rc = wait_for_output_fifo_data(sc, v, output_fifo_ready_timeout_ms);
+    if (rc != RC_OK)
+      return rc;
+    if (v.verbose)
+      std::cout << cyan << " ---> Forcing trigger." << rst << std::endl;
     sc.trigger_force();
     sc.status_report();
   } else {
@@ -243,6 +288,7 @@ inline void activate_trigger(streamer_control &sc,
     sc.trigger_enable();
     sc.status_report();
   }
+  return RC_OK;
 }
 
 inline void deactivate_trigger(streamer_control &sc,
@@ -405,7 +451,10 @@ inline int send_and_trig(Transport &tr,
   rc |= transmit_sequence_checked(tr, sc, working_elements, v);
   if (rc & RC_TIMEOUT)
     return rc;
-  activate_trigger(sc, input, force_trigger, v);
+  const int trigger_rc = activate_trigger(sc, input, force_trigger, v);
+  rc |= trigger_rc;
+  if (trigger_rc != RC_OK)
+    return rc;
 
   const auto timeout_policy = readback_timeout_policy(input);
   bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout_policy, rc);

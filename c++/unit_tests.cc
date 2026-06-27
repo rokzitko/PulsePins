@@ -18,6 +18,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "include/doctest.h"
@@ -155,6 +156,41 @@ struct ScopedTestWebGuiServer {
 
 struct FakeTransportControl {
   void status_report() {}
+};
+
+struct FakeTriggerActivationControl {
+  std::vector<std::pair<uint64_t, uint64_t>> output_fifo_samples;
+  std::pair<uint64_t, uint64_t> current_sample = {0, 0};
+  size_t sample_index = 0;
+  int output_counter_reads = 0;
+  int status_reports = 0;
+  int trigger_force_calls = 0;
+  int trigger_enable_calls = 0;
+
+  FakeTriggerActivationControl(std::initializer_list<std::pair<uint64_t, uint64_t>> samples) :
+    output_fifo_samples(samples) {}
+
+  uint64_t get_output_fifo_ctr_in() {
+    output_counter_reads++;
+    if (output_fifo_samples.empty()) {
+      current_sample = {0, 0};
+    } else {
+      const size_t index = sample_index < output_fifo_samples.size()
+        ? sample_index : output_fifo_samples.size() - 1;
+      current_sample = output_fifo_samples[index];
+    }
+    return current_sample.first;
+  }
+
+  uint64_t get_output_fifo_ctr_out() {
+    if (!output_fifo_samples.empty() && sample_index + 1 < output_fifo_samples.size())
+      sample_index++;
+    return current_sample.second;
+  }
+
+  void trigger_force() { trigger_force_calls++; }
+  void trigger_enable() { trigger_enable_calls++; }
+  void status_report() { status_reports++; }
 };
 
 struct ThrowingTransport {
@@ -1560,6 +1596,46 @@ TEST_CASE("transmit_sequence rejects oversized sequences before writes") {
 
   CHECK_THROWS_AS(transmit_sequence(transport, control, seq, verbosity), std::runtime_error);
   CHECK(transport.send_calls == 0);
+}
+
+TEST_CASE("force trigger waits for output FIFO data") {
+  FakeTriggerActivationControl control{{{0, 0}, {0, 0}, {1, 0}}};
+  Verbosity verbosity;
+  verbosity.verbose = false;
+
+  const auto rc = activate_trigger(control, make_input({}), force_trigger, verbosity, 5);
+
+  CHECK(rc == RC_OK);
+  CHECK(control.output_counter_reads == 3);
+  CHECK(control.trigger_force_calls == 1);
+  CHECK(control.trigger_enable_calls == 0);
+  CHECK(control.status_reports == 1);
+}
+
+TEST_CASE("force trigger readiness accepts terminator-only stream") {
+  FakeTriggerActivationControl control{{{1, 0}}};
+  Verbosity verbosity;
+  verbosity.verbose = false;
+
+  const auto rc = activate_trigger(control, make_input({}), force_trigger, verbosity, 0);
+
+  CHECK(rc == RC_OK);
+  CHECK(control.output_counter_reads == 1);
+  CHECK(control.trigger_force_calls == 1);
+  CHECK(control.status_reports == 1);
+}
+
+TEST_CASE("force trigger readiness timeout does not assert trigger") {
+  FakeTriggerActivationControl control{{{0, 0}}};
+  Verbosity verbosity;
+  verbosity.verbose = false;
+
+  const auto rc = activate_trigger(control, make_input({}), force_trigger, verbosity, 0);
+
+  CHECK(rc == RC_TIMEOUT);
+  CHECK(control.output_counter_reads == 1);
+  CHECK(control.trigger_force_calls == 0);
+  CHECK(control.trigger_enable_calls == 0);
 }
 
 TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {
