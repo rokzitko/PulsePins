@@ -246,7 +246,7 @@ int pptrig(FPGA &fpga, const InputParser &input, const Verbosity &v)
   trig_int.write(p);
   if (v.veryverbose) {
     auto report = [](std::string s, value_t v) {
-      std::cout << "tr(" << s << ")=0x" << std::hex << std::setfill('0') << std::setw(2) << (v && 0xFF) << " " << std::bitset<WIDTH_TRIGGER>(v) << std::endl;
+      std::cout << "tr(" << s << ")=0x" << std::hex << std::setfill('0') << std::setw(2) << (v & 0xFF) << " " << std::bitset<WIDTH_TRIGGER>(v) << std::endl;
     };
     report("int",  tr.ct.in1());
     report("ext",  tr.ct.in2());

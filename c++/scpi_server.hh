@@ -329,6 +329,8 @@ public:
         : acceptor_(io, tcp::endpoint(tcp::v4(), port)) {
         accept();
     }
+
+    virtual ~ScpiServerBase() = default;
 protected:
     tcp::acceptor acceptor_;
     virtual std::shared_ptr<ScpiSessionBase> make_session(tcp::socket socket) = 0;
