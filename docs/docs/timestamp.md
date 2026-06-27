@@ -86,7 +86,7 @@ Important operations:
 
 Each timestamp is assembled from two 32-bit FIFO words into a 64-bit counter value.
 
-The timeout-based read functions poll until two FIFO words are available, then reconstruct the full 64-bit timestamp. This is why the timeout is applied to a complete event record rather than to a single 32-bit transfer. They also fail if the relevant timestamp overflow latch is set.
+The timeout-based read functions poll until two FIFO words are available, then reconstruct the full 64-bit timestamp. This is why the timeout is applied to a complete event record rather than to a single 32-bit transfer. By default they also fail if the relevant timestamp overflow latch is set; callers that are intentionally stress-testing fast sources can opt out and keep draining received samples.
 
 The constructor clears both FIFOs on startup, which helps avoid stale samples after reset or reconfiguration.
 

@@ -38,6 +38,7 @@ Common options:
 * `-pps_xtal`: use the crystal-derived PPS source
 * `-timeout T`: timeout for waiting on new timestamp samples
 * `-nr N`: stop after a limited number of samples; `0` means run continuously
+* `-ignore_ts_overflow`: continue reading even if `ts_core` reports timestamp overflow
 
 The `-nr` limit is applied per active stream reader.
 
@@ -54,7 +55,7 @@ The `sigA` stream is a secondary timestamp path with a selectable source. The se
 | `4` | 1 s generated pulse | Sanity-check timestamp cadence against a slow internal source. |
 | `5` | 100 ms generated pulse | Check 10 Hz internal timing. |
 | `6` | 10 ms generated pulse | Check 100 Hz internal timing. |
-| `7` | 1 ms generated pulse | Check 1 kHz internal timing; sparse enough for timestamp capture. |
+| `7` | 1 ms generated pulse | Stress-test 1 kHz internal timing; use `-ignore_ts_overflow` when overflow is expected. |
 
 If `-selA` is omitted, selector `0` is used.
 
@@ -96,6 +97,8 @@ Because the two streams are read independently, the printed lines from PPS and `
 
 Because the hardware capture core has one pending slot per path and reports overflow if later events arrive before that slot is accepted, `ppts` is intended for sparse timing signals rather than dense pulse trains.
 
+By default, timestamp overflow is reported as a command failure. Use `-ignore_ts_overflow` for deliberate stress tests or fast generated sources where dropped timestamp events are expected and the goal is to inspect the samples that software did receive.
+
 Use [Timestamp capture](timestamp.md) for counter-width, edge-capture, FIFO, and timing-semantics details.
 
 ### Typical examples
@@ -122,4 +125,10 @@ Read both streams and stop after 10 samples per stream:
 
 ```bash
 ppts -sigA -nr 10
+```
+
+Read the fast 1 ms generated `sigA` source without failing on expected timestamp overflow:
+
+```bash
+ppts -nopps -sigA -selA 7 -nr 10 -timeout 10 -ignore_ts_overflow
 ```

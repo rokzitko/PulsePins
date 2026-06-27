@@ -207,15 +207,16 @@ int ppts(FPGA &fpga, const InputParser &input, const Verbosity &v)
   // PPS path, the auxiliary signal-A path, or both concurrently.
   TimestampSession session(fpga, input, v);
   const bool read_pps = !input.exists("-nopps");
+  const bool ignore_ts_overflow = input.exists("-ignore_ts_overflow");
   std::thread ts_pps;
   std::exception_ptr pps_failure;
   if (read_pps)
-    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&session](){ return session.ts.read_with_timeout(session.timeout); }, -1, &pps_failure);
+    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&session, ignore_ts_overflow](){ return session.ts.read_with_timeout(session.timeout, ignore_ts_overflow); }, -1, &pps_failure);
   const bool read_sigA = input.exists("-sigA");
   std::thread ts_sigA;
   std::exception_ptr sigA_failure;
   if (read_sigA)
-    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session](){ return session.ts.readA_with_timeout(session.timeout); }, -1, &sigA_failure);
+    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session, ignore_ts_overflow](){ return session.ts.readA_with_timeout(session.timeout, ignore_ts_overflow); }, -1, &sigA_failure);
   if (read_pps) ts_pps.join();
   if (read_sigA) ts_sigA.join();
   return timestamp_reader_rc(pps_failure) | timestamp_reader_rc(sigA_failure);

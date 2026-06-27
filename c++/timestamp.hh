@@ -210,32 +210,36 @@ public:
   }
 
     // Wait until a full 64-bit PPS event record is present, then reconstruct it.
-    uint64_t read_with_timeout(const double timeout = 2.0) {
+    uint64_t read_with_timeout(const double timeout = 2.0, const bool ignore_overflow = false) {
     std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
     while (ff.fill() < 2) {
-      throw_if_overflow();
+      if (!ignore_overflow)
+        throw_if_overflow();
       auto now = std::chrono::steady_clock::now();
       auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
       if (timeout > 0.0 && elapsed.count() > abs(timeout))
         throw std::runtime_error("Timeout.");
       usleep(100); // don't hose CPU in poll loop
     }
-    throw_if_overflow();
+    if (!ignore_overflow)
+      throw_if_overflow();
     return read();
   }
 
   // Wait until a full 64-bit auxiliary event record is present.
-  uint64_t readA_with_timeout(const double timeout = 2.0) {
+  uint64_t readA_with_timeout(const double timeout = 2.0, const bool ignore_overflow = false) {
     std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
     while (ffA.fill() < 2) {
-      throw_if_overflowA();
+      if (!ignore_overflow)
+        throw_if_overflowA();
       auto now = std::chrono::steady_clock::now();
       auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
       if (timeout > 0.0 && elapsed.count() > abs(timeout))
         throw std::runtime_error("Timeout.");
       usleep(100); // don't hose CPU in poll loop
     }
-    throw_if_overflowA();
+    if (!ignore_overflow)
+      throw_if_overflowA();
     return readA();
   }
 };
