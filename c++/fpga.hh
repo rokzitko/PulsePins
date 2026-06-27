@@ -228,7 +228,7 @@ public:
     if (SYSID_QSYS_0_ID != tidbit)
       throw std::runtime_error("Host build expects a different FPGA design ID.");
     if (SYSID_QSYS_1_ID != expected_version)
-      throw std::runtime_error("Host build expects a different FPGA version ID.");
+      throw std::runtime_error("Host build expects a different FPGA ABI version ID.");
 
     sysid id(dev_lw,   address_map::lw::sysid.base,        SYSID_ID,        verbose, "id");
     sysid id0(dev_lw,  address_map::lw::sysid_qsys_0.base, SYSID_QSYS_0_ID, verbose, "id0");
@@ -236,7 +236,8 @@ public:
     sysid id2(dev_h2f, address_map::h2f::sysid_h2f.base,   SYSID_H2F_ID,    verbose, "id2");
     // These tests also ensure that we can communicate on both lw and h2f buses.
 
-    std::cout << "Bitstream timestamp: " << id.get_timestamp_string() << std::endl;
+    std::cout << "Bitstream timestamp: " << id.get_timestamp_string()
+              << ", ABI version: " << std::dec << id1.get_id() << std::endl;
   }
 
   static constexpr uint32_t CLOCK_MODE_READBACK_SHIFT = 7;

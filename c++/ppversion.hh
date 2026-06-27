@@ -5,7 +5,7 @@
 
 #pragma once
 
-#define VERSION "2025.1"
+#define VERSION "2026.06"
 
 const int tidbit = TIDBITNR;
-const int version = 2; // firmware version (should match SYSID_QSYS_1_ID)
+const int version = 3; // FPGA/host ABI version (should match SYSID_QSYS_1_ID)

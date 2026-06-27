@@ -2443,7 +2443,7 @@
    kind="altera_avalon_sysid_qsys"
    version="21.1"
    enabled="1">
-  <parameter name="id" value="2" />
+  <parameter name="id" value="3" />
  </module>
  <module name="ts_core_pps" kind="ts_core" version="1.0" enabled="1">
   <parameter name="CTR_W" value="64" />

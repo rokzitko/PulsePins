@@ -48,3 +48,23 @@ apptainer shell --writable --fakeroot   --bind $HOME/$PULSEPINSROOT:/work   ubun
 
 cd $PULSEPINSROOT/c++
 make
+
+Release and ABI version updates:
+
+Release labels use the YYYY.MM form, for example 2026.06. Update these files for a release-label-only change:
+
+1. c++/ppversion.hh: VERSION is the host-tool release label printed by the C++ tools.
+2. image/etc/issue: login/banner release label for the image tree.
+3. docs/mkdocs.yml: extra.source_ref should point at the release tag/ref used by documentation source links.
+
+Do not hand-edit generated or historical CLI transcripts just to change the displayed version string, such
+as recipes/ppqout or tests/README.xtal_on_DE10_Nano. Regenerate those examples only when their output is
+being intentionally refreshed.
+
+The FPGA/host ABI version is separate from the release label. Bump it only when the host software and
+bitstream must reject older incompatible counterparts, for example after a register map or protocol change.
+Keep these values in sync:
+
+1. c++/ppversion.hh: const int version.
+2. base_hps.qsys: the sysid_qsys_1 id parameter.
+3. c++/artifacts/hps_0.h: SYSID_QSYS_1_ID for host-safe builds using USE_PREGENERATED=1.
