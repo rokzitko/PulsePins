@@ -91,6 +91,7 @@ static void read_lines_from_stream(int fd, const std::atomic<bool>& stop_flag,
     }
     if (n < 0) {
       if (errno == EINTR) continue;
+      if (stop_flag.load(std::memory_order_relaxed)) break;
       throw std::runtime_error("recv() failed: " + std::string(std::strerror(errno)));
     }
     buf.append(tmp.data(), static_cast<size_t>(n));
@@ -217,7 +218,10 @@ private:
       ::close(fd);
     }
     int cfd = client_fd_.exchange(-1);
-    if (cfd >= 0) ::close(cfd);
+    if (cfd >= 0) {
+      ::shutdown(cfd, SHUT_RDWR);
+      ::close(cfd);
+    }
   }
 
   void run(const std::shared_ptr<StartupSignal> &startup) {

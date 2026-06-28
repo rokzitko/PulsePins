@@ -99,8 +99,11 @@ from_chars_result from_chars(const char* first, const char* last, Int& value, in
 
     if (neg) {
       if (acc > max_abs_neg) return { p, errc::result_out_of_range };
-      // value = -acc (including INT_MIN case)
-      value = static_cast<Int>(0) - static_cast<Int>(acc);
+      if (acc == max_abs_neg) {
+        value = (std::numeric_limits<Int>::min)();
+      } else {
+        value = static_cast<Int>(0) - static_cast<Int>(acc);
+      }
     } else {
       if (acc > max_pos) return { p, errc::result_out_of_range };
       value = static_cast<Int>(acc);
@@ -131,7 +134,7 @@ to_chars_result to_chars(char* first, char* last, Int value, int base = 10) {
   }
 
   // Produce digits in reverse
-  char buf[std::numeric_limits<UInt>::digits10 + 3]; // enough for base10, plus sign
+  char buf[std::numeric_limits<UInt>::digits + 1]; // enough for base2, plus sign
   std::size_t n = 0;
 
   do {

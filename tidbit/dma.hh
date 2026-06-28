@@ -238,13 +238,15 @@ public:
        throw std::invalid_argument("DMA chunk count must be positive");
      const size_t chunk_count = static_cast<size_t>(chunks);
      const size_t chunk_size = size/chunk_count;
+     const size_t remainder = size % chunk_count;
      if (chunk_size == 0)
        throw std::invalid_argument("DMA chunk size must be nonzero");
-     const uint32_t chunk_length = checked_descriptor_u32(chunk_size, "length");
      reset();
      for (size_t i = 0; i < chunk_count; i++) {
        if (i > (UINTPTR_MAX - ram_addr)/chunk_size)
          throw std::out_of_range("DMA chunk address overflows uintptr_t");
+       const size_t this_chunk_size = chunk_size + (i + 1 == chunk_count ? remainder : 0);
+       const uint32_t chunk_length = checked_descriptor_u32(this_chunk_size, "length");
        enqueue(0x0, ram_addr + i*chunk_size, chunk_length); // source addr irrelevant
      }
      if (verbose) std::cout << "Transfering." << std::endl;

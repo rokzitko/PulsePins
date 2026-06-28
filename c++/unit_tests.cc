@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <cstdio>
@@ -243,6 +244,29 @@ TEST_CASE("parse_uint helpers reject malformed input") {
   CHECK_THROWS_AS(parse_uint32_t("abc"), std::runtime_error);
   CHECK_THROWS_AS(parse_uint8_t("256"), std::runtime_error);
   CHECK_THROWS_AS(parse_uint64_t("-1"), std::runtime_error);
+}
+
+TEST_CASE("charconv11 parses signed minimum") {
+  const auto expected = (std::numeric_limits<long long>::min)();
+  const std::string text = std::to_string(expected);
+  long long value = 0;
+
+  const auto result = charconv11::from_chars(text.data(), text.data() + text.size(), value, 10);
+
+  CHECK(result.ec == charconv11::errc::ok);
+  CHECK(result.ptr == text.data() + text.size());
+  CHECK(value == expected);
+}
+
+TEST_CASE("charconv11 to_chars supports uint64 binary output") {
+  char out[64]{};
+  const auto value = (std::numeric_limits<uint64_t>::max)();
+
+  const auto result = charconv11::to_chars(out, out + sizeof(out), value, 2);
+
+  REQUIRE(result.ec == charconv11::errc::ok);
+  const std::string text(out, result.ptr);
+  CHECK(text == std::string(64, '1'));
 }
 
 TEST_CASE("ram_block chunk validation rejects invalid chunk requests") {
