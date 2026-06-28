@@ -52,7 +52,6 @@ ClockSourceSelection clock_source_from_string(std::string source) {
 
 const char *trigger_mode_text(const TriggerModeSelection mode) {
   switch (mode) {
-  case TriggerModeSelection::STANDARD: return "STANDARD";
   case TriggerModeSelection::INT: return "INT";
   case TriggerModeSelection::EXT: return "EXT";
   case TriggerModeSelection::MISC: return "MISC";
@@ -66,7 +65,6 @@ TriggerModeSelection trigger_mode_from_string(std::string mode) {
   for (auto &c : mode) {
     c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
   }
-  if (mode == "STANDARD") return TriggerModeSelection::STANDARD;
   if (mode == "INT") return TriggerModeSelection::INT;
   if (mode == "EXT") return TriggerModeSelection::EXT;
   if (mode == "MISC") return TriggerModeSelection::MISC;

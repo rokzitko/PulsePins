@@ -76,7 +76,7 @@ The page exposes these main sections:
 * Live Hardware: AUX bits, trigger bits, trigger enable/force/reset flags, and the streamer status
 * Tracked by ppwebgui: displayed qout, tracked idle streamer qout, output-override state, combiner mode, trigger mode, and recent action/error text
 * Clocking: a read-only display of the current streamer clock source, tracked `int_clk`/`ext_clk` selection, `core_clk` and `int_clk` PLL profiles, and the last measured `ext_clk`, `int_clk`, `streamer_clk`, and `core_clk` frequencies
-* Trigger Settings: trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask are also visible (read-only). The default trigger mode is `INT`; `STANDARD` remains available and forces EXT invert to `0xffffffff`.
+* Trigger Settings: trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask are also visible (read-only). The default trigger mode is `INT`; EXT inversion is configured explicitly with `invert_ext`.
 * Output Override: one manual final-output override control for the active streamer path used by browser-triggered sequence playback
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
 * Timeline Composer: web-browser editor for simple multi-channel pulse timelines in raw cycles or absolute time units, with JSON draft and pulse-table CSV import/export
@@ -88,14 +88,13 @@ Applying clock settings reruns the same web-controller reset/bring-up path used 
 
 The trigger form uses the same semantic mode names as the CLI trigger tool:
 
-* `STANDARD`
 * `INT`
 * `EXT`
 * `MISC`
 * `ANY`
 * `ALL`
 
-`STANDARD` matches the CLI meaning: it selects the OR combiner path and forces all EXT trigger lines inverted. In the browser UI, `EXT invert` becomes read-only while `STANDARD` is selected so the visible form state stays consistent with the applied semantics.
+The mode selection and inversion fields are independent: for example, active-low external trigger lines can be handled with `ANY` plus `invert_ext = 0xffffffff`.
 
 Browser-triggered streams first run the same web-controller reset/bring-up sequence exposed by the **Reset hardware** button. That resets the streamer core, readback encoder, and counters for a deterministic run. The tracked idle raw qout value is used as the final output element. Because `ppwebgui` controls the final-output policy, sequence text submitted through the browser must not contain an explicit `final ...` record, and shared random-final overrides such as `PP_RANDOM_FINAL` conflict with browser playback.
 

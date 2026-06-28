@@ -1754,7 +1754,12 @@ TEST_CASE("ppwebgui trigger defaults to internal mode") {
   StatusSnapshot status;
   const auto json = status_to_json(status);
   CHECK(contains(json, "\"trigger_settings\":{\"mode\":\"INT\""));
-  CHECK(!contains(json, "\"mode\":\"STANDARD\""));
+
+  status.trigger_settings.mode = static_cast<uint32_t>(trig_mode::OR);
+  status.trigger_settings.invert_ext = ~uint32_t {0};
+  const auto any_json = status_to_json(status);
+  CHECK(contains(any_json, "\"trigger_settings\":{\"mode\":\"ANY\""));
+  CHECK(contains(any_json, "\"invert_ext\":4294967295"));
 }
 
 TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {

@@ -8,7 +8,7 @@ Generate one pulse on qout[0]:
 ./pptest 2 -c 1000 -v 1 -t 0 -veryverbose
 
 Test of PB trigger (push right button):
-./pptest 12 -check -veryverbose -trig_std -c 100 -int_pll 10M
+./pptest 12 -check -veryverbose -trig_any -invert_ext 0xffffffff -c 100 -int_pll 10M
 
 Verbose checks:
 ./pptest 10 -v 8 -c 10000 -repetitions 7 -nr_replays 4 -check -veryverbose -verbosecheck

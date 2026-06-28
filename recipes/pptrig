@@ -36,11 +36,12 @@ For troubleshooting:
  Trig misc inverting: trig=00110000
  0: trig in=00110011
 
-# -trig_std
-./pptrig -debug -veryverbose -trig_std -pio 0b000_0000_0000 -invert_int 0 -invert_misc 0
- Trigger: standard (any of)
+# any trigger with explicit EXT inversion
+./pptrig -debug -veryverbose -trig_any -invert_ext 0xffffffff -pio 0b000_0000_0000 -invert_int 0 -invert_misc 0
+ Trigger: any of
  Trig int inverting: trig=00000000
+ Trig ext inverting: trig=11111111 [enable] [force] [reset]
  Trig misc inverting: trig=00000000
  0: trig in=00000000
 
-./pptrig -debug -veryverbose -trig_std -pio 0b001_0000_0000 -invert_int 0 -invert_misc 0
+./pptrig -debug -veryverbose -trig_any -invert_ext 0xffffffff -pio 0b001_0000_0000 -invert_int 0 -invert_misc 0

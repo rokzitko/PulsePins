@@ -41,7 +41,7 @@ _pulsepins_ppdelay_opts="
 "
 
 _pulsepins_pptrig_opts="
--trig_int -trig_ext -trig_misc -trig_any -trig_all -trig_std
+-trig_int -trig_ext -trig_misc -trig_any -trig_all
 -invert_trig_result -invert_int -invert_ext -invert_misc
 -mask_int -mask_ext -mask_misc -pio -debug
 "

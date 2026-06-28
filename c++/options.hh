@@ -50,7 +50,6 @@ enum class TriggerModeOption {
   misc,
   any,
   all,
-  standard,
 };
 
 struct TriggerOptions {
@@ -150,8 +149,6 @@ inline TriggerOptions resolve_trigger_options(const InputParser &input) {
     opts.mode = TriggerModeOption::any;
   if (input.exists("-trig_all"))
     opts.mode = TriggerModeOption::all;
-  if (input.exists("-trig_std"))
-    opts.mode = TriggerModeOption::standard;
 
   if (input.exists("-invert_trig_result"))
     opts.invert_result = parse_uint32(input, "-invert_trig_result", "0");

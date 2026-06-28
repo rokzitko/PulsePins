@@ -74,7 +74,6 @@ struct ClockingState {
 };
 
 enum class TriggerModeSelection {
-  STANDARD,
   INT,
   EXT,
   MISC,

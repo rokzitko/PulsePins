@@ -127,10 +127,6 @@ TriggerConfigState trigger_config_from_options(const TriggerOptions &opts) {
   case TriggerModeOption::all:
     state.mode = static_cast<uint32_t>(trig_mode::AND);
     break;
-  case TriggerModeOption::standard:
-    state.mode = static_cast<uint32_t>(trig_mode::OR);
-    state.invert_ext = ~uint32_t {0};
-    break;
   }
 
   if (opts.invert_result) state.invert_result = *opts.invert_result;
@@ -147,40 +143,29 @@ TriggerConfigState trigger_config_from_request(const TriggerConfigRequest &reque
                                                const TriggerConfigState &current) {
   TriggerConfigState state = current;
   switch (request.mode) {
-  case TriggerModeSelection::STANDARD:
-    state.mode = static_cast<uint32_t>(trig_mode::OR);
-    state.invert_ext = ~uint32_t {0};
-    break;
   case TriggerModeSelection::INT:
     state.mode = static_cast<uint32_t>(trig_mode::INT);
-    state.invert_ext = request.invert_ext;
     break;
   case TriggerModeSelection::EXT:
     state.mode = static_cast<uint32_t>(trig_mode::EXT);
-    state.invert_ext = request.invert_ext;
     break;
   case TriggerModeSelection::MISC:
     state.mode = static_cast<uint32_t>(trig_mode::MISC);
-    state.invert_ext = request.invert_ext;
     break;
   case TriggerModeSelection::ANY:
     state.mode = static_cast<uint32_t>(trig_mode::OR);
-    state.invert_ext = request.invert_ext;
     break;
   case TriggerModeSelection::ALL:
     state.mode = static_cast<uint32_t>(trig_mode::AND);
-    state.invert_ext = request.invert_ext;
     break;
   }
   state.invert_result = request.invert_result;
   state.invert_int = request.invert_int;
+  state.invert_ext = request.invert_ext;
   state.invert_misc = request.invert_misc;
   state.mask_int = request.mask_int;
   state.mask_ext = request.mask_ext;
   state.mask_misc = request.mask_misc;
-  if (request.mode != TriggerModeSelection::STANDARD) {
-    state.invert_ext = request.invert_ext;
-  }
   return state;
 }
 

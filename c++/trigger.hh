@@ -61,11 +61,6 @@ public:
       if (fpga.v.veryverbose) std::cout << "Trigger: all of" << std::endl;
       ct.mode(trig_mode::AND);
     }
-    if (mode == TriggerModeOption::standard) {
-      if (fpga.v.veryverbose) std::cout << "Trigger: standard (any of)" << std::endl;
-      ct.invert_ext(~0); // invert all external signals (they are pulled up!)
-      ct.mode(trig_mode::OR);
-    }
     if (opts.invert_result) {
       auto v = *opts.invert_result;
       if (fpga.v.veryverbose) std::cout << "Trig result inverting: " << trig_parse(v) << std::endl;

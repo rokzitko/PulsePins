@@ -114,7 +114,6 @@ const char *index_html = R"HTML(<!doctype html>
         <div class="settings-grid">
           <label>Mode
             <select name="mode" id="trigger-mode-select">
-              <option>STANDARD</option>
               <option selected>INT</option>
               <option>EXT</option>
               <option>MISC</option>
@@ -135,7 +134,7 @@ const char *index_html = R"HTML(<!doctype html>
           <button id="trigger-revert-button" type="button" class="secondary-button">Revert local edits</button>
         </div>
       </form>
-      <div class="meta">INT is the default trigger mode. STANDARD follows CLI semantics and forces EXT invert to `0xffffffff`.</div>
+      <div class="meta">INT is the default trigger mode. EXT inversion is configured explicitly with the EXT invert field.</div>
       <div class="settings-grid">
         <div class="setting"><div class="label">AUX invert</div><div id="trigger-invert-aux" class="mono"></div></div>
         <div class="setting"><div class="label">AUX mask</div><div id="trigger-mask-aux" class="mono"></div></div>
@@ -809,7 +808,6 @@ const char *app_js = R"JS((() => {
   const clockingRevertButton = document.getElementById('clocking-revert-button');
   const clockingMeasureButton = document.getElementById('clocking-measure-button');
   const triggerModeSelect = document.getElementById('trigger-mode-select');
-  const triggerExtInvertInput = document.getElementById('trigger-ext-invert');
   const triggerRevertButton = document.getElementById('trigger-revert-button');
   const qoutRevertButton = document.getElementById('qout-revert-button');
   const combinerRevertButton = document.getElementById('combiner-revert-button');
@@ -2126,14 +2124,6 @@ const char *app_js = R"JS((() => {
     select.value = resolved;
   }
 
-  function syncTriggerModeUi() {
-    const standard = triggerModeSelect.value === 'STANDARD';
-    if (standard) {
-      triggerExtInvertInput.value = '0xffffffff';
-    }
-    triggerExtInvertInput.readOnly = standard;
-  }
-
   function setClockingDirty(dirty) {
     clockingDirty = dirty;
     setFormDirty(
@@ -2217,7 +2207,6 @@ const char *app_js = R"JS((() => {
     triggerForm.querySelector('[name="mask_misc"]').value = formatHex(settings.mask_misc);
     setText('trigger-invert-aux', formatHex(settings.invert_aux));
     setText('trigger-mask-aux', formatHex(settings.mask_aux));
-    syncTriggerModeUi();
     setTriggerDirty(false);
   }
 
@@ -2292,7 +2281,6 @@ const char *app_js = R"JS((() => {
   setTriggerDirty(false);
   setQoutDirty(false);
   setCombinerDirty(false);
-  syncTriggerModeUi();
   attachDirtyHandlers(clockingForm, setClockingDirty);
   attachDirtyHandlers(triggerForm, setTriggerDirty);
   attachDirtyHandlers(qoutForm, setQoutDirty);
@@ -2388,10 +2376,6 @@ const char *app_js = R"JS((() => {
   clockingRevertButton.addEventListener('click', () => {
     if (!lastStatus) return;
     populateClocking(lastStatus, true);
-  });
-
-  triggerModeSelect.addEventListener('change', () => {
-    syncTriggerModeUi();
   });
 
   triggerRevertButton.addEventListener('click', () => {

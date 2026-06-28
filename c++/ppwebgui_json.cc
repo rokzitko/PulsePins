@@ -73,7 +73,7 @@ std::string trigger_mode_to_semantic_string(const TriggerConfigState &state) {
   case static_cast<uint32_t>(trig_mode::AND):
     return "ALL";
   case static_cast<uint32_t>(trig_mode::OR):
-    return state.invert_ext == ~uint32_t {0} ? "STANDARD" : "ANY";
+    return "ANY";
   default:
     return trigger_mode_to_string(state.mode);
   }
