@@ -39,6 +39,7 @@ logic trigger_force;
 logic trigger_reset;
 logic retrig;
 logic armed;
+logic wrfull;
 logic o;
 
 chain_trigger dut(
@@ -56,6 +57,7 @@ chain_trigger dut(
  .trigger_reset,
  .retrig,
  .armed,
+ .wrfull,
  .o);
 
 always @(posedge clk) begin

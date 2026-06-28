@@ -26,6 +26,7 @@ input wire trigger_force,               // (internal or external) trigger force 
 input wire trigger_reset,               // trigger reset
 input wire retrig,                      // asserted when retrig element is encountered at the output FIFO buffer out port
 output wire armed,                      // asserted when waiting for the trigger condition
+output wire wrfull,                     // write-side trigger FIFO full flag
 output reg o                            // output
 );
 
@@ -69,11 +70,27 @@ fifo
  .rdempty   (fifo_empty),
  .wrusedw   (used),
  .rdfull    (),
- .wrfull    (),
+ .wrfull    (wrfull),
  .wrempty   (),
  .rdusedw   (),
  .eccstatus ()
 );
+
+// ---- Simulation guards ----
+// synthesis translate_off
+logic wrfull_prev;
+always_ff @(posedge wrclk) begin
+  if (reset)
+    wrfull_prev <= 0;
+  else
+    wrfull_prev <= wrfull;
+end
+
+always_ff @(posedge wrclk) if (!reset) begin
+  assert(!(wrreq && wrfull && wrfull_prev))
+    else $fatal(1, "Write attempted while trigger FIFO full");
+end
+// synthesis translate_on
 
 logic one; // individual trigger output for each trigger event in a sequence
 logic and_trigger_reset; // internal reset for and_trigger (controlled by the state machine)

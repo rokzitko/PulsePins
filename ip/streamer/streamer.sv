@@ -105,9 +105,10 @@ assign in_valid_chain = ~empty_i && is_trigger; // trigger element available in 
 // Trigger elements are consumed immediately into the trigger chain, while regular elements
 // are pulled only when the RL decoder can accept more work.
 logic rdreq_rl_decoder;                  // request for a new element from RL decoder
-logic rdreq_rl_encoder;
-assign rdreq_rl_encoder = in_valid_chain; // the trigger system will fetch the element in a single cycle, thus a wrreq to chain_trigger is also a rdreq to input FIFO
-assign rdreq_i = rdreq_rl_decoder | rdreq_rl_encoder; // decoder can throttle the input FIFO, the trigger system can fetch elements in a single cycle
+logic rdreq_chain_trigger;
+logic trigger_fifo_full;
+assign rdreq_chain_trigger = in_valid_chain && !trigger_fifo_full; // pop only when the trigger FIFO can accept the element
+assign rdreq_i = rdreq_rl_decoder | rdreq_chain_trigger; // decoder and trigger path can both throttle input FIFO consumption
 
 logic [WIDTH_CONTROL-1:0]  out_control;
 logic [WIDTH_DATA-1:0]     out_data;
@@ -203,7 +204,7 @@ chain_trigger ct0 (
     .pattern(data[WIDTH_TRIGGER-1:0]),
     .mask(data[2*WIDTH_TRIGGER-1:WIDTH_TRIGGER]),
     .control(control[WIDTH_TRIGGER_CONTROL-1:0]),
-    .wrreq(in_valid_chain),
+    .wrreq(rdreq_chain_trigger),
 
     .clk(streamer_clk),
     .rst(streamer_rst),
@@ -213,6 +214,7 @@ chain_trigger ct0 (
     .trigger_reset(trigger_reset),
     .retrig(retrig),
     .armed(trigger_armed),
+    .wrfull(trigger_fifo_full),
     .o(trigger_o)
     );
 
