@@ -1,3 +1,4 @@
 #!/bin/bash
+set -ex
 # Infinite duration: runs repeatedly
 while ./test8 ; do : ; done

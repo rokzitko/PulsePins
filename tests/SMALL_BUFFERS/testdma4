@@ -1,5 +1,5 @@
 #!/bin/bash
-source defs.sh
+source ../defs.sh
 
 ppdmatest 4 -c 100000 -v 1 -check
 ppdmatest 4 -c 100000 -v 9 -check
