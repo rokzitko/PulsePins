@@ -22,14 +22,16 @@ module seq_counter
   parameter rolling = 1          // 1=rolling (overlapping), 0=snapshots (non-overlapping)
 )(
   input wire clk,
+  input wire clk_reset,
   input wire d_clk,
+  input wire d_cdc_reset,
   input wire reset,
   input wire d,
   input wire valid,
   input wire latch,
   input wire high_low,
   input wire [width_addr-1:0] addr,
-  output reg [width_bus-1:0] result
+  output logic [width_bus-1:0] result
 );
 
 localparam [length-1:0] max_nr = {length{1'b1}}; // last histogram index
@@ -114,22 +116,45 @@ always_ff @(posedge d_clk) begin
   end
 end
 
-always_ff @(posedge d_clk) begin
-  if (reset) begin
-    for (i = 0; i <= max_nr; i++)
-      ctr_r[i] <= '0;
-  end else if (latch) begin
-    // Freeze the full histogram for software readout.
-    for (i = 0; i <= max_nr; i++)
-      ctr_r[i] <= ctr[i];
+localparam int SNAPSHOT_COUNTERS = 1 << length;
+localparam int SNAPSHOT_W = SNAPSHOT_COUNTERS*width_ctr;
+logic [SNAPSHOT_W-1:0] snapshot_d;
+logic [SNAPSHOT_W-1:0] snapshot_clk;
+
+integer pack_i;
+always_comb begin
+  for (pack_i = 0; pack_i < SNAPSHOT_COUNTERS; pack_i++) begin
+    snapshot_d[pack_i*width_ctr +: width_ctr] = ctr[pack_i];
+    ctr_r[pack_i] = snapshot_clk[pack_i*width_ctr +: width_ctr];
   end
 end
+
+cdc_bus_update #(
+  .WIDTH(SNAPSHOT_W),
+  .RESET_VALUE('0)
+) snapshot_cdc (
+  .src_clk(d_clk),
+  .src_reset(d_cdc_reset),
+  .src_data(snapshot_d),
+  .src_update(latch),
+  .src_busy(),
+  .dst_clk(clk),
+  .dst_reset(clk_reset),
+  .dst_accept(1'b1),
+  .dst_data(snapshot_clk),
+  .dst_valid(),
+  .dst_pending()
+);
 
 logic [width_ctr-1:0] v;
 always_comb
   v = ctr_r[addr];
 
-always_ff @(posedge clk)
-  result <= high_low ? v[2*width_bus-1:width_bus] : v[width_bus-1:0];
+always_ff @(posedge clk) begin
+  if (clk_reset)
+    result <= '0;
+  else
+    result <= high_low ? v[2*width_bus-1:width_bus] : v[width_bus-1:0];
+end
 
 endmodule

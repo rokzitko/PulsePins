@@ -39,7 +39,7 @@ logic [31:0] avs_s0_writedata;
 
 // Trace the externally visible register-selected mode while iterating over randomized checks.
 always @(posedge clk) begin
-  $strobe("t=%8.3f in1=%h in2=%h in3=%h in4=%h cfg=%d o=%h", $realtime, in1, in2, in3, in4, dut.cfg, o);
+  $strobe("t=%8.3f in1=%h in2=%h in3=%h in4=%h cfg=%d o=%h", $realtime, in1, in2, in3, in4, dut.cfg_clk, o);
 end
 
 combiner dut(
@@ -66,7 +66,7 @@ task set_cfg(input logic [31:0] cfg);
   avs_s0_write = 1;
   #1;
   avs_s0_write = 0;
-  #2;
+  #6;
 endtask
 
 // Randomized repeated sanity pass across the supported register-programmed modes.

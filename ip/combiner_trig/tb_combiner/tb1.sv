@@ -34,7 +34,7 @@ logic [WIDTH-1:0] o;
 
 // Trace a few internal datapath signals while stepping through the fixed functional cases.
 always @(posedge clk) begin
-  $strobe("t=%8.3f in1=%h in2=%h in3=%h in4=%h cfg=%d x1=%h y1=%h o=%h", $realtime, in1, in2, in3, in4, dut.cfg,
+  $strobe("t=%8.3f in1=%h in2=%h in3=%h in4=%h cfg=%d x1=%h y1=%h o=%h", $realtime, in1, in2, in3, in4, dut.cfg_clk,
     dut.x1, dut.y1, o);
 end
 
@@ -73,43 +73,43 @@ initial begin
 
   // Force `cfg` directly to isolate datapath behavior from bus programming.
   #1;
-  force dut.cfg = dut.SEL2;
+  force dut.cfg_clk = dut.SEL2;
   #2;
   assert(o == 'hAA) else $fatal;
 
   #1;
-  force dut.cfg = dut.SEL3;
+  force dut.cfg_clk = dut.SEL3;
   #2;
   assert(o == 'hBB) else $fatal;
 
   #1;
-  force dut.cfg = dut.SEL4;
+  force dut.cfg_clk = dut.SEL4;
   #2;
   assert(o == 'hCC) else $fatal;
 
   // Logical combination modes reused for trigger/control words.
   #1;
-  force dut.cfg = dut.AND;
+  force dut.cfg_clk = dut.AND;
   #2;
   assert(o == 'h88) else $fatal;
 
   #1;
-  force dut.cfg = dut.OR;
+  force dut.cfg_clk = dut.OR;
   #2;
   assert(o == 'hFF) else $fatal;
 
   #1;
-  force dut.cfg = dut.XOR;
+  force dut.cfg_clk = dut.XOR;
   #2;
   assert(o == 'h22) else $fatal;
 
   #1;
-  force dut.cfg = dut.XNOR;
+  force dut.cfg_clk = dut.XNOR;
   #2;
   assert(o == 'hffffffdd) else $fatal;
 
   #1;
-  force dut.cfg = dut.MAJ;
+  force dut.cfg_clk = dut.MAJ;
   #2;
   assert(o == 'hAA) else $fatal;
 
@@ -120,7 +120,7 @@ initial begin
   in2 <= 2;
   in3 <= 3;
   in4 <= 4;
-  force dut.cfg = dut.SUM12;
+  force dut.cfg_clk = dut.SUM12;
   #2;
   assert(o == 'd3) else $fatal;
 
@@ -129,7 +129,7 @@ initial begin
   in2 <= 2;
   in3 <= 3;
   in4 <= 4;
-  force dut.cfg = dut.SUM1234;
+  force dut.cfg_clk = dut.SUM1234;
   #2;
   assert(o == 'd10) else $fatal;
 
@@ -138,7 +138,7 @@ initial begin
   in2 <= 10;
   in3 <= 3;
   in4 <= 4;
-  force dut.cfg = dut.DIFF12;
+  force dut.cfg_clk = dut.DIFF12;
   #2;
   assert(o == 'd10) else $fatal;
 
@@ -147,7 +147,7 @@ initial begin
   in2 <= 32'h55667788;
   in3 <= 32'haabbccdd;
   in4 <= 32'h11223344;
-  force dut.cfg = dut.BLOCK8;
+  force dut.cfg_clk = dut.BLOCK8;
   #2;
   assert(o == 32'h44dd8844) else $fatal;
 
@@ -156,7 +156,7 @@ initial begin
   in2 <= 32'h55667788;
   in3 <= 32'haabbccdd;
   in4 <= 32'h11223344;
-  force dut.cfg = dut.BLOCK16;
+  force dut.cfg_clk = dut.BLOCK16;
   #2;
   assert(o == 32'h77883344) else $fatal;
 end

@@ -26,7 +26,9 @@ wire overflow;
 
 basic_counter dut (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(clk),
+  .d_cdc_reset(reset),
   .d_reset(reset),
   .d,
   .d_valid(valid),
@@ -76,7 +78,7 @@ initial begin
   latch <= 1;
   #1;
   latch <= 0;
-  #1;
+  #12;
 
   addr <= 0;
   #1;

@@ -2,5 +2,5 @@
 rm -rf work
 rm -f SUCCESS
 vlib work
-vlog -sv -cover bcesft ../combiner.sv tb1.sv
+vlog -sv -cover bcesft ../combiner.sv ../../misc/cdc.sv tb1.sv
 vsim -c -do "run -all" -coverage tb_combiner1

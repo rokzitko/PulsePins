@@ -1,3 +1,3 @@
 #!/bin/sh
 rm -f tb1
-iverilog -g2012 -o tb1 ../autocorrelation.sv tb1.sv
+iverilog -g2012 -o tb1 ../autocorrelation.sv ../../misc/cdc.sv tb1.sv

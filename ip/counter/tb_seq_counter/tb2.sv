@@ -31,7 +31,9 @@ seq_counter #(
  .rolling(1)
 ) dut (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(clk),
+  .d_cdc_reset(reset),
   .reset,
   .d,
   .valid,
@@ -91,11 +93,11 @@ initial begin
   reset <= 0;
   #1;
   write_serial(data);
-  #5;
+  #12;
   latch <= 1;
   #1;
   latch <= 0;
-  #1;
+  #12;
 
   check(3'b000, 3);
   check(3'b001, 3);

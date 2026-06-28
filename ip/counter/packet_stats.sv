@@ -22,14 +22,16 @@ module packet_stats
   parameter width_ctr = 64
 )(
   input wire clk,
+  input wire clk_reset,
   input wire d_clk,
+  input wire d_cdc_reset,
   input wire reset,
   input wire valid,
   input wire latch,
   input wire high_low,
   input wire [width_addr-1:0] addr,
-  output reg [width_bus-1:0] result,
-  output reg overflow
+  output logic [width_bus-1:0] result,
+  output wire overflow
 );
 
 logic [width_ctr-1:0] ctr_total,        // total sampled clock ticks
@@ -80,33 +82,47 @@ always_ff @(posedge d_clk) begin
   end
 end
 
-always_ff @(posedge d_clk) begin
-  if (reset)
-    overflow <= 0;
-  else if (ctr_total == {width_ctr{1'b1}})
-    overflow <= 1;
-end
+logic overflow_d;
 
 always_ff @(posedge d_clk) begin
-  if (reset) begin
-    ctr_total_r <= 0;
-    ctr_valid_r <= 0;
-    ctr_idle_r <= 0;
-    ctr_pkt_begin_r <= 0;
-    ctr_pkt_end_r <= 0;
-    ctr_pkt_len_sum_r <= 0;
-    ctr_pkt_len_sum2_r <= 0;
-  end else if (latch) begin
-    // Freeze a coherent snapshot for software readout.
-    ctr_total_r <= ctr_total;
-    ctr_valid_r <= ctr_valid;
-    ctr_idle_r <= ctr_idle;
-    ctr_pkt_begin_r <= ctr_pkt_begin;
-    ctr_pkt_end_r <= ctr_pkt_end;
-    ctr_pkt_len_sum_r <= ctr_pkt_len_sum;
-    ctr_pkt_len_sum2_r <= ctr_pkt_len_sum2;
-  end
+  if (reset)
+    overflow_d <= 0;
+  else if (ctr_total == {width_ctr{1'b1}})
+    overflow_d <= 1;
 end
+
+cdc_bit_sync overflow_sync (
+  .dst_clk(clk),
+  .dst_reset(clk_reset),
+  .async_in(overflow_d),
+  .sync_out(overflow)
+);
+
+localparam int SNAPSHOT_W = 7*width_ctr;
+logic [SNAPSHOT_W-1:0] snapshot_d;
+logic [SNAPSHOT_W-1:0] snapshot_clk;
+
+assign snapshot_d = {ctr_pkt_len_sum2, ctr_pkt_len_sum, ctr_pkt_end,
+                     ctr_pkt_begin, ctr_idle, ctr_valid, ctr_total};
+assign {ctr_pkt_len_sum2_r, ctr_pkt_len_sum_r, ctr_pkt_end_r,
+        ctr_pkt_begin_r, ctr_idle_r, ctr_valid_r, ctr_total_r} = snapshot_clk;
+
+cdc_bus_update #(
+  .WIDTH(SNAPSHOT_W),
+  .RESET_VALUE('0)
+) snapshot_cdc (
+  .src_clk(d_clk),
+  .src_reset(d_cdc_reset),
+  .src_data(snapshot_d),
+  .src_update(latch),
+  .src_busy(),
+  .dst_clk(clk),
+  .dst_reset(clk_reset),
+  .dst_accept(1'b1),
+  .dst_data(snapshot_clk),
+  .dst_valid(),
+  .dst_pending()
+);
 
 logic [width_ctr-1:0] v;
 always_comb begin
@@ -122,7 +138,11 @@ always_comb begin
   endcase
 end
 
-always_ff @(posedge clk)
-  result <= high_low ? v[2*width_bus-1:width_bus] : v[width_bus-1:0];
+always_ff @(posedge clk) begin
+  if (clk_reset)
+    result <= '0;
+  else
+    result <= high_low ? v[2*width_bus-1:width_bus] : v[width_bus-1:0];
+end
 
 endmodule

@@ -427,7 +427,7 @@ public:
   // Latch all instruments so the following read sequence observes a stable snapshot.
   void latch_all() {
     lctrl.write(2);
-    fpga.sleep_for_at_least_n_streamer_periods(2);
+    fpga.sleep_for_at_least_n_streamer_periods(12);
     lctrl.write(0);
   }
 

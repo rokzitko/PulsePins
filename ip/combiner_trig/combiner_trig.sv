@@ -28,10 +28,10 @@ module combiner_trig #(
 );
 
 logic [31:0] cfg; // configuration register
+logic cfg_update;
 
 localparam WIDTH_MODE = 4;
 logic [WIDTH_MODE-1:0] mode; // selected input in multiplexer mode or some combining operation
-assign mode = cfg[WIDTH_MODE-1:0];
 
 localparam [WIDTH_MODE-1:0] SEL1 = 4'd0, SEL2 = 4'd1, SEL3 = 4'd2, SEL4 = 4'd3,         // select
                             AND = 4'd4, OR = 4'd5, XOR = 4'd6, XNOR = 4'd7, MAJ = 4'd8, // logic operation
@@ -47,14 +47,9 @@ localparam [WIDTH_MODE-1:0] SEL1 = 4'd0, SEL2 = 4'd1, SEL3 = 4'd2, SEL4 = 4'd3, 
 
 // true = put the value in valueo on the output port o instead of the computed value
 logic forceo;
-assign forceo = cfg[`B_FORCEo];
 
 // true = use the value in value? instead of the value in the input port in?
 logic force1, force2, force3, force4;
-assign force1 = cfg[`B_FORCE1];
-assign force2 = cfg[`B_FORCE2];
-assign force3 = cfg[`B_FORCE3];
-assign force4 = cfg[`B_FORCE4];
 
 `define B_RBo 24
 `define B_RB1 25
@@ -74,6 +69,54 @@ assign rb4 = cfg[`B_RB4];
 logic [WIDTH-1:0] inverto, invert1, invert2, invert3, invert4; // inversion patterns
 logic [WIDTH-1:0] masko, mask1, mask2, mask3, mask4;           // filter masks
 logic [WIDTH-1:0] valueo, value1, value2, value3, value4;      // override values
+
+localparam int CONFIG_W = 32 + 15*WIDTH;
+localparam logic [CONFIG_W-1:0] CONFIG_RESET = {
+  {(5*WIDTH){1'b0}}, // values
+  {(5*WIDTH){1'b1}}, // masks
+  {(5*WIDTH){1'b0}}, // inversion patterns
+  28'b0, SEL1        // cfg
+};
+
+logic [CONFIG_W-1:0] config_clock;
+logic [CONFIG_W-1:0] config_clk;
+logic [31:0] cfg_clk;
+logic [WIDTH-1:0] inverto_clk, invert1_clk, invert2_clk, invert3_clk, invert4_clk;
+logic [WIDTH-1:0] masko_clk, mask1_clk, mask2_clk, mask3_clk, mask4_clk;
+logic [WIDTH-1:0] valueo_clk, value1_clk, value2_clk, value3_clk, value4_clk;
+
+assign config_clock = {value4, value3, value2, value1, valueo,
+                       mask4, mask3, mask2, mask1, masko,
+                       invert4, invert3, invert2, invert1, inverto,
+                       cfg};
+assign {value4_clk, value3_clk, value2_clk, value1_clk, valueo_clk,
+        mask4_clk, mask3_clk, mask2_clk, mask1_clk, masko_clk,
+        invert4_clk, invert3_clk, invert2_clk, invert1_clk, inverto_clk,
+        cfg_clk} = config_clk;
+
+assign mode = cfg_clk[WIDTH_MODE-1:0];
+assign forceo = cfg_clk[`B_FORCEo];
+assign force1 = cfg_clk[`B_FORCE1];
+assign force2 = cfg_clk[`B_FORCE2];
+assign force3 = cfg_clk[`B_FORCE3];
+assign force4 = cfg_clk[`B_FORCE4];
+
+cdc_bus_update #(
+  .WIDTH(CONFIG_W),
+  .RESET_VALUE(CONFIG_RESET)
+) config_cdc (
+  .src_clk(clock_clk),
+  .src_reset(reset_reset),
+  .src_data(config_clock),
+  .src_update(cfg_update),
+  .src_busy(),
+  .dst_clk(clk),
+  .dst_reset(reset_reset),
+  .dst_accept(1'b1),
+  .dst_data(config_clk),
+  .dst_valid(),
+  .dst_pending()
+);
 
 // Avalon MM port addresses
 `define C_CFG    4'b0000
@@ -116,27 +159,58 @@ always_ff @(posedge clock_clk) begin
     value2 <= '0;
     value3 <= '0;
     value4 <= '0;
-  end else if (avs_s0_write) begin
-    unique case (avs_s0_address)
-      `C_CFG:  cfg      <= avs_s0_writedata;
-      `C_INVo: inverto  <= avs_s0_writedata[WIDTH-1:0];
-      `C_INV1: invert1  <= avs_s0_writedata[WIDTH-1:0];
-      `C_INV2: invert2  <= avs_s0_writedata[WIDTH-1:0];
-      `C_INV3: invert3  <= avs_s0_writedata[WIDTH-1:0];
-      `C_INV4: invert4  <= avs_s0_writedata[WIDTH-1:0];
-      `C_MASKo: masko   <= avs_s0_writedata[WIDTH-1:0];
-      `C_MASK1: mask1   <= avs_s0_writedata[WIDTH-1:0];
-      `C_MASK2: mask2   <= avs_s0_writedata[WIDTH-1:0];
-      `C_MASK3: mask3   <= avs_s0_writedata[WIDTH-1:0];
-      `C_MASK4: mask4   <= avs_s0_writedata[WIDTH-1:0];
-      `C_VALUEo: valueo <= avs_s0_writedata[WIDTH-1:0];
-      `C_VALUE1: value1 <= avs_s0_writedata[WIDTH-1:0];
-      `C_VALUE2: value2 <= avs_s0_writedata[WIDTH-1:0];
-      `C_VALUE3: value3 <= avs_s0_writedata[WIDTH-1:0];
-      `C_VALUE4: value4 <= avs_s0_writedata[WIDTH-1:0];
-    endcase
+    cfg_update <= 1'b0;
+  end else begin
+    cfg_update <= avs_s0_write;
+    if (avs_s0_write) begin
+      unique case (avs_s0_address)
+        `C_CFG:  cfg      <= avs_s0_writedata;
+        `C_INVo: inverto  <= avs_s0_writedata[WIDTH-1:0];
+        `C_INV1: invert1  <= avs_s0_writedata[WIDTH-1:0];
+        `C_INV2: invert2  <= avs_s0_writedata[WIDTH-1:0];
+        `C_INV3: invert3  <= avs_s0_writedata[WIDTH-1:0];
+        `C_INV4: invert4  <= avs_s0_writedata[WIDTH-1:0];
+        `C_MASKo: masko   <= avs_s0_writedata[WIDTH-1:0];
+        `C_MASK1: mask1   <= avs_s0_writedata[WIDTH-1:0];
+        `C_MASK2: mask2   <= avs_s0_writedata[WIDTH-1:0];
+        `C_MASK3: mask3   <= avs_s0_writedata[WIDTH-1:0];
+        `C_MASK4: mask4   <= avs_s0_writedata[WIDTH-1:0];
+        `C_VALUEo: valueo <= avs_s0_writedata[WIDTH-1:0];
+        `C_VALUE1: value1 <= avs_s0_writedata[WIDTH-1:0];
+        `C_VALUE2: value2 <= avs_s0_writedata[WIDTH-1:0];
+        `C_VALUE3: value3 <= avs_s0_writedata[WIDTH-1:0];
+        `C_VALUE4: value4 <= avs_s0_writedata[WIDTH-1:0];
+      endcase
+    end
   end
 end
+
+logic [WIDTH-1:0] o_clock, in1_clock, in2_clock, in3_clock, in4_clock;
+
+cdc_snapshot #(.WIDTH(WIDTH)) o_snapshot (
+  .src_clk(clk), .src_reset(reset_reset), .src_data(o),
+  .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(o_clock), .dst_valid()
+);
+
+cdc_snapshot #(.WIDTH(WIDTH)) in1_snapshot (
+  .src_clk(clk), .src_reset(reset_reset), .src_data(in1),
+  .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(in1_clock), .dst_valid()
+);
+
+cdc_snapshot #(.WIDTH(WIDTH)) in2_snapshot (
+  .src_clk(clk), .src_reset(reset_reset), .src_data(in2),
+  .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(in2_clock), .dst_valid()
+);
+
+cdc_snapshot #(.WIDTH(WIDTH)) in3_snapshot (
+  .src_clk(clk), .src_reset(reset_reset), .src_data(in3),
+  .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(in3_clock), .dst_valid()
+);
+
+cdc_snapshot #(.WIDTH(WIDTH)) in4_snapshot (
+  .src_clk(clk), .src_reset(reset_reset), .src_data(in4),
+  .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(in4_clock), .dst_valid()
+);
 
 always_ff @(posedge clock_clk) begin
   if (reset_reset) begin
@@ -154,11 +228,11 @@ always_ff @(posedge clock_clk) begin
       `C_MASK2:    avs_s0_readdata <= mask2;
       `C_MASK3:    avs_s0_readdata <= mask3;
       `C_MASK4:    avs_s0_readdata <= mask4;
-      `C_VALUEo:   avs_s0_readdata <= (rbo ? o : valueo);
-      `C_VALUE1:   avs_s0_readdata <= (rb1 ? in1 : value1);
-      `C_VALUE2:   avs_s0_readdata <= (rb2 ? in2 : value2);
-      `C_VALUE3:   avs_s0_readdata <= (rb3 ? in3 : value3);
-      `C_VALUE4:   avs_s0_readdata <= (rb4 ? in4 : value4);
+      `C_VALUEo:   avs_s0_readdata <= (rbo ? o_clock : valueo);
+      `C_VALUE1:   avs_s0_readdata <= (rb1 ? in1_clock : value1);
+      `C_VALUE2:   avs_s0_readdata <= (rb2 ? in2_clock : value2);
+      `C_VALUE3:   avs_s0_readdata <= (rb3 ? in3_clock : value3);
+      `C_VALUE4:   avs_s0_readdata <= (rb4 ? in4_clock : value4);
     endcase
   end
 end
@@ -167,18 +241,18 @@ end
 logic [WIDTH-1:0] x1, x2, x3, x4;
 
 always_ff @(posedge clk) begin
-  x1 <= (force1 ? value1 : in1) ^ invert1;
-  x2 <= (force2 ? value2 : in2) ^ invert2;
-  x3 <= (force3 ? value3 : in3) ^ invert3;
-  x4 <= (force4 ? value4 : in4) ^ invert4;
+  x1 <= (force1 ? value1_clk : in1) ^ invert1_clk;
+  x2 <= (force2 ? value2_clk : in2) ^ invert2_clk;
+  x3 <= (force3 ? value3_clk : in3) ^ invert3_clk;
+  x4 <= (force4 ? value4_clk : in4) ^ invert4_clk;
 end
 
 // Apply input masks after forcing and inversion.
 logic [WIDTH-1:0] y1, y2, y3, y4;
-assign y1 = x1 & mask1;
-assign y2 = x2 & mask2;
-assign y3 = x3 & mask3;
-assign y4 = x4 & mask4;
+assign y1 = x1 & mask1_clk;
+assign y2 = x2 & mask2_clk;
+assign y3 = x3 & mask3_clk;
+assign y4 = x4 & mask4_clk;
 
 function automatic logic [31:0] majority4 (
  input logic [31:0] a,
@@ -216,7 +290,7 @@ end
 
 // Output forcing bypasses the normal output inversion/masking path.
 always_ff @(posedge clk) begin
-  o <= (forceo ? valueo : (z ^ inverto) & masko);
+  o <= (forceo ? valueo_clk : (z ^ inverto_clk) & masko_clk);
 end
 
 endmodule

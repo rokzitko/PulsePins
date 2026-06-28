@@ -23,15 +23,17 @@ module basic_counter
   parameter width_ctr = 64
 )(
   input wire clk,      // clock in system clock domain
+  input wire clk_reset,
   input wire d_clk,    // data clock
+  input wire d_cdc_reset,
   input wire d_reset,  // reset in d_clk clock domain
   input wire d,        // data
   input wire d_valid,  // data is sampled when d_valid is high
   input wire d_latch,  // when d_latch is asserted, the results are copied to the output registers
   input wire high_low, // upper or lower 32-bit part of the counter?
   input wire [width_addr-1:0] addr,
-  output reg [width_bus-1:0] result,
-  output reg overflow  // latches high if total count overflows (after 2^64 perios = 5850 years at 100MHz)
+  output logic [width_bus-1:0] result,
+  output wire overflow  // latches high if total count overflows (after 2^64 perios = 5850 years at 100MHz)
 );
 
 initial assert (2*width_bus <= width_ctr)
@@ -39,7 +41,7 @@ initial assert (2*width_bus <= width_ctr)
 
 // Working counters updated in the sampled-data clock domain.
 logic [width_ctr-1:0] ctr_total, ctr_l, ctr_h, ctr_lh, ctr_hl;
-// Snapshot registers read from the control side after a latch pulse.
+// Snapshot registers in the control clock domain after a latch pulse.
 logic [width_ctr-1:0] ctr_total_r, ctr_l_r, ctr_h_r, ctr_lh_r, ctr_hl_r;
 
 logic first;  // first=1 after reset, before reading the first value
@@ -68,29 +70,45 @@ always_ff @(posedge d_clk) begin
   end
 end
 
-always_ff @(posedge d_clk) begin
-  if (d_reset)
-    overflow <= 0;
-  else if (d_valid && ctr_total == {width_ctr{1'b1}})
-    overflow <= 1;
-end
+logic overflow_d;
 
 always_ff @(posedge d_clk) begin
-  if (d_reset) begin
-    ctr_total_r <= 0;
-    ctr_l_r <= 0;
-    ctr_h_r <= 0;
-    ctr_hl_r <= 0;
-    ctr_lh_r <= 0;
-  end else if (d_latch) begin
-    // Latching freezes a coherent snapshot for slower software-side readout.
-    ctr_total_r <= ctr_total;
-    ctr_l_r <= ctr_l;
-    ctr_h_r <= ctr_h;
-    ctr_hl_r <= ctr_hl;
-    ctr_lh_r <= ctr_lh;
-  end
+  if (d_reset)
+    overflow_d <= 0;
+  else if (d_valid && ctr_total == {width_ctr{1'b1}})
+    overflow_d <= 1;
 end
+
+cdc_bit_sync overflow_sync (
+  .dst_clk(clk),
+  .dst_reset(clk_reset),
+  .async_in(overflow_d),
+  .sync_out(overflow)
+);
+
+localparam int SNAPSHOT_W = 5*width_ctr;
+logic [SNAPSHOT_W-1:0] snapshot_d;
+logic [SNAPSHOT_W-1:0] snapshot_clk;
+
+assign snapshot_d = {ctr_hl, ctr_lh, ctr_h, ctr_l, ctr_total};
+assign {ctr_hl_r, ctr_lh_r, ctr_h_r, ctr_l_r, ctr_total_r} = snapshot_clk;
+
+cdc_bus_update #(
+  .WIDTH(SNAPSHOT_W),
+  .RESET_VALUE('0)
+) snapshot_cdc (
+  .src_clk(d_clk),
+  .src_reset(d_cdc_reset),
+  .src_data(snapshot_d),
+  .src_update(d_latch),
+  .src_busy(),
+  .dst_clk(clk),
+  .dst_reset(clk_reset),
+  .dst_accept(1'b1),
+  .dst_data(snapshot_clk),
+  .dst_valid(),
+  .dst_pending()
+);
 
 logic [width_ctr-1:0] sel;
 always_comb begin
@@ -104,7 +122,11 @@ always_comb begin
   endcase
 end
 
-always_ff @(posedge clk)
-  result <= high_low ? sel[2*width_bus-1:width_bus] : sel[width_bus-1:0];
+always_ff @(posedge clk) begin
+  if (clk_reset)
+    result <= '0;
+  else
+    result <= high_low ? sel[2*width_bus-1:width_bus] : sel[width_bus-1:0];
+end
 
 endmodule

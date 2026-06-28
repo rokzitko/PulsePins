@@ -30,7 +30,9 @@ crosscorrelation #(
  .width_addr(1+$clog2(length))
 ) dut (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(clk),
+  .d_cdc_reset(reset),
   .reset,
   .d1,
   .d2,
@@ -67,6 +69,7 @@ initial begin
   latch <= 1;
   #1;
   latch <= 0;
+  #12;
 
   #2 $finish;
 end

@@ -79,10 +79,27 @@ logic is_valid;
   assign is_valid = qin_valid;
 `endif
 
+logic input_cdc_reset;
+logic input_reset;
+
+cdc_bit_sync #(.RESET_VALUE(1'b1)) input_cdc_reset_sync (
+  .dst_clk(input_clk),
+  .dst_reset(reset),
+  .async_in(reset),
+  .sync_out(input_cdc_reset)
+);
+
+cdc_bit_sync #(.RESET_VALUE(1'b1)) input_reset_sync (
+  .dst_clk(input_clk),
+  .dst_reset(reset),
+  .async_in(reset | reset_counter),
+  .sync_out(input_reset)
+);
+
 // Pulse counter counts observed input samples, not encoded output elements.
 logic [cfg::WIDTH_COUNTER-1:0] counter;
 always_ff @(posedge input_clk) begin
-  if (reset || reset_counter) begin // global or rl_encoder-specific reset
+  if (input_reset) begin // global or rl_encoder-specific reset
     counter <= 0;
   end else begin
     if (is_valid) begin
@@ -97,11 +114,31 @@ logic        crc_valid;
 
 crc32 crc32_inst (
  .clk(input_clk),
- .reset(reset | reset_counter),
+ .reset(input_reset),
  .data_en(is_valid),
  .data_in(qin[31:0]),
  .crc_out(crc_out),
  .crc_valid(crc_valid)
+);
+
+localparam int STATUS_SNAPSHOT_W = 1 + cfg::WIDTH_COUNTER + 32;
+logic [STATUS_SNAPSHOT_W-1:0] status_input;
+logic [STATUS_SNAPSHOT_W-1:0] status_clk;
+logic overflow_clk;
+logic [cfg::WIDTH_COUNTER-1:0] counter_clk;
+logic [31:0] crc_out_clk;
+
+assign status_input = {overflow, counter, crc_out};
+assign {overflow_clk, counter_clk, crc_out_clk} = status_clk;
+
+cdc_snapshot #(.WIDTH(STATUS_SNAPSHOT_W)) status_snapshot (
+  .src_clk(input_clk),
+  .src_reset(input_cdc_reset),
+  .src_data(status_input),
+  .dst_clk(clk),
+  .dst_reset(reset),
+  .dst_data(status_clk),
+  .dst_valid()
 );
 
 always_ff @(posedge clk) begin
@@ -124,9 +161,9 @@ always_ff @(posedge clk) begin
   end else if (avs_s0_read) begin
     // Software can inspect FIFO-empty state, encoder mode, overflow, observed sample count, and CRC.
     unique case (avs_s0_address)
-      2'b00: avs_s0_readdata <= $bits(avs_s0_readdata)'({ overflow, mode, reset_counter, empty });
-      2'b01: avs_s0_readdata <= counter;
-      2'b10: avs_s0_readdata <= crc_out;
+      2'b00: avs_s0_readdata <= $bits(avs_s0_readdata)'({ overflow_clk, mode, reset_counter, empty });
+      2'b01: avs_s0_readdata <= counter_clk;
+      2'b10: avs_s0_readdata <= crc_out_clk;
       default: avs_s0_readdata <= 0;
     endcase
   end

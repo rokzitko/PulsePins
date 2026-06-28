@@ -35,6 +35,8 @@ module counter_if
 );
 
 logic reset_all, d_reset; // reset signal synchronized into the data clock domain
+logic d_cdc_reset;        // global-only reset for CDC handshakes in the data clock domain
+cdc_twoff sync_cdc_reset (.clk_dst(d_clk), .d_async(reset), .q_sync(d_cdc_reset));
 cdc_twoff sync_reset (.clk_dst(d_clk), .d_async(reset | reset_all), .q_sync(d_reset));
 
 logic latch_all, d_latch; // latch signal + sync'd version
@@ -92,7 +94,9 @@ logic overflow_bc;
 
 basic_counter bc (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(d_clk),
+  .d_cdc_reset(d_cdc_reset),
   .d_reset(d_reset),
   .d(d0),
   .d_valid(d_valid_reg),
@@ -107,7 +111,9 @@ logic [width_bus-1:0] result_rc;
 
 runs_counter rc (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(d_clk),
+  .d_cdc_reset(d_cdc_reset),
   .reset(d_reset),
   .d(d0),
   .valid(d_valid_reg),
@@ -122,7 +128,9 @@ logic overflow_ps;
 
 packet_stats ps (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(d_clk),
+  .d_cdc_reset(d_cdc_reset),
   .reset(d_reset),
   .valid(d_valid_reg),
   .latch(d_latch),
@@ -215,7 +223,9 @@ autocorrelation #(
   .width_addr(c_width)
 ) acdeep (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(d_clk),
+  .d_cdc_reset(d_cdc_reset),
   .reset(d_reset),
   .d(d0), // d0 here!
   .valid(d_valid_reg),
@@ -233,7 +243,9 @@ seq_counter #(
   .rolling(0)
 ) sc (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(d_clk),
+  .d_cdc_reset(d_cdc_reset),
   .reset(d_reset),
   .d(d0),
   .valid(d_valid_reg),
@@ -251,7 +263,9 @@ crosscorrelation #(
   .width_addr(c_width)
 ) ccdeep (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(d_clk),
+  .d_cdc_reset(d_cdc_reset),
   .reset(d_reset),
   .d1(d1), // d1, d2 here!
   .d2(d2),

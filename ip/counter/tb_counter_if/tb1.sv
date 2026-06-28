@@ -132,6 +132,7 @@ initial begin
   #1;
   assert(dut.latch_all == 0) else $fatal;
   avs_s0_write <= 0;
+  #12;
 
   assert(dut.bc.ctr_total_r == 9);
   assert(dut.bc.ctr_total_r == 9);

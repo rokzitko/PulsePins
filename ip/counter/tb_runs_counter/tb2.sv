@@ -25,7 +25,9 @@ wire [31:0] result;
 
 runs_counter dut (
   .clk(clk),
+  .clk_reset(reset),
   .d_clk(clk),
+  .d_cdc_reset(reset),
   .reset,
   .d,
   .valid,
@@ -72,11 +74,11 @@ initial begin
   #1;
   #1;
   valid <= 0;
-  #5;
+  #12;
   latch <= 1;
   #1;
   latch <= 0;
-  #5;
+  #12;
 
   addr <= 4'b0000;
   #1;

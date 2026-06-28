@@ -24,14 +24,16 @@ module runs_counter
   parameter glitch_length = 1
 )(
   input wire clk,
+  input wire clk_reset,
   input wire d_clk,
+  input wire d_cdc_reset,
   input wire reset,
   input wire d,
   input wire valid,
   input wire latch,
   input wire high_low,
   input wire [width_addr-1:0] addr,
-  output reg [width_bus-1:0] result
+  output logic [width_bus-1:0] result
 );
 
 logic [width_ctr-1:0] ctr_run;                  // Number of completed runs of either level
@@ -123,38 +125,46 @@ always_ff @(posedge d_clk) begin
   end
 end
 
-always_ff @(posedge d_clk) begin
-  if (reset) begin
-    ctr_run_r <= 0;
-    nr_run_l_r <= 0;
-    nr_run_h_r <= 0;
-    sum_run_l_r <= 0;
-    sum_run_h_r <= 0;
 `ifdef DO_SUM2
-    sum2_run_l_r <= 0;
-    sum2_run_h_r <= 0;
+localparam int SNAPSHOT_W = 11*width_ctr;
+logic [SNAPSHOT_W-1:0] snapshot_d;
+logic [SNAPSHOT_W-1:0] snapshot_clk;
+
+assign snapshot_d = {nr_glitch_h, nr_glitch_l, max_run_h, max_run_l,
+                     sum2_run_h, sum2_run_l, sum_run_h, sum_run_l,
+                     nr_run_h, nr_run_l, ctr_run};
+assign {nr_glitch_h_r, nr_glitch_l_r, max_run_h_r, max_run_l_r,
+        sum2_run_h_r, sum2_run_l_r, sum_run_h_r, sum_run_l_r,
+        nr_run_h_r, nr_run_l_r, ctr_run_r} = snapshot_clk;
+`else
+localparam int SNAPSHOT_W = 9*width_ctr;
+logic [SNAPSHOT_W-1:0] snapshot_d;
+logic [SNAPSHOT_W-1:0] snapshot_clk;
+
+assign snapshot_d = {nr_glitch_h, nr_glitch_l, max_run_h, max_run_l,
+                     sum_run_h, sum_run_l, nr_run_h, nr_run_l, ctr_run};
+assign {nr_glitch_h_r, nr_glitch_l_r, max_run_h_r, max_run_l_r,
+        sum_run_h_r, sum_run_l_r, nr_run_h_r, nr_run_l_r, ctr_run_r} = snapshot_clk;
+assign sum2_run_l_r = '0;
+assign sum2_run_h_r = '0;
 `endif
-    max_run_l_r <= 0;
-    max_run_h_r <= 0;
-    nr_glitch_l_r <= 0;
-    nr_glitch_h_r <= 0;
-  end else if (latch) begin
-    // Freeze a coherent snapshot for software readout in the control clock domain.
-    ctr_run_r <= ctr_run;
-    nr_run_l_r <= nr_run_l;
-    nr_run_h_r <= nr_run_h;
-    sum_run_l_r   <= sum_run_l;
-    sum_run_h_r   <= sum_run_h;
-`ifdef DO_SUM2
-    sum2_run_l_r  <= sum2_run_l;
-    sum2_run_h_r  <= sum2_run_h;
-`endif
-    max_run_l_r   <= max_run_l;
-    max_run_h_r   <= max_run_h;
-    nr_glitch_l_r <= nr_glitch_l;
-    nr_glitch_h_r <= nr_glitch_h;
-  end
-end
+
+cdc_bus_update #(
+  .WIDTH(SNAPSHOT_W),
+  .RESET_VALUE('0)
+) snapshot_cdc (
+  .src_clk(d_clk),
+  .src_reset(d_cdc_reset),
+  .src_data(snapshot_d),
+  .src_update(latch),
+  .src_busy(),
+  .dst_clk(clk),
+  .dst_reset(clk_reset),
+  .dst_accept(1'b1),
+  .dst_data(snapshot_clk),
+  .dst_valid(),
+  .dst_pending()
+);
 
 logic [width_ctr-1:0] v;
 always_comb begin
@@ -176,7 +186,11 @@ always_comb begin
   endcase
 end
 
-always_ff @(posedge clk)
-  result <= high_low ? v[2*width_bus-1:width_bus] : v[width_bus-1:0];
+always_ff @(posedge clk) begin
+  if (clk_reset)
+    result <= '0;
+  else
+    result <= high_low ? v[2*width_bus-1:width_bus] : v[width_bus-1:0];
+end
 
 endmodule
