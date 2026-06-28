@@ -3,7 +3,7 @@ SCP_TARGET ?= $(TARGETHOST)
 
 .PHONY: copy copy_img
 
-LIST1 = run_all_tests run_all_tests_forever run_PLL defs.sh
+LIST1 = run_all_tests run_all_tests_forever defs.sh
 LIST2 = test* sequence.* vcd.*
 
 copy:
