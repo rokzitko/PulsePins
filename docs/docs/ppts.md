@@ -4,7 +4,7 @@
 
 For the underlying capture architecture, see [Timestamp capture](timestamp.md).
 
-The tool uses the shared host startup path, configures the timestamp-routing PIO, clears the timestamp FIFOs, and then starts one reader thread per enabled timestamp stream.
+The tool uses the shared host startup path, configures the timestamp-routing PIO, clears the timestamp FIFOs and overflow state after routing is selected, and then starts one reader thread per enabled timestamp stream.
 
 The implementation lives in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}) and uses the timestamp interface from [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }}).
 

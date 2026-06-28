@@ -23,6 +23,11 @@ On startup it:
 * reports the measured clocks using the frequency-meter block
 * accepts SCPI-style commands over the network
 
+The transport is line-oriented. A single line may contain multiple commands separated by
+semicolons (`;`); `ppscpi` trims and dispatches each segment in order, with responses emitted
+in the same order. Empty segments are ignored. Each segment is parsed as a complete command
+path, so relative SCPI path continuation is not implemented.
+
 ### Session model
 
 Each client connection gets its own SCPI session object.
@@ -106,7 +111,7 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-`load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit.
+`load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit and must not contain semicolons.
 
 If `SEQ` or `STREAM` returns an error response, the Python client drains `SYST:ERR?` and raises `PulsePinsCommandError` with the queued server-side diagnostic text.
 
@@ -149,6 +154,7 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 
 * `STREAM` uses the same send/trigger path as the local tools, including optional readback verification.
 * `SEQ` stores the parsed sequence in memory; nothing is transmitted to the streamer until `STREAM` is issued.
+* Semicolons separate SCPI commands before command parsing, so they are not valid inside a `SEQ` payload.
 * If the loaded sequence does not end with `final V` and the server was not started with `-t`, `-random_final`, or `PP_RANDOM_FINAL`, `STREAM` appends a no-modify final terminator so outputs remain at the last sequence value. The `f` record only requests forced triggering.
 * Repeated `STREAM` commands reuse the stored sequence exactly as parsed; the cached session sequence is not rewritten by readback checking or final-output preparation.
 * Before each hardware-touching run (`TEST1` and `STREAM`), `ppscpi` resets the streamer core, readback encoder, and counters so repeated commands in the same process/session start from a clean hardware state.

@@ -109,9 +109,7 @@ public:
     ts_overflowA_count(dev_h2f, ts_core_base.base, 3*sizeof(uint32_t), "ts_core/overflowA_count"),
     pio_cfg(dev_lw, pio_cfg_base.base)
     {
-      clear_fifo();
-      clear_fifoA();
-      clear_overflow();
+      clear_capture_state();
     }
 
     // Select the crystal-derived PPS source.
@@ -199,6 +197,12 @@ public:
   void clear_fifoA() {
     while (filledA())
       ffA.read(); // ignore return value
+  }
+
+  void clear_capture_state() {
+    clear_fifo();
+    clear_fifoA();
+    clear_overflow();
   }
 
     // Each timestamp record is stored as two 32-bit FIFO words.

@@ -88,6 +88,7 @@ struct TimestampSession {
     if (input.exists("-pps_xtal"))
       ts.sel_pps_xtal();
     ts.selA(parse_uint32(input, "-selA", "0"));
+    ts.clear_capture_state();
     if (v.verbose)
       std::cout << "timestamp configuration=" << ts.get_cfg() << std::endl;
   }

@@ -152,7 +152,7 @@ protected:
     }
 
     // Parser & dispatcher
-    SessionAction handle_command(const std::string &line) {
+    SessionAction handle_single_command(const std::string &line) {
         if (line.empty()) return SessionAction::continue_reading;
         std::string cmd = line;
 
@@ -231,6 +231,24 @@ protected:
         if (resp.empty() && error_generation_ != error_generation_before) resp = "ERROR";
         if (verbose) std::cout << "Responding [" << resp << "]" << std::endl;
         if (!resp.empty()) write(resp);
+        return SessionAction::continue_reading;
+    }
+
+    SessionAction handle_command(const std::string &line) {
+        if (line.empty()) return SessionAction::continue_reading;
+
+        std::string command;
+        std::istringstream iss(line);
+        while (std::getline(iss, command, ';')) {
+            command = trim(command);
+            if (command.empty()) continue;
+
+            const auto error_generation_before = error_generation_;
+            const auto action = handle_single_command(command);
+            if (action != SessionAction::continue_reading) return action;
+            if (error_generation_ != error_generation_before) return SessionAction::continue_reading;
+        }
+
         return SessionAction::continue_reading;
     }
 

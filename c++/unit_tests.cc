@@ -39,6 +39,7 @@
 #include "ppwebgui_service_api.hh"
 #include "ppworkflow.hh"
 #include "readback.hh"
+#include "scpi_server.hh"
 #include "sequence_file_format.hh"
 #include "sequence.hh"
 #include "stall_timeout.hh"
@@ -147,6 +148,34 @@ struct FakeWebGuiService : WebGuiService {
     return stream_hook(std::move(request));
   }
   void set_last_error(const std::string &message) override { last_error = message; }
+};
+
+struct TestScpiListSession : ScpiSessionBase {
+  using ScpiSessionBase::handle_command;
+
+  std::vector<std::string> calls;
+
+  explicit TestScpiListSession(tcp::socket socket) :
+    ScpiSessionBase(std::move(socket))
+  {
+    verbose = false;
+    add_node({"ONE"}, [this](const std::string &arg) {
+      calls.push_back("ONE:" + arg);
+      return "";
+    });
+    add_node({"TWO"}, [this](const std::string &arg) {
+      calls.push_back("TWO:" + arg);
+      return "";
+    });
+    add_node({"THRee"}, {}, [this]() {
+      calls.push_back("THREE?");
+      return "";
+    });
+    add_node({"CLOSE"}, [this](const std::string &) -> std::string {
+      calls.push_back("CLOSE");
+      throw ScpiCloseSession();
+    });
+  }
 };
 
 struct ScopedTestWebGuiServer {
@@ -1242,6 +1271,28 @@ TEST_CASE("startup reset policy handles ppreset") {
   CHECK(resolve_reset_FPGA(make_input({}), true));
   CHECK(command_forces_startup_reset("ppreset"));
   CHECK(!command_forces_startup_reset("pptest"));
+}
+
+TEST_CASE("SCPI command lists dispatch semicolon-separated segments") {
+  asio::io_context io;
+  auto session = std::make_shared<TestScpiListSession>(tcp::socket(io));
+
+  const auto action = session->handle_command(" ONE ; TWO arg ; :THRee? ;; ");
+
+  const std::vector<std::string> expected {"ONE:", "TWO:arg", "THREE?"};
+  CHECK(action == SessionAction::continue_reading);
+  CHECK(session->calls == expected);
+}
+
+TEST_CASE("SCPI command lists stop after session-close action") {
+  asio::io_context io;
+  auto session = std::make_shared<TestScpiListSession>(tcp::socket(io));
+
+  const auto action = session->handle_command("ONE;CLOSE;TWO skipped");
+
+  const std::vector<std::string> expected {"ONE:", "CLOSE"};
+  CHECK(action == SessionAction::close_session);
+  CHECK(session->calls == expected);
 }
 
 TEST_CASE("resolve_clock_selection_options prefers raw -clk") {
