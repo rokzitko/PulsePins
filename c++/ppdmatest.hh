@@ -83,10 +83,16 @@ public:
     std::cout << "test22 - loops of long sequence (DMA)" << std::endl;
     const auto len = write_sequence(false);
     const auto reps = parse_count(input, "-reps", "0"); // repetitions, 0 = infinity
+    const size_t sequence_bytes = BYTES_TOTAL*len;
+    std::optional<size_t> terminator_offset;
+    if (reps != 0) {
+      terminator_offset = sequence_bytes;
+      ds.dma.write_element(len, el());
+    }
     std::cout << "reps=" << std::dec << reps << std::endl;
     std::thread trig(trig_force, std::ref(ds.sc));
     try {
-      ds.dma.transfer_multiple_times(BYTES_TOTAL*len, reps);
+      ds.dma.transfer_multiple_times(sequence_bytes, reps, terminator_offset, BYTES_TOTAL);
     } catch (...) {
       if (trig.joinable())
         trig.join();

@@ -244,7 +244,7 @@ only exercises memory transfers, and no correctness testing of the generated bit
 
 ### Test 22
 
-Repeated playback of the long DMA sequence from test 21. The number of repetitions is controlled by ``-reps``; ``0`` means repeat indefinitely.
+Repeated playback of the long DMA sequence from test 21. The number of repetitions is controlled by ``-reps``; ``0`` means repeat indefinitely. Finite playback appends a terminator after the final repeated sequence so the streamer exits cleanly.
 
 ### Test 25
 
