@@ -253,7 +253,7 @@ PMOD DA3 sine generator using DMA. This builds one sampled sine-wave period as a
 Additional parameters:
 
 * ``-samples``: number of DAC updates per sine period, default ``250``
-* ``-reps``: number of DMA repetitions, default ``0`` for infinite playback
+* ``-reps``: number of DMA repetitions, default ``0`` for infinite playback; finite playback appends a terminator after the final repeated period so the streamer exits cleanly
 * ``-dwell``: hold time after each DAC update, default ``10us``
 * ``-vmin``: minimum sine voltage, default ``0.0``
 * ``-vmax``: maximum sine voltage, default ``2.5``

@@ -42,6 +42,17 @@ public:
   int report_interval = 300; // report DMA status every report_interval milliseconds when waiting for transfer to complete
   const Verbosity &v;
 
+  void enqueue_sdram_range(const size_t offset, const size_t size) {
+    if (size == 0)
+      throw std::invalid_argument("DMA transfer size must be nonzero");
+    if (offset > max_size || size > max_size - offset)
+      throw std::runtime_error("DMA transfer exceeds configured staging buffer size.");
+    if (offset > UINTPTR_MAX - sdram.get_base())
+      throw std::out_of_range("DMA transfer address overflows uintptr_t");
+
+    enqueue_src_addr(sdram.get_base() + offset, checked_descriptor_u32(size, "length"));
+  }
+
   streamer_dma(const mm &dev,
                 const address_map::H2fRegion csr_base,
                 const address_map::H2fRegion descriptor_base,
@@ -150,7 +161,11 @@ public:
 
   // Queue repeated transfers of the same prepared buffer.
   // `repetitions = 0` means repeat indefinitely.
-  void transfer_multiple_times(const size_t size, const size_t repetitions) {
+  void transfer_multiple_times(
+    const size_t size,
+    const size_t repetitions,
+    const std::optional<size_t> final_offset = std::nullopt,
+    const size_t final_size = 0) {
     constexpr size_t depth = MSGDMA_1_DESCRIPTOR_SLAVE_DESCRIPTOR_FIFO_DEPTH;  // Descriptor FIFO depth = 32
     reset();
     TimeoutGuard watchdog("DMA descriptor FIFO space wait", default_transport_stall_timeout_s);
@@ -163,6 +178,19 @@ public:
         initiate_transfer();
         if (v.verbose) std::cout << "DMA transfer initiated." << std::endl;
       }
+      while (1) {
+        const auto fill = read_fill();
+        if (fill < depth-2) {
+          watchdog.progress();
+          break;
+        }
+        watchdog.progress_if_changed(previous_fill, fill);
+        watchdog.throw_if_stalled(status_string());
+        usleep(100);
+      }
+    }
+    if (final_offset.has_value()) {
+      enqueue_sdram_range(*final_offset, final_size);
       while (1) {
         const auto fill = read_fill();
         if (fill < depth-2) {

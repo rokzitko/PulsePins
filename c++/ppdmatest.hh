@@ -10,6 +10,7 @@
 #include <thread>
 #include <cmath>
 #include <algorithm>
+#include <optional>
 #include <unistd.h>
 #include <algorithm>
 
@@ -131,12 +132,14 @@ public:
     size_t pos = 0;
     size_t seq_len = 0;
     size_t total_len = 0;
+    value_t final_value = default_final_value;
     for (count_t i = 0; i < samples; i++) {
       const double phase = (2.0 * pi * static_cast<double>(i)) / static_cast<double>(samples);
       const double volts = vmid + amplitude * std::sin(phase);
       auto builder = pmod_da3::transaction_for_voltage(volts, 2.5, cfg);
       const auto &tx = builder.sequence();
       seq_len = tx.length();
+      final_value = tx.back().value();
       for (const auto &e : tx) {
         if (4*pos + BYTES_TOTAL > ds.dma.max_size)
           throw std::runtime_error("test25 sequence does not fit in DMA buffer");
@@ -151,6 +154,14 @@ public:
         total_len += dwell_ticks;
         pos++;
       }
+    }
+    const size_t waveform_bytes = BYTES_TOTAL*pos;
+    std::optional<size_t> terminator_offset;
+    if (reps != 0) {
+      if (4*pos + BYTES_TOTAL > ds.dma.max_size)
+        throw std::runtime_error("test25 sequence does not fit in DMA buffer");
+      terminator_offset = waveform_bytes;
+      ds.dma.write_element(pos, el(final_value));
     }
 
     if (verb.verbose) {
@@ -169,7 +180,7 @@ public:
 
     std::thread trig(trig_force, std::ref(ds.sc));
     try {
-      ds.dma.transfer_multiple_times(BYTES_TOTAL*pos, reps);
+      ds.dma.transfer_multiple_times(waveform_bytes, reps, terminator_offset, BYTES_TOTAL);
     } catch (...) {
       if (trig.joinable())
         trig.join();
