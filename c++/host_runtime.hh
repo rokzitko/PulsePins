@@ -39,6 +39,13 @@ struct HostRuntime {
     freq_meter->report();
   }
 
+  ~HostRuntime() noexcept {
+    try {
+      input.warn_unused_options();
+    } catch (...) {
+    }
+  }
+
   FPGA &get_fpga() {
     return *fpga;
   }

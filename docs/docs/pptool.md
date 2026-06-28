@@ -24,6 +24,8 @@ The clock-selection and PLL choices consumed during startup are resolved by [`c+
 
 By default, startup does not pulse the FPGA reset manager. Use `-reset_FPGA` or set `PP_RESET_FPGA` when a process-startup FPGA S2F reset is required. `ppreset` is the exception: it always performs that reset during startup.
 
+At process exit, HostRuntime-based C++ tools warn about option-looking command-line tokens that were never consumed by the parser. This is a non-fatal diagnostic intended to catch stale or misspelled options without changing existing command return codes.
+
 ## Advanced/debug knobs
 
 These switches are intended for bring-up, diagnostics, and controlled test environments. They can

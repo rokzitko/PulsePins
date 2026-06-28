@@ -370,6 +370,37 @@ TEST_CASE("InputParser reports missing arguments and handles first_arg_int safel
   CHECK_FALSE(partial_numeric.first_arg_int().has_value());
 }
 
+TEST_CASE("InputParser tracks unused command-line options") {
+  auto input = make_input({
+      "12",
+      "-used", "7",
+      "-flag",
+      "-unused",
+      "positional",
+      "-other", "-1",
+  });
+
+  CHECK(input.first_arg_int() == std::optional<int>(12));
+  CHECK(input.get_uint32("-used", 0) == 7);
+  CHECK(input.exists("-flag"));
+
+  const auto unused = input.unused_options();
+  const std::vector<std::string> expected {"-unused", "-other"};
+  CHECK(unused == expected);
+
+  std::ostringstream out;
+  input.warn_unused_options(out);
+  CHECK(out.str() == "WARNING: unused command-line option(s): -unused -other\n");
+}
+
+TEST_CASE("InputParser treats option-looking arguments as used") {
+  auto input = make_input({"-file", "-leading-dash.seq", "-d", "-1.5"});
+
+  CHECK(input.get_string("-file", "") == "-leading-dash.seq");
+  CHECK(input.get_double("-d", 0.0) == doctest::Approx(-1.5));
+  CHECK(input.unused_options().empty());
+}
+
 TEST_CASE("read_stable_u64 retries across a rollover") {
   int hi_reads = 0;
   const auto read_low = [&]() -> uint32_t {

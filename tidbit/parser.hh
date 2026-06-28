@@ -14,10 +14,12 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace strict_numeric_detail {
@@ -94,17 +96,31 @@ class InputParser {
  public:
    InputParser(int argc, char *argv[]) {
      for (int i = 1; i < argc; ++i)
-       this->tokens.push_back(std::string(argv[i]));
+       add(std::string(argv[i]));
    }
-   InputParser(std::vector<std::string> t) : tokens(t) {}
+   InputParser(std::vector<std::string> t) :
+     tokens(std::move(t)),
+     used(tokens.size(), false) {}
    std::string get(const std::string &option) const {
-     auto itr = std::find(this->tokens.begin(), this->tokens.end(), option);
-     if (itr != this->tokens.end() && ++itr != this->tokens.end())
-       return *itr;
+     auto index = find_token(option);
+     if (index && *index + 1 < tokens.size()) {
+       mark_used(*index);
+       mark_used(*index + 1);
+       return tokens[*index + 1];
+     }
+     if (index)
+       mark_used(*index);
      return "";
    }
    bool exists(const std::string &option) const {
-     return std::find(this->tokens.begin(), this->tokens.end(), option) != this->tokens.end();
+     bool found = false;
+     for (size_t i = 0; i < tokens.size(); ++i) {
+       if (tokens[i] == option) {
+         mark_used(i);
+         found = true;
+       }
+     }
+     return found;
    }
    std::string get_string(const std::string &option, const std::string def) const {
      return exists(option) ? require_arg(option) : def;
@@ -120,16 +136,18 @@ class InputParser {
    }
    void add(const std::string s) {
      tokens.push_back(s);
+     used.push_back(false);
    }
    void add_with_arg(const std::string s1, const std::string s2) {
-     tokens.push_back(s1);
-     tokens.push_back(s2);
+     add(s1);
+     add(s2);
    }
    std::optional<std::string> first_arg() const {
-     if (tokens.size() > 0)
+     if (tokens.size() > 0) {
+       mark_used(0);
        return tokens.front();
-     else
-       return std::nullopt;
+     }
+     return std::nullopt;
    }
    std::optional<int> first_arg_int() const {
      if (tokens.size() > 0) {
@@ -140,24 +158,64 @@ class InputParser {
        if (std::isdigit(c)) {
          try {
            const auto value = parse_strict_uint64(s, "first argument");
-           if (value <= static_cast<uint64_t>(std::numeric_limits<int>::max()))
+           if (value <= static_cast<uint64_t>(std::numeric_limits<int>::max())) {
+             mark_used(0);
              return static_cast<int>(value);
+           }
          } catch (const std::exception &) {
          }
        }
      }
      return std::nullopt;
    }
+   std::vector<std::string> unused_options() const {
+     std::vector<std::string> unused;
+     for (size_t i = 0; i < tokens.size(); ++i) {
+       if (!used[i] && looks_like_option(tokens[i]) &&
+           std::find(unused.begin(), unused.end(), tokens[i]) == unused.end())
+         unused.push_back(tokens[i]);
+     }
+     return unused;
+   }
+   void warn_unused_options(std::ostream &out = std::cerr) const {
+     const auto unused = unused_options();
+     if (unused.empty())
+       return;
+     out << "WARNING: unused command-line option(s):";
+     for (const auto &option : unused)
+       out << ' ' << option;
+     out << std::endl;
+   }
  private:
+   static bool looks_like_option(const std::string &token) {
+     if (token.size() < 2 || token[0] != '-')
+       return false;
+     const auto c = static_cast<unsigned char>(token[1]);
+     return !std::isdigit(c) && token[1] != '.';
+   }
+   std::optional<size_t> find_token(const std::string &option) const {
+     for (size_t i = 0; i < tokens.size(); ++i) {
+       if (tokens[i] == option)
+         return i;
+     }
+     return std::nullopt;
+   }
+   void mark_used(const size_t index) const {
+     if (index < used.size())
+       used[index] = true;
+   }
    std::string require_arg(const std::string &option) const {
-     auto itr = std::find(this->tokens.begin(), this->tokens.end(), option);
-     if (itr == this->tokens.end())
+     auto index = find_token(option);
+     if (!index)
        throw std::runtime_error("Missing option: " + option);
-     ++itr;
-     if (itr == this->tokens.end())
+     mark_used(*index);
+     const auto arg_index = *index + 1;
+     if (arg_index == tokens.size())
        throw std::runtime_error("Option " + option + " requires an argument");
-     return *itr;
+     mark_used(arg_index);
+     return tokens[arg_index];
    }
 
    std::vector<std::string> tokens;
+   mutable std::vector<bool> used;
 };
