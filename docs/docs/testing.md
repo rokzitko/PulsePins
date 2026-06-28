@@ -8,11 +8,11 @@ of the test battery, run [`run_all_tests`]({{ source_file("tests/run_all_tests")
 Successful completion is reported by printing the message ``SUCCESS``.
 
 One can run the tests continuously using [`run_all_tests_forever`]({{ source_file("tests/run_all_tests_forever") }}) to perform intensive
-stress testing. The main report is written in the current directory as `report`, and per-test
-logs are collected under `/var/volatile` for inspection. Pass `-no-report-files` to avoid
-writing the accumulating `/var/volatile/report.run_N` files during long burn-in runs. Reports
-include a header with the `pptest` version and bitstream timestamp lines captured at the start
-of the run.
+stress testing. Logs are collected under `/var/volatile/pulsepins-test-logs` for inspection:
+`report` records the `pptest` version, bitstream timestamp, and successful-run timestamps, while
+`report.run_N` files contain per-run output. Pass `-no-report-files` to avoid writing the
+accumulating `report.run_N` files during long burn-in runs. The runner exits with failure on the
+first failed sweep, including child processes killed by signals.
 
 ## Wiring up for testing
 

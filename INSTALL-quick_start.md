@@ -14,7 +14,7 @@ tests are complete. At the default 100 MHz streaming clock, the test run should 
 Optionally (recommended):
 
 6. Perform burn-in testing by running `run_all_tests_forever`. Let it run overnight or longer.
-A short report is stored in the text file `report`, while full log files are stored in `/var/volatile`.
+A short report and full log files are stored in `/var/volatile/pulsepins-test-logs`.
 
 7. Change the root password from the default 'eit'.
 
