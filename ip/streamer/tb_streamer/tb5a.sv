@@ -42,6 +42,7 @@ reg [WIDTH_TRIGGER-1:0] trigger_in;
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
   .initial_value('0),
+  .initial_reload(1'b0),
   .initial_value_streamer('0),
   .gate_enable('1),           // must be 1, because rdreq = trigger_activated && gate_enable
   .stop_on_buffer_error('0),  // must be set to 0 or 1

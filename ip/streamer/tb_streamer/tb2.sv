@@ -40,6 +40,7 @@ always @(posedge clk) begin
 end
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value,
+  .initial_reload(1'b0),
   .initial_value_streamer(initial_value),
   .trigger_enable(1'b1),
   .trigger_force(1'b0),

@@ -15,7 +15,9 @@ module tb_presence_detector;
     reg clk   = 0;
     reg reset = 1;
     reg sig_in = 0;
+    reg pulse = 0;
     wire active;
+    wire sync_active;
 
     // Clock: 50 MHz
     always #10 clk = ~clk;
@@ -31,6 +33,16 @@ module tb_presence_detector;
         .active(active)
     );
 
+    presence_detector_sync_pulse #(
+        .CLK_FREQ_HZ(CLK_FREQ_HZ),
+        .WINDOW_MS(WINDOW_MS)
+    ) sync_dut (
+        .clk(clk),
+        .reset(reset),
+        .pulse(pulse),
+        .active(sync_active)
+    );
+
     // Stimulus
     initial begin
         $dumpfile("tb_presence_detector.vcd");
@@ -41,6 +53,15 @@ module tb_presence_detector;
 
         // Wait some clocks
         repeat(5) @(posedge clk);
+
+        // Synchronous one-cycle pulse must start and eventually expire the activity window.
+        pulse = 1;
+        @(posedge clk);
+        pulse = 0;
+        @(posedge clk);
+        if (!sync_active) $fatal(1, "sync detector failed to activate");
+        repeat(WINDOW_CYCLES+2) @(posedge clk);
+        if (sync_active) $fatal(1, "sync detector failed to expire");
 
         // Generate a posedge *between* clk edges
         #7 sig_in = 1;

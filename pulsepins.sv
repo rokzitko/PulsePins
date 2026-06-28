@@ -187,9 +187,6 @@ assign ref_clk = FPGA_CLK1_50;
 // ref_clk (FPGA_CLK1_50) nominal frequency
 localparam integer REF_CLK_FREQ_HZ = 50_000_000;
 
-// Nominal streamer clock frequency (100MHz by default)
-localparam integer STREAMER_CLK_FREQ_HZ = 100_000_000;
-
 logic ext_clk_pll_locked;
 logic clean_clk;
 
@@ -317,6 +314,7 @@ always_ff @(posedge ref_clk or posedge h2f_reset or negedge core_clk_pll_locked)
 end
 
 logic reset_out;
+logic reset_ref;
 reset_sync2_hold #(
  .ACTIVE_LOW(0),
  .STAGES(3),
@@ -326,6 +324,17 @@ reset_sync2_hold #(
 .rst1_in(h2f_reset),
 .rst2_in(sys_reset_hold),
 .rst_out(reset_out)
+);
+
+reset_sync2_hold #(
+ .ACTIVE_LOW(0),
+ .STAGES(3),
+ .HOLD_CYCLES(16)
+) reset_ref_controller (
+.clk(ref_clk),
+.rst1_in(h2f_reset),
+.rst2_in(sys_reset_hold),
+.rst_out(reset_ref)
 );
 
 
@@ -678,13 +687,13 @@ assign oe = pio_cfg[`CFG_OE];
 
 logic heartbeat;
 heartbeat #(
- .CLK_FREQ_HZ(STREAMER_CLK_FREQ_HZ),
+ .CLK_FREQ_HZ(REF_CLK_FREQ_HZ),
  .PULSE_MS(80),
  .GAP_MS(70),
  .PERIOD_MS(1000)
 ) hb_inst (
- .clk(core_clk),
- .reset(reset),
+ .clk(ref_clk),
+ .reset(reset_ref),
  .heartbeat(heartbeat)
 );
 
@@ -696,13 +705,58 @@ sync_bit_3stage sb(
 );
 
 logic activity;
-presence_detector_async_posedge #(
- .CLK_FREQ_HZ(STREAMER_CLK_FREQ_HZ),
+logic activity_seen_streamer;
+logic activity_clear_ref;
+logic activity_clear_streamer;
+logic activity_seen_ref;
+logic activity_seen_ref_d;
+wire activity_event_ref = activity_seen_ref && !activity_seen_ref_d;
+
+cdc_bit_sync sync_activity_clear (
+  .dst_clk(streamer_clk),
+  .dst_reset(streamer_rst),
+  .async_in(activity_clear_ref),
+  .sync_out(activity_clear_streamer)
+);
+
+always_ff @(posedge streamer_clk) begin
+  if (streamer_rst) begin
+    activity_seen_streamer <= 1'b0;
+  end else if (activity_clear_streamer) begin
+    activity_seen_streamer <= 1'b0;
+  end else if (streamer_qout_valid) begin
+    activity_seen_streamer <= 1'b1;
+  end
+end
+
+cdc_bit_sync sync_activity_seen (
+  .dst_clk(ref_clk),
+  .dst_reset(reset_ref),
+  .async_in(activity_seen_streamer),
+  .sync_out(activity_seen_ref)
+);
+
+always_ff @(posedge ref_clk) begin
+  if (reset_ref) begin
+    activity_seen_ref_d <= 1'b0;
+    activity_clear_ref <= 1'b0;
+  end else begin
+    activity_seen_ref_d <= activity_seen_ref;
+    if (activity_event_ref) begin
+      activity_clear_ref <= 1'b1;
+    end else if (!activity_seen_ref) begin
+      activity_clear_ref <= 1'b0;
+    end
+  end
+end
+
+presence_detector_sync_pulse #(
+ .CLK_FREQ_HZ(REF_CLK_FREQ_HZ),
  .WINDOW_MS(200)    // active if signal has at least one posedge within 200 ms
 ) u_activity_monitor (
- .clk(streamer_clk),
- .reset(streamer_rst),
- .sig_in(streamer_qout_strobe),
+ .clk(ref_clk),
+ .reset(reset_ref),
+ .pulse(activity_event_ref),
  .active(activity)
 );
 
@@ -711,7 +765,7 @@ assign freq_meter_0_conduit_end_signal[1] = int_clk;      // internal clock gene
 assign freq_meter_0_conduit_end_signal[2] = streamer_clk; // currently selected streamer clock
 assign freq_meter_0_conduit_end_signal[3] = core_clk;     // PulsePins core clock
 assign freq_meter_0_conduit_end_clock = ref_clk;          // 50MHz xtal clock
-assign freq_meter_0_conduit_end_reset = reset;            // reset in the ref_clk clock domain
+assign freq_meter_0_conduit_end_reset = reset_ref;        // reset in the ref_clk clock domain
 
 // Low-rate board-visible observability.
 // LEDs and selected GPIO pins expose trigger/activity/error state for bring-up and quick
@@ -892,7 +946,7 @@ rand_signal_gen #(
   .SEED              (32'h1234_5678)
 ) rand1 (
   .clk    (ref_clk), // 50MHz, period = 20ns
-  .reset  (reset),
+  .reset  (reset_ref),
   .oe     ('1),
   .signal (rnd1)
 );
@@ -903,7 +957,7 @@ rand_signal_gen #(
   .SEED              (32'h1234_5678)
 ) rand2 (
   .clk    (ref_clk),
-  .reset  (reset),
+  .reset  (reset_ref),
   .oe     ('1),
   .signal (rnd2)
 );
@@ -1084,7 +1138,7 @@ assign pio_trig_monitor[31:27]                                = '0;
 logic PPS_XTAL; // not a true atomic-clock-derived PPS, just a divided crystal oscillator clock
 tik #(.PERIOD(REF_CLK_FREQ_HZ)) tikpps (
  .clk(ref_clk),
- .reset(reset),
+ .reset(reset_ref),
  .tik(PPS_XTAL)
 );
 
@@ -1092,7 +1146,7 @@ tik #(.PERIOD(REF_CLK_FREQ_HZ)) tikpps (
 logic [31:0] elapsed;
 logic PPS_XTAL_d;
 always_ff @(posedge ref_clk) begin
-  if (reset) begin
+  if (reset_ref) begin
     elapsed <= '0;
     PPS_XTAL_d <= 1'b0;
   end else begin
@@ -1119,20 +1173,56 @@ assign pio_elapsed = elapsed;
    assign ARDUINO_IO[15:14] = '0;
 `endif
 
-// Pulse generation (synchronous with streamer_clk)
+// Pulse generation starts in ref_clk and crosses as toggles into the timestamp/core domain.
 logic pulse_1ms;
 logic pulse_10ms;
 logic pulse_100ms;
 logic pulse_1s;
+logic [3:0] pulse_ref;
+logic [3:0] pulse_ref_tgl;
+logic [3:0] pulse_core_tgl;
+logic [3:0] pulse_core_tgl_d;
+wire [3:0] pulse_core = pulse_core_tgl ^ pulse_core_tgl_d;
 
-pulse_gen_timebase #( .CLK_FREQ_HZ(STREAMER_CLK_FREQ_HZ) ) pg_inst (
- .clk(streamer_clk),
- .rst(reset),
- .pulse_1ms(pulse_1ms),     // 1 s pulse (every 1 ms)
- .pulse_10ms(pulse_10ms),   // 0.01 s pulse (every 10 ms)
- .pulse_100ms(pulse_100ms), // 0.1 s pulse (every 100 ms)
- .pulse_1s(pulse_1s)        // 1 s pulse (every 1000 ms)
+pulse_gen_timebase #( .CLK_FREQ_HZ(REF_CLK_FREQ_HZ) ) pg_inst (
+ .clk(ref_clk),
+ .rst(reset_ref),
+ .pulse_1ms(pulse_ref[0]),     // 0.001 s pulse (every 1 ms)
+ .pulse_10ms(pulse_ref[1]),    // 0.01 s pulse (every 10 ms)
+ .pulse_100ms(pulse_ref[2]),   // 0.1 s pulse (every 100 ms)
+ .pulse_1s(pulse_ref[3])       // 1 s pulse (every 1000 ms)
 );
+
+always_ff @(posedge ref_clk) begin
+  if (reset_ref)
+    pulse_ref_tgl <= '0;
+  else
+    pulse_ref_tgl <= pulse_ref_tgl ^ pulse_ref;
+end
+
+genvar pulse_cdc_i;
+generate
+  for (pulse_cdc_i = 0; pulse_cdc_i < 4; pulse_cdc_i++) begin : gen_pulse_ref_to_core
+    cdc_bit_sync sync_pulse_ref_to_core (
+      .dst_clk(core_clk),
+      .dst_reset(reset),
+      .async_in(pulse_ref_tgl[pulse_cdc_i]),
+      .sync_out(pulse_core_tgl[pulse_cdc_i])
+    );
+  end
+endgenerate
+
+always_ff @(posedge core_clk) begin
+  if (reset)
+    pulse_core_tgl_d <= '0;
+  else
+    pulse_core_tgl_d <= pulse_core_tgl;
+end
+
+assign pulse_1ms = pulse_core[0];
+assign pulse_10ms = pulse_core[1];
+assign pulse_100ms = pulse_core[2];
+assign pulse_1s = pulse_core[3];
 
 // Timestamp subsystem routing.
 //

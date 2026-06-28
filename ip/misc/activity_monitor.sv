@@ -69,6 +69,38 @@ module activity_monitor #(
 
 endmodule
 
+// Presence detector for pulses that are already synchronous to clk.
+// Unlike presence_detector_async_posedge, this block never uses the pulse input as a clock.
+module presence_detector_sync_pulse #(
+    parameter integer CLK_FREQ_HZ = 50_000_000,
+    parameter integer WINDOW_MS   = 200
+)(
+    input  wire clk,
+    input  wire reset,
+    input  wire pulse,
+    output reg  active
+);
+    localparam integer WINDOW_CYCLES = (CLK_FREQ_HZ/1000) * WINDOW_MS;
+    localparam integer W_W = (WINDOW_CYCLES>0) ? $clog2(WINDOW_CYCLES+1) : 1;
+
+    reg [W_W-1:0] win_cnt;
+
+    always @(posedge clk) begin
+        if (reset) begin
+            win_cnt <= {W_W{1'b0}};
+            active  <= 1'b0;
+        end else if (pulse) begin
+            win_cnt <= WINDOW_CYCLES[W_W-1:0];
+            active  <= 1'b1;
+        end else if (win_cnt != 0) begin
+            win_cnt <= win_cnt - 1'b1;
+            active  <= 1'b1;
+        end else begin
+            active  <= 1'b0;
+        end
+    end
+endmodule
+
 // Presence detector (posedge-only) with asynchronous event latch and synchronous timeout.
 //
 module presence_detector_async_posedge #(

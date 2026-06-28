@@ -70,6 +70,7 @@ streamer dut(
   .input_ready,
   .gate_enable,
   .initial_value('0),
+  .initial_reload(1'b0),
   .initial_value_streamer(INITIAL_VALUE_STREAMER),
   .streamer_clk(clk),
   .qout,

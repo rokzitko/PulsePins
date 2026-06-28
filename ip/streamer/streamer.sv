@@ -26,6 +26,7 @@ module streamer
 
  input wire gate_enable,                    // streamer_clk-domain gate enable
  input wire [WIDTH_DATA-1:0] initial_value, // clk-domain initial value for decoder state
+ input wire initial_reload,                 // clk-domain pulse to reload decoder initial state
  input wire [WIDTH_DATA-1:0] initial_value_streamer, // streamer_clk-domain pre-trigger output value
 
  input wire streamer_clk,                     // clock for data streaming
@@ -122,6 +123,7 @@ assign in_opmode = control[BIT_MODE_HI:BIT_MODE_LO]; // see config.vh for defini
 rl_decoder rl0 (
     .clk(clk),
     .reset(reset),
+    .reload_initial(initial_reload),
 
     // input to decoder
     .in_data(data),

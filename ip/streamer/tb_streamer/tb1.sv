@@ -41,7 +41,7 @@ always @(posedge clk) begin
 end
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
-  .initial_value, .initial_value_streamer(initial_value));
+  .initial_value, .initial_reload(1'b0), .initial_value_streamer(initial_value));
 
 initial begin
   input_data <= 32'b0;

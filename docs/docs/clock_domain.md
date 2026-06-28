@@ -74,10 +74,10 @@ Clock-select control at top level:
 
 | Clock | Main consumers |
 | ----- | -------------- |
-| `ref_clk` | PLL lock/hold logic, frequency-meter reference, low-rate utility logic, crystal-derived PPS path |
+| `ref_clk` | PLL lock/hold logic, frequency-meter reference, low-rate utility logic, heartbeat/activity timing, crystal-derived PPS path |
 | `core_clk` | Qsys/Platform Designer system, Avalon-MM control, reset release, control-side helpers |
 | `int_clk` | candidate source for `streamer_clk`, frequency-meter observed channel |
-| `streamer_clk` | output FIFO read side, trigger chain, strobe generation, readback, counter data clock, activity monitor |
+| `streamer_clk` | output FIFO read side, trigger chain, strobe generation, readback, counter data clock |
 | `d_clk` | `basic_counter`, `runs_counter`, `packet_stats`, `seq_counter`, `autocorrelation`, `crosscorrelation` |
 | `cnt_clk` | frequency-meter gate timing and result accumulation |
 | `clk` in `ts_core` | timestamp counter, synchronizers, edge detection |
@@ -205,6 +205,7 @@ Current behavior:
 - synchronizer chain for `sig`
 - synchronizer chain for `sigA`
 - rising-edge capture in `clk`
+- top-level ref-clock timing pulses cross into `clk` as toggles before the `sigA` mux
 
 ### Frequency meter
 
@@ -230,7 +231,7 @@ CDC structure in [`ip/freq_meter/freq_meter.sv`]({{ source_file("ip/freq_meter/f
 | -------- | ----------------------- | -------- |
 | PLL lock observation | `ref_clk` | lock qualification |
 | `core_clk_pll_ready` | `ref_clk` | release condition after stable lock |
-| `reset_sync2_hold` output | `core_clk` | synchronized system reset release |
+| `reset_sync2_hold` outputs | `core_clk`, `ref_clk` | synchronized reset release per top-level domain |
 | `streamer_rst` | `streamer_clk` | synchronized reset for streamer output domain |
 
 Reset release is domain-specific.

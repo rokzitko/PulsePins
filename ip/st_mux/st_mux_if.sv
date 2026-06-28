@@ -42,7 +42,8 @@ output reg [31:0] avs_s0_readdata,
 input wire [31:0] avs_s0_writedata
 );
 
-logic channel; // 0 = channel1, 1 = channel2
+logic channel; // active channel: 0 = channel1, 1 = channel2
+logic requested_channel;
 logic [63:0] ctr1;
 logic [63:0] ctr2;
 
@@ -68,14 +69,25 @@ assign asi_ready1 = (channel == 1'b0 ? aso_ready : 1'b0);
 assign asi_ready2 = (channel == 1'b1 ? aso_ready : 1'b0);
 assign aso_channel = channel;
 
+wire selected_stalled = aso_valid && !aso_ready;
+logic requested_channel_next;
+
+always_comb begin
+  requested_channel_next = requested_channel;
+  if (avs_s0_write && avs_s0_address == 3'b0) begin
+    requested_channel_next = avs_s0_writedata[0];
+  end
+end
+
 always_ff @(posedge clk) begin
   if (reset) begin
-    channel <= 0;
-  end else if (avs_s0_write) begin
-    // Only one writable control bit exists: selected input channel.
-    case (avs_s0_address)
-      3'b0: channel <= avs_s0_writedata[0];
-    endcase
+    channel <= 1'b0;
+    requested_channel <= 1'b0;
+  end else begin
+    requested_channel <= requested_channel_next;
+    if (!selected_stalled) begin
+      channel <= requested_channel_next;
+    end
   end
 end
 

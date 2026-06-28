@@ -56,6 +56,8 @@ input wire gate_in
 );
 
 logic [WIDTH_TOTAL-1:0] input_data;
+logic asi_valid_streamer;
+logic asi_ready_streamer;
 
 swap_endianness_96 sw(.in(asi_data),
                       .out(input_data));
@@ -98,10 +100,12 @@ sync_bit_3stage streamer_reset_sync_inst(
 
 // Static output/gating configuration crosses as a coherent bundle and is committed only
 // while streamer_clk logic is idle or held in streamer reset.
-localparam int STATIC_CFG_W = 1 + WIDTH_TRIGGER + 1 + 1 + WIDTH_DATA + WIDTH_DATA + 1;
+localparam int STATIC_CFG_W = 1 + 1 + WIDTH_TRIGGER + 1 + 1 + WIDTH_DATA + WIDTH_DATA + 1;
 logic [STATIC_CFG_W-1:0] static_cfg_clk;
 logic [STATIC_CFG_W-1:0] static_cfg_streamer;
 logic static_cfg_update;
+logic initial_value_update_clk;
+logic initial_value_update_streamer;
 
 logic qout_select_streamer;
 logic [WIDTH_DATA-1:0] qout_override_streamer;
@@ -111,9 +115,9 @@ logic gate_in_en_streamer;
 logic [WIDTH_TRIGGER-1:0] gate_mask_streamer;
 logic stop_on_buffer_error_streamer;
 
-assign static_cfg_clk = {stop_on_buffer_error, gate_mask, gate_in_en, gating,
+assign static_cfg_clk = {initial_value_update_clk, stop_on_buffer_error, gate_mask, gate_in_en, gating,
                          initial_value, qout_override, qout_select};
-assign {stop_on_buffer_error_streamer, gate_mask_streamer, gate_in_en_streamer,
+assign {initial_value_update_streamer, stop_on_buffer_error_streamer, gate_mask_streamer, gate_in_en_streamer,
         gating_streamer, initial_value_streamer, qout_override_streamer,
         qout_select_streamer} = static_cfg_streamer;
 
@@ -151,6 +155,33 @@ logic buffer_error_streamer;
 logic streamer_idle;
 
 assign streamer_idle = !trigger_armed_streamer && !trigger_activated_streamer;
+
+logic streamer_idle_clk;
+logic initial_value_update_clk_sync;
+logic initial_value_update_clk_sync_d;
+wire initial_reload = initial_value_update_clk_sync ^ initial_value_update_clk_sync_d;
+logic initial_reload_pending;
+wire block_input_for_initial_reload = initial_reload_pending && streamer_idle_clk;
+
+assign asi_valid_streamer = asi_valid && !block_input_for_initial_reload;
+assign asi_ready = asi_ready_streamer && !block_input_for_initial_reload;
+
+cdc_bit_sync sync_streamer_idle_to_clk (
+  .dst_clk(clk), .dst_reset(reset),
+  .async_in(streamer_idle), .sync_out(streamer_idle_clk)
+);
+
+cdc_bit_sync sync_initial_value_update_to_clk (
+  .dst_clk(clk), .dst_reset(reset),
+  .async_in(initial_value_update_streamer), .sync_out(initial_value_update_clk_sync)
+);
+
+always_ff @(posedge clk) begin
+  if (reset)
+    initial_value_update_clk_sync_d <= 1'b0;
+  else
+    initial_value_update_clk_sync_d <= initial_value_update_clk_sync;
+end
 
 assign trigger_armed = trigger_armed_streamer;
 assign trigger_activated = trigger_activated_streamer;
@@ -239,11 +270,12 @@ streamer st0 (
 .clk(clk),
 .reset(reset_or_reset_streamer), // system-wide reset or internal forced reset
 .input_data(input_data),
-.input_valid(asi_valid),
-.input_ready(asi_ready),
+.input_valid(asi_valid_streamer),
+.input_ready(asi_ready_streamer),
 .streamer_clk(streamer_clk),
 .gate_enable(gate_enable_streamer),
 .initial_value(initial_value),
+.initial_reload(initial_reload),
 .initial_value_streamer(initial_value_streamer),
 .qout(qout_streamer),
 .qout_valid(qout_valid),
@@ -356,6 +388,8 @@ always_ff @(posedge clk) begin
     gate_in_en <= 0;
     gate_mask <= 0;
     stop_on_buffer_error <= 0;
+    initial_value_update_clk <= 0;
+    initial_reload_pending <= 0;
     static_cfg_update <= 0;
   end else begin
     static_cfg_update <= avs_s0_write &&
@@ -364,12 +398,20 @@ always_ff @(posedge clk) begin
        (st_if_w_t'(avs_s0_address) == QOUT_OVERRIDE) ||
        (st_if_w_t'(avs_s0_address) == GATING_W));
 
+    if (initial_reload) begin
+      initial_reload_pending <= 1'b0;
+    end
+
     if (avs_s0_write) begin
       // Control writes intentionally stay in the Avalon/control clock domain; streamer_clk
       // consumers receive synchronized runtime controls or idle/reset-committed config shadows.
       unique case (st_if_w_t'(avs_s0_address))
         IF_CTRL:       {stop_on_buffer_error, qout_select, trigger_reset_int, reset_streamer, trigger_enable_int, trigger_force_int, stop} <= avs_s0_writedata[6:0];
-        INIT_VAL:      initial_value[WIDTH_AVS-1:0] <= avs_s0_writedata;
+        INIT_VAL: begin
+          initial_value[WIDTH_AVS-1:0] <= avs_s0_writedata;
+          initial_value_update_clk <= ~initial_value_update_clk;
+          initial_reload_pending <= 1'b1;
+        end
         QOUT_OVERRIDE: qout_override[WIDTH_AVS-1:0] <= avs_s0_writedata;
         GATING_W:      {gate_mask, gate_in_en, gating} <= avs_s0_writedata[WIDTH_TRIGGER+2-1:0];
         default:       ;

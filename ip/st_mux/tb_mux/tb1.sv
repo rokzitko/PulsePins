@@ -28,9 +28,11 @@ end
 
 logic [31:0] asi_data1;
 logic asi_valid1;
+logic asi_channel1;
 logic asi_ready1;
 logic [31:0] asi_data2;
 logic asi_valid2;
+logic asi_channel2;
 logic asi_ready2;
 
 logic aso_ready;
@@ -49,9 +51,11 @@ st_mux_if dut(
  .reset,
  .asi_data1,
  .asi_valid1,
+ .asi_channel1,
  .asi_ready1,
  .asi_data2,
  .asi_valid2,
+ .asi_channel2,
  .asi_ready2,
  .aso_ready,
  .aso_data,
@@ -65,10 +69,19 @@ st_mux_if dut(
 );
 
 initial begin
-  asi_ready1 <= 1;
+  asi_data1 <= '0;
+  asi_valid1 <= 1'b0;
+  asi_channel1 <= 1'b0;
+  asi_data2 <= '0;
+  asi_valid2 <= 1'b0;
+  asi_channel2 <= 1'b1;
   aso_ready <= 1;
+  avs_s0_address <= '0;
+  avs_s0_writedata <= '0;
+  avs_s0_write <= 1'b0;
+  avs_s0_read <= 1'b0;
 
-  #1;
+  #2;
 
   asi_data1 <= 1;
   asi_valid1 <= 1;
@@ -101,12 +114,46 @@ initial begin
 
   assert(dut.ctr1 == 10) else $fatal;
   assert(dut.ctr2 == 10) else $fatal;
+
+  avs_s0_address <= 0;
+  avs_s0_writedata <= 0;
+  avs_s0_write <= 1;
+  #1;
+  avs_s0_write <= 0;
+  #2;
+
+  aso_ready <= 0;
+  asi_data1 <= 32'haaaa_0001;
+  asi_valid1 <= 1;
+  asi_data2 <= 32'hbbbb_0002;
+  asi_valid2 <= 1;
+  #2;
+  assert(aso_valid == 1) else $fatal;
+  assert(aso_channel == 0) else $fatal;
+  assert(aso_data == 32'haaaa_0001) else $fatal;
+
+  avs_s0_address <= 0;
+  avs_s0_writedata <= 1;
+  avs_s0_write <= 1;
+  #1;
+  avs_s0_write <= 0;
+  #3;
+  assert(dut.requested_channel == 1) else $fatal;
+  assert(aso_channel == 0) else $fatal;
+  assert(aso_data == 32'haaaa_0001) else $fatal;
+
+  aso_ready <= 1;
+  #2;
+  assert(aso_channel == 1) else $fatal;
+  assert(aso_data == 32'hbbbb_0002) else $fatal;
+  asi_valid1 <= 0;
+  asi_valid2 <= 0;
 end
 
 integer fh;
 
 initial begin
-  #60 $display("SUCCESS");
+  #100 $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_mux1.ucdb");

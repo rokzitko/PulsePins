@@ -11,6 +11,7 @@ module rl_decoder
 (
   input  wire                     clk,
   input  wire                     reset,          // active-high reset
+  input  wire                     reload_initial, // reload previous-value state from initial_data
 
   // Input FIFO (show-ahead semantics)
   input  wire                     in_valid,       // tuple valid (not empty)
@@ -61,7 +62,7 @@ module rl_decoder
   wire can_emit = (curr_cnt != '0) && !out_almost_full;
   wire finishing_run = can_emit && (curr_cnt == WIDTH_COUNTER'(1));
   wire can_load_next = (curr_cnt == '0) || finishing_run;
-  wire load_fire = !reset && can_load_next && in_valid;
+  wire load_fire = !reset && !reload_initial && can_load_next && in_valid;
   wire [WIDTH_DATA-1:0] load_base_value = finishing_run ? curr_value : prev_value;
 
   always_comb
@@ -69,7 +70,7 @@ module rl_decoder
 
   // ---- Main process ----
   always_ff @(posedge clk) begin
-    if (reset) begin
+    if (reset || reload_initial) begin
       prev_value  <= initial_data;
       curr_value  <= '0;
       curr_cnt    <= '0;

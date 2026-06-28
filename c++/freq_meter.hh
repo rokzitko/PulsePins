@@ -41,6 +41,10 @@ private:
   int n_ch;
   bool verbose;
 
+  static void cdc_settle() {
+    usleep(10);
+  }
+
 public:
   static Ticks normalize_gate_len(const Ticks requested_gate_len) {
     return std::max<Ticks>(1, requested_gate_len);
@@ -84,9 +88,17 @@ public:
   // Reprogram the measurement window and restart accumulation.
   void set_gate_len(Ticks new_gate_len) {
     gate_len = normalize_gate_len(new_gate_len);
+    // The RTL uses independent toggle CDC paths for gate length, clear, and enable.
+    // Space these writes so each request can cross before the next dependent request.
+    lctl.write(0); // disable
+    cdc_settle();
     lgate_len.write(gate_len);
+    (void)lgate_len.read(); // MMIO read barrier before the following control toggles
+    cdc_settle();
     lctl.write(2); // clear
+    cdc_settle();
     lctl.write(1); // enable
+    cdc_settle();
     if (verbose)
       std::cout << "freq_meter: gate_len=" << std::dec << gate_len << std::endl;
   }

@@ -69,6 +69,7 @@ streamer dut(
   .input_ready,
   .gate_enable(1'b1),
   .initial_value('0),
+  .initial_reload(1'b0),
   .initial_value_streamer('0),
   .streamer_clk(clk),
   .qout,

@@ -30,7 +30,7 @@ More detail:
 
 More detail:
 
-* [`activity_monitor.sv`]({{ source_file("ip/misc/activity_monitor.sv") }}) blinks an output when the observed signal has changed recently; the same file also contains `presence_detector_async_posedge`, which latches asynchronous positive edges and holds an `active` indication for a programmable time window
+* [`activity_monitor.sv`]({{ source_file("ip/misc/activity_monitor.sv") }}) blinks an output when the observed signal has changed recently; the same file also contains `presence_detector_async_posedge` for true asynchronous positive edges and `presence_detector_sync_pulse` for pulses already synchronous to the detector clock
 * [`heartbeat.sv`]({{ source_file("ip/misc/heartbeat.sv") }}) generates a repeated double-pulse heartbeat pattern from a single input clock
 * [`crc32.sv`]({{ source_file("ip/misc/crc32.sv") }}) implements a streaming reflected CRC-32 over 32-bit words with one word consumed per clock and a valid pulse aligned to the registered result; see [CRC32 integrity checks](readback.md#crc32-integrity-checks) for how the value is used by software
 
