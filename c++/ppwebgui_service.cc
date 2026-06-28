@@ -109,30 +109,28 @@ uint32_t pack_live_trigger_status(const trigger_t trigger_in, const port_t trigg
 
 TriggerConfigState trigger_config_from_options(const TriggerOptions &opts) {
   TriggerConfigState state;
-  state.mode = 0;
+  const auto mode = opts.mode.value_or(TriggerModeOption::internal);
 
-  if (opts.mode) {
-    switch (*opts.mode) {
-    case TriggerModeOption::internal:
-      state.mode = static_cast<uint32_t>(trig_mode::INT);
-      break;
-    case TriggerModeOption::external:
-      state.mode = static_cast<uint32_t>(trig_mode::EXT);
-      break;
-    case TriggerModeOption::misc:
-      state.mode = static_cast<uint32_t>(trig_mode::MISC);
-      break;
-    case TriggerModeOption::any:
-      state.mode = static_cast<uint32_t>(trig_mode::OR);
-      break;
-    case TriggerModeOption::all:
-      state.mode = static_cast<uint32_t>(trig_mode::AND);
-      break;
-    case TriggerModeOption::standard:
-      state.mode = static_cast<uint32_t>(trig_mode::OR);
-      state.invert_ext = ~uint32_t {0};
-      break;
-    }
+  switch (mode) {
+  case TriggerModeOption::internal:
+    state.mode = static_cast<uint32_t>(trig_mode::INT);
+    break;
+  case TriggerModeOption::external:
+    state.mode = static_cast<uint32_t>(trig_mode::EXT);
+    break;
+  case TriggerModeOption::misc:
+    state.mode = static_cast<uint32_t>(trig_mode::MISC);
+    break;
+  case TriggerModeOption::any:
+    state.mode = static_cast<uint32_t>(trig_mode::OR);
+    break;
+  case TriggerModeOption::all:
+    state.mode = static_cast<uint32_t>(trig_mode::AND);
+    break;
+  case TriggerModeOption::standard:
+    state.mode = static_cast<uint32_t>(trig_mode::OR);
+    state.invert_ext = ~uint32_t {0};
+    break;
   }
 
   if (opts.invert_result) state.invert_result = *opts.invert_result;

@@ -76,7 +76,7 @@ The page exposes these main sections:
 * Live Hardware: AUX bits, trigger bits, trigger enable/force/reset flags, and the streamer status
 * Tracked by ppwebgui: displayed qout, tracked idle streamer qout, output-override state, combiner mode, trigger mode, and recent action/error text
 * Clocking: a read-only display of the current streamer clock source, tracked `int_clk`/`ext_clk` selection, `core_clk` and `int_clk` PLL profiles, and the last measured `ext_clk`, `int_clk`, `streamer_clk`, and `core_clk` frequencies
-* Trigger Settings: trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask are also visible (read-only)
+* Trigger Settings: trigger mode plus editable invert and mask settings for the result, INT, EXT, and MISC paths; AUX invert and mask are also visible (read-only). The default trigger mode is `INT`; `STANDARD` remains available and forces EXT invert to `0xffffffff`.
 * Output Override: one manual final-output override control for the active streamer path used by browser-triggered sequence playback
 * Output Combiner: mode selection plus per-output and per-input invert/mask/force settings
 * Timeline Composer: web-browser editor for simple multi-channel pulse timelines in raw cycles or absolute time units, with JSON draft and pulse-table CSV import/export

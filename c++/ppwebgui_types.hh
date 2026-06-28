@@ -83,7 +83,7 @@ enum class TriggerModeSelection {
 };
 
 struct TriggerConfigRequest {
-  TriggerModeSelection mode = TriggerModeSelection::STANDARD;
+  TriggerModeSelection mode = TriggerModeSelection::INT;
   uint32_t invert_result = 0;
   uint32_t invert_int = 0;
   uint32_t invert_ext = 0;

@@ -1747,6 +1747,16 @@ TEST_CASE("force trigger readiness timeout does not assert trigger") {
   CHECK(control.trigger_enable_calls == 0);
 }
 
+TEST_CASE("ppwebgui trigger defaults to internal mode") {
+  TriggerConfigRequest request;
+  CHECK(request.mode == TriggerModeSelection::INT);
+
+  StatusSnapshot status;
+  const auto json = status_to_json(status);
+  CHECK(contains(json, "\"trigger_settings\":{\"mode\":\"INT\""));
+  CHECK(!contains(json, "\"mode\":\"STANDARD\""));
+}
+
 TEST_CASE("ppwebgui routes return 400 for service-side bad requests") {
   ScopedStreamCapture capture(std::cerr);
   FakeWebGuiService service;

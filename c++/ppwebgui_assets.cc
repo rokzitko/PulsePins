@@ -115,7 +115,7 @@ const char *index_html = R"HTML(<!doctype html>
           <label>Mode
             <select name="mode" id="trigger-mode-select">
               <option>STANDARD</option>
-              <option>INT</option>
+              <option selected>INT</option>
               <option>EXT</option>
               <option>MISC</option>
               <option>ANY</option>
@@ -124,7 +124,7 @@ const char *index_html = R"HTML(<!doctype html>
           </label>
           <label>Result invert<input name="invert_result" value="0x0"></label>
           <label>INT invert<input name="invert_int" value="0x0"></label>
-          <label>EXT invert<input id="trigger-ext-invert" name="invert_ext" value="0xffffffff"></label>
+          <label>EXT invert<input id="trigger-ext-invert" name="invert_ext" value="0x0"></label>
           <label>MISC invert<input name="invert_misc" value="0x0"></label>
           <label>INT mask<input name="mask_int" value="0x0"></label>
           <label>EXT mask<input name="mask_ext" value="0x0"></label>
@@ -135,7 +135,7 @@ const char *index_html = R"HTML(<!doctype html>
           <button id="trigger-revert-button" type="button" class="secondary-button">Revert local edits</button>
         </div>
       </form>
-      <div class="meta">STANDARD follows CLI semantics and forces EXT invert to `0xffffffff`.</div>
+      <div class="meta">INT is the default trigger mode. STANDARD follows CLI semantics and forces EXT invert to `0xffffffff`.</div>
       <div class="settings-grid">
         <div class="setting"><div class="label">AUX invert</div><div id="trigger-invert-aux" class="mono"></div></div>
         <div class="setting"><div class="label">AUX mask</div><div id="trigger-mask-aux" class="mono"></div></div>

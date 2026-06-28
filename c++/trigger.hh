@@ -33,32 +33,35 @@ public:
   trigger(const InputParser &input, const FPGA &_fpga) :
     trigger(resolve_trigger_options(input), _fpga) {}
 
-  // Apply trigger-routing options. The default policy is internal triggering.
+  // Apply trigger-routing options. Mode is always programmed; when no mode is
+  // requested, the default policy is internal triggering.
   void set(const TriggerOptions &opts) {
-    // Only explicitly requested fields are programmed, so callers can update one aspect of
-    // the trigger path without overwriting the rest of the combiner configuration.
+    const auto mode = opts.mode.value_or(TriggerModeOption::internal);
+
+    // Only explicitly requested invert/mask fields are programmed, so callers can update one
+    // aspect of the trigger path without overwriting the rest of the combiner configuration.
     if (fpga.v.veryverbose) std::cout << "## Setting up the trigger combiner." << std::endl;
-    if (opts.mode == TriggerModeOption::internal) {
+    if (mode == TriggerModeOption::internal) {
       if (fpga.v.veryverbose) std::cout << "Trigger: internal" << std::endl;
       ct.mode(trig_mode::INT);
     }
-    if (opts.mode == TriggerModeOption::external) {
+    if (mode == TriggerModeOption::external) {
       if (fpga.v.veryverbose) std::cout << "Trigger: external" << std::endl;
       ct.mode(trig_mode::EXT);
     }
-    if (opts.mode == TriggerModeOption::misc) {
+    if (mode == TriggerModeOption::misc) {
       if (fpga.v.veryverbose) std::cout << "Trigger: misc (pushbuttons + 1PPS)" << std::endl;
       ct.mode(trig_mode::MISC);
     }
-    if (opts.mode == TriggerModeOption::any) {
+    if (mode == TriggerModeOption::any) {
       if (fpga.v.veryverbose) std::cout << "Trigger: any of" << std::endl;
       ct.mode(trig_mode::OR);
     }
-    if (opts.mode == TriggerModeOption::all) {
+    if (mode == TriggerModeOption::all) {
       if (fpga.v.veryverbose) std::cout << "Trigger: all of" << std::endl;
       ct.mode(trig_mode::AND);
     }
-    if (opts.mode == TriggerModeOption::standard) {
+    if (mode == TriggerModeOption::standard) {
       if (fpga.v.veryverbose) std::cout << "Trigger: standard (any of)" << std::endl;
       ct.invert_ext(~0); // invert all external signals (they are pulled up!)
       ct.mode(trig_mode::OR);
