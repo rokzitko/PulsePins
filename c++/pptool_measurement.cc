@@ -66,6 +66,10 @@ int timestamp_reader_rc(const std::exception_ptr &eptr) {
   return msg.find("Timeout") != std::string::npos ? RC_TIMEOUT : RC_EXCEPTION;
 }
 
+bool timestamp_aggregation_stopped(const std::exception_ptr &eptr) {
+  return eptr && exception_message(eptr).find("timestamp aggregation stopped") != std::string::npos;
+}
+
 struct TimestampSession {
   timestamp ts;
   double timeout;
@@ -372,7 +376,7 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
     if (stop_requested.load())
       throw std::runtime_error("timestamp aggregation stopped");
     try {
-      const auto A = session.ts.read_with_timeout(session.timeout);
+      const auto A = session.ts.read_with_timeout(session.timeout, false, [&stop_requested] { return stop_requested.load(); });
       if (!agg.submitA(A))
         throw std::runtime_error("timestamp aggregation stopped");
       return A;
@@ -385,7 +389,7 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
     if (stop_requested.load())
       throw std::runtime_error("timestamp aggregation stopped");
     try {
-      const auto B = session.ts.readA_with_timeout(session.timeout);
+      const auto B = session.ts.readA_with_timeout(session.timeout, false, [&stop_requested] { return stop_requested.load(); });
       if (!agg.submitB(B))
         throw std::runtime_error("timestamp aggregation stopped");
       return B;
@@ -405,7 +409,14 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
     std::lock_guard<std::mutex> lock(lockcout);
     std::cerr << "GPSDO aggregation failed: " << exception_message(aggregation_failure) << std::endl;
   }
-  return timestamp_reader_rc(pps_failure) | timestamp_reader_rc(sigA_failure) | timestamp_reader_rc(aggregation_failure);
+  const bool pps_cancelled = timestamp_aggregation_stopped(pps_failure);
+  const bool sigA_cancelled = timestamp_aggregation_stopped(sigA_failure);
+  const bool real_failure = aggregation_failure ||
+    (pps_failure && !pps_cancelled) ||
+    (sigA_failure && !sigA_cancelled);
+  const int pps_rc = (pps_cancelled && real_failure) ? RC_OK : timestamp_reader_rc(pps_failure);
+  const int sigA_rc = (sigA_cancelled && real_failure) ? RC_OK : timestamp_reader_rc(sigA_failure);
+  return pps_rc | sigA_rc | timestamp_reader_rc(aggregation_failure);
 }
 
 int pptemp(FPGA &, const InputParser &input, const Verbosity &)

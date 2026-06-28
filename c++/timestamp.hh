@@ -210,14 +210,17 @@ public:
   }
 
     // Wait until a full 64-bit PPS event record is present, then reconstruct it.
-    uint64_t read_with_timeout(const double timeout = 2.0, const bool ignore_overflow = false) {
+    template <typename StopRequested>
+    uint64_t read_with_timeout(const double timeout, const bool ignore_overflow, StopRequested stop_requested) {
     std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
     while (ff.fill() < 2) {
+      if (stop_requested())
+        throw std::runtime_error("timestamp aggregation stopped");
       if (!ignore_overflow)
         throw_if_overflow();
       auto now = std::chrono::steady_clock::now();
       auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
-      if (timeout > 0.0 && elapsed.count() > abs(timeout))
+      if (timeout > 0.0 && elapsed.count() > timeout)
         throw std::runtime_error("Timeout.");
       usleep(100); // don't hose CPU in poll loop
     }
@@ -226,20 +229,31 @@ public:
     return read();
   }
 
+  uint64_t read_with_timeout(const double timeout = 2.0, const bool ignore_overflow = false) {
+    return read_with_timeout(timeout, ignore_overflow, [] { return false; });
+  }
+
   // Wait until a full 64-bit auxiliary event record is present.
-  uint64_t readA_with_timeout(const double timeout = 2.0, const bool ignore_overflow = false) {
+  template <typename StopRequested>
+  uint64_t readA_with_timeout(const double timeout, const bool ignore_overflow, StopRequested stop_requested) {
     std::chrono::steady_clock::time_point initial_time = std::chrono::steady_clock::now();
     while (ffA.fill() < 2) {
+      if (stop_requested())
+        throw std::runtime_error("timestamp aggregation stopped");
       if (!ignore_overflow)
         throw_if_overflowA();
       auto now = std::chrono::steady_clock::now();
       auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - initial_time);
-      if (timeout > 0.0 && elapsed.count() > abs(timeout))
+      if (timeout > 0.0 && elapsed.count() > timeout)
         throw std::runtime_error("Timeout.");
       usleep(100); // don't hose CPU in poll loop
     }
     if (!ignore_overflow)
       throw_if_overflowA();
     return readA();
+  }
+
+  uint64_t readA_with_timeout(const double timeout = 2.0, const bool ignore_overflow = false) {
+    return readA_with_timeout(timeout, ignore_overflow, [] { return false; });
   }
 };

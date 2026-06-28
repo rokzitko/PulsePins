@@ -1127,6 +1127,21 @@ TEST_CASE("convert_to_BitLoad") {
   CHECK(s1bis == s2);
 }
 
+TEST_CASE("convert_to_BitLoad honors the initial output value") {
+  Sequence s1;
+  s1.push_back(el(1, BitSet(0x03)));
+  s1.push_back(el(2, BitFlip(0x01)));
+  s1.push_back(el(3, BitClear(0x10)));
+
+  Sequence s2;
+  s2.push_back(el(1, BitLoad(0x13)));
+  s2.push_back(el(2, BitLoad(0x12)));
+  s2.push_back(el(3, BitLoad(0x02)));
+
+  auto s1bis = s1.convert_to_BitLoad(0x10);
+  CHECK(s1bis == s2);
+}
+
 TEST_CASE("merge 1") {
   Sequence s1;
   s1.push_back(el(10, 42));
@@ -1629,6 +1644,22 @@ TEST_CASE("convert_for_readback_check normalizes effective output stream") {
   expected = expected.merge();
 
   convert_for_readback_check(seq);
+
+  CHECK(seq == expected);
+}
+
+TEST_CASE("convert_for_readback_check seeds conversion from current output") {
+  Sequence seq;
+  seq.push_back(el(1, BitSet(0x03)));
+  seq.push_back(el(2, BitFlip(0x01)));
+  seq.push_back(el(3, BitClear(0x10)));
+
+  Sequence expected;
+  expected.push_back(el(1, BitLoad(0x13)));
+  expected.push_back(el(2, BitLoad(0x12)));
+  expected.push_back(el(3, BitLoad(0x02)));
+
+  convert_for_readback_check(seq, 0x10);
 
   CHECK(seq == expected);
 }

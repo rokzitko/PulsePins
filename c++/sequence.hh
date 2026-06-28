@@ -205,16 +205,14 @@ public:
     // Convert regular data elements into the effective output-value stream. This is
     // mainly used for readback checking, where comparisons are done against the data
     // observed at the streamer output rather than the original update operators.
-    Sequence convert_to_BitLoad() const {
+    Sequence convert_to_BitLoad(const value_t initial_value = 0) const {
     Sequence s;
-    bool seen_regular = false;
-    value_t v_prev = 0;
+    value_t v_prev = initial_value;
     for (const auto &e: *this) {
-      const el enew = (seen_regular && e.is_regular()) ? e.as_bitload_after(v_prev) : e;
+      const el enew = e.is_regular() ? e.as_bitload_after(v_prev) : e;
       s.push_back(enew);
       if (e.is_regular()) {
         v_prev = enew.value();
-        seen_regular = true;
       }
     }
     return s;

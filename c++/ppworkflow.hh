@@ -22,6 +22,7 @@
 #include <iostream>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 #include "colors.hh"
@@ -60,9 +61,18 @@ inline void drop_count0(Sequence &s)
   }
 }
 
-inline void convert_for_readback_check(Sequence &s) {
-  auto s_new = s.convert_to_BitLoad().merge();
+inline void convert_for_readback_check(Sequence &s, const value_t initial_value = 0) {
+  auto s_new = s.convert_to_BitLoad(initial_value).merge();
   s = std::move(s_new);
+}
+
+template<typename Convert>
+inline void convert_readback_reference(Convert convert, Sequence &elements, const value_t initial_value) {
+  if constexpr (std::is_invocable_v<Convert, Sequence&, value_t>) {
+    convert(elements, initial_value);
+  } else {
+    convert(elements);
+  }
 }
 
 inline constexpr double default_readback_first_element_timeout_s = 2.0;
@@ -324,6 +334,7 @@ inline bool run_readback_check_phase(readback &rb,
                                      const Verbosity &v,
                                      Convert convert,
                                      const ReadbackTimeoutPolicy &timeout_policy,
+                                     const value_t initial_value,
                                      int &rc)
 {
   bool rb_failure = false;
@@ -331,7 +342,7 @@ inline bool run_readback_check_phase(readback &rb,
     // Readback comparison is done against the effective output stream, not necessarily
     // against the original input representation. `convert(...)` lets callers normalize
     // features such as non-BITLOAD updates before the check.
-    convert(elements);
+    convert_readback_reference(convert, elements, initial_value);
     drop_count0(elements);
     if (v.veryverbose && input.exists("-dump-converted"))
       elements.dump(std::cout, "% ");
@@ -455,7 +466,8 @@ inline int send_and_trig(Transport &tr,
   //   form before comparison.
   // - the return code accumulates multiple error bits instead of stopping at first failure.
   int rc = RC_OK;
-  auto [working_elements, final] = prepare_sequence_for_streaming(elements, input, sc.get_qout_streamer());
+  const value_t initial_value = sc.get_qout_streamer();
+  auto [working_elements, final] = prepare_sequence_for_streaming(elements, input, initial_value);
   dump_sequence(working_elements, v);
   rc |= transmit_sequence_checked(tr, sc, working_elements, v);
   if (rc & RC_TIMEOUT)
@@ -466,7 +478,7 @@ inline int send_and_trig(Transport &tr,
     return rc;
 
   const auto timeout_policy = readback_timeout_policy(input);
-  bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout_policy, rc);
+  bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout_policy, initial_value, rc);
   run_readback_dump_phase(rb, input, v, timeout_policy);
 
   // -dont_wait deliberately skips post-execution cleanup; armed/forced trigger
@@ -480,7 +492,7 @@ inline int send_and_trig(Transport &tr,
 template<typename Transport>
 inline int send_and_trig(Transport &tr, streamer_control &sc, readback &rb, counter &ctr,
                         Sequence &elements, const InputParser &input, const bool force_trigger, const Verbosity &v) {
-  return send_and_trig(tr, sc, rb, ctr, elements, input, force_trigger, v, identity);
+  return send_and_trig(tr, sc, rb, ctr, elements, input, force_trigger, v, convert_for_readback_check);
 }
 
 constexpr bool force_trigger = true;
