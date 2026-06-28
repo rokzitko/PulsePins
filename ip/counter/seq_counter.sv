@@ -33,7 +33,7 @@ module seq_counter
 );
 
 localparam [length-1:0] max_nr = {length{1'b1}}; // last histogram index
-localparam width = $clog2(length);               // number of bits needed for the fill counter
+localparam width = $clog2(length+1);             // number of bits needed for the fill counter
 
 logic [width_ctr-1:0] ctr [0:max_nr];   // internal counters
 logic [width_ctr-1:0] ctr_r [0:max_nr]; // registered counters for readout

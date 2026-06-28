@@ -83,7 +83,7 @@ end
 always_ff @(posedge d_clk) begin
   if (reset)
     overflow <= 0;
-  else if (valid && ctr_total == {width_ctr{1'b1}})
+  else if (ctr_total == {width_ctr{1'b1}})
     overflow <= 1;
 end
 

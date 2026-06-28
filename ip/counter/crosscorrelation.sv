@@ -16,7 +16,7 @@
 module crosscorrelation
 #(
   parameter length = 8,                    // size of the shift register
-  parameter width_addr = $clog2(length),   // width of the address bus for readout
+  parameter width_addr = $clog2(length+1), // width of the address bus for readout
   parameter width_bus = 32,
   parameter width_ctr = 64
 )(
