@@ -59,8 +59,15 @@ module rl_decoder
 
   // Convenience
   wire can_emit = (curr_cnt != '0) && !out_almost_full;
+  wire finishing_run = can_emit && (curr_cnt == WIDTH_COUNTER'(1));
+  wire can_load_next = (curr_cnt == '0) || finishing_run;
+  wire load_fire = !reset && can_load_next && in_valid;
+  wire [WIDTH_DATA-1:0] load_base_value = finishing_run ? curr_value : prev_value;
 
-  // ---- Main process (no prefetch; bubbles allowed between runs) ----
+  always_comb
+    in_rdreq = load_fire;
+
+  // ---- Main process ----
   always_ff @(posedge clk) begin
     if (reset) begin
       prev_value  <= initial_data;
@@ -70,11 +77,9 @@ module rl_decoder
       out_wrreq   <= 1'b0;
       out_data    <= '0;
       out_control <= '0;
-      in_rdreq    <= 1'b0;
     end else begin
       // defaults each cycle
       out_wrreq <= 1'b0;
-      in_rdreq  <= 1'b0;
 
       // 1) Emit when we have repeats and sink is ready
       if (can_emit) begin
@@ -85,21 +90,15 @@ module rl_decoder
         prev_value  <= curr_value;     // track last emitted element
       end
 
-      // 2) If current run is exhausted, try to load a new one (one bubble acceptable)
-      if (curr_cnt == '0) begin
-        if (in_valid) begin
-          if (in_counter == '0) begin
-            // Skip zero-length run (bubble); pop and look again next cycle
-            in_rdreq <= 1'b1;
-          end else begin
-            // Consume tuple and begin a new run
-            in_rdreq     <= 1'b1;
-            curr_value   <= apply_op(prev_value, in_data, in_opmode);
-            curr_cnt     <= in_counter;
-            curr_control <= in_control;
-            // Note: first element will be emitted on a later cycle when !out_almost_full
-          end
-        end
+      // 2) If current run is exhausted or finishing now, try to load a new one.
+      // Loading on the final emit avoids a run-boundary bubble when clk and streamer_clk match.
+      if (load_fire && in_counter != '0) begin
+        // Consume tuple and begin a new run. Zero-length runs are popped and ignored.
+        curr_value   <= apply_op(load_base_value, in_data, in_opmode);
+        curr_cnt     <= in_counter;
+        curr_control <= in_control;
+        // Note: if we loaded while idle, the first element emits on a later cycle;
+        // if we loaded while finishing a run, the next cycle can emit immediately.
       end
     end
   end
