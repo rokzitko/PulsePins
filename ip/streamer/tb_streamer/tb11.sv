@@ -36,6 +36,7 @@ reg rdreq;
 
 wire [WIDTH_DATA-1:0] qout;
 wire qout_valid;
+wire qout_written;
 wire strobe;
 wire strobe_enable;
 wire almost_full;
@@ -55,6 +56,7 @@ output_fifo dut (
   .rdreq(rdreq),
   .qout(qout),
   .qout_valid(qout_valid),
+  .qout_written(qout_written),
   .strobe(strobe),
   .strobe_enable(strobe_enable),
   .almost_full(almost_full),

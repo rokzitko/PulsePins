@@ -13,6 +13,8 @@
 
 module tb_st_7;
 
+localparam logic [WIDTH_DATA-1:0] INITIAL_VALUE_STREAMER = WIDTH_DATA'(32'ha5a5_a5a5);
+
 logic clk;
 logic reset;
 
@@ -68,7 +70,7 @@ streamer dut(
   .input_ready,
   .gate_enable,
   .initial_value('0),
-  .initial_value_streamer('0),
+  .initial_value_streamer(INITIAL_VALUE_STREAMER),
   .streamer_clk(clk),
   .qout,
   .qout_valid,
@@ -124,8 +126,10 @@ initial begin
   used_before_gate = dut.fifo0.used;
   repeat (4) @(posedge clk);
   assert(gate_enable == 0) else $fatal;
+  assert(dut.rdreq == 0) else $fatal;
+  assert(dut.trigger_latch == 0) else $fatal;
   assert(dut.fifo0.used == used_before_gate) else $fatal;
-  assert(qout == 0) else $fatal;
+  assert(qout == INITIAL_VALUE_STREAMER) else $fatal;
   assert(qout_valid == 0) else $fatal;
   assert(done == 0) else $fatal;
 end

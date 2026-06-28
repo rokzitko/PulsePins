@@ -149,6 +149,7 @@ sync_bit_3stage sb_inst(
 assign out_q = {out_control, out_data};
 
 logic [WIDTH_DATA-1:0] qout_fifo; // output from FIFO
+logic qout_written;
 logic retrig_requested;
 logic rdreq;
 
@@ -162,6 +163,7 @@ output_fifo fifo0 (
 
     .qout(qout_fifo),
     .qout_valid(qout_valid),
+    .qout_written(qout_written),
     .rdreq(rdreq),
     .rdclk(streamer_clk),
     .rdrst(streamer_rst),
@@ -183,7 +185,7 @@ logic trigger_latch;
 always_ff @(posedge streamer_clk) begin
   if (streamer_rst) begin
     trigger_latch <= 0;
-  end else if (trigger_activated) begin
+  end else if (qout_written) begin
     trigger_latch <= 1;
   end
 end

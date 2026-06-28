@@ -19,6 +19,7 @@ input wire rdreq,              // if 1, data is read from FIFO each time rdclk i
 
 output reg [WIDTH_DATA-1:0] qout,  // output data
 output reg qout_valid,         // valid/enable signal
+output wire qout_written,      // one-cycle pulse when qout is updated
 output reg strobe,             // clock/strobe for output data (inverted rdclk)
 output reg strobe_enable,      // Goes high when all conditions for streaming are fulfilled. Signal is exported for debugging purposes.
 output reg almost_full,        // 1 if the buffer is too full, used for input data throttling
@@ -157,13 +158,14 @@ logic data_update, valid, wr_last;
 assign data_update = read_fire && is_data && !done;
 assign valid       = data_update && !is_no_strobe;
 assign wr_last     = read_fire && is_last && !done;
+assign qout_written = !rdrst && (data_update || wr_last);
 
 always_ff @(posedge rdclk) begin
   if (rdrst) begin
     qout <= 0;
     qout_valid <= 0;
   end else begin
-    if (data_update || wr_last) begin
+    if (qout_written) begin
       qout <= (is_prng ? rnd[WIDTH_DATA-1:0] : q);
      end else begin
       qout <= qout; // this allows to keep the "final value" in the output register
