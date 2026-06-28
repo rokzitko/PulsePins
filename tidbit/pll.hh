@@ -11,6 +11,9 @@
 
 enum class pll_mode { waitrequest, polling };
 
+inline constexpr int pll_counter_min = 1;
+inline constexpr int pll_counter_max = 510;
+
 // Documentation:
 // - AN661
 // - Altera Phase-Locked Loop (Altera PLL) IP Core User Guide, 2017.06.16
@@ -81,8 +84,8 @@ class pll {
    // ex=true: execute the reconfiguration; ex=false: part of a longer sequences of
    void set_N(const int val, const bool ex) { // val = Total_div
      if (ex) setmode(pll_mode::waitrequest);
-     if (val < 1 || val >= 512)
-       throw std::out_of_range("PLL N divider must be in range [1, 511]");
+     if (val < pll_counter_min || val > pll_counter_max)
+       throw std::out_of_range("PLL N divider must be in range [1, 510]");
      const uint8_t half = val/2;
      const uint8_t rest = val-half;
      const uint32_t x = half*256 + rest;
@@ -92,8 +95,8 @@ class pll {
    }
    void set_M(const int val, const bool ex) { // val = Total_div
      if (ex) setmode(pll_mode::waitrequest);
-     if (val < 1 || val >= 512)
-       throw std::out_of_range("PLL M divider must be in range [1, 511]");
+     if (val < pll_counter_min || val > pll_counter_max)
+       throw std::out_of_range("PLL M divider must be in range [1, 510]");
      const uint8_t half = val/2;
      const uint8_t rest = val-half;
      const uint32_t x = half*256 + rest;
@@ -103,8 +106,8 @@ class pll {
    }
    void set_C(const int val, const bool ex, int ndx = 0) { // val = Total_div
      if (ex) setmode(pll_mode::waitrequest);
-     if (val < 1 || val >= 512)
-       throw std::out_of_range("PLL C divider must be in range [1, 511]");
+     if (val < pll_counter_min || val > pll_counter_max)
+       throw std::out_of_range("PLL C divider must be in range [1, 510]");
      if (ndx < 0 || ndx > 17)
        throw std::out_of_range("PLL C counter index must be in range [0, 17]");
      const uint8_t half = val/2;

@@ -26,8 +26,8 @@ constexpr double vco_max_hz = 1600.0e6;
 constexpr double preferred_vco_hz = 1000.0e6;
 constexpr int counter_min = 1;
 // The current reconfiguration helper represents high/low counter fields as uint8_t values
-// and asserts val < 512, so calculated profiles are limited to the programmable range here.
-constexpr int counter_max = 511;
+// and encodes each half directly, so calculated profiles are limited to the safe field range.
+constexpr int counter_max = 510;
 constexpr double output_min_hz = vco_min_hz / counter_max;
 constexpr double output_max_hz = vco_max_hz / counter_min;
 

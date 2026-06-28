@@ -414,7 +414,7 @@ void WebGuiController::reset_hardware_locked(const ClockConfigState &clocking_st
 
   play_streamer.set_initial_value_opts(config.streamer_options);
   fpga.output_enable(true);
-  play_streamer.sc.reset();
+  play_streamer.reset_for_active_clock();
   readback_path.reset();
   counters.reset_all();
   snapshot.streamer.qout_streamer = config.streamer_options.initial_value;

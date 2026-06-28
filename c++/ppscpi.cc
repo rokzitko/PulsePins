@@ -70,7 +70,7 @@ private:
   }
 
   void prepare_stream_run() {
-    s.sc.reset();
+    s.reset_for_active_clock();
     rb.reset();
     ctr.reset_all();
   }

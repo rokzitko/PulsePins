@@ -1162,6 +1162,14 @@ TEST_CASE("merge keeps adjacent regular elements with different control separate
   CHECK(seq.merge() == seq);
 }
 
+TEST_CASE("merge rejects count overflow") {
+  Sequence seq;
+  seq.push_back(el(static_cast<count_t>(max_count_t), 0x42));
+  seq.push_back(el(1, 0x42));
+
+  CHECK_THROWS_AS(seq.merge(), std::overflow_error);
+}
+
 TEST_CASE("parseVerilogInt") {
   CHECK(parseVerilogInt("8'hFF") == 255);
   CHECK(parseVerilogInt("12'o777") == 511);
@@ -1259,6 +1267,13 @@ TEST_CASE("pll calculator finds strict exact 66 MHz solution") {
 
 TEST_CASE("pll calculator rejects unreachable strict low frequency") {
   CHECK(!pllcalc::calculate("10k").has_value());
+}
+
+TEST_CASE("pll calculator respects encoded divider field limit") {
+  CHECK(pllcalc::counter_max == 510);
+  CHECK(pllcalc::is_strict_candidate(5, 60, pllcalc::counter_max));
+  CHECK(!pllcalc::is_strict_candidate(5, 60, pllcalc::counter_max + 1));
+  CHECK(pllcalc::calculate(pllcalc::vco_min_hz / (pllcalc::counter_max + 1)).has_value() == false);
 }
 
 TEST_CASE("pll profile resolution preserves presets and raw strings") {
@@ -1899,6 +1914,19 @@ TEST_CASE("write_VCD exports simple BitLoad waveform") {
   CHECK(contains(vcd, "b" + value_to_vcd_binary(0x1) + " !\n"));
   CHECK(contains(vcd, "#3\n"));
   CHECK(contains(vcd, "b" + value_to_vcd_binary(0x3) + " !\n"));
+}
+
+TEST_CASE("write_VCD uses 64-bit timestamps") {
+  Sequence seq;
+  seq.push_back(el(static_cast<count_t>(max_count_t), 0x1));
+  seq.push_back(el(1, 0x3));
+
+  std::ostringstream out;
+  seq.write_VCD(out);
+  const std::string vcd = out.str();
+
+  CHECK(contains(vcd, "#4294967295\n"));
+  CHECK(contains(vcd, "#4294967296\n"));
 }
 
 TEST_CASE("write_VCD merges unchanged adjacent output states") {

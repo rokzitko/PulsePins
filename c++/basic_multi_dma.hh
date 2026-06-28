@@ -73,6 +73,10 @@ public:
   void set_initial_value(const InputParser &input, const std::string param_name = "-i") {
     set_initial_value_opts(resolve_streamer_options(input, param_name), param_name);
   }
+
+  void reset_for_active_clock(const int periods = 2) {
+    sc.reset_with_wait([this, periods] { fpga.sleep_for_at_least_n_streamer_periods(periods); });
+  }
 };
 
 // Single-stream bring-up helper using the FIFO transport path.
@@ -97,7 +101,7 @@ public:
       fpga.output_enable(true);
       mux.channel(1);
       combiner(fpga.dev_h2f, address_map::h2f::combiner_qout, "combiner_qout").reset_passthrough();
-      sc.reset();
+      reset_for_active_clock();
     }
 
   streamer(const InputParser &input,
@@ -155,13 +159,13 @@ public:
       // single-stream helper.
       fpga.output_enable(true);
       s1.set_initial_value_opts(s1_opts, "-i1");
-      s1.sc.reset();
+      s1.reset_for_active_clock();
       s2.set_initial_value_opts(s2_opts, "-i2");
-      s2.sc.reset();
+      s2.reset_for_active_clock();
       s3.set_initial_value_opts(s3_opts, "-i3");
-      s3.sc.reset();
+      s3.reset_for_active_clock();
       s4.set_initial_value_opts(s4_opts, "-i4");
-      s4.sc.reset();
+      s4.reset_for_active_clock();
     }
 
   multistreamer(const InputParser &input, FPGA &_fpga) :

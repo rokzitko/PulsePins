@@ -244,7 +244,9 @@ public:
       std::cout << "Waiting for streamer to complete" << std::endl;
     uint64_t cnt = 0;
     while (!(done() || buffer_error()) && cnt < max_cnt) { sleep_1ms(); cnt++; }
-    if (cnt == max_cnt) {
+    if (buffer_error()) {
+      rc = RC_ERROR_BUFFER_ERROR;
+    } else if (cnt == max_cnt) {
       rc = RC_TIMEOUT;
       if (v.verbose)
         std::cout << "wait_to_complete(): " << streamer_completion_timeout_text << "." << std::endl;
@@ -286,21 +288,38 @@ public:
     F << ")" << std::endl;
   }
 
-  // Asserts reset signal for 'usleep_time' microseconds
-  void reset_streamer(const uint32_t usleep_time = 10) {
+  // Asserts reset signal for the caller-provided wait interval.
+  template<typename Wait>
+  void reset_streamer_with_wait(Wait wait) {
     BITMASK_SET(control, RESET);
     sc.write(control);
-    usleep(usleep_time);
+    try {
+      wait();
+    } catch (...) {
+      BITMASK_CLEAR(control, RESET);
+      sc.write(control);
+      throw;
+    }
     BITMASK_CLEAR(control, RESET);
     sc.write(control);
+  }
+
+  // Asserts reset signal for 'usleep_time' microseconds.
+  void reset_streamer(const uint32_t usleep_time = 10) {
+    reset_streamer_with_wait([usleep_time] { usleep(usleep_time); });
+  }
+
+  template<typename Wait>
+  void reset_with_wait(Wait wait) {
+    control = control_initial_value;
+    sc.write(control);
+    reset_streamer_with_wait(wait);
   }
 
   // Full software-visible reset: restore the control word to its persistent defaults, then
   // pulse the streamer reset bit.
   void reset(const uint32_t usleep_time = 10) {
-    control = control_initial_value;
-    sc.write(control);
-    reset_streamer(usleep_time);
+    reset_with_wait([usleep_time] { usleep(usleep_time); });
   }
 
   // Unconditionally stop streaming

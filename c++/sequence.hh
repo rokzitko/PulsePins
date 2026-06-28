@@ -18,6 +18,7 @@
 #include <deque>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -150,6 +151,14 @@ inline void validate_binary_header(const BinarySequenceHeader &h)
 // Thin extension of `std::deque<el>` with helpers that reflect the semantics of a
 // pulse sequence rather than just container operations.
 class Sequence : public std::deque<el> {
+private:
+  static count_t checked_count_sum(const count_t x, const count_t y) {
+    const uint64_t sum = uint64_t(x) + uint64_t(y);
+    if (sum > max_count_t)
+      throw std::overflow_error("Sequence count overflow while merging adjacent elements");
+    return static_cast<count_t>(sum);
+  }
+
 public:
   using Base = std::deque<el>;
   using Base::Base;
@@ -216,7 +225,7 @@ public:
     Sequence s = *this; // make a copy
     merge_adjacent<el>(s,
                         [](const el &x, const el &y){ return x.is_regular() && y.is_regular() && x.control() == y.control() && x.value() == y.value(); },
-                        [](const el &x, const el &y){ return x.with_count(x.count() + y.count()); });
+                        [](const el &x, const el &y){ return x.with_count(checked_count_sum(x.count(), y.count())); });
     return s;
   }
 
@@ -274,12 +283,14 @@ public:
       return;
     }
 
-    count_t time = 0;
+    uint64_t time = 0;
     value_t last_value = s.front().value();
     f << "#0\n";
     f << "b" << value_to_vcd_binary(last_value) << " !\n";
 
     for (size_t i = 0; i < s.size(); ++i) {
+      if (time > std::numeric_limits<uint64_t>::max() - s[i].count())
+        throw std::overflow_error("VCD timestamp overflow");
       time += s[i].count();
       if (i + 1 >= s.size())
         break;
