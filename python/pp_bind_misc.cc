@@ -5,11 +5,13 @@
 #include <vector>
 
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/vector.h>
 
 #include "pp_bind.hh"
 
 #include "config.h"
+#include "options.hh"
 #include "ppcommon.hh"
 #include "ppmisc.hh"
 
@@ -39,6 +41,30 @@ void bind_misc(nb::module_ &m) {
     .def("add_with_arg", &InputParser::add_with_arg);
 
   m.def("set_verbosity", &set_verbosity, "Parse input flags and return a Verbosity struct");
+
+  nb::class_<PllOptions>(m, "PllOptions")
+    .def(nb::init<>())
+    .def_rw("profile", &PllOptions::profile)
+    .def_rw("charge_pump", &PllOptions::charge_pump)
+    .def_rw("bandwidth", &PllOptions::bandwidth);
+
+  nb::enum_<TriggerModeOption>(m, "TriggerModeOption")
+    .value("internal", TriggerModeOption::internal)
+    .value("external", TriggerModeOption::external)
+    .value("misc", TriggerModeOption::misc)
+    .value("any", TriggerModeOption::any)
+    .value("all", TriggerModeOption::all);
+
+  nb::class_<TriggerOptions>(m, "TriggerOptions")
+    .def(nb::init<>())
+    .def_rw("mode", &TriggerOptions::mode)
+    .def_rw("invert_result", &TriggerOptions::invert_result)
+    .def_rw("invert_int", &TriggerOptions::invert_int)
+    .def_rw("invert_ext", &TriggerOptions::invert_ext)
+    .def_rw("invert_misc", &TriggerOptions::invert_misc)
+    .def_rw("mask_int", &TriggerOptions::mask_int)
+    .def_rw("mask_ext", &TriggerOptions::mask_ext)
+    .def_rw("mask_misc", &TriggerOptions::mask_misc);
 
   m.attr("P_FIFO_IN1") = P_FIFO_IN1;
   m.attr("P_FIFO_IN2") = P_FIFO_IN2;

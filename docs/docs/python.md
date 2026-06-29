@@ -201,7 +201,11 @@ decoded = pp.el.from_regular_token("xr", 7, 0x55)
 assert decoded.sequence_record() == "xr 7 0x55"
 ```
 
-Bindings that wrap MMIO-backed hardware objects own long-lived board resources. The module keeps the immediate `mm`/`FPGA` constructor arguments alive for the wrapper object.
+Bindings that wrap MMIO-backed hardware objects own long-lived board resources. The module keeps the immediate `mm`/`FPGA` constructor arguments alive for the wrapper object. `loc` objects returned by `mm.get_loc(...)` also keep their source `mm` mapping alive, so `loc = pp.mm(...).get_loc(...)` remains valid as long as `loc` is alive.
+
+The board-native API exposes the structured C++ option types used by clock and trigger helpers. Use `pp.PllOptions()` with `profile`, `charge_pump`, and `bandwidth` for `pll_core_clk.set_core_clk(...)` and `pll_int_clk.set_int_clk(...)`. Use `pp.TriggerOptions()` with `mode`, invert fields, and mask fields for `trigger(...)` and `trigger.set(...)`; `mode` values come from `pp.TriggerModeOption`, for example `pp.TriggerModeOption.external`. Optional fields use `None` when unset.
+
+Python method defaults match the C++ defaults for `loc.read(...)`, `loc.write(...)`, `mm.get_ptr(...)`, `mm.get_loc(...)`, `streamer_fifo.out(...)`, and `streamer_dma.send_sequence(...)`.
 
 The small helper scripts in [`python/pptool.py`]({{ source_file("python/pptool.py") }}) and [`tests/test2.py`]({{ source_file("tests/test2.py") }}) use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` disabling the readback timeout.
 

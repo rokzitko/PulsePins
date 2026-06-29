@@ -80,7 +80,7 @@ void bind_streaming(nb::module_ &m) {
     .def("send", nb::overload_cast<const uintmax_t, const uint32_t>(&c_dma::send))
     .def("read_in_chunks", &c_dma::read_in_chunks);
 
-  nb::class_<streamer_dma, c_dma>(m, "streamer_dma")
+  nb::class_<streamer_dma>(m, "streamer_dma")
     .def("__init__", [](streamer_dma *self,
                          const mm &dev,
                          const std::uintptr_t csr_base,
@@ -108,9 +108,11 @@ void bind_streaming(nb::module_ &m) {
     .def("verify", &streamer_dma::verify)
     .def("report", &streamer_dma::report)
     .def("transfer", &streamer_dma::transfer)
-    .def("send_sequence", &streamer_dma::send_sequence);
+    .def("send_sequence", &streamer_dma::send_sequence,
+         "elements"_a,
+         "verify_buffer"_a = true);
 
-  nb::class_<streamer_fifo, fifo>(m, "streamer_fifo")
+  nb::class_<streamer_fifo>(m, "streamer_fifo")
     .def("__init__", [](streamer_fifo *self,
                          const mm &dev,
                          const std::uintptr_t base,
@@ -123,7 +125,9 @@ void bind_streaming(nb::module_ &m) {
          "base"_a,
          "in_csr_base"_a,
          nb::keep_alive<1, 2>())
-    .def("out", &streamer_fifo::out)
+    .def("out", &streamer_fifo::out,
+         "e"_a,
+         "dump"_a = false)
     .def("check_fill_status", &streamer_fifo::check_fill_status)
     .def("report", &streamer_fifo::report)
     .def("send_sequence", &streamer_fifo::send_sequence);

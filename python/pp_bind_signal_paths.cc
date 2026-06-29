@@ -134,7 +134,8 @@ void bind_signal_paths(nb::module_ &m) {
 
   nb::class_<trigger>(m, "trigger")
     .def(nb::init<const InputParser &, const FPGA &>(), nb::keep_alive<1, 3>())
-    .def("set", &trigger::set, "input"_a);
+    .def(nb::init<const TriggerOptions &, const FPGA &>(), nb::keep_alive<1, 3>())
+    .def("set", &trigger::set, "opts"_a);
 
   nb::class_<trigger_ext, pio_in>(m, "trigger_ext")
     .def("__init__", [](trigger_ext *self,

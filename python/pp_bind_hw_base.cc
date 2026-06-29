@@ -18,14 +18,19 @@ using namespace nb::literals;
 void bind_hw_base(nb::module_ &m) {
   nb::class_<loc>(m, "loc")
     .def(nb::init<std::uintptr_t>())
-    .def("write", &loc::write)
-    .def("read", &loc::read)
+    .def("write", &loc::write, "val"_a, "offset"_a = uint32_t{0})
+    .def("read", &loc::read, "offset"_a = uint32_t{0})
     .def("get_ptr", &loc::get_ptr);
 
   nb::class_<mm>(m, "mm")
     .def(nb::init<std::uintptr_t, std::uintptr_t>())
-    .def("get_ptr", &mm::get_ptr)
-    .def("get_loc", &mm::get_loc);
+    .def("get_ptr", &mm::get_ptr,
+         "ptr_base"_a = std::uintptr_t{0},
+         "shift"_a = std::uintptr_t{0})
+    .def("get_loc", &mm::get_loc,
+         "ptr_base"_a = std::uintptr_t{0},
+         "shift"_a = std::uintptr_t{0},
+         nb::keep_alive<0, 1>());
 
   nb::class_<MGR>(m, "MGR")
     .def(nb::init<mm &, const Verbosity &>(),
@@ -110,9 +115,13 @@ void bind_hw_base(nb::module_ &m) {
 
   nb::class_<pll_core_clk>(m, "pll_core_clk")
     .def(nb::init<mm &>(), nb::keep_alive<1, 2>())
-    .def("set_core_clk", &pll_core_clk::set_core_clk);
+    .def("set_core_clk", &pll_core_clk::set_core_clk,
+         "opts"_a,
+         "verbosity"_a);
 
   nb::class_<pll_int_clk>(m, "pll_int_clk")
     .def(nb::init<mm &>(), nb::keep_alive<1, 2>())
-    .def("set_int_clk", &pll_int_clk::set_int_clk);
+    .def("set_int_clk", &pll_int_clk::set_int_clk,
+         "opts"_a,
+         "verbosity"_a);
 }

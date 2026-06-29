@@ -91,6 +91,39 @@ def test_InputParser_add_and_add_with_arg():
    assert p.exists("-flag") is True
    assert p.get_string("-name", "") == "value"
 
+
+def test_PllOptions_bindings():
+   opts = pp.PllOptions()
+   assert opts.profile == ""
+   assert opts.charge_pump is None
+   assert opts.bandwidth is None
+
+   opts.profile = "100M"
+   opts.charge_pump = 1
+   opts.bandwidth = 7
+   assert opts.profile == "100M"
+   assert opts.charge_pump == 1
+   assert opts.bandwidth == 7
+
+
+def test_TriggerOptions_bindings():
+   opts = pp.TriggerOptions()
+   assert opts.mode is None
+   assert opts.invert_result is None
+   assert opts.mask_ext is None
+
+   opts.mode = pp.TriggerModeOption.external
+   opts.invert_result = 1
+   opts.mask_ext = 0x3
+   assert opts.mode == pp.TriggerModeOption.external
+   assert opts.invert_result == 1
+   assert opts.mask_ext == 0x3
+
+
+def test_streamer_transports_do_not_publish_private_cpp_bases():
+   assert not issubclass(pp.streamer_dma, pp.c_dma)
+   assert not issubclass(pp.streamer_fifo, pp.fifo)
+
 def test_Counter():
    c = pp.Counter(10)
    assert c.count() == 10
