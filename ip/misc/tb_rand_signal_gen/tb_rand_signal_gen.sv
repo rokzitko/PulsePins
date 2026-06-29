@@ -119,7 +119,7 @@ module tb_rand_signal_gen;
 
         // Loose self-check (optional)
         if ((mean < (0.5 - MEAN_TOL)) || (mean > (0.5 + MEAN_TOL))) begin
-            $error("Mean out of tolerance: mean=%.8f (tol=±%.6f)", mean, MEAN_TOL);
+            $fatal(1, "Mean out of tolerance: mean=%.8f (tol=±%.6f)", mean, MEAN_TOL);
         end else begin
             $display("PASS: mean within ±%.6f of 0.5", MEAN_TOL);
         end

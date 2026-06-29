@@ -585,8 +585,9 @@ def test_sequence_binary_roundtrip_control_flow_and_force_trigger():
 @pytest.mark.hardware
 def test_readback_mode_set_smoke(fpga, dev_h2f):
    rb = make_readback(fpga, dev_h2f)
-   rb.mode(0)
    rb.mode(1)
+   with pytest.raises(RuntimeError, match="WEIRD_CLOCK"):
+      rb.mode(0)
 
 
 @pytest.mark.hardware

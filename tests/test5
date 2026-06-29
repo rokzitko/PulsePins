@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 pptest 5 -c 1 -check
 pptest 5 -c 10 -check
 pptest 5 -c 100 -check

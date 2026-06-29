@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 pptest 21 -vmin 0 -vmax 2.5 -vstep 0.1 -dwell 0.2 -spi_clock 50e6 -check
 pptest 21 -vmin 0 -vmax 2.5 -vstep 0.1 -dwell 0.2 -spi_clock 30e6 -check
 pptest 21 -vmin 0 -vmax 2.5 -vstep 0.1 -dwell 0.2 -spi_clock 20e6 -check

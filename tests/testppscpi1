@@ -1,12 +1,12 @@
 #!/bin/bash
 # Note 1: we are making two separate connections
-# Note 2: we need to sleep long enough so that the clock ferquency measurement is performed
+# Note 2: readiness polling waits until the clock frequency measurement is available
 
-ppscpi &
-sleep .2
-RESPONSE=$(echo "*IDN?" | nc localhost 5025 2>/dev/null)
-sleep .1
-echo "TERMINATE" | nc localhost 5025
+set -euo pipefail
+source "$(dirname "$0")/testppscpi_common.sh"
+
+start_ppscpi
+RESPONSE="${READY_RESPONSE}"
 
 RED="\033[31m"
 GREEN="\033[32m"

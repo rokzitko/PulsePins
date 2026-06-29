@@ -1,6 +1,8 @@
 #!/bin/bash
-ppscpi &
-sleep .2
+set -euo pipefail
+source "$(dirname "$0")/testppscpi_common.sh"
+
+start_ppscpi
 RESPONSE=$(nc localhost 5025 2>/dev/null <<'EOF'
 *IDN?
 CHECK ON

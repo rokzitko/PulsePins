@@ -1,3 +1,4 @@
 #!/bin/bash
-source ../defs.sh
+set -e
+source "$(dirname "$0")/../defs.sh"
 #pptest 16 -c 10_000 -cycles 10_000  -core_pll 20M

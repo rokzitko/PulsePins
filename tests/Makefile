@@ -3,8 +3,8 @@ SCP_TARGET ?= $(TARGETHOST)
 
 .PHONY: copy copy_img
 
-LIST1 = run_all_tests run_all_tests_forever defs.sh
-LIST2 = test* sequence.* vcd.*
+LIST1 = run_all_tests run_all_tests_forever
+LIST2 = test* sequence.* vcd.* defs.sh
 
 copy:
 	ssh $(SCP_TARGET) "mkdir -p tests"

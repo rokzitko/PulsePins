@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 
 # Random final-output coverage. These commands are copied from existing test* scripts
 # and add -random_final only to cases without an explicit terminal value.

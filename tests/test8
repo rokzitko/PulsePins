@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 pptest 8 -c 1 -v 200 -check -dump-converted # Problematic at the highest frequencies ??
 pptest 8 -c 2 -v 200 -check -dump-converted
 pptest 8 -c 12 -v 400 -check -dump-converted

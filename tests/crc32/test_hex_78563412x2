@@ -1,2 +1,4 @@
 #!/bin/bash
-printf '7856341278563412' | xxd -r -p | ./crc32
+expected=51705056
+got=$(printf '7856341278563412' | xxd -r -p | ./crc32)
+test "$got" = "$expected" && echo "OK ($got)" || { echo "FAIL: got $got expected $expected"; exit 1; }

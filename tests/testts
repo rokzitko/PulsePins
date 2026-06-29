@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 ppts -nr 5
 # Timeout -> non-zero RC, hence || :
 ppts -nr 10 -timeout 3.0 -selA 0 -sigA || :

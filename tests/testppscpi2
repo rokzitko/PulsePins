@@ -1,9 +1,9 @@
 #!/bin/bash
-ppscpi &
-sleep .2
-RESPONSE=$(echo "TEST1" | nc localhost 5025 2>/dev/null)
-sleep .1
-echo "TERMINATE" | nc localhost 5025
+set -euo pipefail
+source "$(dirname "$0")/testppscpi_common.sh"
+
+start_ppscpi
+RESPONSE="$(ppscpi_query "TEST1")"
 
 RED="\033[31m"
 GREEN="\033[32m"

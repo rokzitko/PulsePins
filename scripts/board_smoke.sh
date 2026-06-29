@@ -260,7 +260,8 @@ smoke_ppscpi() {
   ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" 'exec ./ppscpi' &
   PPSCPI_SSH_PID=$!
 
-  python3 - <<'PY'
+  local python_rc
+  if python3 - <<'PY'
 import os
 import socket
 import time
@@ -307,47 +308,73 @@ with connect_ready_socket() as sock:
         print(f"{cmd} -> {reply}")
         return reply
 
+    def expect(cmd: str, expected: str) -> str:
+        reply = ask(cmd)
+        if reply != expected:
+            raise SystemExit(f"{cmd}: got {reply!r}, expected {expected!r}")
+        return reply
+
+    def require_contains(text: str, needle: str, label: str) -> None:
+        if needle not in text:
+            raise SystemExit(f"{label}: expected {needle!r} in {text!r}")
+
     print("subcheck: built-in TEST1")
-    assert ask("TEST1") == "SUCCESS"
+    expect("TEST1", "SUCCESS")
 
     print("subcheck: CHECK state toggles and forced stream succeeds")
     send_only("CHECK ON")
-    assert ask("CHECK?") == "TRUE"
+    expect("CHECK?", "TRUE")
     send_only("CHECK OFF")
-    assert ask("CHECK?") == "FALSE"
-    assert ask("SEQ d 1 0x1 f") == "LOADED"
-    assert ask("STREAM") == "SUCCESS"
-    assert ask("SYST:ERR?") == '0, "No error"'
+    expect("CHECK?", "FALSE")
+    expect("SEQ d 1 0x1 f", "LOADED")
+    expect("STREAM", "SUCCESS")
+    expect("SYST:ERR?", '0, "No error"')
 
     print("subcheck: checked non-strobed stream reports execution error")
     send_only("CHECK ON")
-    assert ask("CHECK?") == "TRUE"
-    assert ask("SEQ dn 1 0x1 f") == "LOADED"
-    assert ask("STREAM") == "FAILURE"
+    expect("CHECK?", "TRUE")
+    expect("SEQ dn 1 0x1 f", "LOADED")
+    expect("STREAM", "FAILURE")
     error_text = ask("SYST:ERR?")
-    assert "STREAM failed with rc=" in error_text
-    assert "timeout" in error_text
-    assert ask("SYST:ERR?") == '0, "No error"'
+    require_contains(error_text, "STREAM failed with rc=", "stream error")
+    require_contains(error_text, "timeout", "stream error")
+    expect("SYST:ERR?", '0, "No error"')
 
     print("subcheck: malformed command reaches error queue")
-    assert ask("BADCMD") == "ERROR"
+    expect("BADCMD", "ERROR")
     error_text = ask("SYST:ERR?")
-    assert "unknown token 'BADCMD'" in error_text
-    assert ask("SYST:ERR?") == '0, "No error"'
+    require_contains(error_text, "unknown token 'BADCMD'", "bad-command error")
+    expect("SYST:ERR?", '0, "No error"')
 
     print("subcheck: malformed query form returns ERROR")
-    assert ask("STREAM?") == "ERROR"
+    expect("STREAM?", "ERROR")
     error_text = ask("SYST:ERR?")
-    assert "not queryable" in error_text
-    assert ask("SYST:ERR?") == '0, "No error"'
+    require_contains(error_text, "not queryable", "query-form error")
+    expect("SYST:ERR?", '0, "No error"')
 
     ask("TERMINATE")
 PY
+  then
+    python_rc=0
+  else
+    python_rc=$?
+  fi
 
-  set +e
-  wait "${PPSCPI_SSH_PID}"
-  set -e
+  local ppscpi_rc
+  if (( python_rc != 0 )); then
+    kill "${PPSCPI_SSH_PID}" >/dev/null 2>&1 || true
+  fi
+  if wait "${PPSCPI_SSH_PID}"; then
+    ppscpi_rc=0
+  else
+    ppscpi_rc=$?
+  fi
   PPSCPI_SSH_PID=""
+
+  if (( python_rc != 0 )); then
+    return "${python_rc}"
+  fi
+  return "${ppscpi_rc}"
 }
 
 # Network smoke for the web UI: start the server remotely, hit the main success flows,
@@ -357,7 +384,8 @@ smoke_ppwebgui() {
   ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" 'exec ./ppwebgui -ip 0.0.0.0 -port 4242' &
   PPWEBGUI_SSH_PID=$!
 
-  python3 - <<'PY'
+  local python_rc
+  if python3 - <<'PY'
 import json
 import os
 import time
@@ -366,6 +394,10 @@ import urllib.error
 import urllib.request
 
 base = f"http://{os.environ['BOARD_IP']}:4242"
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SystemExit(message)
 
 for _ in range(40):
     try:
@@ -377,7 +409,7 @@ for _ in range(40):
 else:
     raise SystemExit("failed to connect to ppwebgui")
 
-assert "stream" in status and "clocking" in status
+require("stream" in status and "clocking" in status, f"status missing expected sections: {status!r}")
 
 def post_form(path: str, data: dict):
     body = urllib.parse.urlencode(data).encode()
@@ -403,13 +435,14 @@ def post_form_expect_http_error(path: str, data: dict, expected_status: int):
     except urllib.error.HTTPError as exc:
         payload = json.loads(exc.read().decode())
         print(path, exc.code, payload.get("error", payload.get("message", "")))
-        assert exc.code == expected_status
+        if exc.code != expected_status:
+            raise SystemExit(f"{path}: got HTTP {exc.code}, expected {expected_status}")
         return payload
     raise SystemExit(f"expected HTTP {expected_status} from {path}")
 
 print("subcheck: remeasure clocks")
 measure = post_form("/api/clocking/measure", {})
-assert "status" in measure
+require("status" in measure, f"clock measure missing status: {measure!r}")
 
 print("subcheck: stream tiny valid sequence")
 stream = post_form(
@@ -420,7 +453,7 @@ stream = post_form(
         "check_readback": "0",
     },
 )
-assert stream["ok"] is True
+require(stream.get("ok") is True, f"stream did not report ok=true: {stream!r}")
 
 print("subcheck: reject malformed clock request")
 bad_clocking = post_form_expect_http_error(
@@ -432,8 +465,8 @@ bad_clocking = post_form_expect_http_error(
     },
     400,
 )
-assert bad_clocking["ok"] is False
-assert "Invalid clock source" in bad_clocking["error"]
+require(bad_clocking.get("ok") is False, f"bad clocking did not report ok=false: {bad_clocking!r}")
+require("Invalid clock source" in bad_clocking.get("error", ""), f"bad clocking error mismatch: {bad_clocking!r}")
 
 print("subcheck: reject explicit final in browser sequence text")
 bad_stream = post_form_expect_http_error(
@@ -445,8 +478,8 @@ bad_stream = post_form_expect_http_error(
     },
     400,
 )
-assert bad_stream["ok"] is False
-assert "explicit final output" in bad_stream["error"]
+require(bad_stream.get("ok") is False, f"bad stream did not report ok=false: {bad_stream!r}")
+require("explicit final output" in bad_stream.get("error", ""), f"bad stream error mismatch: {bad_stream!r}")
 
 print("subcheck: report readback timeout as HTTP 504")
 timed_out_stream = post_form_expect_http_error(
@@ -458,13 +491,19 @@ timed_out_stream = post_form_expect_http_error(
     },
     504,
 )
-assert timed_out_stream["ok"] is False
-assert "timed out" in timed_out_stream["message"].lower()
+require(timed_out_stream.get("ok") is False, f"timed-out stream did not report ok=false: {timed_out_stream!r}")
+require("timed out" in timed_out_stream.get("message", "").lower(), f"timed-out stream message mismatch: {timed_out_stream!r}")
 PY
+  then
+    python_rc=0
+  else
+    python_rc=$?
+  fi
 
-  kill "${PPWEBGUI_SSH_PID}"
+  kill "${PPWEBGUI_SSH_PID}" >/dev/null 2>&1 || true
   wait "${PPWEBGUI_SSH_PID}" >/dev/null 2>&1 || true
   PPWEBGUI_SSH_PID=""
+  return "${python_rc}"
 }
 
 section "Deploy"

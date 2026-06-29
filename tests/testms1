@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 ppmstest 1 -veryverbose -check -trig -mode 1
 ppmstest 1 -check -trig -mode 2
 ppmstest 1 -check -trig -mode 3

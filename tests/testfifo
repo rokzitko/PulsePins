@@ -1,6 +1,7 @@
 #!/bin/bash
 # Tests that depend on FIFO buffer being sufficiently large.
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 
 # Max size that still fits the input FIFO buffers
 pptest 8 -c 120000 -v 3381 -check -dump-converted

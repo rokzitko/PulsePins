@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 
 time ppdmatest 22 -c 100000 -v 254 -reps 4
 time ppdmatest 22 -c 100000 -v 254 -reps 20

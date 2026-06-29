@@ -1,6 +1,7 @@
 #!/bin/bash
 # Tests for clock synthesis using PLL
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 
 pptest 3 -c 1_000 -v 1_000 -check -core_pll 100M
 pptest 3 -c 1_000 -v 1_000 -check -core_pll 75M

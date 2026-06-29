@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 pptest 7 -iv 0 -read -timeout -0.1 -dont_wait
 pptest 7 -iv 1 -read -timeout -0.1 -dont_wait
 pptest 7 -iv 2 -read -timeout -0.1 -dont_wait

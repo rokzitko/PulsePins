@@ -15,6 +15,8 @@ always #0.5 clk = ~clk;
 reg i1, i2;
 wire o;
 reg [0:0] sel;
+integer inputs;
+integer s;
 
 sig_mux #( .INPUTS(2) ) dut (
  .i( {i2, i1} ),
@@ -29,24 +31,29 @@ always @(posedge clk) begin
 end
 
 initial begin
-  // Generate random activity
-  repeat (1000) begin
-    #1;
-    i1  = $urandom_range(0, 1);
-    i2  = $urandom_range(0, 1);
-    sel = $urandom_range(0, 1);
-  end
-end
-
-initial begin
   $timeformat(-9, 2, " ns", 20);
   $display("Hello world");
 
+  i1 = 0;
+  i2 = 0;
+  sel = 0;
   reset <= 1;
   #1;
   reset <= 0;
 
-  #1050 $finish;
+  for (inputs = 0; inputs < 4; inputs = inputs + 1) begin
+    {i2, i1} = inputs[1:0];
+    for (s = 0; s < 2; s = s + 1) begin
+      sel = s[0:0];
+      #1;
+      if (o !== (s == 0 ? i1 : i2)) begin
+        $fatal(1, "mux mismatch inputs=%b sel=%0d got=%b", {i2, i1}, s, o);
+      end
+    end
+  end
+
+  $display("PASS");
+  $finish;
 end
 
 endmodule: hello_world

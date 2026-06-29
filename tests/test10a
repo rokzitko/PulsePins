@@ -1,6 +1,7 @@
 #!/bin/bash
 #Replay tests
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 
 pptest 10 -v 4 -c 5 -repetitions 2 -nr_replays 2 -pre -p 2 -mid -m 3 -post -o 2 -check  -dump-converted
 pptest 10 -v 8 -c 13 -repetitions 2 -nr_replays 2 -pre -p 2 -mid -m 3 -post -o 2 -check

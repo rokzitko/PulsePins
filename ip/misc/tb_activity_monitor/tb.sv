@@ -66,10 +66,15 @@ module tb_presence_detector;
         // Generate a posedge *between* clk edges
         #7 sig_in = 1;
         #5 sig_in = 0;
+        // Let any captured activity from this legacy short-pulse stimulus expire.
+        repeat(WINDOW_CYCLES+5) @(posedge clk);
+        #1;
 
         // Another pulse, this time aligned with a clk edge
         repeat(10) @(posedge clk);
         sig_in = 1; #20 sig_in = 0;
+        repeat(10) @(posedge clk);
+        #1;
 
         // Burst of two very quick pulses within one clk period
         #7  sig_in = 1; #2 sig_in = 0;
@@ -77,15 +82,20 @@ module tb_presence_detector;
 
         // Wait long enough for window to expire
         #(WINDOW_CYCLES*30);
+        #1;
 
         // Another pulse to re-activate
         sig_in = 1; #10 sig_in = 0;
+        repeat(10) @(posedge clk);
+        #1;
 
         // Wait long enough for window to expire
         #(WINDOW_CYCLES*30);
+        #1;
 
         // Finish
         #(2000);
+        $display("PASS");
         $finish;
     end
 

@@ -1,5 +1,6 @@
 #!/bin/bash
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 
 # Trick: we use -timeout with a negative value to termine the readback after one second,
 # and we use -dont_wait to skip waiting for the streaming process to terminate.

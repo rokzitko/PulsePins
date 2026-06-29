@@ -1,3 +1,4 @@
 #!/bin/sh
+set -e
 iverilog -g2012 -o tb ../rand_signal_gen.sv tb_rand_signal_gen.sv
 time vvp tb

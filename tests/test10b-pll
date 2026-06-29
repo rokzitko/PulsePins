@@ -1,6 +1,7 @@
 #!/bin/bash
 #Replay tests - large counts
-source defs.sh
+set -e
+source "$(dirname "$0")/defs.sh"
 
 export PP_INT_PLL=50M
 
