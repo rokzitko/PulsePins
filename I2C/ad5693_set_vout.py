@@ -44,7 +44,7 @@ def main() -> int:
     ap.add_argument("--gain", type=int, choices=(1, 2), default=1,
                     help="Output amplifier gain (1 => 0..Vref, 2 => 0..2*Vref). Default: 1")
     ap.add_argument("--bits", type=int, default=16, choices=(12, 14, 16),
-                    help="Resolution bits (AD5693/AD5693R are 16-bit). Default: 16")
+                    help="Resolution bits for code calculation; 12/14-bit codes are left-aligned. Default: 16")
     ap.add_argument("--set-control", action="store_true",
                     help="Write control register (sets gain; keeps normal mode; keeps internal ref enabled).")
     ap.add_argument("--disable-ref", action="store_true",
@@ -57,6 +57,9 @@ def main() -> int:
     if args.vref <= 0:
         print("Error: vref must be > 0", file=sys.stderr)
         return 2
+    if args.gain != 1 and not args.set_control:
+        print("Error: non-default --gain requires --set-control so the DAC gain register is updated", file=sys.stderr)
+        return 2
 
     full_scale = args.vref * args.gain
     max_code = (1 << args.bits) - 1
@@ -65,15 +68,20 @@ def main() -> int:
     code_f = (args.vout / full_scale) * max_code
     code = int(round(code_f))
     code = clamp(code, 0, max_code)
+    dac_code = code << (16 - args.bits)
 
     try:
         with SMBus(args.bus) as bus:
             if args.set_control:
                 write_control(bus, args.addr, gain_2x=(args.gain == 2), ref_disable=args.disable_ref)
 
-            write_dac_code(bus, args.addr, code)
+            write_dac_code(bus, args.addr, dac_code)
 
-        print(f"addr=0x{args.addr:02X} bus={args.bus} vout={args.vout:.6f} V -> code=0x{code:04X} ({code})")
+        if args.bits == 16:
+            print(f"addr=0x{args.addr:02X} bus={args.bus} vout={args.vout:.6f} V -> code=0x{code:04X} ({code})")
+        else:
+            code_hex_width = (args.bits + 3) // 4
+            print(f"addr=0x{args.addr:02X} bus={args.bus} vout={args.vout:.6f} V -> code=0x{code:0{code_hex_width}X} ({code}) dac_word=0x{dac_code:04X}")
         return 0
 
     except PermissionError:

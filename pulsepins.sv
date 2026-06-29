@@ -660,6 +660,8 @@ assign gp_in[0] = core_clk_pll_locked;
 assign gp_in[1] = int_clk_pll_locked;
 `ifdef EXTERNAL_CLK_CLEAN
    assign gp_in[2] = ext_clk_pll_locked;
+`elsif SELECT_CLK_CLEAN
+   assign gp_in[2] = ext_clk_pll_locked;
 `else
    assign gp_in[2] = 0;
 `endif

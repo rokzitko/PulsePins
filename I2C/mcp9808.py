@@ -67,6 +67,8 @@ def main() -> int:
             raise ValueError(f"I2C address out of 7-bit range: 0x{addr:02x}")
         if args.delay < 0:
             raise ValueError("--delay must be non-negative")
+        if args.count < 0:
+            raise ValueError("--count must be non-negative")
 
         if args.csv:
             args.timestamp = True
