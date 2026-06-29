@@ -40,11 +40,17 @@ class pptool:
         usleep(100)
         self.sc.trigger_force()
         success = self.rb.check(elements, timeout)
-        assert success
+        if not success:
+            raise RuntimeError("Readback check failed.")
         start = time.monotonic()
-        while not(self.sc.done() or self.sc.buffer_error()):
+        while not self.sc.done():
+            if self.sc.buffer_error():
+                raise RuntimeError("Streamer buffer error detected.")
             if DEFAULT_COMPLETION_TIMEOUT_S > 0 and (time.monotonic() - start) > DEFAULT_COMPLETION_TIMEOUT_S:
                 raise TimeoutError("Timeout waiting for streamer completion.")
             usleep(1)
+        if self.sc.buffer_error():
+            raise RuntimeError("Streamer buffer error detected.")
         final_qout = self.sc.get_qout()
-        assert final_qout == 0
+        if final_qout != 0:
+            raise RuntimeError(f"Unexpected final qout: {final_qout}")

@@ -7,6 +7,7 @@ RBF=${PREFIX}.rbf
 
 TARGETHOST ?= de10nano
 SCP_TARGET ?= $(TARGETHOST)
+BOOT_MOUNT ?= /home/root/fat
 
 # Quartus bin directory. Override in `Makefile.local` if the toolchain lives elsewhere.
 QDIR ?= ${HOME}/intelFPGA_lite/21.1/quartus/bin
@@ -81,7 +82,8 @@ copy: ${RBF}
 
 # Copy the FPGA runtime image to the boot partition path on the live target board.
 copy_boot: ${RBF}
-	scp ${RBF} ${SCP_TARGET}:fat/socfpga.rbf
+	ssh ${SCP_TARGET} 'mkdir -p "${BOOT_MOUNT}" && (mountpoint -q "${BOOT_MOUNT}" || mount "${BOOT_MOUNT}")'
+	scp ${RBF} ${SCP_TARGET}:${BOOT_MOUNT}/socfpga.rbf
 
 # Stage only the FPGA runtime image into the image tree.
 copy_img: ${RBF}
