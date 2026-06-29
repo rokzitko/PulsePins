@@ -1,3 +1,11 @@
 #!/bin/bash
-cd ..
-sudo make copy_all_img
+set -euo pipefail
+
+MOUNTPOINT="$(pwd)/ext"
+
+if ! mountpoint -q "$MOUNTPOINT"; then
+	echo "error: $MOUNTPOINT is not mounted" >&2
+	exit 1
+fi
+
+make -C .. IMAGE_SUDO=sudo copy_all_img

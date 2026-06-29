@@ -73,10 +73,11 @@ copy_misc:
 	scp $(PY_EXAMPLE_FILES) $(SCP_TARGET):$(PYDIR)/$(PY_EXAMPLE_DIR)
 
 IMGROOT ?= ../image/ext/home/root
+IMAGE_SUDO ?=
 
 # Stage the same source bundle into the image tree.
 copy_sources_img:
-	mkdir -p $(IMGROOT)/$(PYDIR) $(IMGROOT)/$(PYDIR)/$(PY_PACKAGE) $(IMGROOT)/$(PYDIR)/$(PY_EXAMPLE_DIR)
-	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(PYDIR)
-	cp -v $(PY_PACKAGE_FILES) $(IMGROOT)/$(PYDIR)/$(PY_PACKAGE)
-	cp -v $(PY_EXAMPLE_FILES) $(IMGROOT)/$(PYDIR)/$(PY_EXAMPLE_DIR)
+	$(IMAGE_SUDO) mkdir -p $(IMGROOT)/$(PYDIR) $(IMGROOT)/$(PYDIR)/$(PY_PACKAGE) $(IMGROOT)/$(PYDIR)/$(PY_EXAMPLE_DIR)
+	$(IMAGE_SUDO) cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(PYDIR)
+	$(IMAGE_SUDO) cp -v $(PY_PACKAGE_FILES) $(IMGROOT)/$(PYDIR)/$(PY_PACKAGE)
+	$(IMAGE_SUDO) cp -v $(PY_EXAMPLE_FILES) $(IMGROOT)/$(PYDIR)/$(PY_EXAMPLE_DIR)

@@ -12,8 +12,9 @@ copy:
 	scp $(LIST2) $(SCP_TARGET):tests/
 
 IMGROOT ?= ../image/ext/home/root
+IMAGE_SUDO ?=
 
 copy_img:
-	mkdir -p $(IMGROOT)/tests
-	cp -v $(LIST1) $(IMGROOT)
-	cp -v $(LIST2) $(IMGROOT)/tests
+	$(IMAGE_SUDO) mkdir -p $(IMGROOT)/tests
+	$(IMAGE_SUDO) cp -v $(LIST1) $(IMGROOT)
+	$(IMAGE_SUDO) cp -v $(LIST2) $(IMGROOT)/tests

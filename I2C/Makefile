@@ -1,6 +1,7 @@
 TARGETHOST ?= de10nano
 SCP_TARGET ?= $(TARGETHOST)
 IMGROOT ?= ../image/ext/home/root
+IMAGE_SUDO ?=
 
 .PHONY: copy
 
@@ -11,5 +12,5 @@ copy:
 	scp $(FILES) $(SCP_TARGET):$(DIR)
 
 copy_img:
-	mkdir -p $(IMGROOT)/$(DIR)
-	cp -v $(FILES) $(IMGROOT)/$(DIR)
+	$(IMAGE_SUDO) mkdir -p $(IMGROOT)/$(DIR)
+	$(IMAGE_SUDO) cp -v $(FILES) $(IMGROOT)/$(DIR)

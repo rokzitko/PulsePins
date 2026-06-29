@@ -219,12 +219,13 @@ copy: $(TARGETS)
 	ssh $(SCP_TARGET) 'for L in $(SYMLINKS); do ln -sf pptool $$L; done'
 
 IMGROOT ?= ../image/ext/home/root
+IMAGE_SUDO ?=
 
 # Stage the same executables into the image tree.
 copy_img: $(TARGETS)
-	mkdir -p $(IMGROOT)
-	cp -v $(TARGETS) $(IMGROOT)
-	cd $(IMGROOT) && for L in $(SYMLINKS); do ln -sf pptool $$L; done
+	$(IMAGE_SUDO) mkdir -p $(IMGROOT)
+	$(IMAGE_SUDO) cp -v $(TARGETS) $(IMGROOT)
+	cd $(IMGROOT) && for L in $(SYMLINKS); do $(IMAGE_SUDO) ln -sf pptool $$L; done
 
 # Copy source files to the DE10-Nano for local compilation. This is useful because the board can
 # build Python bindings natively and can also rebuild the C++ tools from source when needed.
@@ -248,15 +249,15 @@ copy_sources: ../hps_0.h
 
 # Stage the same source bundle into the image tree for image-based rebuild workflows.
 copy_sources_img: ../hps_0.h
-	mkdir -p $(IMGROOT)/$(CPPDIR) $(IMGROOT)/$(CPPDIR)/third_party
-	cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(CPPDIR)
-	cp -v ../hps_0.h $(IMGROOT)
+	$(IMAGE_SUDO) mkdir -p $(IMGROOT)/$(CPPDIR) $(IMGROOT)/$(CPPDIR)/third_party
+	$(IMAGE_SUDO) cp -v $(SOURCES) $(MISCFILES) $(IMGROOT)/$(CPPDIR)
+	$(IMAGE_SUDO) cp -v ../hps_0.h $(IMGROOT)
 	$(MAKE) -C third_party/lua clean
-	cp -r third_party/lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party
-	ln -sfn lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party/lua
-	cp -r third_party/asio $(IMGROOT)/$(CPPDIR)/third_party
-	cp third_party/httplib.h $(IMGROOT)/$(CPPDIR)/third_party
-	mkdir -p $(IMGROOT)/$(CPPDIR)/third_party/hwlib
-	cp -r third_party/hwlib/include $(IMGROOT)/$(CPPDIR)/third_party/hwlib
-	cp -r include/ $(IMGROOT)/$(CPPDIR)
-	cp -r unit_tests_input/ $(IMGROOT)/$(CPPDIR)
+	$(IMAGE_SUDO) cp -r third_party/lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party
+	$(IMAGE_SUDO) ln -sfn lua-5.5.0 $(IMGROOT)/$(CPPDIR)/third_party/lua
+	$(IMAGE_SUDO) cp -r third_party/asio $(IMGROOT)/$(CPPDIR)/third_party
+	$(IMAGE_SUDO) cp third_party/httplib.h $(IMGROOT)/$(CPPDIR)/third_party
+	$(IMAGE_SUDO) mkdir -p $(IMGROOT)/$(CPPDIR)/third_party/hwlib
+	$(IMAGE_SUDO) cp -r third_party/hwlib/include $(IMGROOT)/$(CPPDIR)/third_party/hwlib
+	$(IMAGE_SUDO) cp -r include/ $(IMGROOT)/$(CPPDIR)
+	$(IMAGE_SUDO) cp -r unit_tests_input/ $(IMGROOT)/$(CPPDIR)

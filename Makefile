@@ -28,6 +28,7 @@ IMAGE_ROOT ?= image
 IMGROOT ?= ${IMAGE_ROOT}/ext/home/root
 IMAGE_ROOT_ABS = $(abspath ${IMAGE_ROOT})
 IMGROOT_ABS = $(abspath ${IMGROOT})
+IMAGE_SUDO ?=
 
 SOURCE=$(wildcard *.sv) $(wildcard ../IP/*.v) $(wildcard ../IP/*.sv)
 IPSOURCE=$(wildcard ip/*/*.v) $(wildcard ip/*/*.vh) $(wildcard ip/*/*.sv)
@@ -84,8 +85,8 @@ copy_boot: ${RBF}
 
 # Stage only the FPGA runtime image into the image tree.
 copy_img: ${RBF}
-	mkdir -p ${IMGROOT}
-	cp -v ${RBF} ${IMGROOT}/${PREFIX}.rbf
+	$(IMAGE_SUDO) mkdir -p ${IMGROOT}
+	$(IMAGE_SUDO) cp -v ${RBF} ${IMGROOT}/${PREFIX}.rbf
 
 # Do not check for dependences, force copying the current file
 forcecopy:
@@ -105,12 +106,12 @@ copy_all: copy
 
 # Stage the same runtime bundle into the image tree instead of pushing it to a board.
 copy_all_img: copy_img
-	$(MAKE) -C c++ IMGROOT=$(IMGROOT_ABS) copy_img
-	$(MAKE) -C c++ IMGROOT=$(IMGROOT_ABS) copy_sources_img
-	$(MAKE) -C python IMGROOT=$(IMGROOT_ABS) copy_sources_img
-	$(MAKE) -C tests IMGROOT=$(IMGROOT_ABS) copy_img
-	$(MAKE) -C I2C IMGROOT=$(IMGROOT_ABS) copy_img
-	$(MAKE) -C contrib/completions IMGROOT=$(IMAGE_ROOT_ABS) copy_img
+	$(MAKE) -C c++ IMGROOT=$(IMGROOT_ABS) IMAGE_SUDO="$(IMAGE_SUDO)" copy_img
+	$(MAKE) -C c++ IMGROOT=$(IMGROOT_ABS) IMAGE_SUDO="$(IMAGE_SUDO)" copy_sources_img
+	$(MAKE) -C python IMGROOT=$(IMGROOT_ABS) IMAGE_SUDO="$(IMAGE_SUDO)" copy_sources_img
+	$(MAKE) -C tests IMGROOT=$(IMGROOT_ABS) IMAGE_SUDO="$(IMAGE_SUDO)" copy_img
+	$(MAKE) -C I2C IMGROOT=$(IMGROOT_ABS) IMAGE_SUDO="$(IMAGE_SUDO)" copy_img
+	$(MAKE) -C contrib/completions IMGROOT=$(IMAGE_ROOT_ABS)/ext IMAGE_SUDO="$(IMAGE_SUDO)" copy_img
 
 copy_all_image: copy_all_img
 

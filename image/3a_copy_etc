@@ -1,4 +1,12 @@
 #!/bin/bash
+set -euo pipefail
+
 ORIG=etc/
-MOUNTPOINT=`pwd`/ext/
-sudo cp -rv ${ORIG} $MOUNTPOINT
+MOUNTPOINT="$(pwd)/ext"
+
+if ! mountpoint -q "$MOUNTPOINT"; then
+	echo "error: $MOUNTPOINT is not mounted" >&2
+	exit 1
+fi
+
+sudo cp -rv "$ORIG" "$MOUNTPOINT"

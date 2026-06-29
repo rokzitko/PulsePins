@@ -1,6 +1,14 @@
 #!/bin/bash
-TARGET=pulsepins.img
-rm -fv ${TARGET}
+set -euo pipefail
+
 ORIG=$HOME/yocto/rsYocto_1_042_D10NANO.img
-sha256sum ${ORIG}
-cp -v ${ORIG} ${TARGET}
+CHECKSUM="$(pwd)/checksum"
+TARGET=pulsepins.img
+TMP=${TARGET}.tmp
+
+(cd "$(dirname "$ORIG")" && sha256sum -c "$CHECKSUM")
+trap 'rm -f "$TMP"' EXIT
+rm -f "$TMP"
+cp -v "$ORIG" "$TMP"
+mv -f "$TMP" "$TARGET"
+trap - EXIT

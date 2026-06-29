@@ -1,4 +1,12 @@
 #!/bin/bash
+set -euo pipefail
+
 ORIG=../pulsepins.rbf
-MOUNTPOINT=`pwd`/fat/
-sudo cp -rv ${ORIG} $MOUNTPOINT/socfpga.rbf
+MOUNTPOINT="$(pwd)/fat"
+
+if ! mountpoint -q "$MOUNTPOINT"; then
+	echo "error: $MOUNTPOINT is not mounted" >&2
+	exit 1
+fi
+
+sudo cp -rv "$ORIG" "$MOUNTPOINT/socfpga.rbf"
