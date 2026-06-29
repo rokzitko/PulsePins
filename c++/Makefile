@@ -127,11 +127,12 @@ pptool: $(PPTOOL_OBJS) $(LUA_LIB)
 	$(CXX) $(LDFLAGS)   $^ -o $@ $(FSLIB) $(LUA_LIB)
 
 ASIO_DIR := third_party/asio
+ASIO_HEADER := $(ASIO_DIR)/include/asio.hpp
 
-$(ASIO_DIR):
-	git submodule update --init --recursive
+$(ASIO_HEADER):
+	git submodule update --init --recursive $(ASIO_DIR)
 
-ppscpi: ppscpi.o $(ASIO_DIR)
+ppscpi: ppscpi.o
 	$(CXX) $(LDFLAGS)   $< -o $@ $(FSLIB)
 
 PPWEBGUI_OBJS = ppwebgui_main.o ppwebgui_app.o ppwebgui_server.o ppwebgui_service.o ppwebgui_service_api.o ppwebgui_json.o ppwebgui_http.o ppwebgui_assets.o ppwebgui_config.o ppwebgui_bootstrap.o
@@ -147,7 +148,7 @@ pllcalc: pllcalc.o
 
 HEADERS = $(wildcard *.hh) $(wildcard *.h) $(wildcard $(TIDBIT_DIR)/*.hh) $(wildcard $(TIDBIT_DIR)/*.h) $(HPSFILE)
 
-unit_tests: unit_tests.cc ppwebgui_http.cc ppwebgui_json.cc $(HEADERS)
+unit_tests: unit_tests.cc ppwebgui_http.cc ppwebgui_json.cc $(HEADERS) $(ASIO_HEADER)
 	g++ $(CXXFLAGS) $(LDFLAGS) unit_tests.cc -o $@
 
 # Host-safe compile-only check for the main board-facing executables.
@@ -156,7 +157,7 @@ host-main-compile: $(HOST_MAIN_OBJS)
 $(HOST_CHECK_DIR):
 	mkdir -p $@
 
-$(HOST_CHECK_DIR)/%.o: %.cc $(HEADERS) | $(HOST_CHECK_DIR) $(ASIO_DIR)
+$(HOST_CHECK_DIR)/%.o: %.cc $(HEADERS) $(ASIO_HEADER) | $(HOST_CHECK_DIR)
 	$(CXX) $(CROSSCXXFLAGS) $(CXXFLAGS) -c $< -o $@
 
 pptool.o : pptool.cc $(HEADERS)
@@ -168,7 +169,7 @@ pptool_streaming.o : pptool_streaming.cc $(HEADERS)
 pptool_measurement.o : pptool_measurement.cc $(HEADERS)
 	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
-ppscpi.o : ppscpi.cc $(HEADERS)
+ppscpi.o : ppscpi.cc $(HEADERS) $(ASIO_HEADER)
 	$(CXX) $(CROSSCXXFLAGS)  $(CXXFLAGS) -c $< -o $@
 
 ppwebgui_main.o : ppwebgui_main.cc $(HEADERS)
