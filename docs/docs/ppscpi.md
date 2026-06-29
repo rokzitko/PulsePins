@@ -46,7 +46,7 @@ The session does not persist across reconnects.
 Standard commands:
 
 * `*IDN?` - identify the instrument
-* `*RST` - clear loaded sequence and session state
+* `*RST` - clear loaded sequence/session state and reset the hardware run path (streamer, readback, counters, mux, output combiner, and trigger combiner)
 * `*CLS` - clear status and error queue
 * `*OPC` / `*OPC?` - operation complete flag/query
 * `*WAI` - no-op; `STREAM` itself is synchronous
@@ -153,6 +153,7 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ### Notes
 
 * `STREAM` uses the same send/trigger path as the local tools, including optional readback verification.
+* `*RST` restores a clean remote-control run state; it does not reprogram clocks or PLLs.
 * `SEQ` stores the parsed sequence in memory; nothing is transmitted to the streamer until `STREAM` is issued.
 * Semicolons separate SCPI commands before command parsing, so they are not valid inside a `SEQ` payload.
 * If the loaded sequence does not end with `final V` and the server was not started with `-t`, `-random_final`, or `PP_RANDOM_FINAL`, `STREAM` appends a no-modify final terminator so outputs remain at the last sequence value. The `f` record only requests forced triggering.

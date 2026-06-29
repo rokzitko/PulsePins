@@ -34,6 +34,7 @@
 #include "DAC.hh"
 #include "MCP9808.hh"
 #include "freq_meter.hh"
+#include "numeric_safety.hh"
 #include "sequence.hh"
 #include "sequence_file_format.hh"
 #include "elements.hh"
@@ -309,8 +310,8 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
   TimestampSession session(fpga, input, v);
   const auto kp = parse_double(input, "-kp", "0.01");
   const auto ki = parse_double(input, "-ki", "0.1");
-  const int64_t clip = parse_uint64(input, "-clip", "1000");
-  const int64_t reject = parse_uint64(input, "-reject", "10000");
+  const int64_t clip = parse_nonnegative_int64(input, "-clip", "1000");
+  const int64_t reject = parse_nonnegative_int64(input, "-reject", "10000");
   const auto dp = parse_double(input, "-dp", "0");
   const auto di = parse_double(input, "-di", "0");
   const auto eps = parse_double(input, "-eps", "0.0");
@@ -349,15 +350,16 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
   ZipAggregator<uint64_t, uint64_t> agg
   (
       [&cnt, &diff_prev, clip, reject, very_silent_after, &av](const uint64_t &a, const uint64_t &b) {
-        const int64_t diff = int64_t(b)-int64_t(a);
-        const int64_t Delta = (cnt > 0 ? diff_prev-diff : 0);
+        const int64_t diff = signed_counter_delta(b, a);
+        const int64_t Delta = (cnt > 0 ? checked_i64_sub(diff_prev, diff, "GPSDO timestamp delta overflow") : 0);
         if (cnt < very_silent_after) {
           std::lock_guard<std::mutex> lock(lockcout);
           std::cout << "pair: A=" << std::dec << a << "  B=" << b << "  diff=" << diff <<
             "  Delta=" << Delta << std::endl;
         }
-        if (cnt > 0 && abs(Delta) < reject) {
-          const int64_t clippedDelta = (abs(Delta) < clip ? Delta : clip*sgn(Delta));
+        const uint64_t absDelta = abs_i64_to_u64(Delta);
+        if (cnt > 0 && absDelta < static_cast<uint64_t>(reject)) {
+          const int64_t clippedDelta = (absDelta < static_cast<uint64_t>(clip) ? Delta : clip*sgn(Delta));
           av.add(clippedDelta);
         }
         cnt++;

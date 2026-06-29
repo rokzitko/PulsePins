@@ -43,7 +43,7 @@ If neither ``-t`` nor an explicit ``final V`` sequence record is provided, the s
 The numeric parameters can be expressed in decimal (42), hexadecimal (0x2A), octal (052) or binary (0b101010). The
 parser is implemented in [`tidbit/misc.hh`]({{ source_file("tidbit/misc.hh") }}). Look for functions ``parse_uint8_t``, ``parse_uint32_t`` and
 ``parse_uint64_t``. Underscores are ignored; this allows large input values to be easier to read, e.g. 1_000_000_000.
-Finally, Verilog literals are also parsed correctly (e.g. ``8`b1111_1111``, ``32`hFF_FF_FF_FF`` and similar).
+Finally, SystemVerilog integer literals are also parsed correctly (e.g. ``8'b1111_1111``, ``32'hFF_FF_FF_FF``, ``4'hff`` and similar). Sized literals are evaluated at their declared width, so ``4'hff`` is truncated to ``0xf``. Unknown/high-impedance digits such as ``x``, ``z``, and ``?`` are accepted by the low-level literal parser but rejected by ordinary unsigned CLI parameter conversions.
 
 WARNING: be careful not to use a leading 0 in what is intended to be a decimal number, because
 the string will be parsed as an octal base representation.

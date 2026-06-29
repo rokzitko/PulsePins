@@ -28,6 +28,7 @@
 #include "elements.hh"
 #include "freq_meter.hh"
 #include "MCP9808.hh"
+#include "numeric_safety.hh"
 #include "PMODDA3.hh"
 #include "SPI.hh"
 #include "options.hh"
@@ -273,6 +274,28 @@ TEST_CASE("parse_uint helpers reject malformed input") {
   CHECK_THROWS_AS(parse_uint32_t("abc"), std::runtime_error);
   CHECK_THROWS_AS(parse_uint8_t("256"), std::runtime_error);
   CHECK_THROWS_AS(parse_uint64_t("-1"), std::runtime_error);
+}
+
+TEST_CASE("signed numeric helpers reject unsafe GPSDO ranges") {
+  CHECK(parse_nonnegative_int64(make_input({}), "-clip", "0") == 0);
+  CHECK(parse_nonnegative_int64(make_input({}), "-clip", std::to_string((std::numeric_limits<int64_t>::max)())) ==
+        (std::numeric_limits<int64_t>::max)());
+  CHECK_THROWS_AS(parse_nonnegative_int64(make_input({"-clip", "9223372036854775808"}), "-clip", "0"), std::runtime_error);
+  CHECK_THROWS_AS(parse_nonnegative_int64(make_input({"-clip", "18446744073709551615"}), "-clip", "0"), std::runtime_error);
+
+  CHECK(signed_counter_delta(10, 5) == 5);
+  CHECK(signed_counter_delta(5, 10) == -5);
+  CHECK(signed_counter_delta(2, (std::numeric_limits<uint64_t>::max)() - 1) == 4);
+  CHECK(signed_counter_delta((std::numeric_limits<uint64_t>::max)() - 1, 2) == -4);
+  CHECK(signed_counter_delta(uint64_t{1} << 63, 0) == (std::numeric_limits<int64_t>::min)());
+
+  CHECK(checked_i64_sub(10, 3, "test") == 7);
+  CHECK(checked_i64_sub(-10, -3, "test") == -7);
+  CHECK_THROWS_AS(checked_i64_sub((std::numeric_limits<int64_t>::max)(), -1, "test"), std::overflow_error);
+  CHECK_THROWS_AS(checked_i64_sub((std::numeric_limits<int64_t>::min)(), 1, "test"), std::overflow_error);
+  CHECK(abs_i64_to_u64(0) == 0);
+  CHECK(abs_i64_to_u64(-5) == 5);
+  CHECK(abs_i64_to_u64((std::numeric_limits<int64_t>::min)()) == (uint64_t{1} << 63));
 }
 
 TEST_CASE("charconv11 parses signed minimum") {
@@ -1239,9 +1262,59 @@ TEST_CASE("merge rejects count overflow") {
 }
 
 TEST_CASE("parseVerilogInt") {
+  CHECK(parseVerilogInt("123") == 123);
+  CHECK(parseVerilogInt("077") == 77);
+  CHECK(parseVerilogInt("1_000") == 1000);
   CHECK(parseVerilogInt("8'hFF") == 255);
+  CHECK(parseVerilogInt("4'hFF") == 15);
   CHECK(parseVerilogInt("12'o777") == 511);
   CHECK(parseVerilogInt("'b1010") == 10);
+  CHECK(parseVerilogInt("'d42") == 42);
+  CHECK(parseVerilogInt("'hff") == 255);
+  CHECK(parseVerilogInt("8'shff") == 255);
+  CHECK(parseVerilogInt("'0") == 0);
+  CHECK(parseVerilogInt("'1") == 1);
+
+  const auto truncated = parseSystemVerilogInteger("4'hff");
+  CHECK(truncated.explicit_width);
+  CHECK(truncated.width == 4);
+  CHECK(truncated.base == 16);
+  CHECK(truncated.low_u64() == 15);
+  CHECK(truncated.truncated_known_bits);
+  CHECK(!truncated.has_unknown());
+
+  const auto signed_literal = parseSystemVerilogInteger("16'sd10");
+  CHECK(signed_literal.explicit_width);
+  CHECK(signed_literal.is_signed);
+  CHECK(signed_literal.width == 16);
+  CHECK(signed_literal.low_u64() == 10);
+
+  const auto unknown_binary = parseSystemVerilogInteger("4'bx101");
+  CHECK(unknown_binary.explicit_width);
+  CHECK(unknown_binary.width == 4);
+  CHECK(unknown_binary.low_u64() == 0b0101);
+  CHECK(unknown_binary.has_unknown());
+  CHECK(unknown_binary.unknown_words.front() == 0b1000);
+
+  const auto unknown_hex = parseSystemVerilogInteger("8'hz?");
+  CHECK(unknown_hex.width == 8);
+  CHECK(unknown_hex.low_u64() == 0);
+  CHECK(unknown_hex.has_unknown());
+  CHECK(unknown_hex.unknown_words.front() == 0xff);
+
+  const auto unbased_unknown = parseSystemVerilogInteger("'x");
+  CHECK(unbased_unknown.unbased_unsized);
+  CHECK(unbased_unknown.width == 1);
+  CHECK(unbased_unknown.has_unknown());
+
+  CHECK_THROWS_AS(parseVerilogInt("4'bx101"), std::runtime_error);
+  CHECK_THROWS_AS(parseVerilogInt("'x"), std::runtime_error);
+  CHECK_THROWS_AS(parseVerilogInt(""), std::runtime_error);
+  CHECK_THROWS_AS(parseVerilogInt("8'"), std::runtime_error);
+  CHECK_THROWS_AS(parseVerilogInt("8'q10"), std::runtime_error);
+  CHECK_THROWS_AS(parseVerilogInt("0'h0"), std::runtime_error);
+  CHECK_THROWS_AS(parseVerilogInt("4'd1a"), std::runtime_error);
+  CHECK_THROWS_AS(parseVerilogInt("65'h1_0000_0000_0000_0000"), std::runtime_error);
 }
 
 TEST_CASE("stripUnderscores") {
@@ -1259,8 +1332,11 @@ TEST_CASE("parseuint32_t") {
   CHECK(parse_uint32_t("0b11111111") == 255);
   CHECK(parse_uint32_t("077") == 63); // octal!
   CHECK(parse_uint32_t("8'hFF") == 255);
+  CHECK(parse_uint32_t("4'hFF") == 15);
   CHECK(parse_uint32_t("12'o777") == 511);
   CHECK(parse_uint32_t("'b1010") == 10);
+  CHECK_THROWS_AS(parse_uint32_t("4'bx101"), std::runtime_error);
+  CHECK_THROWS_AS(parse_uint32_t("33'h1_0000_0000"), std::runtime_error);
 }
 
 TEST_CASE("startup reset policy handles ppreset") {
@@ -2586,6 +2662,36 @@ TEST_CASE("spi sequence builder quantizes requested frequency") {
   CHECK(builder.achieved_spi_clock_hz() == doctest::Approx(12.5e6));
   CHECK(builder.sequence().size() > 4);
   CHECK(builder.sequence()[0] == el(1, 0x1));
+}
+
+TEST_CASE("spi sequence builder validates clock range before narrowing") {
+  spi::Config cfg;
+  cfg.decoder_clock_hz = 100e6;
+
+  SUBCASE("rejects non-finite clocks") {
+    cfg.spi_clock_hz = std::numeric_limits<double>::infinity();
+    CHECK_THROWS_AS(spi::SequenceBuilder{cfg}, std::invalid_argument);
+    cfg.spi_clock_hz = std::numeric_limits<double>::quiet_NaN();
+    CHECK_THROWS_AS(spi::SequenceBuilder{cfg}, std::invalid_argument);
+  }
+
+  SUBCASE("rejects non-positive clocks") {
+    cfg.spi_clock_hz = 0.0;
+    CHECK_THROWS_AS(spi::SequenceBuilder{cfg}, std::invalid_argument);
+    cfg.spi_clock_hz = -1.0;
+    CHECK_THROWS_AS(spi::SequenceBuilder{cfg}, std::invalid_argument);
+  }
+
+  SUBCASE("rejects half-period overflow") {
+    cfg.spi_clock_hz = cfg.decoder_clock_hz / (2.0 * (static_cast<double>(max_count_t) + 1.0));
+    CHECK_THROWS_AS(spi::SequenceBuilder{cfg}, std::invalid_argument);
+  }
+
+  SUBCASE("accepts maximum representable half-period") {
+    cfg.spi_clock_hz = cfg.decoder_clock_hz / (2.0 * static_cast<double>(max_count_t));
+    spi::SequenceBuilder builder(cfg);
+    CHECK(builder.half_period_ticks() == static_cast<count_t>(max_count_t));
+  }
 }
 
 TEST_CASE("PMOD DA3 voltage conversion clips to DAC range") {

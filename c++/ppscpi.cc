@@ -75,6 +75,22 @@ private:
     ctr.reset_all();
   }
 
+  void reset_session_state() {
+    check = false;
+    elements.clear();
+    force_trigger_p = false;
+  }
+
+  void reset_hardware_run_state() {
+    auto lock = fpga.acquire_lock();
+    s.set_initial_value(input);
+    fpga.output_enable(true);
+    s.mux.channel(1);
+    combiner(fpga.dev_h2f, address_map::h2f::combiner_qout, "combiner_qout").reset_passthrough();
+    combiner(fpga.dev_h2f, address_map::h2f::combiner_trig, "combiner_trig").reset_passthrough();
+    prepare_stream_run();
+  }
+
   void build_tree() {
     // *IDN?
     add_node({"*IDN"}, {}, [this]() {
@@ -82,9 +98,8 @@ private:
     });
     // *RST
     add_node({"*RST"}, [this](const std::string&) {
-      check = false;
-      elements.clear();
-      force_trigger_p = false;
+      reset_session_state();
+      reset_hardware_run_state();
       return "";
     });
     // *CLS

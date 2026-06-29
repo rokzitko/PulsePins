@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cmath>
 #include <initializer_list>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -42,9 +43,13 @@ public:
   explicit SequenceBuilder(Config cfg) : cfg_(cfg) {
     validate_config();
     const double exact_half_period = cfg_.decoder_clock_hz / (2.0 * cfg_.spi_clock_hz);
-    half_period_ticks_ = static_cast<count_t>(std::llround(exact_half_period));
-    if (half_period_ticks_ < 1)
+    const double rounded_half_period = std::floor(exact_half_period + 0.5);
+    if (rounded_half_period > static_cast<double>((std::numeric_limits<count_t>::max)()))
+      throw std::invalid_argument("SPI clock is too slow for the streamer counter range");
+    if (rounded_half_period < 1.0)
       half_period_ticks_ = 1;
+    else
+      half_period_ticks_ = static_cast<count_t>(rounded_half_period);
     cpol_ = (cfg_.mode == 2 || cfg_.mode == 3);
     cpha_ = (cfg_.mode == 1 || cfg_.mode == 3);
     clear();
@@ -150,8 +155,9 @@ private:
   void validate_config() const {
     if (cfg_.mode < 0 || cfg_.mode > 3)
       throw std::invalid_argument("SPI mode must be in range 0..3");
-    if (cfg_.decoder_clock_hz <= 0.0 || cfg_.spi_clock_hz <= 0.0)
-      throw std::invalid_argument("Clock frequencies must be positive");
+    if (!std::isfinite(cfg_.decoder_clock_hz) || !std::isfinite(cfg_.spi_clock_hz) ||
+        cfg_.decoder_clock_hz <= 0.0 || cfg_.spi_clock_hz <= 0.0)
+      throw std::invalid_argument("Clock frequencies must be finite and positive");
 
     validate_bit_index(cfg_.bit_sclk, "SCLK");
     validate_bit_index(cfg_.bit_mosi, "MOSI");
