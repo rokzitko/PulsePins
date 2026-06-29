@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -128,19 +129,25 @@ struct FakeWebGuiService : WebGuiService {
   StatusSnapshot status;
   std::string last_error;
   int apply_clock_calls = 0;
+  int qout_calls = 0;
   int stream_calls = 0;
+  std::function<StatusSnapshot()> status_hook;
   std::function<void(const ClockConfigRequest &)> apply_clock_hook = [](const ClockConfigRequest &) {};
   std::function<StreamResult(StreamLaunchRequest)> stream_hook = [](StreamLaunchRequest) {
     return StreamResult{true, RC_OK, 200, "ok"};
   };
 
-  StatusSnapshot get_status_copy() override { return status; }
+  StatusSnapshot get_status_copy() override {
+    if (status_hook)
+      return status_hook();
+    return status;
+  }
   void apply_clock_config(const ClockConfigRequest &request) override {
     apply_clock_calls++;
     apply_clock_hook(request);
   }
   void measure_clocks() override {}
-  void apply_streamer_override(const StreamerOverrideState &) override {}
+  void apply_streamer_override(const StreamerOverrideState &) override { qout_calls++; }
   void apply_combiner_config(const CombinerRequest &) override {}
   void apply_trigger_config(const TriggerConfigRequest &) override {}
   ResetResult reset_hardware() override { return {true, "reset"}; }
@@ -1978,10 +1985,17 @@ TEST_CASE("force trigger readiness timeout does not assert trigger") {
 TEST_CASE("ppwebgui trigger defaults to internal mode") {
   TriggerConfigRequest request;
   CHECK(request.mode == TriggerModeSelection::INT);
+  CHECK(request.mask_int == ~uint32_t {0});
+  CHECK(request.mask_ext == ~uint32_t {0});
+  CHECK(request.mask_misc == ~uint32_t {0});
 
   StatusSnapshot status;
   const auto json = status_to_json(status);
   CHECK(contains(json, "\"trigger_settings\":{\"mode\":\"INT\""));
+  CHECK(contains(json, "\"mask_int\":4294967295"));
+  CHECK(contains(json, "\"mask_ext\":4294967295"));
+  CHECK(contains(json, "\"mask_misc\":4294967295"));
+  CHECK(contains(json, "\"mask_aux\":4294967295"));
 
   status.trigger_settings.mode = static_cast<uint32_t>(trig_mode::OR);
   status.trigger_settings.invert_ext = ~uint32_t {0};
@@ -2033,6 +2047,51 @@ TEST_CASE("ppwebgui routes reject malformed clock requests before calling the se
   CHECK(service.apply_clock_calls == 0);
   CHECK(service.last_error == "Missing parameter: source");
   CHECK(contains(capture.str(), "ppwebgui: HTTP 400 error: Missing parameter: source"));
+}
+
+TEST_CASE("ppwebgui status route returns wrapped JSON errors") {
+  ScopedStreamCapture capture(std::cerr);
+  FakeWebGuiService service;
+  service.status_hook = []() -> StatusSnapshot {
+    throw std::runtime_error("synthetic status failure");
+  };
+
+  ScopedTestWebGuiServer server(service);
+  httplib::Client client("127.0.0.1", server.port);
+
+  const auto res = client.Get("/api/status");
+
+  REQUIRE(res);
+  CHECK(res->status == httplib::StatusCode::InternalServerError_500);
+  CHECK(contains(res->body, "\"ok\":false"));
+  CHECK(contains(res->body, "synthetic status failure"));
+  CHECK(service.last_error == "synthetic status failure");
+  CHECK(contains(capture.str(), "ppwebgui: HTTP 500 error: synthetic status failure"));
+}
+
+TEST_CASE("ppwebgui routes reject signed integer parameters") {
+  ScopedStreamCapture capture(std::cerr);
+  FakeWebGuiService service;
+
+  ScopedTestWebGuiServer server(service);
+  httplib::Client client("127.0.0.1", server.port);
+
+  for (const std::string value : {"-1", "+1"}) {
+    const httplib::Params params {
+      {"override_enabled", "1"},
+      {"override_value", value},
+    };
+
+    const auto res = client.Post("/api/qout", params);
+
+    REQUIRE(res);
+    CHECK(res->status == httplib::StatusCode::BadRequest_400);
+    CHECK(contains(res->body, "Invalid integer for override_value: " + value));
+    CHECK(service.last_error == "Invalid integer for override_value: " + value);
+  }
+  CHECK(service.qout_calls == 0);
+  CHECK(contains(capture.str(), "ppwebgui: HTTP 400 error: Invalid integer for override_value: -1"));
+  CHECK(contains(capture.str(), "ppwebgui: HTTP 400 error: Invalid integer for override_value: +1"));
 }
 
 TEST_CASE("VCD parser") {

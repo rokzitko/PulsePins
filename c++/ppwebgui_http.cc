@@ -99,6 +99,9 @@ uint32_t parse_u32_literal(std::string value) {
   if (value.empty()) {
     throw std::invalid_argument("Empty integer string");
   }
+  if (value.front() == '+' || value.front() == '-') {
+    throw std::invalid_argument("Signed integer string");
+  }
 
   if (containsChar(value, '\'')) {
     const auto parsed = parseVerilogInt(value);
@@ -109,6 +112,9 @@ uint32_t parse_u32_literal(std::string value) {
   }
 
   if (value.size() > 2 && value[0] == '0' && (value[1] == 'b' || value[1] == 'B')) {
+    if (value[2] == '+' || value[2] == '-') {
+      throw std::invalid_argument("Signed binary integer");
+    }
     errno = 0;
     char *end = nullptr;
     const auto parsed = std::strtoul(value.c_str() + 2, &end, 2);
@@ -261,13 +267,6 @@ void register_ppwebgui_routes(httplib::Server &server,
     res.set_content(assets.app_js, "application/javascript; charset=utf-8");
   });
 
-  server.Get("/api/status", [service_ptr](const httplib::Request &, httplib::Response &res) {
-    res.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    res.set_header("Pragma", "no-cache");
-    res.set_header("Expires", "0");
-    respond_json(res, status_to_json(service_ptr->get_status_copy()));
-  });
-
   auto wrap = [service_ptr](auto handler) {
     return [service_ptr, handler = std::move(handler)](const httplib::Request &req, httplib::Response &res) mutable {
       try {
@@ -284,6 +283,13 @@ void register_ppwebgui_routes(httplib::Server &server,
       }
     };
   };
+
+  server.Get("/api/status", wrap([service_ptr](const httplib::Request &, httplib::Response &res) {
+    res.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    res.set_header("Pragma", "no-cache");
+    res.set_header("Expires", "0");
+    respond_json(res, status_to_json(service_ptr->get_status_copy()));
+  }));
 
   server.Post("/api/qout", wrap([service_ptr, options](const httplib::Request &req, httplib::Response &res) {
     if (options.veryverbose) {

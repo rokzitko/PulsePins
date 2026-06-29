@@ -87,9 +87,9 @@ struct TriggerConfigRequest {
   uint32_t invert_int = 0;
   uint32_t invert_ext = 0;
   uint32_t invert_misc = 0;
-  uint32_t mask_int = 0;
-  uint32_t mask_ext = 0;
-  uint32_t mask_misc = 0;
+  uint32_t mask_int = ~uint32_t {0};
+  uint32_t mask_ext = ~uint32_t {0};
+  uint32_t mask_misc = ~uint32_t {0};
 };
 
 struct TriggerConfigState {
@@ -99,10 +99,10 @@ struct TriggerConfigState {
   uint32_t invert_ext = 0;
   uint32_t invert_misc = 0;
   uint32_t invert_aux = 0;
-  uint32_t mask_int = 0;
-  uint32_t mask_ext = 0;
-  uint32_t mask_misc = 0;
-  uint32_t mask_aux = 0;
+  uint32_t mask_int = ~uint32_t {0};
+  uint32_t mask_ext = ~uint32_t {0};
+  uint32_t mask_misc = ~uint32_t {0};
+  uint32_t mask_aux = ~uint32_t {0};
 };
 
 struct StatusSnapshot {

@@ -306,6 +306,9 @@ StreamResult WebGuiController::stream_text_sequence(StreamLaunchRequest request)
     }
 
     auto lock = fpga.acquire_lock();
+    if (snapshot.streamer.override_state.enabled || combiner_base_config.output.force_enabled) {
+      throw WebGuiBadRequest("Output override is enabled; disable it before streaming");
+    }
     const auto previous_clocking = read_clock_config_locked();
     const auto previous_trigger = read_trigger_config_locked();
     const auto previous_combiner = read_combiner_config_locked();
