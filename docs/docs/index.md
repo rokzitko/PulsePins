@@ -320,7 +320,6 @@ The multiplexer modes are the following:
 * SEL3: select port 3 (MISC)
 * SEL4: select port 4 (not used)
 * AND, OR, XOR, XNOR: bitwise logical operation for each bit taking inputs from all four ports
-* MAJ: majority, i.e., three out of four operation
 
 ### Manual triggering using the physical buttons
 

@@ -34,10 +34,7 @@ localparam WIDTH_MODE = 4;
 logic [WIDTH_MODE-1:0] mode; // selected input in multiplexer mode or some combining operation
 
 localparam [WIDTH_MODE-1:0] SEL1 = 4'd0, SEL2 = 4'd1, SEL3 = 4'd2, SEL4 = 4'd3,         // select
-                            AND = 4'd4, OR = 4'd5, XOR = 4'd6, XNOR = 4'd7, MAJ = 4'd8, // logic operation
-                            BLOCK8 = 4'd9, BLOCK16 = 4'd10,                             // blocking
-                            SUM12 = 4'd11, SUM1234 = 4'd12,                             // algebraic sum
-                            DIFF12 = 4'd13;                                             // algebraic difference
+                            AND = 4'd4, OR = 4'd5, XOR = 4'd6, XNOR = 4'd7;
 
 `define B_FORCEo 16
 `define B_FORCE1 17
@@ -278,12 +275,6 @@ always_comb begin
     OR:      z = y1 | y2 | y3 | y4;
     XOR:     z = y1 ^ y2 ^ y3 ^ y4;
     XNOR:    z = y1 ~^ y2 ~^ y3 ~^ y4;
-//    MAJ:     z = majority4(y1, y2, y3, y4);
-//    BLOCK8:  z = { y4[7:0], y3[7:0], y2[7:0], y1[7:0] };
-//    BLOCK16: z = { y2[15:0], y1[15:0] };
-//    SUM12:   z = y1+y2;
-//    SUM1234: z = y1+y2+y3+y4;
-//    DIFF12:  z = y1-y2;
     default: z = '0;
   endcase
 end
