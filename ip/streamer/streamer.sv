@@ -154,6 +154,7 @@ assign out_q = {out_control, out_data};
 logic [WIDTH_DATA-1:0] qout_fifo; // output from FIFO
 logic qout_written;
 logic retrig_requested;
+logic terminal_seen;
 logic rdreq;
 
 output_fifo fifo0 (
@@ -173,6 +174,7 @@ output_fifo fifo0 (
     .strobe(strobe),
     .strobe_enable(strobe_enable),
     .done(done),
+    .terminal_seen(terminal_seen),
     .buffer_error(buffer_error),
     .retrig_requested(retrig_requested),
 
@@ -221,8 +223,8 @@ chain_trigger ct0 (
     );
 
 // `trigger_activated` is the final runtime enable for output progression. It folds in
-// trigger state, explicit stop, completion, and the optional stop-on-buffer-error policy.
-assign trigger_activated = trigger_o && ~done && (stop_on_buffer_error ? ~buffer_error : 1) && ~stop;
+// trigger state, explicit stop, terminator consumption, and the optional stop-on-buffer-error policy.
+assign trigger_activated = trigger_o && ~terminal_seen && (stop_on_buffer_error ? ~buffer_error : 1) && ~stop;
 
 endmodule
 

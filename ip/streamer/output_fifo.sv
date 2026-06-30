@@ -23,7 +23,8 @@ output wire qout_written,      // one-cycle pulse when qout is updated
 output reg strobe,             // clock/strobe for output data (inverted rdclk)
 output reg strobe_enable,      // Goes high when all conditions for streaming are fulfilled. Signal is exported for debugging purposes.
 output reg almost_full,        // 1 if the buffer is too full, used for input data throttling
-output reg done,               // goes high when done
+output reg done,               // goes high on clean/successful completion
+output reg terminal_seen,      // goes high when the terminator is consumed, even after buffer_error
 output reg buffer_error,       // goes high if read is attempted from an empty buffer
 output reg retrig_requested,   // goes high when a retrig request element is encountered
 output reg [WIDTH_STAT-1:0] ctr_in, // elements clocked in
@@ -104,7 +105,17 @@ assign is_last      = control[BIT_TERMINATE];      // indicates the end of the s
 assign is_data      = ~is_retrig & ~is_last;        // regular (data) element
 assign is_no_strobe = control[BIT_NO_STROBE];      // element should not be strobed out
 
-// 'done' signal logic: 'done' signal indicates a successful completion of the RL decoding process, i.e., if there were no buffer underflows
+// Terminal tracking is separate from public `done`: after an underrun the terminator can
+// still be consumed to let the parent streamer stop advancing, but that is not a clean run.
+always_ff @(posedge rdclk) begin
+  if (rdrst)
+    terminal_seen <= 0;
+  else if (read_fire && is_last)
+    terminal_seen <= 1;
+end
+
+// 'done' signal logic: 'done' indicates successful completion of the RL decoding process,
+// i.e., the terminating element was consumed without any prior buffer underflow.
 always_ff @(posedge rdclk) begin
   if (rdrst)
     done <= 0;
@@ -134,11 +145,11 @@ always_ff @(posedge rdclk) begin
     stream_started <= 1;
 end
 
-// 'buffer_error' signal logic: triggered if the output FIFO buffer is emptied before the completion of the RL decoding process
+// 'buffer_error' signal logic: triggered if the output FIFO buffer is emptied before the terminator is consumed.
 always_ff @(posedge rdclk) begin
   if (rdrst)
     buffer_error <= 0;
-  else if (stream_started && rdreq_nrr && !done && empty)
+  else if (stream_started && rdreq_nrr && !terminal_seen && empty)
     buffer_error <= 1;
 end
 

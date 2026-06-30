@@ -14,7 +14,7 @@ make -C docs timing-diagrams
 
 `qout` updates on rising edges of `streamer_clk` when the output FIFO supplies a data or final element. `qout_valid` marks ordinary data samples. `qout_strobe` is generated as `qout_valid & ~streamer_clk`, so it appears during the low phase of `streamer_clk`.
 
-Sequence shown: ordinary data samples `0x11`, `0x22`, and `0x33`, followed by a final element that leaves the final value visible and asserts `done`. Only the ordinary data samples assert `qout_valid` and `qout_strobe`.
+Sequence shown: ordinary data samples `0x11`, `0x22`, and `0x33`, followed by a final element that leaves the final value visible and asserts `done` because no prior `buffer_error` occurred. Only the ordinary data samples assert `qout_valid` and `qout_strobe`.
 
 [![Streamer output strobe timing](img/timing/output_strobe.svg)](img/timing/output_strobe.svg)
 
@@ -22,7 +22,7 @@ RTL points:
 
 * `qout_valid` is registered in [`output_fifo.sv`]({{ source_file("ip/streamer/output_fifo.sv") }}) from `valid = data_update && !is_no_strobe`.
 * `qout_strobe` is `qout_valid & ~rdclk`.
-* A final element updates `qout` and can assert `done`, but it is not a valid data sample.
+* A final element updates `qout` and can assert clean `done` if no prior `buffer_error` occurred, but it is not a valid data sample.
 
 ## Forced trigger with a closed gate
 
@@ -44,7 +44,7 @@ This mirrors the directed gating test in [`tb7.sv`]({{ source_file("ip/streamer/
 
 Gating is an output-side pacing mechanism. Closing the gate during playback stops new FIFO reads. The visible `qout` bus holds its previous value, while `qout_valid` and `qout_strobe` stop marking new samples.
 
-Sequence shown: 3 samples of `0x11`, 2 samples of `0x22`, 2 samples of `0x44`, followed by a final element that leaves `qout` at `0x55`. The gate closes after the first `0x22` sample, so `qout` holds `0x22` while the gate is closed; the second `0x22` sample is emitted after the gate reopens. The `read_fire && is_last` marker is the output-FIFO event that writes the final value and asserts `done` on the same `streamer_clk` edge.
+Sequence shown: 3 samples of `0x11`, 2 samples of `0x22`, 2 samples of `0x44`, followed by a final element that leaves `qout` at `0x55`. The gate closes after the first `0x22` sample, so `qout` holds `0x22` while the gate is closed; the second `0x22` sample is emitted after the gate reopens. The `read_fire && is_last` marker is the output-FIFO event that writes the final value and, on clean runs, asserts `done` on the same `streamer_clk` edge.
 
 [![Gate pause and resume](img/timing/gate_pause_resume.svg)](img/timing/gate_pause_resume.svg)
 
@@ -72,9 +72,9 @@ This behavior is tested by [`tb5.sv`]({{ source_file("ip/streamer/tb_streamer/tb
 
 ## No-strobe and final elements
 
-`BIT_NO_STROBE` suppresses `qout_valid` and `qout_strobe`, but it still updates the `qout` data bus. A final element also updates `qout`; it asserts completion through `done` rather than producing a valid data sample.
+`BIT_NO_STROBE` suppresses `qout_valid` and `qout_strobe`, but it still updates the `qout` data bus. A final element also updates `qout`; on clean runs it asserts completion through `done` rather than producing a valid data sample.
 
-Sequence shown: a no-strobe element updates `qout` to `0x55` without asserting `qout_valid`, then a normal data element emits `0xaa` with `qout_valid` and `qout_strobe`, then a final element leaves `qout` at `0xcc` and asserts `done`.
+Sequence shown: a no-strobe element updates `qout` to `0x55` without asserting `qout_valid`, then a normal data element emits `0xaa` with `qout_valid` and `qout_strobe`, then a final element leaves `qout` at `0xcc` and, because no underrun occurred, asserts `done`.
 
 [![No-strobe and final elements](img/timing/no_strobe_final.svg)](img/timing/no_strobe_final.svg)
 

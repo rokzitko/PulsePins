@@ -95,6 +95,8 @@ Decoded output updates are written into [`output_fifo.sv`]({{ source_file("ip/st
 
 This FIFO is the key CDC boundary in the subsystem. It is also where underrun behavior and completion tracking become visible through `buffer_error` and `done`.
 
+`done` is intentionally clean-completion-only. If `buffer_error` has latched, a later terminator can still stop output progression internally, but public `done` remains low. Software waits may stop on `done || buffer_error`, while successful completion is `done && !buffer_error`.
+
 ### 5. Trigger and gating policy
 
 [`chain_trigger.sv`]({{ source_file("ip/streamer/chain_trigger.sv") }}) runs in the output domain and controls when streaming is allowed to start.

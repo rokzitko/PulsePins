@@ -41,6 +41,7 @@ wire strobe;
 wire strobe_enable;
 wire almost_full;
 wire done;
+wire terminal_seen;
 wire buffer_error;
 wire retrig_requested;
 wire [WIDTH_STAT-1:0] ctr_in;
@@ -61,6 +62,7 @@ output_fifo dut (
   .strobe_enable(strobe_enable),
   .almost_full(almost_full),
   .done(done),
+  .terminal_seen(terminal_seen),
   .buffer_error(buffer_error),
   .retrig_requested(retrig_requested),
   .ctr_in(ctr_in),

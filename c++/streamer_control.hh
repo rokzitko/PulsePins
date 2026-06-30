@@ -233,7 +233,7 @@ public:
     return status() & BUFFER_ERROR;
   }
 
-  // True if the streamer reached the end of the buffered output stream.
+  // True if the streamer reached the end of the buffered output stream without an underrun.
   bool done() {
     return status() & DONE;
   }

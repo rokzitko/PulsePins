@@ -17,7 +17,7 @@ PulsePins command-line tools use the shared return-code constants defined in [`c
 
 Streaming-oriented commands use the shared workflow in [`c++/ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }}), so readback, CRC, FIFO, final-output, overflow, buffer, and timeout failures can be combined in one return code.
 
-Finite playback has an internal streamer-completion timeout. If the streamer does not report `done` within the internal limit, the command sets `RC_TIMEOUT`, reports `timed out waiting for streamer completion (10 s internal limit)`, and skips the normal post-completion checks.
+Finite playback has an internal streamer-completion timeout. The wait ends on clean `done` or a latched `buffer_error`; if neither status appears within the internal limit, the command sets `RC_TIMEOUT`, reports `timed out waiting for streamer completion (10 s internal limit)`, and skips the normal post-completion checks.
 
 Readback timeouts that happen during `-check` set both `RC_TIMEOUT` and `RC_ERROR_CHECK`.
 
