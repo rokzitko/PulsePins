@@ -53,17 +53,29 @@ module rl_decoder
   endfunction
 
   // ---- State ----
-  logic [WIDTH_DATA-1:0]    prev_value;      // last emitted element
+  logic [WIDTH_DATA-1:0]    prev_value;      // last actual emitted element
   logic [WIDTH_DATA-1:0]    curr_value;      // value being repeated
   logic [WIDTH_COUNTER-1:0] curr_cnt;        // remaining repeats
   logic [WIDTH_CONTROL-1:0] curr_control;    // pass-through control for this run
 
   // Convenience
   wire can_emit = (curr_cnt != '0) && !out_almost_full;
+  wire curr_is_prng = curr_control[BIT_PRNG];
+  logic [63:0] rnd;
+  prng_xoroshiro128plus prng(
+    .clk(clk),
+    .rst_n(~reset),
+    .en(can_emit && curr_is_prng),
+    .reseed(1'b0),
+    .rnd(rnd),
+    .seed(128'd123456789) // fixed seed
+  );
+
+  wire [WIDTH_DATA-1:0] emit_value = curr_is_prng ? rnd[WIDTH_DATA-1:0] : curr_value;
   wire finishing_run = can_emit && (curr_cnt == WIDTH_COUNTER'(1));
   wire can_load_next = (curr_cnt == '0) || finishing_run;
   wire load_fire = !reset && !reload_initial && can_load_next && in_valid;
-  wire [WIDTH_DATA-1:0] load_base_value = finishing_run ? curr_value : prev_value;
+  wire [WIDTH_DATA-1:0] load_base_value = finishing_run ? emit_value : prev_value;
 
   always_comb
     in_rdreq = load_fire;
@@ -85,10 +97,10 @@ module rl_decoder
       // 1) Emit when we have repeats and sink is ready
       if (can_emit) begin
         out_wrreq   <= 1'b1;
-        out_data    <= curr_value;
+        out_data    <= emit_value;
         out_control <= curr_control;
         curr_cnt    <= curr_cnt - 1'b1;
-        prev_value  <= curr_value;     // track last emitted element
+        prev_value  <= emit_value;     // track last actual emitted element
       end
 
       // 2) If current run is exhausted or finishing now, try to load a new one.

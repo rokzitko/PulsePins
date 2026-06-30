@@ -36,7 +36,7 @@ module prng_xoroshiro128plus (
     input  wire        en,          // advance when 1
     input  wire        reseed,      // load new seed when 1
     input  wire [127:0] seed,       // must be non-zero
-    output reg [63:0] rnd
+    output wire [63:0] rnd
 );
     // Internal state: two 64-bit registers
     logic [63:0] s0, s1;
@@ -48,6 +48,8 @@ module prng_xoroshiro128plus (
     );
         rotl64 = (x << k) | (x >> (64 - k));
     endfunction
+
+    assign rnd = s0 + s1;
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -61,8 +63,6 @@ module prng_xoroshiro128plus (
             logic [63:0] t0, t1;
             t0 = s0;
             t1 = s1;
-
-            rnd <= t0 + t1;   // xoroshiro128+ output
 
             t1 ^= t0;
             s0 <= rotl64(t0, 55) ^ t1 ^ (t1 << 14);

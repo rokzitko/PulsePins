@@ -98,12 +98,11 @@ logic [WIDTH_CONTROL-1:0] control;
 assign control = qc[WIDTH_DATACTRL-1:WIDTH_DATA];
 
 // Element type control settings
-logic is_retrig, is_last, is_data, is_no_strobe, is_prng;
+logic is_retrig, is_last, is_data, is_no_strobe;
 assign is_retrig    = control[BIT_RETRIG];         // indicates a retrigger request
 assign is_last      = control[BIT_TERMINATE];      // indicates the end of the sequence
 assign is_data      = ~is_retrig & ~is_last;        // regular (data) element
 assign is_no_strobe = control[BIT_NO_STROBE];      // element should not be strobed out
-assign is_prng      = control[BIT_PRNG];           // randomize the output value
 
 // 'done' signal logic: 'done' signal indicates a successful completion of the RL decoding process, i.e., if there were no buffer underflows
 always_ff @(posedge rdclk) begin
@@ -143,16 +142,6 @@ always_ff @(posedge rdclk) begin
     buffer_error <= 1;
 end
 
-logic [63:0] rnd;
-prng_xoroshiro128plus prng(
- .clk(rdclk),
- .rst_n(~rdrst),
- .en(1'b1),
- .reseed(1'b0),
- .rnd(rnd),
- .seed(128'd123456789) // fixed seed
-);
-
 logic data_update, valid, wr_last;
 // No-strobe elements still update qout; only qout_valid/strobe are suppressed.
 assign data_update = read_fire && is_data && !done;
@@ -166,7 +155,7 @@ always_ff @(posedge rdclk) begin
     qout_valid <= 0;
   end else begin
     if (qout_written) begin
-      qout <= (is_prng ? rnd[WIDTH_DATA-1:0] : q);
+      qout <= q;
      end else begin
       qout <= qout; // this allows to keep the "final value" in the output register
     end
