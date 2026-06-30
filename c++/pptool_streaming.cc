@@ -109,7 +109,7 @@ int ppfg(FPGA &fpga, const InputParser &input, const Verbosity &v)
   streamer s(input, fpga); // must be called first to setup the PLL
 
   const auto [period_req, duty] = resolve_ppfg_timing(input);
-  const double output_clk = fpga.pll_int.int_clk.get_freq(0);
+  const double output_clk = fpga.streamer_freq();
   if (v.verbose)
     std::cout << "output_clk=" << pretty_frequency(output_clk) << " output_clk_period="
     << pretty_time(1.0/output_clk) << std::endl;
@@ -219,7 +219,7 @@ int ppdelay(FPGA &fpga, const InputParser &input, const Verbosity &v)
   trigger tr(input, fpga);
   const auto [p, m] = get_trigger_pm(input, v.verbose);
   const auto delay = parse_time(input, "-delay", "0");
-  const double output_clk = fpga.pll_int.int_clk.get_freq(0);
+  const double output_clk = fpga.streamer_freq();
   const auto nr_delay = calc_delay(delay, output_clk);
   const auto pulse_duration = parse_time(input, "-duration", "0");
   const auto nr = calc_duration_nr(pulse_duration, v.verbose, output_clk);
