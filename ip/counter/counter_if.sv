@@ -71,20 +71,64 @@ end
 // Channel selectors feeding the various instruments. Most blocks observe `sel0`, while
 // correlation and timing measurements additionally use `sel1` and `sel2`.
 localparam width_sel = $clog2(width_data); // 32 -> 5
+localparam int width_sel_cdc = 3*width_sel;
 logic [width_sel-1:0] sel0;
+logic [width_sel-1:0] sel1, sel2;
+logic [width_sel-1:0] sel_write_data;
+logic [width_sel-1:0] d_sel0, d_sel1, d_sel2;
+logic [width_sel_cdc-1:0] sel_cdc_src, sel_cdc_dst;
+
+assign sel_write_data = avs_s0_writedata[width_sel-1:0];
+
+always_comb begin
+  sel_cdc_src = { sel2, sel1, sel0 };
+  if (avs_s0_write) begin
+    case (avs_s0_address)
+      4'd4: sel_cdc_src = { sel2, sel1, sel_write_data };
+      4'd5: sel_cdc_src = { sel2, sel_write_data, sel0 };
+      4'd6: sel_cdc_src = { sel_write_data, sel1, sel0 };
+      default: ;
+    endcase
+  end
+end
+
+logic sel_cdc_update;
+assign sel_cdc_update = avs_s0_write &&
+                        (avs_s0_address == 4'd4 ||
+                         avs_s0_address == 4'd5 ||
+                         avs_s0_address == 4'd6);
+
+cdc_bus_update #(
+  .WIDTH(width_sel_cdc),
+  .RESET_VALUE('0)
+) selector_cdc (
+  .src_clk(clk),
+  .src_reset(reset),
+  .src_data(sel_cdc_src),
+  .src_update(sel_cdc_update),
+  .src_busy(),
+  .dst_clk(d_clk),
+  .dst_reset(d_cdc_reset),
+  .dst_accept(1'b1),
+  .dst_data(sel_cdc_dst),
+  .dst_valid(),
+  .dst_pending()
+);
+
+assign { d_sel2, d_sel1, d_sel0 } = sel_cdc_dst;
+
 logic d0;
 mux32to1 mux1 (
   .in(d_reg),
-  .sel(sel0),
+  .sel(d_sel0),
   .out(d0)
 );
 
-logic [width_sel-1:0] sel1, sel2;
 logic d1, d2;
 mux32to2 mux2 (
   .in(d_reg),
-  .sel1(sel1),
-  .sel2(sel2),
+  .sel1(d_sel1),
+  .sel2(d_sel2),
   .out1(d1),
   .out2(d2)
 );

@@ -189,6 +189,7 @@ Current CDC facts:
 
 - `reset_all` is synchronized into `d_clk`
 - `latch_all` is synchronized into `d_clk`
+- channel selector updates cross into `d_clk` through a coherent latest-value CDC update before driving data-domain muxes
 - live counter updates happen in `d_clk`
 - time-counter selected input levels are synchronized into `clk` before edge detection
 - readout happens from the control side after latching

@@ -44,7 +44,7 @@ The subsystem explicitly bridges between:
 * a system/control clock domain (`clk`)
 * a data clock domain (`d_clk`)
 
-[`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) synchronizes global reset and latch operations into the data domain before they are consumed by the individual counters.
+[`counter_if.sv`]({{ source_file("ip/counter/counter_if.sv") }}) synchronizes global reset and latch operations into the data domain before they are consumed by the individual counters. Channel selector updates also cross into the data domain through a coherent latest-value CDC update before they drive the selected-channel muxes.
 
 This matters because the counters are designed to inspect signals that may be produced by the streamer clock rather than the Avalon control clock.
 

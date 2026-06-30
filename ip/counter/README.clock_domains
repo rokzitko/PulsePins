@@ -11,7 +11,8 @@ Clock-domain notes for the counter subsystem.
 - `clk` - Avalon-MM programming and result readout domain
 - `d_clk` - live counter update domain for sampled signal statistics
 - `reset_all` and `latch_all` are generated in `clk` and synchronized into `d_clk`
-- selected channels `d0`, `d1`, `d2` are derived from the registered copy of `d`
+- selector updates cross from `clk` into `d_clk` through a coherent latest-value CDC update
+- selected channels `d0`, `d1`, `d2` are derived from the registered copy of `d` using the `d_clk` selector copy
 
 ## Time-counter path
 

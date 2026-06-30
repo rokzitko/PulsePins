@@ -67,6 +67,7 @@ Important maintenance facts:
 
 - live counting happens in `d_clk`
 - `reset_all` and `latch_all` are synchronized into `d_clk`
+- channel selector updates cross into `d_clk` through a coherent latest-value CDC update before driving data-domain muxes
 - readout happens from the control side after a latch operation
 - the time-counter path is slightly different: it converts selected channel edges into asynchronous start/stop events and measures elapsed time back in `clk`
 
