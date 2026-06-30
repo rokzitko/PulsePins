@@ -207,10 +207,14 @@ public:
 
     // Each timestamp record is stored as two 32-bit FIFO words.
     uint64_t read() {
-    return (uint64_t(read_one()) << 32) + read_one();
+    const uint32_t high = read_one();
+    const uint32_t low = read_one();
+    return (uint64_t(high) << 32) + low;
   }
   uint64_t readA() {
-    return (uint64_t(read_oneA()) << 32) + read_oneA();
+    const uint32_t high = read_oneA();
+    const uint32_t low = read_oneA();
+    return (uint64_t(high) << 32) + low;
   }
 
     // Wait until a full 64-bit PPS event record is present, then reconstruct it.
