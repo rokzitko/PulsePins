@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 source "$(dirname "$0")/defs.sh"
-time ppdmatest 21 -c 10 -v 44739241
-time ppdmatest 21 -c 10 -v 5000000
-time ppdmatest 21 -c 10 -v 500000
-time ppdmatest 21 -c 10 -v 50000
-time ppdmatest 21 -c 10 -v 5000
-time ppdmatest 21 -c 10 -v 500
-time ppdmatest 21 -c 10 -v 50
 time ppdmatest 21 -c 10 -v 5
+time ppdmatest 21 -c 10 -v 50
+time ppdmatest 21 -c 10 -v 500
+time ppdmatest 21 -c 10 -v 5000
+time ppdmatest 21 -c 10 -v 50000
+time ppdmatest 21 -c 10 -v 500000
+time ppdmatest 21 -c 10 -v 5000000
+time ppdmatest 21 -c 10 -v 44739241
 
 time ppdmatest 21 -c 1000000 -v 100
