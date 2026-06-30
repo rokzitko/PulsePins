@@ -118,6 +118,10 @@ public:
     gpout.write(x);
   }
 
+  uint32_t gpio_out_read() const {
+    return gpout.read();
+  }
+
   uint32_t gpio_read() const {
     return gpin.read();
   }
@@ -205,6 +209,7 @@ public:
     pll_int(dev_lw, "pll_int")
     {
       check_version(expected_version);
+      sync_cfg_from_hardware();
     }
 
   void blink_led() {
@@ -286,9 +291,23 @@ public:
     pio_cfg.write_at(0, oe);
   }
 
-  // Apply streamer clock-source selection. Reset is only pulsed when the caller explicitly
-  // requested a source change through the resolved options object.
+  void sync_cfg_from_hardware() {
+    cfg = mgr.gpio_out_read();
+  }
+
+  // Apply streamer clock-source selection. Reset is pulsed only for explicit source changes
+  // or when repairing an invalid default selector.
   void set_clk(const ClockSelectionOptions &opts) {
+    if (!opts.source.has_value()) {
+      sync_cfg_from_hardware();
+      const auto sel = cfg & uint32_t(3);
+      if (sel == static_cast<uint32_t>(ch_ext) || sel == static_cast<uint32_t>(ch_int))
+        return;
+      rm.s2f_hold_reset();
+      sel_clk_int();
+      rm.s2f_release_reset();
+      return;
+    }
     if (opts.source == StreamerClockSource::internal) {
       rm.s2f_hold_reset();
       sel_clk_int();

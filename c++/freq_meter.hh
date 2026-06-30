@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include "tidbit.hh"
 #include "address_map.hh"
+#include "colors.hh"
 #include "freqfmt.hh"
 #include "fpga.hh"
 #include "options.hh"
@@ -155,6 +156,17 @@ constexpr int METER_CORE_CLK = 3;
 class pp_freq_meter {
 private:
   FPGA &fpga;
+  bool zero_streamer_clk_warning_emitted = false;
+
+  void warn_zero_streamer_clk_once() {
+    if (zero_streamer_clk_warning_emitted)
+      return;
+    std::cerr << red
+              << "WARNING: streamer_clk measured 0 Hz; selected streamer clock is not running. "
+              << "Check gp_out[1:0], clock source selection, external clock input, and PLL lock."
+              << rst << std::endl;
+    zero_streamer_clk_warning_emitted = true;
+  }
 
 public:
   freq_meter meter;
@@ -181,6 +193,8 @@ public:
 
   double refresh_streamer_clk() {
     const auto hz = meter.read_freq(METER_STREAMER_CLK);
+    if (hz == 0.0)
+      warn_zero_streamer_clk_once();
     fpga.set_streamer_clk(hz);
     return hz;
   }
