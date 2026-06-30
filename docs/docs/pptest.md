@@ -211,7 +211,7 @@ Triggers and execution flags:
 Preprocessor and control-flow elements:
 
 * ``store I OP ...``: parse the following regular-element record and tag it for storage in preprocessor slot ``I``
-* ``r R L``: replay a stored subsequence ``R`` times with replay length ``L``
+* ``r R L``: replay a stored subsequence ``R`` times with replay length ``L``; ``L`` must not exceed the fast-memory depth
 * ``rt``: pause and wait for a retrigger event
 * ``pr C``: emit pseudo-random values for ``C`` cycles
 * ``final V``: explicit final terminator with output value ``V``; it must be the last sequence element

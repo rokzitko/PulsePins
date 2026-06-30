@@ -163,7 +163,7 @@ Supported `pp.el(...)` constructors include:
 * `pp.el(counter, value)` - regular `BITLOAD` element with explicit `Counter` policy
 * `pp.el(counter, value_wrapper)` - regular element with explicit `Counter` and `Value` wrapper semantics
 * `pp.el(pattern, mask, final)` - trigger element
-* `pp.el(pp.Replay(), repetitions, length)` - replay element
+* `pp.el(pp.Replay(), repetitions, length)` - replay element; `length` must not exceed the fast-memory depth (`POSITIONS`)
 * `pp.el(pp.Retrig(), value=...)` - retrigger element
 * `pp.el(pp.PseudoRandom(), count)` - pseudo-random element
 

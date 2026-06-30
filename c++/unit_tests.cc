@@ -943,6 +943,24 @@ TEST_CASE("replay constructor") {
   CHECK(contains(e.desc(), "Replay: repetitions=7 length=4"));
 }
 
+TEST_CASE("replay length is limited by fast-memory depth") {
+  CHECK_NOTHROW(el(Replay{}, 7, static_cast<value_t>(POSITIONS)));
+  CHECK_THROWS_WITH_AS(el(Replay{}, 7, static_cast<value_t>(POSITIONS + 1)),
+                       "replay length exceeds fast-memory depth",
+                       std::runtime_error);
+  CHECK_THROWS_WITH_AS(el::from_raw_triplet(REPLAY, 7, static_cast<value_t>(POSITIONS + 1)),
+                       "replay length exceeds fast-memory depth",
+                       std::runtime_error);
+  CHECK_THROWS_WITH_AS(el(7, static_cast<value_t>(POSITIONS + 1)).with_control(REPLAY),
+                       "replay length exceeds fast-memory depth",
+                       std::runtime_error);
+
+  auto replay = el(Replay{}, 7, 1);
+  CHECK_THROWS_WITH_AS(replay.set_value(Value(static_cast<value_t>(POSITIONS + 1))),
+                       "replay length exceeds fast-memory depth",
+                       std::runtime_error);
+}
+
 TEST_CASE("retrig constructor") {
   el e(Retrig{});
   CHECK(e.count() == 1);
@@ -999,12 +1017,12 @@ TEST_CASE("set_control normalizes regular mode semantics for BITLOAD control") {
 }
 
 TEST_CASE("set_control updates special element type when control is unambiguous") {
-  el e(3, 0x12);
+  el e(3, 6);
   e.set_control(REPLAY);
 
   CHECK(e.is_replay());
   CHECK(!e.is_regular());
-  CHECK(contains(e.desc(), "Replay: repetitions=3 length=18"));
+  CHECK(contains(e.desc(), "Replay: repetitions=3 length=6"));
 }
 
 TEST_CASE("set_count with counter wrapper updates count and strobe semantics") {
@@ -1123,10 +1141,10 @@ TEST_CASE("from_raw_triplet reconstructs encoded elements") {
   }
 
   SUBCASE("replay") {
-    const auto e = el::from_raw_triplet(REPLAY, 3, 9);
+    const auto e = el::from_raw_triplet(REPLAY, 3, 8);
     CHECK(e.is_replay());
     CHECK(e.count() == 3);
-    CHECK(e.value() == 9);
+    CHECK(e.value() == 8);
   }
 
   SUBCASE("trigger") {
@@ -1160,7 +1178,7 @@ TEST_CASE("sequence_record serializes element kinds") {
   CHECK(el(7, BitXor(0x12)).sequence_record() == "xr 7 0x12");
   CHECK(el(7, BitXor(0x12)).stored_in(3).sequence_record() == "store 3 xr 7 0x12");
   CHECK(el(0x55, 0x2a, true).sequence_record() == "t 0x55 0x2a");
-  CHECK(el(Replay{}, 3, 9).sequence_record() == "r 3 0x9");
+  CHECK(el(Replay{}, 3, 8).sequence_record() == "r 3 0x8");
   CHECK(el(Retrig{}).sequence_record() == "rt");
   CHECK(el(PseudoRandom{}, 11).sequence_record() == "pr 11");
   CHECK(el(0x42).sequence_record() == "final 0x42");
@@ -2673,10 +2691,12 @@ TEST_CASE("parse_sequence_from_stream rejects malformed stage 4 records") {
   std::istringstream in_store("store 2");
   std::istringstream in_store_op("store 2 t 0b1 0b1");
   std::istringstream in_r("r 5");
+  std::istringstream in_r_length(std::string("r 1 ") + std::to_string(POSITIONS + 1));
   std::istringstream in_pr("pr");
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_store), "Incomplete 'store' record: expected slot and regular-element token", std::runtime_error);
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_store_op), "Unknown regular sequence token in 'store': 't'", std::runtime_error);
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_r), "Incomplete 'r' record: expected repetitions and length", std::runtime_error);
+  CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_r_length), "replay length exceeds fast-memory depth", std::runtime_error);
   CHECK_THROWS_WITH_AS(parse_sequence_from_stream(in_pr), "Incomplete 'pr' record: expected count", std::runtime_error);
 }
 

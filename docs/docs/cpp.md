@@ -136,7 +136,7 @@ Class ``el`` (defined in [`elements.hh`]({{ source_file("c++/elements.hh") }})) 
 * ``el(Counter, value_t)``: regular element with explicit strobe policy, ``BitLoad`` update
 * ``el(Counter, Value)``: regular element with explicit strobe and update mode
 * ``el(trigger_t, trigger_t, bool)``: trigger condition element
-* ``el(Replay, count_t, value_t)``: replay a stored subsequence
+* ``el(Replay, count_t, value_t)``: replay a stored subsequence; the length must not exceed the fast-memory depth (``POSITIONS``)
 * ``el(Retrig, value_t)``: stop streaming and wait for a retrigger event
 * ``el(PseudoRandom, count_t)``: emit pseudo-random values for the selected count
 

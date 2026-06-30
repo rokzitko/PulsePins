@@ -238,6 +238,11 @@ private:
     return normalized_regular_value_kind(value) == value_kind_t::bitload ? BITLOAD : value.mode_bits();
   }
 
+  static void validate_replay_length(value_t length) {
+    if (length > POSITIONS)
+      throw std::runtime_error("replay length exceeds fast-memory depth");
+  }
+
   static el_type type_from_control(control_t control) {
     if ((control & TRIGGERBITS) == TRIGGER || (control & TRIGGERBITS) == (TRIGGER | TRIGGERFINAL))
       return el_type::trigger;
@@ -323,6 +328,8 @@ private:
         v(value),
         counter_kind(counter_kind_),
         value_kind(value_kind_) {
+    if (type_from_control(y) == el_type::replay)
+      validate_replay_length(v);
     sync_cached_state_from_control();
   }
 
@@ -460,6 +467,8 @@ public:
   el with_control(control_t control) const {
     el copy = *this;
     copy.y = control;
+    if (copy.is_replay())
+      validate_replay_length(copy.v);
     copy.sync_cached_state_from_control();
     return copy;
   }
@@ -508,6 +517,9 @@ public:
       *this = with_regular_value(_vv);
       return;
     }
+
+    if (is_replay())
+      validate_replay_length(_vv.value());
 
     v = _vv.value();
     value_kind = _vv.kind();
