@@ -98,7 +98,7 @@ At the sequence-serialization level, Python exposes the same practical formats a
 * VCD import/export via `Sequence.load_VCD(...)` and `Sequence.write_VCD_file(...)`
 * exact binary sequence import/export via `read_sequence_binary(...)` and `Sequence.write_binary_file(...)`
 
-Text and binary sequence helpers preserve explicit `final`, trigger, replay, retrigger, and pseudo-random records exactly. VCD export is narrower: `Sequence.write_VCD_file(...)` only accepts deterministic regular sequences and rejects trigger/final/control-flow elements. The underlying C++ VCD export default uses `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
+Text and binary sequence helpers preserve terminal explicit `final`, trigger, replay, retrigger, and pseudo-random records exactly. VCD export is narrower: `Sequence.write_VCD_file(...)` only accepts deterministic regular sequences and rejects trigger/final/control-flow elements. The underlying C++ VCD export default uses `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
 
 ## Supported build modes
 

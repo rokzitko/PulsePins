@@ -188,6 +188,12 @@ public:
     return sz;
   }
 
+  void validate_final_is_terminal() const {
+    for (size_t i = 0; i < size(); ++i)
+      if ((*this)[i].is_final() && i + 1 != size())
+        throw std::runtime_error("Explicit final output must be the last sequence element");
+  }
+
   // Dump the sequence to stream `F`.
   void dump(std::ostream &F = std::cout, const std::string prefix = "") const {
     F << prefix << "Sequence: number of elements (size)=" << size() << ", sequence duration in clock periods (length)=" << length() << std::endl;
@@ -348,6 +354,7 @@ public:
     }
     if (f.peek() != std::char_traits<char>::eof())
       throw std::runtime_error("Trailing data after binary sequence payload");
+    seq.validate_final_is_terminal();
     const bool force_trigger = (header.flags & PPBF_FLAG_FORCE_TRIGGER) != 0;
     return {seq, force_trigger};
   }
@@ -489,5 +496,6 @@ inline std::pair<Sequence, bool> parse_sequence_from_stream(std::istream &f)
       throw std::runtime_error("Unknown sequence token: '" + token + "'");
     }
   }
+  elements.validate_final_is_terminal();
   return {elements, force_trigger};
 }

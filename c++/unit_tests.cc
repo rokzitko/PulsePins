@@ -1749,6 +1749,19 @@ TEST_CASE("prepare_sequence_for_streaming keeps caller sequence unchanged") {
   CHECK(prepared.back() == el(0x34));
 }
 
+TEST_CASE("prepare_sequence_for_streaming rejects non-terminal explicit final terminator") {
+  ScopedEnvVar env("PP_RANDOM_FINAL", std::nullopt);
+  Sequence seq;
+  seq.push_back(el(3, 0x12));
+  seq.push_back(el(0x34));
+  seq.push_back(el(4, 0x56));
+
+  CHECK_THROWS_WITH_AS(
+    prepare_sequence_for_streaming(seq, make_input({})),
+    "Explicit final output must be the last sequence element",
+    std::runtime_error);
+}
+
 TEST_CASE("drop_count0 removes only zero-count elements") {
   Sequence seq;
   seq.push_back(el(0, 0x10));
@@ -2339,6 +2352,21 @@ TEST_CASE("binary round-trip preserves final update mode") {
   CHECK(roundtrip[0].updated_value(0x1234) == 0x1234);
 }
 
+TEST_CASE("binary reader rejects non-terminal explicit final terminator") {
+  Sequence seq;
+  seq.push_back(el(0x34));
+  seq.push_back(el(3, 0x12));
+
+  std::ostringstream out(std::ios::binary);
+  seq.write_binary(out, false);
+  std::istringstream in(out.str(), std::ios::binary);
+
+  CHECK_THROWS_WITH_AS(
+    Sequence::read_binary(in),
+    "Explicit final output must be the last sequence element",
+    std::runtime_error);
+}
+
 TEST_CASE("binary round-trips mixed sequence exactly") {
   Sequence seq;
   seq.push_back(el(3, 0x12));
@@ -2592,6 +2620,15 @@ TEST_CASE("parse_sequence_from_stream parses explicit final terminator") {
 
   CHECK(seq[0] == el(3, 0x12));
   CHECK(seq[1] == el(0x34));
+}
+
+TEST_CASE("parse_sequence_from_stream rejects non-terminal explicit final terminator") {
+  std::istringstream in("d 3 0x12 final 0x34 d 4 0x56");
+
+  CHECK_THROWS_WITH_AS(
+    parse_sequence_from_stream(in),
+    "Explicit final output must be the last sequence element",
+    std::runtime_error);
 }
 
 TEST_CASE("parse_sequence_from_stream rejects unknown tokens") {

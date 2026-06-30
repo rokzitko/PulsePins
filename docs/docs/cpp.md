@@ -186,7 +186,7 @@ Public member functions are:
 
 Two sequences can be compared using function ``compare()`` and using ``operator==``.
 
-[`sequence.hh`]({{ source_file("c++/sequence.hh") }}) also provides ``parse_sequence_from_stream(std::istream&)`` for the text-based sequence format used by `pptest` test 42 and by the SCPI `SEQ` command. That parser accepts the same regular update modes implemented by the `Value` subclasses, non-final triggers, preprocessor operations (`store`, `r`, `rt`, `pr`), explicit final terminators, and the `f` force-trigger flag. The accepted token grammar is documented inline next to the parser and mirrored in [pptest - self-tests](pptest.md) ([source]({{ source_file("docs/docs/pptest.md") }})).
+[`sequence.hh`]({{ source_file("c++/sequence.hh") }}) also provides ``parse_sequence_from_stream(std::istream&)`` for the text-based sequence format used by `pptest` test 42 and by the SCPI `SEQ` command. That parser accepts the same regular update modes implemented by the `Value` subclasses, non-final triggers, preprocessor operations (`store`, `r`, `rt`, `pr`), terminal explicit final terminators, and the `f` force-trigger flag. The accepted token grammar is documented inline next to the parser and mirrored in [pptest - self-tests](pptest.md) ([source]({{ source_file("docs/docs/pptest.md") }})).
 
 The same header also provides ``write_sequence_to_stream(...)`` and ``write_sequence_to_file(...)`` for emitting that text format from an in-memory `Sequence`. These helpers are intended for round-tripping sequences through files or for generating sequence files programmatically instead of hand-writing token streams.
 

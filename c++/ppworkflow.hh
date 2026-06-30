@@ -124,6 +124,7 @@ inline ReadbackTimeoutPolicy readback_timeout_policy(const InputParser &input) {
 
 inline std::optional<value_t> explicit_final_output(const Sequence &elements)
 {
+  elements.validate_final_is_terminal();
   if (!elements.empty() && elements.back().is_final())
     return elements.back().value();
   return std::nullopt;
@@ -141,6 +142,7 @@ inline el no_modify_final_output()
 
 inline std::optional<value_t> infer_sequence_final_output(const Sequence &elements, value_t initial_value)
 {
+  elements.validate_final_is_terminal();
   value_t current = initial_value;
   for (const auto &e : elements) {
     if (e.is_regular()) {

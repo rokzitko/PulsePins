@@ -214,9 +214,9 @@ Preprocessor and control-flow elements:
 * ``r R L``: replay a stored subsequence ``R`` times with replay length ``L``
 * ``rt``: pause and wait for a retrigger event
 * ``pr C``: emit pseudo-random values for ``C`` cycles
-* ``final V``: explicit final terminator with output value ``V``
+* ``final V``: explicit final terminator with output value ``V``; it must be the last sequence element
 
-If a tool or workflow already controls the final output value through ``-t`` or ``-random_final``/``PP_RANDOM_FINAL``, do not also include ``final V`` in the sequence text. The shared execution path rejects multiple final-output policies at the same time. If no final-output policy is provided, playback appends a no-modify final terminator so the outputs remain at the last sequence value.
+If a tool or workflow already controls the final output value through ``-t`` or ``-random_final``/``PP_RANDOM_FINAL``, do not also include ``final V`` in the sequence text. The shared execution path rejects multiple final-output policies at the same time, and rejects ``final V`` if any sequence element follows it. If no final-output policy is provided, playback appends a no-modify final terminator so the outputs remain at the last sequence value.
 
 The ``store`` wrapper accepts any regular-element token in place of ``OP``: ``d``, ``dn``, ``s``, ``c``, ``x``, ``n``, ``a``, ``o``, ``xr``, ``xn``, ``sl``, or ``sr``.
 
