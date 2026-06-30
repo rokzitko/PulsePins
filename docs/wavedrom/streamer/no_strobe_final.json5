@@ -1,0 +1,19 @@
+{
+  head: {
+    text: 'No-strobe and final output elements',
+  },
+  signal: [
+    { name: 'streamer_clk',  wave: '0101010101010101' },
+    { name: 'rdreq',         wave: '0111111100000000' },
+    { name: 'control',       wave: '23.4.5..........', data: ['empty', 'NO_STROBE', 'DATA', 'FINAL'] },
+    { name: 'qout_written',  wave: '0111111000000000' },
+    { name: 'qout',          wave: '23.4.5..........', data: ['old', '0x55', '0xaa', '0xcc'] },
+    { name: 'qout_valid',    wave: '0001100000000000' },
+    { name: 'qout_strobe',   wave: '0000100000000000' },
+    { name: 'done',          wave: '0000011111111111' },
+  ],
+  foot: {
+    text: 'BIT_NO_STROBE updates qout without asserting qout_valid. The final element updates qout and asserts done, but is not a valid data sample.',
+  },
+  config: { hscale: 2 },
+}

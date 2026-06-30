@@ -12,6 +12,8 @@ Use this page when checking how quickly an RTL event can become visible.
 
 For CDC terminology used in the tables below, see [CDC background terms](clock_domain.md#cdc-background-terms). Here, CDC paths have observable behavior rather than one universal cycle count because FIFO state, synchronizer phase, and source/destination clock relationships can vary.
 
+For documentation waveforms focused on streamer output, triggering, gating, retriggering, and `qout_strobe`, see [Streamer timing diagrams](streamer_timing.md).
+
 ## Streamer Timing
 
 | Area | Timing behavior | Practical consequence |

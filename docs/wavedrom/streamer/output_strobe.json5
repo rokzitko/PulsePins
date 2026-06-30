@@ -1,0 +1,18 @@
+{
+  head: {
+    text: 'Streamer output-valid and strobe convention',
+  },
+  signal: [
+    { name: 'streamer_clk', wave: '0101010101010101' },
+    { name: 'rdreq',         wave: '0111111100000000' },
+    { name: 'read_fire',     wave: '0111111100000000' },
+    { name: 'qout',          wave: '23.4.5.6........', data: ['initial', '0x11', '0x22', '0x33', 'final'] },
+    { name: 'qout_valid',    wave: '0111111000000000' },
+    { name: 'qout_strobe',   wave: '0010101000000000' },
+    { name: 'done',          wave: '0000000111111111' },
+  ],
+  foot: {
+    text: 'This diagram uses half-cycle ticks. qout_strobe pulses only during the low half of streamer_clk while qout_valid is high.',
+  },
+  config: { hscale: 2 },
+}

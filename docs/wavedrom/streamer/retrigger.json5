@@ -1,0 +1,20 @@
+{
+  head: {
+    text: 'Retrigger element pauses output until the next trigger',
+  },
+  signal: [
+    { name: 'streamer_clk',      wave: 'p....................' },
+    { name: 'trigger_in',        wave: '2..3.........4.......', data: ['00', '01', '10'] },
+    { name: 'trigger_armed',     wave: '01..0......1..0......' },
+    { name: 'trigger_activated', wave: '0...1.....0...1....0.' },
+    { name: 'rdreq',             wave: '0...1111.0...111.0..' },
+    { name: 'qout',              wave: '2...3.........4..5...', data: ['initial', '0x12345678 held', '0x87654321', 'final'] },
+    { name: 'qout_valid',        wave: '0...1110.....1110...' },
+    { name: 'retrig_requested',  wave: '0.......10..........' },
+    { name: 'done',              wave: '0................1..' },
+  ],
+  foot: {
+    text: 'A retrigger element resets the trigger chain to IDLE. Output advancement resumes after the later trigger condition is satisfied.',
+  },
+  config: { hscale: 2 },
+}

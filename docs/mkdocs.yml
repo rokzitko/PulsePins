@@ -12,6 +12,7 @@ nav:
     - PP_PMOD hardware reference: pp_pmod_reference.md
     - Technicalities: details.md
     - Streamer subsystem: streamer.md
+    - Streamer timing diagrams: streamer_timing.md
     - RTL latency and timing: latency.md
     - Clock domains: clock_domain.md
     - Combiner subsystem: combiner.md

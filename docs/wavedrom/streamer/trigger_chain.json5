@@ -1,0 +1,19 @@
+{
+  head: {
+    text: 'Multi-stage trigger chain state timing',
+  },
+  signal: [
+    { name: 'streamer_clk', wave: 'p................' },
+    { name: 'state',        wave: '2.3.4.3.5.3.6.7.2', data: ['IDLE', 'LOAD', 'WAIT 001', 'LOAD', 'WAIT 010', 'LOAD', 'WAIT 100', 'TRIGGERED', 'IDLE'] },
+    { name: 'rdreq',        wave: '0.1.0.1.0.1.0....' },
+    { name: 'armed',        wave: '0..1.0.1.0.1.0...' },
+    { name: 'trigger_in',   wave: '2...3...4...5....', data: ['000', '001', '010', '100'] },
+    { name: 'one',          wave: '0...1.0.1.0.1....' },
+    { name: 'trigger_o',    wave: '0............1.0.' },
+    { name: 'trigger_reset', wave: '0..............10' },
+  ],
+  foot: {
+    text: 'Each stage loads a mask/pattern word, waits for a match, then advances to the next stage or TRIGGERED.',
+  },
+  config: { hscale: 2 },
+}

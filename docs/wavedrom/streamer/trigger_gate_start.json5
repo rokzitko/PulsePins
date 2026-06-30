@@ -1,0 +1,20 @@
+{
+  head: {
+    text: 'Forced trigger while the output gate is closed',
+  },
+  signal: [
+    { name: 'streamer_clk',      wave: 'p...............' },
+    { name: 'trigger_force',     wave: '0..1............' },
+    { name: 'trigger_activated', wave: '0...1.........0.' },
+    { name: 'gate_enable',       wave: '0.......1.......' },
+    { name: 'rdreq',             wave: '0.......1.....0.' },
+    { name: 'trigger_latch',     wave: '0........1......' },
+    { name: 'qout',              wave: '2........3..4.5.', data: ['initial', '0x11', '0x22', 'final'] },
+    { name: 'qout_valid',        wave: '0........111110.' },
+    { name: 'done',              wave: '0.............1.' },
+  ],
+  foot: {
+    text: 'trigger_activated alone does not advance the output FIFO. rdreq starts only when gate_enable is also high.',
+  },
+  config: { hscale: 2 },
+}

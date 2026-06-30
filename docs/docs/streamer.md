@@ -112,7 +112,7 @@ In [`streamer.sv`]({{ source_file("ip/streamer/streamer.sv") }}), the output FIF
 
 This makes gating an output-side pacing mechanism rather than an input-side buffering mechanism.
 
-For the concise trigger, gate, and output-valid timing summary, see [RTL latency and timing](latency.md).
+For the concise trigger, gate, and output-valid timing summary, see [RTL latency and timing](latency.md). For idealized waveform diagrams of these conventions, see [Streamer timing diagrams](streamer_timing.md).
 
 ## Trigger model
 
