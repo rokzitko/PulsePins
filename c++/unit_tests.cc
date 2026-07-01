@@ -2149,6 +2149,17 @@ TEST_CASE("VCD parser rejects zero scale factor") {
   CHECK_THROWS_AS(parseVcdUpdates(vcd, "outs", 0), std::runtime_error);
 }
 
+TEST_CASE("VCD parser rejects out-of-range timestamps") {
+  std::istringstream vcd(
+    "$timescale 1fs $end\n"
+    "$var reg 1 ! outs $end\n"
+    "$enddefinitions $end\n"
+    "#184467440737095516160\n"
+    "1!\n");
+
+  CHECK_THROWS_AS(parseVcdUpdates(vcd, "outs", std::numeric_limits<uint32_t>::max()), std::runtime_error);
+}
+
 TEST_CASE("VCD parser applies timescale before default scale factor") {
   std::istringstream vcd(
     "$timescale 10ns $end\n"
@@ -2216,6 +2227,25 @@ TEST_CASE("write_VCD merges unchanged adjacent output states") {
   CHECK(vcd.find(five, vcd.find(five) + 1) == std::string::npos);
   CHECK(contains(vcd, "#5\n"));
   CHECK(contains(vcd, "b" + value_to_vcd_binary(0x7) + " !\n"));
+}
+
+TEST_CASE("load_VCD rejects decreasing timestamps") {
+  const std::string filename = "unit_tests_output_decreasing.vcd";
+  {
+    std::ofstream out(filename);
+    REQUIRE(out);
+    out << "$timescale 1ns $end\n"
+        << "$var reg 1 ! outs $end\n"
+        << "$enddefinitions $end\n"
+        << "#10\n"
+        << "1!\n"
+        << "#5\n"
+        << "0!\n";
+  }
+
+  Sequence seq;
+  CHECK_THROWS_AS(seq.load_VCD(filename, "outs", 1), std::runtime_error);
+  std::remove(filename.c_str());
 }
 
 TEST_CASE("write_VCD normalizes deterministic regular operators") {

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cerrno>
 #include <cstdint>
 #include <cstdlib>
 #include <cctype>
@@ -213,8 +214,9 @@ inline count_t parse_timestamp(std::string_view t, uint32_t scale_factor, VcdTim
   ++p;
 
   char* endp = nullptr;
+  errno = 0;
   unsigned long long v = std::strtoull(p, &endp, 10);
-  if (endp == p || *endp != '\0') {
+  if (endp == p || *endp != '\0' || errno == ERANGE) {
     throw std::runtime_error("Invalid VCD timestamp: " + s);
   }
   const uint64_t denominator = checked_mul_u64(scale_factor, timescale.denominator, "VCD timestamp scale divisor");
@@ -278,7 +280,10 @@ inline std::vector<VcdUpdate> parseVcdUpdates(std::istream& in, std::string_view
     }
 
     if (t[0] == '#') {
-      current_time = detail::parse_timestamp(t, scale_factor, timescale);
+      const count_t next_time = detail::parse_timestamp(t, scale_factor, timescale);
+      if (next_time < current_time)
+        throw std::runtime_error("Non-monotonic VCD timestamp: " + t);
+      current_time = next_time;
       continue;
     }
 

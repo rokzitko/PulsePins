@@ -239,7 +239,9 @@ public:
     if (!F)
       throw std::runtime_error("Could not open VCD input file: " + filename);
     auto l = parseVcdUpdates(F, target_name, scale_factor);
-    for (size_t i = 0; i < l.size()-1; i++) {
+    for (size_t i = 0; i + 1 < l.size(); i++) {
+      if (l[i+1].count < l[i].count)
+        throw std::runtime_error("Non-monotonic VCD timestamp in input file: " + filename);
       Counter c = l[i+1].count-l[i].count;
       this->push_back(el(c, l[i].value));
     }
