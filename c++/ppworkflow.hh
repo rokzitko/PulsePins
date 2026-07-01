@@ -384,6 +384,7 @@ inline int run_post_execution_checks(streamer_control &sc,
                                     int rc)
 {
   // The remaining checks are post-completion invariants for the whole streamer path.
+  bool post_execution_check_failure = false;
   const int wait_rc = sc.wait_to_complete(v);
   rc |= wait_rc;
   if (wait_rc & RC_TIMEOUT) {
@@ -403,20 +404,24 @@ inline int run_post_execution_checks(streamer_control &sc,
   } else {
     if (!(envVarExists("PP_IGNORE_QOUT_FINAL") || input.exists("-pp_ignore_qout_final"))) {
       std::cout << red << " Mismatch: expecting " << hex8(*final) << rst << std::endl;
+      post_execution_check_failure = true;
       rc |= RC_ERROR_CHECK;
     }
   }
   sc.statistics();
   if (sc.get_input_fifo1_ctr_in() != sc.get_input_fifo1_ctr_out()) {
     std::cout << red << "Mismatch in the streamer input FIFO1 detected." << rst << std::endl;
+    post_execution_check_failure = true;
     rc |= RC_ERROR_CHECK;
   }
   if (sc.get_input_fifo2_ctr_in() != sc.get_input_fifo2_ctr_out()) {
     std::cout << red << "Mismatch in the streamer input FIFO2 detected." << rst << std::endl;
+    post_execution_check_failure = true;
     rc |= RC_ERROR_CHECK;
   }
   if (sc.get_output_fifo_ctr_in() != sc.get_output_fifo_ctr_out()) {
     std::cout << red << "Mismatch in the streamer output FIFO detected." << rst << std::endl;
+    post_execution_check_failure = true;
     rc |= RC_ERROR_CHECK;
   }
   if (sc.get_overflow()) {
@@ -443,7 +448,7 @@ inline int run_post_execution_checks(streamer_control &sc,
     std::cout << red << " Mismatch in readback CRC. Got=0x" << std::hex << std::setw(8) << std::setfill('0') << crc32rb << rst << std::endl;
     rc |= RC_ERROR_CRC_MISMATCH;
   }
-  if (crcOK && rb_failure)
+  if (crcOK && rb_failure && !post_execution_check_failure)
     if (input.exists("-ignore_rb_error_if_crc_ok") || envVarExists("PP_IGNORE_RB_ERROR_IF_CRC_OK"))
       rc &= ~RC_ERROR_CHECK;
   deactivate_trigger(sc, force_trigger, v);
@@ -475,12 +480,12 @@ inline int send_and_trig(Transport &tr,
   rc |= transmit_sequence_checked(tr, sc, working_elements, v);
   if (rc & RC_TIMEOUT)
     return rc;
+  const auto timeout_policy = readback_timeout_policy(input);
   const int trigger_rc = activate_trigger(sc, input, force_trigger, v);
   rc |= trigger_rc;
   if (trigger_rc != RC_OK)
     return rc;
 
-  const auto timeout_policy = readback_timeout_policy(input);
   bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout_policy, initial_value, rc);
   run_readback_dump_phase(rb, input, v, timeout_policy);
 

@@ -36,7 +36,7 @@ unless the caller deliberately wants that behavior.
 * `-rbmode 1` or `PP_RBMODE=1`: select the supported readback valid/clock mode. Other readback strobe modes are not available in the current build.
 * `-stop_on_buffer_error` or `-sobe`: request streamer stop-on-buffer-error behavior when a command constructs the shared streamer helper. With the default policy, underrun is still latched in `buffer_error` and playback may continue until a terminator, but `done` remains clean-completion-only.
 * `-pp_ignore_qout_final` or `PP_IGNORE_QOUT_FINAL`: do not fail a streaming command solely because the final observed `qout` differs from the inferred expected final value.
-* `-ignore_rb_error_if_crc_ok` or `PP_IGNORE_RB_ERROR_IF_CRC_OK`: clear the readback-check error bit when the readback path reported an error but the streamer and readback CRC values still match.
+* `-ignore_rb_error_if_crc_ok` or `PP_IGNORE_RB_ERROR_IF_CRC_OK`: clear only the readback-check error contribution when the readback path reported an error but the streamer and readback CRC values still match; final `qout` and FIFO check failures are still reported.
 
 The command catalog itself is declared in [`c++/pptool_commands.hh`]({{ source_file("c++/pptool_commands.hh") }}) and implemented mainly in:
 
