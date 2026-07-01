@@ -65,6 +65,7 @@ module cdc_bus_update #(
 
   // Source holds src_send_data stable from request toggle until the destination has sampled it
   // and returned the acknowledgement toggle. Additional source updates collapse to latest value.
+  // dst_valid is a one-dst_clk-cycle pulse each time dst_data is committed.
   logic [WIDTH-1:0] src_send_data;
   logic [WIDTH-1:0] src_pending_data;
   logic             src_pending_valid;
@@ -144,6 +145,7 @@ module cdc_bus_update #(
     end else begin
       dst_req_sync_chain <= {dst_req_sync_chain[0], src_req_tgl};
       dst_req_sync_d     <= dst_req_sync;
+      dst_valid          <= 1'b0;
 
       if (dst_req_event) begin
         dst_ack_tgl <= ~dst_ack_tgl;

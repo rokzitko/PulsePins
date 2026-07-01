@@ -100,12 +100,18 @@ sync_bit_3stage streamer_reset_sync_inst(
 
 // Static output/gating configuration crosses as a coherent bundle and is committed only
 // while streamer_clk logic is idle or held in streamer reset.
-localparam int STATIC_CFG_W = 1 + 1 + WIDTH_TRIGGER + 1 + 1 + WIDTH_DATA + WIDTH_DATA + 1;
+localparam int INIT_RELOAD_SEQ_W = 32;
+localparam int STATIC_CFG_W = INIT_RELOAD_SEQ_W + 1 + WIDTH_TRIGGER + 1 + 1 + WIDTH_DATA + WIDTH_DATA + 1;
 logic [STATIC_CFG_W-1:0] static_cfg_clk;
 logic [STATIC_CFG_W-1:0] static_cfg_streamer;
 logic static_cfg_update;
-logic initial_value_update_clk;
-logic initial_value_update_streamer;
+logic static_cfg_commit_streamer;
+logic [INIT_RELOAD_SEQ_W-1:0] initial_reload_seq_clk;
+logic [INIT_RELOAD_SEQ_W-1:0] initial_reload_seq_streamer;
+logic [INIT_RELOAD_SEQ_W-1:0] initial_reload_ack_seq_streamer;
+logic [INIT_RELOAD_SEQ_W-1:0] initial_reload_ack_seq_clk;
+logic initial_reload_ack_update_streamer;
+logic initial_reload_ack_valid_clk;
 
 logic qout_select_streamer;
 logic [WIDTH_DATA-1:0] qout_override_streamer;
@@ -115,9 +121,9 @@ logic gate_in_en_streamer;
 logic [WIDTH_TRIGGER-1:0] gate_mask_streamer;
 logic stop_on_buffer_error_streamer;
 
-assign static_cfg_clk = {initial_value_update_clk, stop_on_buffer_error, gate_mask, gate_in_en, gating,
+assign static_cfg_clk = {initial_reload_seq_clk, stop_on_buffer_error, gate_mask, gate_in_en, gating,
                          initial_value, qout_override, qout_select};
-assign {initial_value_update_streamer, stop_on_buffer_error_streamer, gate_mask_streamer, gate_in_en_streamer,
+assign {initial_reload_seq_streamer, stop_on_buffer_error_streamer, gate_mask_streamer, gate_in_en_streamer,
         gating_streamer, initial_value_streamer, qout_override_streamer,
         qout_select_streamer} = static_cfg_streamer;
 
@@ -157,9 +163,7 @@ logic streamer_idle;
 assign streamer_idle = !trigger_armed_streamer && !trigger_activated_streamer;
 
 logic streamer_idle_clk;
-logic initial_value_update_clk_sync;
-logic initial_value_update_clk_sync_d;
-wire initial_reload = initial_value_update_clk_sync ^ initial_value_update_clk_sync_d;
+wire initial_reload = initial_reload_ack_valid_clk && (initial_reload_ack_seq_clk == initial_reload_seq_clk);
 logic initial_reload_pending;
 wire block_input_for_initial_reload = initial_reload_pending && streamer_idle_clk;
 
@@ -171,16 +175,17 @@ cdc_bit_sync sync_streamer_idle_to_clk (
   .async_in(streamer_idle), .sync_out(streamer_idle_clk)
 );
 
-cdc_bit_sync sync_initial_value_update_to_clk (
-  .dst_clk(clk), .dst_reset(reset),
-  .async_in(initial_value_update_streamer), .sync_out(initial_value_update_clk_sync)
-);
-
-always_ff @(posedge clk) begin
-  if (reset)
-    initial_value_update_clk_sync_d <= 1'b0;
-  else
-    initial_value_update_clk_sync_d <= initial_value_update_clk_sync;
+always_ff @(posedge streamer_clk) begin
+  if (streamer_global_reset) begin
+    initial_reload_ack_seq_streamer <= '0;
+    initial_reload_ack_update_streamer <= 1'b0;
+  end else begin
+    initial_reload_ack_update_streamer <= 1'b0;
+    if (static_cfg_commit_streamer && (initial_reload_seq_streamer != initial_reload_ack_seq_streamer)) begin
+      initial_reload_ack_seq_streamer <= initial_reload_seq_streamer;
+      initial_reload_ack_update_streamer <= 1'b1;
+    end
+  end
 end
 
 assign trigger_armed = trigger_armed_streamer;
@@ -212,7 +217,24 @@ cdc_bus_update #(
   .dst_reset(streamer_global_reset),
   .dst_accept(streamer_reset || streamer_idle),
   .dst_data(static_cfg_streamer),
-  .dst_valid(),
+  .dst_valid(static_cfg_commit_streamer),
+  .dst_pending()
+);
+
+cdc_bus_update #(
+  .WIDTH(INIT_RELOAD_SEQ_W),
+  .RESET_VALUE('0)
+) initial_reload_ack_cdc_inst (
+  .src_clk(streamer_clk),
+  .src_reset(streamer_global_reset),
+  .src_data(initial_reload_ack_seq_streamer),
+  .src_update(initial_reload_ack_update_streamer),
+  .src_busy(),
+  .dst_clk(clk),
+  .dst_reset(reset),
+  .dst_accept(1'b1),
+  .dst_data(initial_reload_ack_seq_clk),
+  .dst_valid(initial_reload_ack_valid_clk),
   .dst_pending()
 );
 
@@ -388,7 +410,7 @@ always_ff @(posedge clk) begin
     gate_in_en <= 0;
     gate_mask <= 0;
     stop_on_buffer_error <= 0;
-    initial_value_update_clk <= 0;
+    initial_reload_seq_clk <= '0;
     initial_reload_pending <= 0;
     static_cfg_update <= 0;
   end else begin
@@ -409,7 +431,7 @@ always_ff @(posedge clk) begin
         IF_CTRL:       {stop_on_buffer_error, qout_select, trigger_reset_int, reset_streamer, trigger_enable_int, trigger_force_int, stop} <= avs_s0_writedata[6:0];
         INIT_VAL: begin
           initial_value[WIDTH_AVS-1:0] <= avs_s0_writedata;
-          initial_value_update_clk <= ~initial_value_update_clk;
+          initial_reload_seq_clk <= initial_reload_seq_clk + 1'b1;
           initial_reload_pending <= 1'b1;
         end
         QOUT_OVERRIDE: qout_override[WIDTH_AVS-1:0] <= avs_s0_writedata;
