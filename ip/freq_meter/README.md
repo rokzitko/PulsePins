@@ -31,7 +31,7 @@ The Avalon-MM register file exposes:
 
 The hardware continuously produces per-gate edge counts while enabled. Software converts those counts into Hz using the known gate length and nominal counter-clock frequency.
 
-`clear` restarts the count-domain measurement baseline. It does not immediately overwrite the Avalon-visible result registers, so direct register readers should wait for a new gate result before treating reads as fresh.
+`clear` restarts the count-domain measurement baseline and publishes zeroed Avalon-visible result registers through the normal result update path. Direct register readers still need to allow CDC propagation before expecting the zeroed snapshot to be visible.
 
 ## Reading order for maintainers
 

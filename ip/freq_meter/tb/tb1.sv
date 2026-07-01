@@ -1,7 +1,8 @@
 // Purpose: frequency-meter functional testbench.
 //
-// Verifies that the frequency-meter datapath counts input-clock activity over a gate interval and
-// exposes the expected measurement result through its wrapper logic.
+// Verifies that the frequency-meter datapath counts input-clock activity over a gate interval,
+// exposes the expected measurement result through its wrapper logic, and publishes zeroed
+// Avalon-visible results after clear.
 `timescale 1ns/1ps
 
 module tb1;
@@ -179,6 +180,24 @@ module tb1;
     if ((r0 < exp0-2) || (r0 > exp0+2)) $fatal(1, "ch0 out of range");
     if ((r1 < exp1-2) || (r1 > exp1+2)) $fatal(1, "ch1 out of range");
     if ((r2 < exp2-2) || (r2 > exp2+2)) $fatal(1, "ch2 out of range");
+
+    // Clear while keeping the meter enabled. The zero result should publish through the
+    // update-toggle path before another full gate can complete.
+    avs_write32(A_CTRL, 32'h0000_0003); // enable + clear
+    #(CNT_PER * 100);
+    avs_read32(A_RES_BASE + 0, r0);
+    avs_read32(A_RES_BASE + 1, r1);
+    avs_read32(A_RES_BASE + 2, r2);
+    if (r0 != 0 || r1 != 0 || r2 != 0) $fatal(1, "clear did not publish zeroed results");
+
+    // Measurements should resume normally after the cleared gate completes.
+    #(gate_len * CNT_PER * 2);
+    avs_read32(A_RES_BASE + 0, r0);
+    avs_read32(A_RES_BASE + 1, r1);
+    avs_read32(A_RES_BASE + 2, r2);
+    if ((r0 < exp0-2) || (r0 > exp0+2)) $fatal(1, "post-clear ch0 out of range");
+    if ((r1 < exp1-2) || (r1 > exp1+2)) $fatal(1, "post-clear ch1 out of range");
+    if ((r2 < exp2-2) || (r2 > exp2+2)) $fatal(1, "post-clear ch2 out of range");
 
     $display("PASS");
     fh = $fopen("SUCCESS", "w");

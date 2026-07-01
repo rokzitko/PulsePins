@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <array>
 #include <bitset>
 #include <cstdint>
 #include <iostream>
@@ -415,23 +416,52 @@ public:
 
   // returns 0 if successfull
   int self_test() {
+    constexpr int port_count = 5;
+    const auto saved_cfg = get_cfg();
+    cfg(saved_cfg);
+    std::array<Value, port_count> saved_invert;
+    std::array<Value, port_count> saved_mask;
+    std::array<Value, port_count> saved_force;
+    for (int i = 0; i < port_count; i++) {
+      saved_invert[i] = get_invert(i);
+      saved_mask[i] = get_mask(i);
+      saved_force[i] = get_force(i);
+    }
+
+    auto restore = [&]() {
+      for (int i = 0; i < port_count; i++) {
+        invert(i, saved_invert[i]);
+        mask(i, saved_mask[i]);
+        value(i, saved_force[i]);
+      }
+      cfg(saved_cfg);
+    };
+
     rnd32 rng;
     Value v;
-    for (int i = 0; i < 5; i++) {
+    int rc = 0;
+    for (int i = 0; i < port_count; i++) {
       v = rng();
       invert(i, v);
-      if (get_invert(i) != v)
-        return 1;
+      if (get_invert(i) != v) {
+        rc = 1;
+        break;
+      }
       v = rng();
       mask(i, v);
-      if (get_mask(i) != v)
-        return 2;
+      if (get_mask(i) != v) {
+        rc = 2;
+        break;
+      }
       v = rng();
       force(i, v);
-      if (get_force(i) != v)
-        return 3;
+      if (get_force(i) != v) {
+        rc = 3;
+        break;
+      }
     }
-    return 0;
+    restore();
+    return rc;
   }
 };
 

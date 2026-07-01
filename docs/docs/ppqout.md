@@ -90,7 +90,7 @@ With `-veryverbose`, `ppqout` prints:
 * the transformed `combiner_inN` values
 * the resulting `combiner_out`
 
-`-self_test` performs quick built-in checks and returns a non-zero exit status if a failure is detected.
+`-self_test` performs quick built-in checks, restores the previous combiner settings before returning, and returns a non-zero exit status if a failure is detected.
 `-test <n>` runs a more intensive randomized combiner validation loop.
 
 ## Related pages

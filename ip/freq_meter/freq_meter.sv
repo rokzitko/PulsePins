@@ -277,6 +277,7 @@ module freq_meter_avalon_gray #(
         for (c = 0; c < N_CH; c++) begin
           bin_prev_cnt[c] <= gray2bin(gray_sync[c]);
           result_cnt_r[c] <= '0;
+          upd_tgl_cnt_r[c] <= ~upd_tgl_cnt_r[c];
         end
       end else if (!enable_cnt) begin
         gate_down_cnt <= gate_len_cnt;
