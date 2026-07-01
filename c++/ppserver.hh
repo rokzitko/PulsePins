@@ -247,7 +247,13 @@ private:
           // That prevents any further connections.
           // int old_lfd = listen_fd_.exchange(-1);
           // if (old_lfd >= 0) ::close(old_lfd);
-          read_lines_from_stream(cfd, stop_flag_, handler_);
+          try {
+            read_lines_from_stream(cfd, stop_flag_, handler_);
+          } catch (const std::exception &e) {
+            if (!stop_flag_.load(std::memory_order_relaxed)) {
+              std::cerr << "LineServer connection error: " << e.what() << "\n";
+            }
+          }
           int old_cfd = client_fd_.exchange(-1);
           if (old_cfd >= 0) ::close(old_cfd);
           std::cout << "Connection closed." << std::endl;
