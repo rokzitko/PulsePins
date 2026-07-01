@@ -29,6 +29,7 @@ ppwebgui
 ```
 
 This starts the server on all interfaces on port `4242` and prints the bound URL to standard output.
+It also prints a red `WARNING` line, states `waiting one second`, and waits one second before accepting browser traffic.
 
 When bound to `0.0.0.0`, `ppwebgui` also prints the discovered non-loopback interface names, IPv4 addresses, and matching URLs so you can connect directly from another machine without looking up the address separately.
 
@@ -212,6 +213,7 @@ and a `clocking` object with:
 By default, `ppwebgui` binds to `0.0.0.0:4242`.
 
 That means it accepts connections from outside the board, including from another machine over the Ethernet interface, as long as the network path is reachable.
+On this bind address, startup prints the external-interface warning and pauses for one second.
 
 If you want local-only access, bind explicitly to loopback instead:
 

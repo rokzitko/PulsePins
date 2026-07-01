@@ -13,7 +13,14 @@ The implementation is in [`c++/ppscpi.cc`]({{ source_file("c++/ppscpi.cc") }}) a
 
 ### Transport and startup
 
-`ppscpi` listens on standard SCPI TCP port `5025`.
+`ppscpi` listens on standard SCPI TCP port `5025`. By default it binds to
+`0.0.0.0`, which accepts connections on all interfaces.
+
+Command-line options:
+
+* `-ip <addr>`: bind address, default `0.0.0.0`
+
+When bound to `0.0.0.0`, `ppscpi` prints a red `WARNING` line, states `waiting one second`, and waits one second before accepting client traffic. Use `-ip 127.0.0.1` for local-only access or another specific interface address when remote access should be limited.
 
 On startup it:
 

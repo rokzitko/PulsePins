@@ -2,6 +2,7 @@ set -euo pipefail
 
 PPSCPI_PID=""
 READY_RESPONSE=""
+PPSCPI_TEST_IP="127.0.0.1"
 
 RED="\033[31m"
 GREEN="\033[32m"
@@ -58,7 +59,7 @@ cleanup_ppscpi() {
   PPSCPI_PID=""
 
   if [[ -n "${pid}" ]]; then
-    printf 'TERMINATE\n' | nc localhost 5025 >/dev/null 2>&1 || true
+    printf 'TERMINATE\n' | nc "${PPSCPI_TEST_IP}" 5025 >/dev/null 2>&1 || true
     wait "${pid}" >/dev/null 2>&1 || true
   fi
 }
@@ -75,7 +76,7 @@ wait_for_ppscpi() {
       return 1
     fi
 
-    response="$(printf '*IDN?\n' | nc localhost 5025 2>/dev/null || true)"
+    response="$(printf '*IDN?\n' | nc "${PPSCPI_TEST_IP}" 5025 2>/dev/null || true)"
     if ppscpi_is_idn "${response}"; then
       READY_RESPONSE="${response}"
       return 0
@@ -90,13 +91,13 @@ wait_for_ppscpi() {
 
 start_ppscpi() {
   stop_stale_ppscpi
-  ppscpi &
+  ppscpi -ip "${PPSCPI_TEST_IP}" &
   PPSCPI_PID=$!
   wait_for_ppscpi
 }
 
 ppscpi_query() {
-  printf '%s\n' "$1" | nc localhost 5025 2>/dev/null
+  printf '%s\n' "$1" | nc "${PPSCPI_TEST_IP}" 5025 2>/dev/null
 }
 
 ppscpi_expect_query() {

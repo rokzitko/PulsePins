@@ -12,6 +12,7 @@
 
 #include "scpi_server.hh"
 #include "host_runtime.hh"
+#include "network_warning.hh"
 #include "ppmisc.hh"
 #include "ppversion.hh"
 #include "ppworkflow.hh"
@@ -203,8 +204,9 @@ private:
   FPGA &fpga;
   const Verbosity &v;
 public:
-  PPServer(asio::io_context &io, unsigned short port, const InputParser &_input, FPGA &_fpga, const Verbosity &_v)
-    : ScpiServerBase(io, port), input(_input), fpga(_fpga), v(_v) {}
+  PPServer(asio::io_context &io, const std::string &bind_ip, unsigned short port,
+          const InputParser &_input, FPGA &_fpga, const Verbosity &_v)
+    : ScpiServerBase(io, bind_ip, port), input(_input), fpga(_fpga), v(_v) {}
 protected:
   std::shared_ptr<ScpiSessionBase> make_session(tcp::socket socket) override {
     std::cout << "Connection from " << socket.remote_endpoint().address().to_string() << std::endl;
@@ -222,8 +224,10 @@ int main(int argc, char *argv[]) {
     auto &v = rt.verbosity;
     auto &fpga = rt.get_fpga();
     asio::io_context io;
-    PPServer server(io, server_port, input, fpga, v);
-    std::cout << "ppscpi running on port " << server_port << std::endl;
+    const auto bind_ip = input.get_string("-ip", "0.0.0.0");
+    PPServer server(io, bind_ip, server_port, input, fpga, v);
+    std::cout << "ppscpi running on " << bind_ip << ':' << server_port << std::endl;
+    warn_if_external_socket_bind("ppscpi", bind_ip, server_port);
     io.run();
   } catch (const std::exception& e) {
     std::cerr << "Fatal: " << e.what() << "\n";

@@ -257,7 +257,7 @@ smoke_ppdmatest22() {
 # and one expected SCPI error path, then terminate it cleanly.
 smoke_ppscpi() {
   ssh "${TARGETHOST}" 'pkill -f "(^|/)ppscpi($| )" >/dev/null 2>&1 || true'
-  ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" 'exec ./ppscpi' &
+  ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" "exec ./ppscpi -ip ${BOARD_IP}" &
   PPSCPI_SSH_PID=$!
 
   local python_rc
@@ -381,7 +381,7 @@ PY
 # then verify one bad-request path and one timeout path before stopping it.
 smoke_ppwebgui() {
   ssh "${TARGETHOST}" 'pkill -f "(^|/)ppwebgui($| )" >/dev/null 2>&1 || true'
-  ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" 'exec ./ppwebgui -ip 0.0.0.0 -port 4242' &
+  ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "${TARGETHOST}" "exec ./ppwebgui -ip ${BOARD_IP} -port 4242" &
   PPWEBGUI_SSH_PID=$!
 
   local python_rc

@@ -22,6 +22,8 @@
 #endif
 #include <unistd.h>
 
+#include "network_warning.hh"
+
 namespace {
 
 #ifdef PPWEBGUI_ENABLE_BACKTRACE
@@ -99,11 +101,12 @@ void install_ppwebgui_fatal_signal_handlers() {
 
 void print_ppwebgui_startup_urls(const std::string &bind_ip, const int actual_port) {
   std::cout << "ppwebgui running on http://" << bind_ip << ':' << actual_port << std::endl;
-  if (bind_ip != "0.0.0.0") {
+  if (!is_external_socket_bind(bind_ip)) {
     return;
   }
 
   std::cout << "Listening on all interfaces." << std::endl;
+  warn_if_external_socket_bind("ppwebgui", bind_ip, static_cast<unsigned>(actual_port));
 
   const auto addresses = discover_interface_addresses();
   if (addresses.empty()) {

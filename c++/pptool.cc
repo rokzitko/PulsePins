@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
       if (v.verbose)
         std::cout << "Binding server to " << (protocol == Proto::UDP ? "UDP" : "TCP") << " port " << port << " @ " << ip << std::endl;
       server = std::make_unique<LineServer>(ip, static_cast<uint16_t>(port), protocol,
-                                            [&luna](const std::string &line){ luna.process_line(line); });
+                                            [&luna](const std::string &line){ luna.process_line(line); },
+                                            progname + " -server");
       server->start();
     }
 #endif

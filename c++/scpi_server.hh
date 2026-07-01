@@ -358,8 +358,8 @@ protected:
 // --- Base server ---
 class ScpiServerBase {
 public:
-    ScpiServerBase(asio::io_context &io, unsigned short port)
-        : acceptor_(io, tcp::endpoint(tcp::v4(), port)) {
+    ScpiServerBase(asio::io_context &io, const std::string &bind_ip, unsigned short port)
+        : acceptor_(io, tcp::endpoint(asio::ip::make_address_v4(bind_ip), port)) {
         accept();
     }
 

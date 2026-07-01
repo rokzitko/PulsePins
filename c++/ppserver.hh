@@ -24,6 +24,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "network_warning.hh"
+
 enum class Proto { TCP, UDP };
 
 inline constexpr std::size_t max_line_bytes = 64 * 1024;
@@ -164,8 +166,10 @@ class LineServer {
 public:
   using Handler = std::function<void(const std::string&)>;
 
-  LineServer(std::string bind_ip, uint16_t port, Proto proto, Handler handler)
-    : bind_ip_(std::move(bind_ip)), port_(port), proto_(proto), handler_(std::move(handler)) {}
+  LineServer(std::string bind_ip, uint16_t port, Proto proto, Handler handler,
+            std::string label = "LineServer")
+    : bind_ip_(std::move(bind_ip)), port_(port), proto_(proto), handler_(std::move(handler)),
+      label_(std::move(label)) {}
 
   void start() {
     if (thread_.joinable()) throw std::runtime_error("Server already started");
@@ -228,6 +232,7 @@ private:
     try {
       const int lfd = make_listen_socket(bind_ip_, port_, proto_);
       listen_fd_.store(lfd);
+      warn_if_external_socket_bind(label_, bind_ip_, port_);
       signal_startup_success(startup);
       if (proto_ == Proto::TCP) {
         for (;;) {
@@ -281,6 +286,7 @@ private:
   uint16_t port_;
   Proto proto_;
   Handler handler_;
+  std::string label_;
   std::atomic<bool> stop_flag_{false};
   std::atomic<int> listen_fd_{-1};
   std::atomic<int> client_fd_{-1};
