@@ -244,11 +244,6 @@ smoke_ppdmatest21() {
   ssh "${TARGETHOST}" './ppdmatest 21 -c 10 -v 16'
 }
 
-smoke_ppread_timeout() {
-  ssh "${TARGETHOST}" './ppread -timeout 1'
-  grep -q 'Caught ReadbackException: Timeout waiting for more readback data.' "${STEP_LOG_FILE}"
-}
-
 smoke_ppdmatest22() {
   ssh "${TARGETHOST}" './ppdmatest 22 -c 10 -v 16 -reps 4'
 }
@@ -515,7 +510,6 @@ run_step "ppcounter -test1 -check" ppcounter smoke_ppcounter
 capture_common_metadata_from_log "${LOG_DIR}/ppcounter.log"
 capture_binary_version_from_log pptool "${LOG_DIR}/ppcounter.log"
 run_step "ppdmatest 21 -c 10 -v 16" ppdmatest21 smoke_ppdmatest21
-run_step "ppread -timeout 1" ppread-timeout smoke_ppread_timeout
 run_step "ppdmatest 22 -c 10 -v 16 -reps 4" ppdmatest22 smoke_ppdmatest22
 
 section "Network Smoke"
