@@ -83,7 +83,7 @@ public:
       if (verb.veryverbose) std::cout << "Output mode SUM1234: algebraic total" << std::endl;
     } else if (input.exists("-out_diff12")) {
       cq.mode(comb_mode::DIFF12);
-      if (verb.veryverbose) std::cout << "Output mode DIFF12: difference (2-1)" << std::endl;
+      if (verb.veryverbose) std::cout << "Output mode DIFF12: difference (1-2)" << std::endl;
     } else {
       // default
       cq.mode(comb_mode::SEL1);

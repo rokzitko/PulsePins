@@ -31,6 +31,8 @@ The Avalon-MM register file exposes:
 
 The hardware continuously produces per-gate edge counts while enabled. Software converts those counts into Hz using the known gate length and nominal counter-clock frequency.
 
+`clear` restarts the count-domain measurement baseline. It does not immediately overwrite the Avalon-visible result registers, so direct register readers should wait for a new gate result before treating reads as fresh.
+
 ## Reading order for maintainers
 
 1. `freq_meter.sv`

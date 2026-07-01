@@ -137,7 +137,7 @@ The recommended host-side command is:
 make -C python USE_PREGENERATED=1 build test-host
 ```
 
-`USE_PREGENERATED=1` uses the checked-in [`c++/artifacts/hps_0.h`]({{ source_file("c++/artifacts/hps_0.h") }}) header instead of the top-level generated [`hps_0.h`]({{ source_file("hps_0.h") }}), which is ignored and normally produced by the Quartus/Qsys hardware build. `test-host` intentionally skips tests marked `hardware`, which require `/dev/mem`, board-backed MMIO, or a live PulsePins runtime.
+`USE_PREGENERATED=1` uses the checked-in [`c++/artifacts/hps_0.h`]({{ source_file("c++/artifacts/hps_0.h") }}) header instead of the top-level generated `hps_0.h`, which is ignored and normally produced by the Quartus/Qsys hardware build for compilation. `test-host` intentionally skips tests marked `hardware`, which require `/dev/mem`, board-backed MMIO, or a live PulsePins runtime.
 
 ## Sequence I/O examples
 

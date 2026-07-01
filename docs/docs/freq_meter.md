@@ -43,7 +43,7 @@ More concretely, the word offsets are:
 * `0x08` - number of channels
 * `0x10` and up - per-channel results
 
-The `clear` control behaves like a pulse request, while `enable` keeps periodic measurements running.
+The `clear` control behaves like a pulse request, while `enable` keeps periodic measurements running. A clear restarts the gate/reference-domain baseline for the next measurement. It does not immediately publish zero into the Avalon-visible result registers; until the next gate completes and crosses back to Avalon, result reads may still return the previous completed measurement.
 
 The C++ wrapper treats the gate length as the main measurement configuration knob.
 
@@ -53,7 +53,7 @@ The `freq_meter` class provides:
 
 * `set_gate_len()` - configure the measurement window in cycles
 * `set_gate_time()` - configure the same window in seconds
-* `read()` - read the raw result counter
+* `read()` - read the raw result counter from the last completed gate
 * `read_freq()` - convert the raw count to Hz
 * `read_freq_str()` - return a formatted frequency string
 * `wait_one_gate_time()` - wait for one fresh measurement interval

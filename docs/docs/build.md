@@ -9,7 +9,7 @@ The main entry point is the repository root [`Makefile`]({{ source_file("Makefil
 Running `make` at the repository root performs these steps:
 
 1. Generate `base_hps.sopcinfo` from [`base_hps.qsys`]({{ source_file("base_hps.qsys") }})
-2. Generate the HPS header [`hps_0.h`]({{ source_file("hps_0.h") }})
+2. Generate the top-level HPS header `hps_0.h` for compilation; the checked-in host-safe copy is [`c++/artifacts/hps_0.h`]({{ source_file("c++/artifacts/hps_0.h") }})
 3. Compile the [Quartus Prime](https://www.altera.com/products/development-tools/quartus) project into `pulsepins.sof`
 4. Run the Quartus timing/report checker
 5. Convert the SOF bitstream into `pulsepins.rbf`
@@ -53,7 +53,7 @@ Platform Designer/Qsys is Intel/Altera's system-integration tool for assembling 
 Important outputs:
 
 * `base_hps.sopcinfo` - system description generated from [`base_hps.qsys`]({{ source_file("base_hps.qsys") }})
-* [`hps_0.h`]({{ source_file("hps_0.h") }}) - HPS/FPGA address map header consumed by the C++ build
+* top-level generated `hps_0.h` - HPS/FPGA address map header consumed by normal hardware/C++ builds; the checked-in host-safe copy is [`c++/artifacts/hps_0.h`]({{ source_file("c++/artifacts/hps_0.h") }})
 * `pulsepins.sof` - SRAM Object File; Quartus-generated volatile FPGA programming image used for direct FPGA programming/debug loading
 * `pulsepins.rbf` - Raw Binary File; compact FPGA configuration bitstream used for boot/runtime deployment, including `FPGA-writeConfig` and boot-partition workflows
 
@@ -78,7 +78,7 @@ Key targets in [`c++/Makefile`]({{ source_file("c++/Makefile") }}):
 
 The build expects:
 
-* [`hps_0.h`]({{ source_file("hps_0.h") }}) from the top-level hardware build
+* top-level generated `hps_0.h` from the hardware build; host-safe builds use the checked-in [`c++/artifacts/hps_0.h`]({{ source_file("c++/artifacts/hps_0.h") }}) with `USE_PREGENERATED=1`
 * SoC EDS / hwlib headers
 * the Lua sources vendored under [`c++/third_party/lua`]({{ source_file("c++/third_party/lua/") }})
 
@@ -179,7 +179,7 @@ sudo ./scripts/install_bash_completion.sh
 
 The prepackaged quick-start SD-card images already ship with this completion installed, so the installer is only needed for manually provisioned systems.
 
-If you stage a board image through the repository Makefiles, `make copy_all_img` (or `make copy_all_image`) also stages the same completion file into `image/etc/profile.d/pulsepins-completion.sh`.
+If you stage a board image through the repository Makefiles, `make copy_all_img` (or `make copy_all_image`) also stages the same completion file into `image/ext/etc/profile.d/pulsepins-completion.sh`.
 
 Build only the Python bindings:
 
@@ -187,7 +187,7 @@ Build only the Python bindings:
 make -C python USE_PREGENERATED=1 build
 ```
 
-`USE_PREGENERATED=1` is the host-side path used when the top-level generated [`hps_0.h`]({{ source_file("hps_0.h") }}) is not available.
+`USE_PREGENERATED=1` is the host-side path used when the top-level generated `hps_0.h` is not available; it uses the checked-in [`c++/artifacts/hps_0.h`]({{ source_file("c++/artifacts/hps_0.h") }}).
 
 Run HDL test benches:
 
