@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <iostream>
 #include <string>
 
@@ -97,11 +98,14 @@ public:
       //   3. select the FIFO transport path; the mux state can persist across commands
       //   4. restore the single-stream output combiner route
       //   5. reset the streamer core so it starts from that known idle state
+      fpga.streamer_done_config(0b0000, 0b0000);
       basic_streamer::set_initial_value_opts(opts);
       fpga.output_enable(true);
       mux.channel(1);
       combiner(fpga.dev_h2f, address_map::h2f::combiner_qout, "combiner_qout").reset_passthrough();
       reset_for_active_clock();
+      fpga.streamer_done_config(0b0001, 0b0001);
+      fpga.sleep_for_at_least_n_streamer_periods(4);
     }
 
   streamer(const InputParser &input,
@@ -141,14 +145,19 @@ public:
 class multistreamer {
 public:
   FPGA &fpga;
+  uint8_t active_mask;
+  uint8_t armed_live_mask;
   basic_streamer s1, s2, s3, s4;
 
   multistreamer(const StreamerOptions &s1_opts,
                 const StreamerOptions &s2_opts,
                 const StreamerOptions &s3_opts,
                 const StreamerOptions &s4_opts,
-                FPGA &_fpga) :
+                FPGA &_fpga,
+                const StreamerDoneOptions done_opts = {}) :
     fpga(_fpga),
+    active_mask(done_opts.active_mask),
+    armed_live_mask(done_opts.armed_live_mask),
     s1(s1_opts, fpga, address_map::h2f::fifo_1_in, address_map::h2f::fifo_1_in_csr, address_map::h2f::st_interface_1, "streamer1"),
     s2(s2_opts, fpga, address_map::h2f::fifo_2_in, address_map::h2f::fifo_2_in_csr, address_map::h2f::st_interface_2, "streamer2"),
     s3(s3_opts, fpga, address_map::h2f::fifo_3_in, address_map::h2f::fifo_3_in_csr, address_map::h2f::st_interface_3, "streamer3"),
@@ -157,6 +166,7 @@ public:
       // Each core is configured independently, but outputs are enabled once globally.
       // Initial values are set before each per-core reset for the same reason as in the
       // single-stream helper.
+      fpga.streamer_done_config(0b0000, 0b0000);
       fpga.output_enable(true);
       s1.set_initial_value_opts(s1_opts, "-i1");
       s1.reset_for_active_clock();
@@ -166,6 +176,8 @@ public:
       s3.reset_for_active_clock();
       s4.set_initial_value_opts(s4_opts, "-i4");
       s4.reset_for_active_clock();
+      fpga.streamer_done_config(active_mask, armed_live_mask);
+      fpga.sleep_for_at_least_n_streamer_periods(4);
     }
 
   multistreamer(const InputParser &input, FPGA &_fpga) :
@@ -173,5 +185,6 @@ public:
                   resolve_streamer_options(input, "-i2"),
                   resolve_streamer_options(input, "-i3"),
                   resolve_streamer_options(input, "-i4"),
-                  _fpga) {}
+                  _fpga,
+                  resolve_streamer_done_options(input)) {}
 };

@@ -291,6 +291,27 @@ public:
     pio_cfg.write_at(0, oe);
   }
 
+  void streamer_done_config(const uint32_t active_mask, const uint32_t armed_live_mask) {
+    if ((active_mask & ~STREAMER_MASK_VALUE_MASK) != 0)
+      throw std::out_of_range("streamer active mask must fit in 4 bits");
+    if ((armed_live_mask & ~STREAMER_MASK_VALUE_MASK) != 0)
+      throw std::out_of_range("streamer armed-live mask must fit in 4 bits");
+
+    const uint32_t clear_mask = STREAMER_ACTIVE_MASK_CFG_MASK | STREAMER_ARMED_LIVE_MASK_CFG_MASK;
+    const uint32_t next = (pio_cfg.read() & ~clear_mask) |
+      (active_mask << CFG_STREAMER_ACTIVE_MASK_OFFSET) |
+      (armed_live_mask << CFG_STREAMER_ARMED_LIVE_MASK_OFFSET);
+    pio_cfg.write(next);
+  }
+
+  uint8_t streamer_active_mask() {
+    return uint8_t((pio_cfg.read() >> CFG_STREAMER_ACTIVE_MASK_OFFSET) & STREAMER_MASK_VALUE_MASK);
+  }
+
+  uint8_t streamer_armed_live_mask() {
+    return uint8_t((pio_cfg.read() >> CFG_STREAMER_ARMED_LIVE_MASK_OFFSET) & STREAMER_MASK_VALUE_MASK);
+  }
+
   void sync_cfg_from_hardware() {
     cfg = mgr.gpio_out_read();
   }

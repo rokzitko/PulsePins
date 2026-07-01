@@ -37,7 +37,7 @@
 `define POS_TRIG_FORCE     (`WIDTH_TRIGGER+1)
 `define POS_TRIG_RESET     (`WIDTH_TRIGGER+2)
 `define WIDTH_AUX          8
-`define WIDTH_CFG          13
+`define WIDTH_CFG          21
 
 parameter TS_SIGA_MUX_NR_IN = 8;
 parameter TS_SIGA_MUX_WIDTH = $clog2(TS_SIGA_MUX_NR_IN);
@@ -46,6 +46,8 @@ parameter TS_SIGA_MUX_WIDTH = $clog2(TS_SIGA_MUX_NR_IN);
 `define CFG_TS_SEL_PPS             1
 `define CFG_TS_SEL_SIGA_MUX_OFFSET 2
 `define CFG_AUX_DIR_OFFSET         (2+TS_SIGA_MUX_WIDTH)
+`define CFG_STREAMER_ACTIVE_MASK_OFFSET     13
+`define CFG_STREAMER_ARMED_LIVE_MASK_OFFSET (`CFG_STREAMER_ACTIVE_MASK_OFFSET+4)
 
 `define ARDUINO_DEBUG_PORT
 
@@ -706,6 +708,30 @@ sync_bit_3stage sb(
  .sync_out(streamer_rst)
 );
 
+// Aggregate done configuration crosses from the software/control clock domain into the
+// streamer clock as one bundle so active/live mask updates are committed coherently.
+logic [7:0] streamer_done_cfg_core;
+logic [7:0] streamer_done_cfg_streamer;
+logic [3:0] streamer_active_mask;
+logic [3:0] streamer_armed_live_mask;
+
+assign streamer_done_cfg_core[3:0] =
+  pio_cfg[`CFG_STREAMER_ACTIVE_MASK_OFFSET+3:`CFG_STREAMER_ACTIVE_MASK_OFFSET];
+assign streamer_done_cfg_core[7:4] =
+  pio_cfg[`CFG_STREAMER_ARMED_LIVE_MASK_OFFSET+3:`CFG_STREAMER_ARMED_LIVE_MASK_OFFSET];
+
+cdc_snapshot #(
+  .WIDTH(8),
+  .RESET_VALUE('0)
+) streamer_done_cfg_cdc (
+  .src_clk(core_clk), .src_reset(reset), .src_data(streamer_done_cfg_core),
+  .dst_clk(streamer_clk), .dst_reset(streamer_rst), .dst_data(streamer_done_cfg_streamer),
+  .dst_valid()
+);
+
+assign streamer_active_mask     = streamer_done_cfg_streamer[3:0];
+assign streamer_armed_live_mask = streamer_done_cfg_streamer[7:4];
+
 logic activity;
 logic activity_seen_streamer;
 logic activity_clear_ref;
@@ -1090,12 +1116,39 @@ assign combiner_qout_in_in4 = streamer4_qout;
    //
    // Note: in combiner mode, `streamer_qout_strobe` is synthesized locally from
    // `streamer_qout_valid && ~streamer_clk` rather than forwarded from one individual streamer.
+   logic [3:0] streamer_done_vec;
+   logic [3:0] streamer_armed_vec;
+   logic [3:0] streamer_activated_vec;
+   logic [3:0] streamer_done_d1;
+   logic [3:0] streamer_armed_d1;
+   logic [3:0] streamer_activated_d1;
+   logic [3:0] streamer_active_mask_d1;
+   logic [3:0] streamer_armed_live_mask_d1;
+   logic [3:0] streamer_live_d1;
+
+   assign streamer_done_vec      = {streamer4_done, streamer3_done, streamer2_done, streamer1_done};
+   assign streamer_armed_vec     = {streamer4_trigger_armed, streamer3_trigger_armed,
+                                    streamer2_trigger_armed, streamer1_trigger_armed};
+   assign streamer_activated_vec = {streamer4_trigger_activated, streamer3_trigger_activated,
+                                    streamer2_trigger_activated, streamer1_trigger_activated};
+   assign streamer_live_d1       = streamer_activated_d1 | (streamer_armed_d1 & streamer_armed_live_mask_d1);
+
+   always_ff @(posedge streamer_clk) begin
+      streamer_done_d1            <= streamer_done_vec;
+      streamer_armed_d1           <= streamer_armed_vec;
+      streamer_activated_d1       <= streamer_activated_vec;
+      streamer_active_mask_d1     <= streamer_active_mask;
+      streamer_armed_live_mask_d1 <= streamer_armed_live_mask;
+
+      streamer_done <= (streamer_active_mask_d1 != 4'b0000) &&
+                       (|(streamer_done_d1 & streamer_active_mask_d1)) &&
+                       (~|(streamer_live_d1 & streamer_active_mask_d1));
+   end
+
    delay_or4 u_qout_valid        (.clk(streamer_clk), .in1(streamer1_qout_valid), .in2(streamer2_qout_valid),
                                   .in3(streamer3_qout_valid), .in4(streamer4_qout_valid), .dout(streamer_qout_valid));
    delay_or4 u_strobe_enable     (.clk(streamer_clk), .in1(streamer1_strobe_enable), .in2(streamer2_strobe_enable),
                                   .in3(streamer3_strobe_enable), .in4(streamer4_strobe_enable), .dout(streamer_strobe_enable));
-   delay_or4 u_done              (.clk(streamer_clk), .in1(streamer1_done), .in2(streamer2_done),
-                                  .in3(streamer3_done), .in4(streamer4_done), .dout(streamer_done));
    delay_or4 u_buffer_error      (.clk(streamer_clk), .in1(streamer1_buffer_error), .in2(streamer2_buffer_error),
                                   .in3(streamer3_buffer_error), .in4(streamer4_buffer_error), .dout(streamer_buffer_error));
    delay_or4 u_trigger_armed     (.clk(streamer_clk), .in1(streamer1_trigger_armed), .in2(streamer2_trigger_armed),

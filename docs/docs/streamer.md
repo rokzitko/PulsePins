@@ -97,6 +97,13 @@ This FIFO is the key CDC boundary in the subsystem. It is also where underrun be
 
 `done` is intentionally clean-completion-only. If `buffer_error` has latched, a later terminator can still stop output progression internally, but public `done` remains low. Software waits may stop on `done || buffer_error`, while successful completion is `done && !buffer_error`.
 
+At the top level, four streamer cores share one combined output/status path. The board-visible aggregate `streamer_done` is controlled by two software masks in `pio_cfg`:
+
+* `streamer_active_mask`: streamers included in aggregate done evaluation
+* `streamer_armed_live_mask`: selected streamers whose armed state counts as live; activation always counts as live
+
+The aggregate `streamer_done` is high when `streamer_active_mask` is nonzero, at least one selected streamer has cleanly completed, and no selected streamer is live under its configured live definition. Setting `streamer_armed_live_mask` to zero supports mutually exclusive trigger programs where only the streamer that actually activates should block or complete the aggregate run. Software must set these masks during run setup and must not change them while selected streamers are armed or activated.
+
 ### 5. Trigger and gating policy
 
 [`chain_trigger.sv`]({{ source_file("ip/streamer/chain_trigger.sv") }}) runs in the output domain and controls when streaming is allowed to start.

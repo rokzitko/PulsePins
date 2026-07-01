@@ -1564,6 +1564,29 @@ TEST_CASE("resolve_streamer_options reports explicit initial value") {
   }
 }
 
+TEST_CASE("resolve_streamer_done_options captures aggregate masks") {
+  SUBCASE("default") {
+    auto opts = resolve_streamer_done_options(make_input({}));
+    CHECK(opts.active_mask == 0x0f);
+    CHECK(opts.armed_live_mask == 0x0f);
+  }
+
+  SUBCASE("armed-live defaults to active mask") {
+    auto opts = resolve_streamer_done_options(make_input({"-streamer_active_mask", "0b0011"}));
+    CHECK(opts.active_mask == 0x03);
+    CHECK(opts.armed_live_mask == 0x03);
+  }
+
+  SUBCASE("explicit armed-live mask") {
+    auto opts = resolve_streamer_done_options(make_input({"-streamer_active_mask", "0x5", "-streamer_armed_live_mask", "0"}));
+    CHECK(opts.active_mask == 0x05);
+    CHECK(opts.armed_live_mask == 0x00);
+  }
+
+  CHECK_THROWS_AS(resolve_streamer_done_options(make_input({"-streamer_active_mask", "16"})), std::runtime_error);
+  CHECK_THROWS_AS(resolve_streamer_done_options(make_input({"-streamer_armed_live_mask", "16"})), std::runtime_error);
+}
+
 TEST_CASE("resolve_freq_meter_options captures correction factor") {
   SUBCASE("absent") {
     auto opts = resolve_freq_meter_options(make_input({}));

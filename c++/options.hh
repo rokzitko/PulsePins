@@ -69,6 +69,11 @@ struct StreamerOptions {
   bool report_initial_value = false;
 };
 
+struct StreamerDoneOptions {
+  uint8_t active_mask = STREAMER_MASK_VALUE_MASK;
+  uint8_t armed_live_mask = STREAMER_MASK_VALUE_MASK;
+};
+
 struct FreqMeterOptions {
   std::optional<double> correction_factor;
 };
@@ -176,6 +181,22 @@ inline StreamerOptions resolve_streamer_options(const InputParser &input,
   opts.stop_on_buffer_error = input.exists("-stop_on_buffer_error") || input.exists("-sobe");
   opts.initial_value = parse_value(input, initial_value_param, "0");
   opts.report_initial_value = opts.initial_value != 0;
+  return opts;
+}
+
+inline uint8_t resolve_streamer_mask(const InputParser &input,
+                                     const std::string &param,
+                                     const uint32_t default_value) {
+  const auto mask = input.get_uint32(param, default_value);
+  if (mask > STREAMER_MASK_VALUE_MASK)
+    throw std::runtime_error(param + " must be in the range 0..15.");
+  return static_cast<uint8_t>(mask);
+}
+
+inline StreamerDoneOptions resolve_streamer_done_options(const InputParser &input) {
+  StreamerDoneOptions opts;
+  opts.active_mask = resolve_streamer_mask(input, "-streamer_active_mask", STREAMER_MASK_VALUE_MASK);
+  opts.armed_live_mask = resolve_streamer_mask(input, "-streamer_armed_live_mask", opts.active_mask);
   return opts;
 }
 

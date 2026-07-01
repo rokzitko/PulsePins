@@ -58,6 +58,11 @@ void bind_hw_base(nb::module_ &m) {
          "verbose"_a = false)
     .def("status", &FPGA::status)
     .def("set_streamer_clk", &FPGA::set_streamer_clk)
+    .def("streamer_done_config", &FPGA::streamer_done_config,
+         "active_mask"_a,
+         "armed_live_mask"_a)
+    .def("streamer_active_mask", &FPGA::streamer_active_mask)
+    .def("streamer_armed_live_mask", &FPGA::streamer_armed_live_mask)
     .def("output_enable", &FPGA::output_enable);
 
   nb::class_<freq_meter>(m, "freq_meter")

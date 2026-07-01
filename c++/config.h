@@ -53,6 +53,15 @@ using aux_t = uint8_t;
 constexpr int WIDTH_AUX = 8;
 constexpr int AUX_MASK = 0xFF;
 
+constexpr uint32_t CFG_STREAMER_ACTIVE_MASK_OFFSET = 13;
+constexpr uint32_t CFG_STREAMER_ARMED_LIVE_MASK_OFFSET = 17;
+constexpr uint32_t STREAMER_MASK_BITS = 4;
+constexpr uint32_t STREAMER_MASK_VALUE_MASK = 0x0f;
+constexpr uint32_t STREAMER_ACTIVE_MASK_CFG_MASK =
+  STREAMER_MASK_VALUE_MASK << CFG_STREAMER_ACTIVE_MASK_OFFSET;
+constexpr uint32_t STREAMER_ARMED_LIVE_MASK_CFG_MASK =
+  STREAMER_MASK_VALUE_MASK << CFG_STREAMER_ARMED_LIVE_MASK_OFFSET;
+
 // Function aliases; we need two sets due to different interfaces (_t versions accept
 // a string; those without _t suffix accept InputParse, keyword, default_value)
 const auto parse_value_t = parse_uint32_t;

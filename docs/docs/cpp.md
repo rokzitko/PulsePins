@@ -291,6 +291,7 @@ Clocking-related responsibilities are split deliberately:
 * `FPGA::set_clk()` performs top-level streamer-clock source switching with the required reset hold/release sequence
 * `pll_core_clk` and `pll_int_clk` in [`pll_clk.hh`]({{ source_file("c++/pll_clk.hh") }}) program the two reconfigurable PLLs
 * `FPGA::set_streamer_clk()` stores the measured active streaming frequency for later timing-aware host operations
+* `FPGA::streamer_done_config(active_mask, armed_live_mask)` configures the top-level aggregate `streamer_done` masks used by the four-stream output/status path
 
 Streamer classes (defined in [`basic_multi_dma.hh`]({{ source_file("c++/basic_multi_dma.hh") }})):
 
@@ -298,6 +299,8 @@ Streamer classes (defined in [`basic_multi_dma.hh`]({{ source_file("c++/basic_mu
 * ``streamer``: single-core helper using the FIFO transport and the Avalon-ST mux default path; it also applies the usual bring-up sequence (initial value, output enable, reset)
 * ``dma_streamer``: single-core helper that reuses the same streamer bring-up but switches the transport to DMA via the ST mux
 * ``multistreamer``: container for four independent ``basic_streamer`` instances with coordinated bring-up of the four streamer cores
+
+The single-stream helpers configure aggregate done as `active_mask=0b0001` and `armed_live_mask=0b0001`. `multistreamer` defaults both masks to `0b1111`; commands may override them with `-streamer_active_mask` and `-streamer_armed_live_mask`. For mutually exclusive trigger programs, set `-streamer_armed_live_mask 0` so streamers that remain armed but never activate do not block aggregate completion.
 
 The host-side transport split is:
 
