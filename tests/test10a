@@ -88,7 +88,7 @@ pptest 10 -v 8 -c 2 -repetitions 2 -nr_replays 2 -check
 pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -post -o 2 -check
 pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -post -o 1 -check
 pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -post -o 0 -check
-pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -check q
+pptest 10 -v 8 -c 2 -repetitions 3 -nr_replays 4 -check
 
 # v=7, variable repetitions
 pptest 10 -v 7 -c 1 -repetitions 3 -nr_replays 4 -check
