@@ -114,6 +114,7 @@ protected:
     uint8_t stb_ = 0;
     uint64_t error_generation_ = 0;
     bool write_in_progress_ = false;
+    bool close_after_writes_ = false;
 
     // For derived classes: add commands to tree
     void add_node(const std::vector<std::string>& path,
@@ -271,6 +272,8 @@ protected:
                         close_session();
                         stop_server();
                     }
+                } else if (ec == asio::error::eof) {
+                    close_after_writes();
                 } else if (ec != asio::error::operation_aborted) {
                     if (verbose) {
                         if (ec == asio::error::not_found && buffer_.size() >= max_line_bytes) {
@@ -288,6 +291,14 @@ protected:
         asio::error_code ec;
         socket_.shutdown(tcp::socket::shutdown_both, ec);
         socket_.close(ec);
+    }
+
+    void close_after_writes() {
+        if (write_in_progress() || !write_queue_.empty()) {
+            close_after_writes_ = true;
+            return;
+        }
+        close_session();
     }
 
     void stop_server() {
@@ -310,6 +321,10 @@ protected:
     void start_next_write() {
         if (write_queue_.empty()) {
             write_in_progress_ = false;
+            if (close_after_writes_) {
+                close_after_writes_ = false;
+                close_session();
+            }
             return;
         }
 
