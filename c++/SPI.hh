@@ -188,7 +188,7 @@ private:
 
     const value_t pins = compose_pins(sclk, mosi, selected, aux);
     if (!sequence_.empty() && sequence_.back().is_regular() && sequence_.back().control() == BITLOAD && sequence_.back().value() == pins) {
-      sequence_.back() = el(sequence_.back().count() + ticks, pins);
+      sequence_.back() = sequence_.back().with_count(checked_count_sum(sequence_.back().count(), ticks));
     } else {
       sequence_.push_back(el(ticks, pins));
     }

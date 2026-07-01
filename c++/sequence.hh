@@ -148,17 +148,16 @@ inline void validate_binary_header(const BinarySequenceHeader &h)
     throw std::runtime_error("Binary sequence payload size mismatch");
 }
 
+inline count_t checked_count_sum(const count_t x, const count_t y) {
+  const uint64_t sum = uint64_t(x) + uint64_t(y);
+  if (sum > max_count_t)
+    throw std::overflow_error("Sequence count overflow while merging adjacent elements");
+  return static_cast<count_t>(sum);
+}
+
 // Thin extension of `std::deque<el>` with helpers that reflect the semantics of a
 // pulse sequence rather than just container operations.
 class Sequence : public std::deque<el> {
-private:
-  static count_t checked_count_sum(const count_t x, const count_t y) {
-    const uint64_t sum = uint64_t(x) + uint64_t(y);
-    if (sum > max_count_t)
-      throw std::overflow_error("Sequence count overflow while merging adjacent elements");
-    return static_cast<count_t>(sum);
-  }
-
 public:
   using Base = std::deque<el>;
   using Base::Base;

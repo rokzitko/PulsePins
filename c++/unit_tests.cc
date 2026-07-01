@@ -2810,6 +2810,12 @@ TEST_CASE("spi sequence builder validates clock range before narrowing") {
   }
 }
 
+TEST_CASE("spi sequence builder rejects merged count overflow") {
+  spi::SequenceBuilder builder(spi::Config{});
+
+  CHECK_THROWS_AS(builder.emit_idle(static_cast<count_t>(max_count_t)), std::overflow_error);
+}
+
 TEST_CASE("PMOD DA3 voltage conversion clips to DAC range") {
   CHECK(pmod_da3::code_from_voltage(-1.0) == 0x0000);
   CHECK(pmod_da3::code_from_voltage(0.0) == 0x0000);
