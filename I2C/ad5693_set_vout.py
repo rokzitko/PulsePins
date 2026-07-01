@@ -57,6 +57,9 @@ def main() -> int:
     if args.vref <= 0:
         print("Error: vref must be > 0", file=sys.stderr)
         return 2
+    if args.disable_ref and not args.set_control:
+        print("Error: --disable-ref requires --set-control so the DAC control register is updated", file=sys.stderr)
+        return 2
     if args.gain != 1 and not args.set_control:
         print("Error: non-default --gain requires --set-control so the DAC gain register is updated", file=sys.stderr)
         return 2
