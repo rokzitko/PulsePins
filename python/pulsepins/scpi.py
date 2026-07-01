@@ -117,11 +117,11 @@ class PulsePins:
 
     def reset(self) -> None:
         """Clear the current SCPI session state."""
-        self.send("*RST")
+        self._execute("*RST")
 
     def clear_status(self) -> None:
         """Clear SCPI status and the error queue."""
-        self.send("*CLS")
+        self._execute("*CLS")
 
     def load(self, sequence, **sequence_options) -> None:
         """Alias for ``load_sequence(...)``."""
@@ -146,6 +146,10 @@ class PulsePins:
             sequence = to_sequence(**sequence_options)
         if not isinstance(sequence, str):
             raise TypeError("to_sequence() must return text")
+        if ";" in sequence:
+            raise PulsePinsProtocolError(
+                "PulsePins sequence text must not contain semicolons"
+            )
         payload = " ".join(sequence.split())
         command = "SEQ" if not payload else "SEQ " + payload
         response = self.query(command)
@@ -155,7 +159,7 @@ class PulsePins:
         """Enable or disable readback checking for later ``stream()`` calls."""
         if not isinstance(enabled, bool):
             raise TypeError("enabled must be a bool")
-        self.send("CHECK {}".format("ON" if enabled else "OFF"))
+        self._execute("CHECK {}".format("ON" if enabled else "OFF"))
 
     def check_enabled(self) -> bool:
         """Return whether readback checking is enabled in this session."""
@@ -246,6 +250,10 @@ class PulsePins:
             message += ": " + "; ".join(details)
         raise PulsePinsCommandError(message)
 
+    def _execute(self, command: str) -> None:
+        response = self.query("{};*OPC?".format(command))
+        self._expect_response(command, response, "1")
+
     def _write_line(self, command: str) -> None:
         if "\n" in command or "\r" in command:
             raise PulsePinsProtocolError("SCPI commands must be single-line strings")
@@ -273,6 +281,8 @@ class PulsePins:
             if newline >= 0:
                 raw = bytes(self._rx[:newline])
                 del self._rx[: newline + 1]
+                if len(raw) + 1 > self.MAX_SCPI_LINE_BYTES:
+                    raise PulsePinsProtocolError("SCPI response line is too long")
                 if raw.endswith(b"\r"):
                     raw = raw[:-1]
                 try:

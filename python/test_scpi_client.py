@@ -19,56 +19,92 @@ class FakeScpiServer(socketserver.ThreadingTCPServer):
         self.errors = []
         self.check = False
         self.fail_stream = False
+        self.fail_check = False
 
 
 class FakeScpiHandler(socketserver.StreamRequestHandler):
     def handle(self):
         for raw in self.rfile:
             line = raw.decode("ascii").strip()
-            self.server.commands.append(line)
+            for command in line.split(";"):
+                command = command.strip()
+                if not command:
+                    continue
+                action = self._handle_command(command)
+                if action == "close":
+                    return
+                if action == "error":
+                    break
 
-            if line == "*IDN?":
-                self._write("PulsePins,TEST")
-            elif line == "*RST":
-                self.server.check = False
-            elif line == "*CLS":
-                self.server.errors.clear()
-            elif line == "CHECK ON":
-                self.server.check = True
-            elif line == "CHECK OFF":
-                self.server.check = False
-            elif line == "CHECK?":
-                self._write("TRUE" if self.server.check else "FALSE")
-            elif line == "CLOCK:STREAMER?":
-                self._write("100000000")
-            elif line.startswith("SEQ"):
-                if "BAD" in line:
-                    self.server.errors.append("Execution error: bad sequence")
-                    self._write("ERROR")
-                else:
-                    self._write("LOADED")
-            elif line == "STREAM":
-                if self.server.fail_stream:
-                    self.server.errors.append("Execution error: STREAM failed with rc=1")
-                    self._write("FAILURE")
-                else:
-                    self._write("SUCCESS")
-            elif line == "TEST1":
-                self._write("SUCCESS")
-            elif line == "SYST:ERR?":
-                if self.server.errors:
-                    self._write('100, "{}"'.format(self.server.errors.pop(0)))
-                else:
-                    self._write('0, "No error"')
-            elif line == "DISCONNECT":
-                return
-            else:
-                self.server.errors.append("Command error: unknown token")
+    def _handle_command(self, line):
+        self.server.commands.append(line)
+
+        if line == "*IDN?":
+            self._write("PulsePins,TEST")
+        elif line == "*OPC?":
+            self._write("1")
+        elif line == "*RST":
+            self.server.check = False
+        elif line == "*CLS":
+            self.server.errors.clear()
+        elif line == "CHECK ON":
+            if self.server.fail_check:
+                self.server.errors.append("Execution error: CHECK failed")
                 self._write("ERROR")
+                return "error"
+            self.server.check = True
+        elif line == "CHECK OFF":
+            if self.server.fail_check:
+                self.server.errors.append("Execution error: CHECK failed")
+                self._write("ERROR")
+                return "error"
+            self.server.check = False
+        elif line == "CHECK?":
+            self._write("TRUE" if self.server.check else "FALSE")
+        elif line == "CLOCK:STREAMER?":
+            self._write("100000000")
+        elif line.startswith("SEQ"):
+            if "BAD" in line:
+                self.server.errors.append("Execution error: bad sequence")
+                self._write("ERROR")
+                return "error"
+            else:
+                self._write("LOADED")
+        elif line == "STREAM":
+            if self.server.fail_stream:
+                self.server.errors.append("Execution error: STREAM failed with rc=1")
+                self._write("FAILURE")
+                return "error"
+            else:
+                self._write("SUCCESS")
+        elif line == "TEST1":
+            self._write("SUCCESS")
+        elif line == "SYST:ERR?":
+            if self.server.errors:
+                self._write('100, "{}"'.format(self.server.errors.pop(0)))
+            else:
+                self._write('0, "No error"')
+        elif line == "DISCONNECT":
+            return "close"
+        else:
+            self.server.errors.append("Command error: unknown token")
+            self._write("ERROR")
+            return "error"
+        return "ok"
 
     def _write(self, text):
         self.wfile.write((text + "\n").encode("ascii"))
         self.wfile.flush()
+
+
+class ChunkSocket:
+    def __init__(self, chunks):
+        self.chunks = list(chunks)
+
+    def recv(self, _size):
+        if not self.chunks:
+            return b""
+        return self.chunks.pop(0)
 
 
 @pytest.fixture
@@ -107,6 +143,16 @@ def test_load_sequence_flattens_multiline_text(scpi_server):
 
     assert "SEQ d 10 0xff d 5 0x00 f" in scpi_server.commands
     assert "STREAM" in scpi_server.commands
+
+
+def test_load_sequence_rejects_semicolon_before_send(scpi_server):
+    with make_client(scpi_server) as pp:
+        with pytest.raises(PulsePinsProtocolError) as excinfo:
+            pp.load_sequence("d 1 0x1; STREAM")
+
+    assert "semicolons" in str(excinfo.value)
+    assert not any(command.startswith("SEQ") for command in scpi_server.commands)
+    assert "STREAM" not in scpi_server.commands
 
 
 def test_load_sequence_accepts_timeline(scpi_server):
@@ -153,6 +199,17 @@ def test_stream_failure_includes_error_queue(scpi_server):
     assert "STREAM failed with rc=1" in str(excinfo.value)
 
 
+def test_check_error_includes_error_queue_and_preserves_query_alignment(scpi_server):
+    scpi_server.fail_check = True
+    with make_client(scpi_server) as pp:
+        with pytest.raises(PulsePinsCommandError) as excinfo:
+            pp.check(True)
+        assert pp.idn() == "PulsePins,TEST"
+
+    assert "CHECK ON returned 'ERROR'" in str(excinfo.value)
+    assert "CHECK failed" in str(excinfo.value)
+
+
 def test_test1_runs_builtin_self_test(scpi_server):
     with make_client(scpi_server) as pp:
         assert pp.test1() == "SUCCESS"
@@ -181,6 +238,17 @@ def test_rejects_oversize_sequence_line_before_send(scpi_server):
 
     assert "accepts at most" in str(excinfo.value)
     assert not any(command.startswith("SEQ") for command in scpi_server.commands)
+
+
+def test_read_line_rejects_complete_overlimit_response():
+    pp = PulsePins("unused", auto_connect=False)
+    pp._socket = ChunkSocket([b"x\n"])
+    pp._rx.extend(b"x" * (PulsePins.MAX_SCPI_LINE_BYTES - 1))
+
+    with pytest.raises(PulsePinsProtocolError) as excinfo:
+        pp._read_line()
+
+    assert "too long" in str(excinfo.value)
 
 
 def test_system_error_parsing(scpi_server):

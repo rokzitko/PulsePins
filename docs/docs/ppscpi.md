@@ -113,7 +113,7 @@ with PulsePins("de10nano") as pp:
 
 `load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit and must not contain semicolons.
 
-If `SEQ` or `STREAM` returns an error response, the Python client drains `SYST:ERR?` and raises `PulsePinsCommandError` with the queued server-side diagnostic text.
+If a high-level Python client command receives an error or failure response, it drains `SYST:ERR?` and raises `PulsePinsCommandError` with the queued server-side diagnostic text.
 
 For notebook-oriented pulse construction, the same package provides `Timeline`:
 
