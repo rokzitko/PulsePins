@@ -3,25 +3,18 @@ set -euo pipefail
 source "$(dirname "$0")/testppscpi_common.sh"
 
 start_ppscpi
-RESPONSE=$(nc localhost 5025 2>/dev/null <<'EOF'
-*IDN?
-CHECK ON
-SEQ d 10 0xff d 5 0x00 d 2 0b0101 f
-STREAM
-TERMINATE
-EOF
-)
+mapfile -t RESPONSE_LINES < <(ppscpi_query '*IDN?;CHECK ON;CHECK?;SEQ d 10 0xff d 5 0x00 d 2 0b0101 f;STREAM;SYST:ERR?')
 
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-RST="\033[0m"
+printf 'Responses:\n'
+printf '%s\n' "${RESPONSE_LINES[@]}"
 
-echo "Reponse: $RESPONSE"
-if [[ $RESPONSE == *"SUCCESS"* ]]; then
-  echo -e "${GREEN}SUCCESS${RST}"
-  exit 0
-else
-  echo -e "${RED}FAILURE${RST}"
-  exit 1
+if [[ "${#RESPONSE_LINES[@]}" -ne 5 ]]; then
+  ppscpi_fail "expected 5 response lines, got ${#RESPONSE_LINES[@]}"
 fi
+
+ppscpi_expect_idn "${RESPONSE_LINES[0]}"
+ppscpi_expect_response "CHECK?" "${RESPONSE_LINES[1]}" "TRUE"
+ppscpi_expect_response "SEQ" "${RESPONSE_LINES[2]}" "LOADED"
+ppscpi_expect_response "STREAM" "${RESPONSE_LINES[3]}" "SUCCESS"
+ppscpi_expect_response "SYST:ERR?" "${RESPONSE_LINES[4]}" '0, "No error"'
+ppscpi_pass

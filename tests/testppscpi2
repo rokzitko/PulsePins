@@ -3,18 +3,5 @@ set -euo pipefail
 source "$(dirname "$0")/testppscpi_common.sh"
 
 start_ppscpi
-RESPONSE="$(ppscpi_query "TEST1")"
-
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-RST="\033[0m"
-
-echo "Reponse: $RESPONSE"
-if [[ $RESPONSE == *"SUCCESS"* ]]; then
-  echo -e "${GREEN}SUCCESS${RST}"
-  exit 0
-else
-  echo -e "${RED}FAILURE${RST}"
-  exit 1
-fi
+ppscpi_expect_query "TEST1" "SUCCESS"
+ppscpi_pass

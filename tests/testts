@@ -2,8 +2,19 @@
 set -e
 source "$(dirname "$0")/defs.sh"
 ppts -nr 5
-# Timeout -> non-zero RC, hence || :
-ppts -nr 10 -timeout 3.0 -selA 0 -sigA || :
+set +e
+TIMEOUT_OUTPUT="$(ppts -nr 10 -timeout 3.0 -selA 0 -sigA 2>&1)"
+TIMEOUT_RC=$?
+set -e
+printf '%s\n' "${TIMEOUT_OUTPUT}"
+if [[ "${TIMEOUT_RC}" -ne 64 ]]; then
+  printf 'FAILURE: expected ppts timeout rc 64, got %s\n' "${TIMEOUT_RC}" >&2
+  exit 1
+fi
+if [[ "${TIMEOUT_OUTPUT}" != *"sigA timestamp reader failed: Timeout."* ]]; then
+  printf 'FAILURE: expected sigA timestamp timeout diagnostic\n' >&2
+  exit 1
+fi
 ppts -nr 10 -timeout 10.0 -selA 7 -sigA -ignore_ts_overflow
 ppts -nr 10 -timeout 10.0 -selA 6 -sigA
 ppts -nr 10 -timeout 10.0 -selA 5 -sigA

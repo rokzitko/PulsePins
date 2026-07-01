@@ -8,16 +8,6 @@ source "$(dirname "$0")/testppscpi_common.sh"
 start_ppscpi
 RESPONSE="${READY_RESPONSE}"
 
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-RST="\033[0m"
-
-echo "Reponse: $RESPONSE"
-if [[ $RESPONSE == *"PulsePins"* ]]; then
-  echo -e "${GREEN}SUCCESS${RST}"
-  exit 0
-else
-  echo -e "${RED}FAILURE${RST}"
-  exit 1
-fi
+echo "Response: $RESPONSE"
+ppscpi_expect_idn "${RESPONSE}"
+ppscpi_pass
