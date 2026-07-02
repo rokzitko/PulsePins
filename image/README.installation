@@ -3,4 +3,4 @@
 3. Run `pip3 install nanobind`.
 4. Run `pip3 install pytest`.
 5. Add `export TZ="CET-1CEST,M3.5.0,M10.5.0/3"` to `/etc/profile`.
-6. Add user `pp` with password `pp` -> access to hardware, but not to admin tasks.
+6. Add user `pp` with password `pp` -> hardware access. Treat this account as privileged/root-equivalent: direct PulsePins hardware access can expose `/dev/mem` and DMA-backed physical memory operations.

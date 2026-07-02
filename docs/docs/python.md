@@ -87,6 +87,8 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 
 PulsePins uses [nanobind](https://nanobind.readthedocs.io/en/latest/) to provide Python bindings for the underlying C++ interface.
 
+The board-native `pp` / `pp_impl` bindings are intended for trusted board-local code. Accounts that can run these bindings should be treated as privileged/root-equivalent: the low-level hardware bindings expose `/dev/mem`-backed MMIO access, and the DMA helpers accept raw physical addresses/descriptors. Use the host-side `pulsepins` SCPI client with a controlled `ppscpi` service for non-root, remote, or less-trusted workflows.
+
 The Python binding tree lives in [`python/`]({{ source_file("python/") }}) and builds two modules:
 
 * `pp`
