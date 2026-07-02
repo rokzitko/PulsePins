@@ -8,7 +8,7 @@ WAVEDROM_STREAMER_SVG := $(patsubst wavedrom/streamer/%.json5,docs/img/timing/%.
 
 .PHONY: site timing-diagrams upload clean
 
-site: mkdocs.yml main.py $(shell find docs)
+site: mkdocs.yml main.py
 	mkdocs build
 
 timing-diagrams: $(WAVEDROM_STREAMER_SVG)
