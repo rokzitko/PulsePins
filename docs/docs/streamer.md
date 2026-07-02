@@ -121,6 +121,12 @@ In [`streamer.sv`]({{ source_file("ip/streamer/streamer.sv") }}), the output FIF
 
 This makes gating an output-side pacing mechanism rather than an input-side buffering mechanism.
 
+The trigger chain latches its triggered state until trigger reset or streamer reset. For that reason,
+software timeout handling must not rely only on clearing trigger-force or trigger-enable bits after an
+already-triggered stream. The shared host workflow treats a streamer-completion timeout as an abort:
+it asserts the runtime `stop` control to halt output progression, clears or disables the internal
+trigger control path, then pulses streamer reset before returning `RC_TIMEOUT`.
+
 For the concise trigger, gate, and output-valid timing summary, see [RTL latency and timing](latency.md). For idealized waveform diagrams of these conventions, see [Streamer timing diagrams](streamer_timing.md).
 
 ## Trigger model

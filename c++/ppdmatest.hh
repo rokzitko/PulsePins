@@ -38,6 +38,13 @@ public:
     std::cout << "%%% Triggered." << std::endl;
   }
 
+  int wait_to_complete_or_abort() {
+    const int rc = ds.sc.wait_to_complete(verb);
+    if (rc & RC_TIMEOUT)
+      abort_streamer_after_timeout(ds.sc, force_trigger, verb);
+    return rc;
+  }
+
   int test4() {
     std::cout << "test4 - sequential counter (or randomized values using the -rnd switch) with random duration" << std::endl;
     const auto c = parse_count(input, "-c", "10000");
@@ -76,7 +83,7 @@ public:
       throw;
     }
     trig.join();
-    return ds.sc.wait_to_complete(verb);
+    return wait_to_complete_or_abort();
   }
 
   int test22() {
@@ -99,7 +106,7 @@ public:
       throw;
     }
     trig.join();
-    return ds.sc.wait_to_complete(verb);
+    return wait_to_complete_or_abort();
   }
 
   int test25() {
@@ -193,7 +200,7 @@ public:
       throw;
     }
     trig.join();
-    return ds.sc.wait_to_complete(verb);
+    return wait_to_complete_or_abort();
   }
 
   dmatests(dma_streamer &_ds, readback &_rb, counter &_ctr, const InputParser &_input, const Verbosity &_v) :

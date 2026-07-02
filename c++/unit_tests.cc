@@ -220,6 +220,14 @@ struct FakeTriggerActivationControl {
   int status_reports = 0;
   int trigger_force_calls = 0;
   int trigger_enable_calls = 0;
+  int trigger_clear_calls = 0;
+  int trigger_disable_calls = 0;
+  int stop_true_calls = 0;
+  int stop_false_calls = 0;
+  int reset_streamer_calls = 0;
+  bool stopped = false;
+
+  FakeTriggerActivationControl() = default;
 
   FakeTriggerActivationControl(std::initializer_list<std::pair<uint64_t, uint64_t>> samples) :
     output_fifo_samples(samples) {}
@@ -244,6 +252,16 @@ struct FakeTriggerActivationControl {
 
   void trigger_force() { trigger_force_calls++; }
   void trigger_enable() { trigger_enable_calls++; }
+  void trigger_clear() { trigger_clear_calls++; }
+  void trigger_disable() { trigger_disable_calls++; }
+  void stop(bool s) {
+    stopped = s;
+    if (s)
+      stop_true_calls++;
+    else
+      stop_false_calls++;
+  }
+  void reset_streamer() { reset_streamer_calls++; }
   void status_report() { status_reports++; }
 };
 
@@ -2034,6 +2052,38 @@ TEST_CASE("force trigger readiness timeout does not assert trigger") {
   CHECK(control.output_counter_reads == 1);
   CHECK(control.trigger_force_calls == 0);
   CHECK(control.trigger_enable_calls == 0);
+}
+
+TEST_CASE("streamer timeout abort stops forced-trigger output and resets streamer") {
+  FakeTriggerActivationControl control;
+  Verbosity verbosity;
+  verbosity.verbose = false;
+
+  abort_streamer_after_timeout(control, force_trigger, verbosity);
+
+  CHECK(control.stop_true_calls == 1);
+  CHECK(control.stop_false_calls == 0);
+  CHECK(control.stopped);
+  CHECK(control.trigger_clear_calls == 1);
+  CHECK(control.trigger_disable_calls == 0);
+  CHECK(control.reset_streamer_calls == 1);
+  CHECK(control.status_reports == 1);
+}
+
+TEST_CASE("streamer timeout abort stops armed-trigger output and resets streamer") {
+  FakeTriggerActivationControl control;
+  Verbosity verbosity;
+  verbosity.verbose = false;
+
+  abort_streamer_after_timeout(control, do_not_force_trigger, verbosity);
+
+  CHECK(control.stop_true_calls == 1);
+  CHECK(control.stop_false_calls == 0);
+  CHECK(control.stopped);
+  CHECK(control.trigger_clear_calls == 0);
+  CHECK(control.trigger_disable_calls == 1);
+  CHECK(control.reset_streamer_calls == 1);
+  CHECK(control.status_reports == 1);
 }
 
 TEST_CASE("ppwebgui trigger defaults to internal mode") {

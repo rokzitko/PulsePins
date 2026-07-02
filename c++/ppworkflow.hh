@@ -312,7 +312,8 @@ inline int activate_trigger(StreamerControl &sc,
   return RC_OK;
 }
 
-inline void deactivate_trigger(streamer_control &sc,
+template<typename StreamerControl>
+inline void deactivate_trigger(StreamerControl &sc,
                                const bool force_trigger,
                                const Verbosity &v)
 {
@@ -327,6 +328,21 @@ inline void deactivate_trigger(streamer_control &sc,
     sc.trigger_disable();
     sc.status_report();
   }
+}
+
+template<typename StreamerControl>
+inline void abort_streamer_after_timeout(StreamerControl &sc,
+                                         const bool force_trigger,
+                                         const Verbosity &v)
+{
+  // A triggered chain stays triggered until reset, so disarming alone is not a safe abort.
+  if (v.verbose)
+    std::cout << cyan << " ---> Stopping streamer after timeout." << rst << std::endl;
+  sc.stop(true);
+  deactivate_trigger(sc, force_trigger, v);
+  if (v.verbose)
+    std::cout << cyan << " ---> Resetting streamer after timeout." << rst << std::endl;
+  sc.reset_streamer();
 }
 
 template<typename Convert>
@@ -390,7 +406,7 @@ inline int run_post_execution_checks(streamer_control &sc,
   if (wait_rc & RC_TIMEOUT) {
     std::cout << red << "Skipping post-completion checks because the streamer "
               << streamer_completion_timeout_text << "." << rst << std::endl;
-    deactivate_trigger(sc, force_trigger, v);
+    abort_streamer_after_timeout(sc, force_trigger, v);
     return rc;
   }
   sleep_1ms();
@@ -489,10 +505,13 @@ inline int send_and_trig(Transport &tr,
   bool rb_failure = run_readback_check_phase(rb, working_elements, input, v, convert, timeout_policy, initial_value, rc);
   run_readback_dump_phase(rb, input, v, timeout_policy);
 
-  // -dont_wait deliberately skips post-execution cleanup; armed/forced trigger
-  // state may remain active until reset, reconfiguration, or explicit deactivation.
-  if (input.exists("-dont_wait"))
+  // -dont_wait deliberately skips successful post-execution cleanup; if a timeout has
+  // already made the operation fail, abort before returning to the caller.
+  if (input.exists("-dont_wait")) {
+    if (rc & RC_TIMEOUT)
+      abort_streamer_after_timeout(sc, force_trigger, v);
     return rc;
+  }
 
   return run_post_execution_checks(sc, rb, ctr, final, rb_failure, force_trigger, input, v, rc);
 }

@@ -124,8 +124,10 @@ int ppcounter(FPGA &fpga, const InputParser &input, const Verbosity &v)
   if (trigger_rc != RC_OK)
     return rc;
   rc |= s.sc.wait_to_complete(v);
-  if (rc & RC_TIMEOUT)
+  if (rc & RC_TIMEOUT) {
+    abort_streamer_after_timeout(s.sc, force_trigger, v);
     return rc;
+  }
   ctr.latch_all();
   ctr.report();
   if (input.exists("-test1") && input.exists("-check"))

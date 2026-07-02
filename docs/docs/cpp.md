@@ -43,7 +43,7 @@ For streamer-oriented tools, the typical host-side path is:
 5. optionally validate the readback stream
 6. wait for completion and inspect final status, counters, FIFO statistics, and [CRC32 integrity checks](readback.md#crc32-integrity-checks)
 
-That common pattern is centralized in `send_and_trig(...)` in [`ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }}) so that behavior stays consistent across multiple tools.
+That common pattern is centralized in `send_and_trig(...)` in [`ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }}) so that behavior stays consistent across multiple tools. If the streamer-completion wait times out, the workflow aborts the active streamer by asserting `stop`, clearing or disabling the internal trigger path, and pulsing streamer reset before returning the timeout failure.
 
 The startup path follows the same philosophy: `HostRuntime` centralizes executable bootstrap, CLI and environment inputs are normalized by [`options.hh`]({{ source_file("c++/options.hh") }}), then [`startup.hh`]({{ source_file("c++/startup.hh") }}) applies the resulting clock-selection and PLL policy through the `FPGA` wrapper.
 
