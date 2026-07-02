@@ -12,7 +12,7 @@ The block accepts two Avalon-ST inputs and forwards one of them to a single Aval
 
 It also maintains 64-bit counters for traffic observed on each input path.
 
-Only the selected input sees `ready` asserted, so the block acts as a strict selector rather than as a merge or arbitration stage.
+Only the selected input sees `ready` asserted, so the block acts as a strict selector rather than as a merge or arbitration stage. The output channel tag identifies the selected source (`0` for input 1, `1` for input 2). In the generated HPS system, the downstream 32-to-96 Avalon-ST width adapter uses that tag to keep each source's partial elements separate before the streamer ignores the tag.
 
 For selected-path latency notes, see [RTL latency and timing](latency.md).
 
@@ -35,6 +35,8 @@ The `st_mux` class provides:
 This block is primarily an integration component.
 
 It is useful when two producers share one downstream Avalon-ST consumer and software needs to decide which path is active while keeping simple statistics for both sources.
+
+This is also useful when software switches between FIFO and DMA sequence ingress: the width adapter does not mix words from the two sources into one 96-bit streamer element.
 
 ### Related pages
 

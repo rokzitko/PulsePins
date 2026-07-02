@@ -25,6 +25,8 @@ The streamer uses Intel Avalon interfaces: [Avalon-ST](https://www.intel.com/con
 
 The data ingress port on [`st_interface.sv`]({{ source_file("ip/streamer/st_interface.sv") }}) receives encoded `{control, counter, data}` elements.
 
+The ingress also accepts an Avalon-ST channel tag. The streamer does not interpret this tag; it is present so generated width adapters can keep partial elements from different upstream sources separate before data reaches `st_interface.sv`.
+
 Conceptually each regular element says:
 
 * what output update to perform

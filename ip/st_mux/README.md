@@ -12,10 +12,11 @@ This directory contains a small integration block used to switch one downstream 
 
 1. software selects input channel 1 or 2 through a one-bit control register
 2. the selected input drives the shared Avalon-ST output
-3. only the selected input sees `ready` asserted
-4. each input has an independent 64-bit transfer counter that increments on successful handshakes
+3. the selected input is tagged on the output channel signal (`0` = input 1, `1` = input 2)
+4. only the selected input sees `ready` asserted
+5. each input has an independent 64-bit transfer counter that increments on successful handshakes
 
-The block does not buffer or reorder traffic. It is strictly a routing and statistics helper.
+The block does not buffer or reorder traffic. It is strictly a routing and statistics helper. In the HPS system, the output channel tag lets the generated 32-to-96 Avalon-ST width adapter keep partial elements for the two sources separate, so FIFO and DMA words are not packed into the same streamer element.
 
 ## Programming model
 

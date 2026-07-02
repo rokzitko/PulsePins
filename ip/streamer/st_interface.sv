@@ -23,6 +23,7 @@ input wire reset,
 // Avalon-ST bus for streaming data
 input wire [WIDTH_TOTAL-1:0] asi_data,
 input wire asi_valid,
+input wire asi_channel,
 output wire asi_ready,
 
 // Avalon-MM bus for controlling the streamer core
@@ -58,6 +59,8 @@ input wire gate_in
 logic [WIDTH_TOTAL-1:0] input_data;
 logic asi_valid_streamer;
 logic asi_ready_streamer;
+// The generated width adapter uses this source tag; streamer semantics ignore it.
+wire unused_asi_channel = asi_channel;
 
 swap_endianness_96 sw(.in(asi_data),
                       .out(input_data));

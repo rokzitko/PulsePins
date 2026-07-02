@@ -43,6 +43,8 @@ It exposes:
 - an Avalon-MM control/status port for trigger control, output override, gating, CRC readout, and FIFO statistics
 - direct trigger and gate inputs used at runtime in the `streamer_clk` domain
 
+The Avalon-ST ingress accepts a channel tag for integration with channel-aware width adapters. `st_interface.sv` ignores the tag after the adapter has used it to keep upstream partial elements separate.
+
 Important behavioral points:
 
 - regular sequence elements describe output updates and durations

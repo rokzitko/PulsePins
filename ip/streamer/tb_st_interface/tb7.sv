@@ -51,6 +51,7 @@ st_interface dut (
   .reset,
   .asi_data,
   .asi_valid,
+  .asi_channel(1'b0),
   .asi_ready,
   .avs_s0_address,
   .avs_s0_read,

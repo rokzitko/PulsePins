@@ -131,7 +131,7 @@ set_interface_property avalon_streaming_sink_0 associatedReset reset
 set_interface_property avalon_streaming_sink_0 dataBitsPerSymbol 8
 set_interface_property avalon_streaming_sink_0 errorDescriptor ""
 set_interface_property avalon_streaming_sink_0 firstSymbolInHighOrderBits true
-set_interface_property avalon_streaming_sink_0 maxChannel 0
+set_interface_property avalon_streaming_sink_0 maxChannel 1
 set_interface_property avalon_streaming_sink_0 readyLatency 0
 set_interface_property avalon_streaming_sink_0 ENABLED true
 set_interface_property avalon_streaming_sink_0 EXPORT_OF ""
@@ -141,6 +141,7 @@ set_interface_property avalon_streaming_sink_0 SVD_ADDRESS_GROUP ""
 
 add_interface_port avalon_streaming_sink_0 asi_data data Input 96
 add_interface_port avalon_streaming_sink_0 asi_valid valid Input 1
+add_interface_port avalon_streaming_sink_0 asi_channel channel Input 1
 add_interface_port avalon_streaming_sink_0 asi_ready ready Output 1
 
 #
