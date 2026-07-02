@@ -41,7 +41,7 @@ IPSOURCE=$(wildcard ip/*/*.v) $(wildcard ip/*/*.vh) $(wildcard ip/*/*.sv)
 # Full hardware + host-software build. This is the main project build entry point.
 all: ${HPS} ${SOF} ${RBF} c++
 
-c++:
+c++: ${HPS}
 	$(MAKE) -C c++
 
 # Consolidated host-side contributor sanity pass. This intentionally stays in the
