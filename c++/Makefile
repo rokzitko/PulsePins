@@ -18,7 +18,7 @@ HWLIBS_ROOT ?= $(SOCEDS_ROOT)/ip/altera/hps/altera_hps/hwlib
 #CROSS_COMPILE ?= $(TOOLCHAIN)/bin/arm-linux-gnueabihf-
 
 CROSS_COMPILE ?= arm-linux-gnueabihf-
-GCC_SUFFIX ?= -7
+GCC_SUFFIX ?= -10
 
 # `SYSROOT` is only meaningful for the ARM cross-build. Leaving it empty allows host-side
 # compile checks without emitting a broken `--sysroot=` flag.
