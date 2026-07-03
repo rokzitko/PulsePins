@@ -65,9 +65,17 @@ def main() -> int:
         return 2
 
     full_scale = args.vref * args.gain
+    if not (0 <= args.vout <= full_scale):
+        print(
+            f"Error: vout must be in range 0..{full_scale:.6f} V "
+            f"for vref={args.vref:.6f} V and gain={args.gain}",
+            file=sys.stderr,
+        )
+        return 2
+
     max_code = (1 << args.bits) - 1
 
-    # Compute code (clamp to range)
+    # Compute code
     code_f = (args.vout / full_scale) * max_code
     code = int(round(code_f))
     code = clamp(code, 0, max_code)

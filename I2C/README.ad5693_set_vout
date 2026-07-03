@@ -1,2 +1,4 @@
 ./ad5693_set_vout.py --vout 3.0 --gain 2 --set-control
 addr=0x4C bus=1 vout=3.000000 V -> code=0x9999 (39321)
+
+--vout must be in the range 0..(--vref * --gain); out-of-range values are rejected.
