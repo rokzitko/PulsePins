@@ -159,11 +159,12 @@ assign gate_enable = gate_enable_streamer;
 
 logic trigger_armed_streamer;
 logic trigger_activated_streamer;
+logic stream_active_streamer;
 logic done_streamer;
 logic buffer_error_streamer;
 logic streamer_idle;
 
-assign streamer_idle = !trigger_armed_streamer && !trigger_activated_streamer;
+assign streamer_idle = !trigger_armed_streamer && !stream_active_streamer;
 
 logic streamer_idle_clk;
 wire initial_reload = initial_reload_ack_valid_clk && (initial_reload_ack_seq_clk == initial_reload_seq_clk);
@@ -314,6 +315,7 @@ streamer st0 (
 .trigger_force(trigger_force_streamer),
 .trigger_armed(trigger_armed_streamer),
 .trigger_activated(trigger_activated_streamer),
+.stream_active(stream_active_streamer),
 .stop(stop_streamer),
 .stop_on_buffer_error(stop_on_buffer_error_streamer),
 .input_fifo1_ctr_in(input_fifo1_ctr_in),

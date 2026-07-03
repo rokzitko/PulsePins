@@ -57,7 +57,9 @@ module streamer
 
  // Overflow detection
  output wire input_fifo_overflow_in,
- output wire input_fifo_overflow_out
+ output wire input_fifo_overflow_out,
+
+ output wire stream_active                  // high after triggering until terminator/reset, even if stopped
 );
 
 logic full_i;                // throttling
@@ -201,6 +203,17 @@ wire trigger_o;
 
 logic retrig;
 assign retrig = retrig_requested && trigger_o;
+
+logic stream_in_progress;
+always_ff @(posedge streamer_clk) begin
+  if (streamer_rst || terminal_seen) begin
+    stream_in_progress <= 1'b0;
+  end else if (trigger_o) begin
+    stream_in_progress <= 1'b1;
+  end
+end
+
+assign stream_active = (stream_in_progress || trigger_o) && !terminal_seen;
 
 chain_trigger ct0 (
     .wrclk(clk),

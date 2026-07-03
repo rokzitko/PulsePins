@@ -1,6 +1,6 @@
-.PHONY: test test1 test2 test3 test4 test5 test6 test7 test8 clean
+.PHONY: test test1 test2 test3 test4 test5 test6 test7 test8 test9 clean
 
-test: test1 test2 test3 test4 test5 test6 test7 test8
+test: test1 test2 test3 test4 test5 test6 test7 test8 test9
 
 test1:
 	./run1
@@ -32,6 +32,10 @@ test7:
 
 test8:
 	./run8
+	@[ -f "SUCCESS" ]
+
+test9:
+	./run9
 	@[ -f "SUCCESS" ]
 
 clean:
