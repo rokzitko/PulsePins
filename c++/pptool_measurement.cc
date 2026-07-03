@@ -174,9 +174,9 @@ int ppread(FPGA &fpga, const InputParser &input, const Verbosity &v)
   return RC_OK;
 }
 
-void ts_reader(const InputParser &input,
-               std::string label,
+void ts_reader(std::string label,
                std::function<uint64_t()> read,
+               const uint64_t nr,
                long long silent_after = -1,
                std::exception_ptr *failure = nullptr)
 {
@@ -194,7 +194,6 @@ void ts_reader(const InputParser &input,
   d['D'] = [&ctr, &current, &previous](std::string_view t) { return setw_l(ctr ? "diff=" + with_underscores(current-previous) : "", t); };
   std::string fmt = "%4l  %t  ctr=%10c  ts=%15s  %15D";
   try {
-    const auto nr = parse_uint64(input, "-nr", "0");
     for (ctr = 0; nr == 0 || ctr < nr; ctr++) {
       current = read();
       if (silent_after < 0 || ctr < static_cast<uint64_t>(silent_after)) {
@@ -219,15 +218,16 @@ int ppts(FPGA &fpga, const InputParser &input, const Verbosity &v)
   TimestampSession session(fpga, input, v);
   const bool read_pps = !input.exists("-nopps");
   const bool ignore_ts_overflow = input.exists("-ignore_ts_overflow");
+  const bool read_sigA = input.exists("-sigA");
+  const auto nr = (read_pps || read_sigA) ? parse_uint64(input, "-nr", "0") : uint64_t{0};
   std::thread ts_pps;
   std::exception_ptr pps_failure;
   if (read_pps)
-    ts_pps = std::thread(ts_reader, std::ref(input), "PPS", [&session, ignore_ts_overflow](){ return session.ts.read_with_timeout(session.timeout, ignore_ts_overflow); }, -1, &pps_failure);
-  const bool read_sigA = input.exists("-sigA");
+    ts_pps = std::thread(ts_reader, "PPS", [&session, ignore_ts_overflow](){ return session.ts.read_with_timeout(session.timeout, ignore_ts_overflow); }, nr, -1, &pps_failure);
   std::thread ts_sigA;
   std::exception_ptr sigA_failure;
   if (read_sigA)
-    ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session, ignore_ts_overflow](){ return session.ts.readA_with_timeout(session.timeout, ignore_ts_overflow); }, -1, &sigA_failure);
+    ts_sigA = std::thread(ts_reader, "sigA", [&session, ignore_ts_overflow](){ return session.ts.readA_with_timeout(session.timeout, ignore_ts_overflow); }, nr, -1, &sigA_failure);
   if (read_pps) ts_pps.join();
   if (read_sigA) ts_sigA.join();
   return timestamp_reader_rc(pps_failure) | timestamp_reader_rc(sigA_failure);
@@ -338,6 +338,7 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
   size_t cnt = 0;
   int64_t diff_prev = 0;
   const size_t avg = parse_uint32(input, "-avg", "1");
+  const auto nr = parse_uint64(input, "-nr", "0");
   Averager<double> av(avg, [&pid, &convert, &dac, vref, gain](double avgDelta) {
     const auto control = pid.update(avgDelta);
     const double vout = convert.y(control);
@@ -377,7 +378,7 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
   };
   std::exception_ptr pps_failure;
   std::exception_ptr sigA_failure;
-  auto ts_pps  = std::thread(ts_reader, std::ref(input), "PPS", [&session, &agg, &stop_requested, &request_stop](){
+  auto ts_pps  = std::thread(ts_reader, "PPS", [&session, &agg, &stop_requested, &request_stop](){
     if (stop_requested.load())
       throw std::runtime_error("timestamp aggregation stopped");
     try {
@@ -389,8 +390,8 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
       request_stop();
       throw;
     }
-  }, silent_after, &pps_failure);
-  auto ts_sigA = std::thread(ts_reader, std::ref(input), "sigA", [&session, &agg, &stop_requested, &request_stop](){
+  }, nr, silent_after, &pps_failure);
+  auto ts_sigA = std::thread(ts_reader, "sigA", [&session, &agg, &stop_requested, &request_stop](){
     if (stop_requested.load())
       throw std::runtime_error("timestamp aggregation stopped");
     try {
@@ -402,7 +403,7 @@ int ppgpsdo(FPGA &fpga, const InputParser &input, const Verbosity &v)
       request_stop();
       throw;
     }
-  }, silent_after, &sigA_failure);
+  }, nr, silent_after, &sigA_failure);
   ts_pps.join();
   ts_sigA.join();
   agg.stop(true);

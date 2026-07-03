@@ -36,8 +36,8 @@ public:
   mstests(multistreamer &_ms, qout &_q, readback &_rb, pio_out &_pio_trig_int, const InputParser &_input, const Verbosity &_v) :
           ms(_ms), q(_q), rb(_rb), pio_trig_int(_pio_trig_int), input(_input), verb(_v) {}
 
-  static void trig1(pio_out &p, const InputParser &input) {
-    if (input.exists("-trig")) {
+  static void trig1(pio_out &p, const bool enabled) {
+    if (enabled) {
       const int delay = 100*1000;
       usleep(delay);
       p.write(1);
@@ -85,8 +85,10 @@ public:
     el_ref.push_back(el());
     if (verb.veryverbose)
       std::cout << "comb_mode=" << to_string(cm) << " result=0x" << std::hex << result << std::endl;
-    std::thread trig(trig1, std::ref(pio), std::ref(input));
-    if (input.exists("-check")) {
+    const bool trig_enabled = input.exists("-trig");
+    const bool check = input.exists("-check");
+    std::thread trig(trig1, std::ref(pio), trig_enabled);
+    if (check) {
       usleep(10);
       if (verb.veryverbose) rb.check_fill_status();
       const double timeout = 1.0;

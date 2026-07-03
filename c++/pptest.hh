@@ -274,8 +274,8 @@ public:
   }
 
   // **** Triggering tests
-  static void trig12(trigger_int &trig_int, const InputParser &input) {
-    if (input.exists("-trig")) {
+  static void trig12(trigger_int &trig_int, const bool enabled) {
+    if (enabled) {
       constexpr int delay = 100*1000;
       usleep(delay);
       trig_int.write(1);
@@ -294,16 +294,15 @@ public:
     auto c = parse_count(input, "-c", "1");
     auto v = parse_value(input, "-v", "0b11");
     elements.push_back(el(c, v));
-    std::thread trig(trig12, std::ref(trig_int), std::ref(input));
+    const bool trig_enabled = input.exists("-trig");
+    std::thread trig(trig12, std::ref(trig_int), trig_enabled);
     int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb);
     trig.join();
     return rc;
   }
 
-  static void trig13(trigger_int &trig_int, const InputParser &input) {
-    if (input.exists("-trig")) {
-      auto p = parse_trigger(input, "-p", "0b01");
-      auto r = parse_trigger(input, "-r", "0b10");
+  static void trig13(trigger_int &trig_int, const bool enabled, const trigger_t p, const trigger_t r) {
+    if (enabled) {
       constexpr int delay = 200*1000;
       usleep(delay);
       trig_int.write(p);
@@ -327,18 +326,16 @@ public:
     auto c = parse_count(input, "-c", "1");
     auto v = parse_value(input, "-v", "0b11");
     elements.push_back(el(c, v));
-    std::thread trig(trig13, std::ref(trig_int), std::ref(input));
+    const bool trig_enabled = input.exists("-trig");
+    std::thread trig(trig13, std::ref(trig_int), trig_enabled, p, r);
     int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb);
     trig.join();
     return rc;
   }
 
-  static void trig14(trigger_int &trig_int, const InputParser &input) {
-    if (input.exists("-trig")) {
-      const auto cycles = parse_uint32(input, "-cycles", "10");
-      const auto p = parse_trigger(input, "-p", "0b01");
-      const auto r = parse_trigger(input, "-r", "0b10");
-      const auto delay = parse_uint32(input, "-delay", "10000");
+  static void trig14(trigger_int &trig_int, const bool enabled, const uint32_t cycles,
+                     const trigger_t p, const trigger_t r, const uint32_t delay) {
+    if (enabled) {
       for (uint32_t i = 0; i < cycles; i++) {
         usleep(delay);
         trig_int.write(p);
@@ -366,18 +363,17 @@ public:
     const auto c = parse_count(input, "-c", "1");
     const auto v = parse_value(input, "-v", "0b11");
     elements.push_back(el(c, v));
-    std::thread trig(trig14, std::ref(trig_int), std::ref(input));
+    const bool trig_enabled = input.exists("-trig");
+    const auto delay = trig_enabled ? parse_uint32(input, "-delay", "10000") : uint32_t{10000};
+    std::thread trig(trig14, std::ref(trig_int), trig_enabled, cycles, p, r, delay);
     const int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb);
     trig.join();
     return rc;
   }
 
-  static void trig15(trigger_int &trig_int, const InputParser &input) {
-    if (input.exists("-trig")) {
-      const auto cycles = parse_uint32(input, "-cycles", "10");
-      const auto p = parse_trigger(input, "-p", "0b01");
-      const auto r = parse_trigger(input, "-r", "0b10");
-      const auto delay = parse_uint32(input, "-delay", "100000"); // 100ms
+  static void trig15(trigger_int &trig_int, const bool enabled, const uint32_t cycles,
+                     const trigger_t p, const trigger_t r, const uint32_t delay) {
+    if (enabled) {
       for (uint32_t i = 0; i < cycles; i++) {
         usleep(delay);
         trig_int.write(i % 2 == 0 ? p : r);
@@ -410,7 +406,9 @@ public:
       if (i < cycles-1)
         elements.push_back(el(Retrig{}));
     }
-    std::thread trig(trig15, std::ref(trig_int), std::ref(input));
+    const bool trig_enabled = input.exists("-trig");
+    const auto delay = trig_enabled ? parse_uint32(input, "-delay", "100000") : uint32_t{100000}; // 100ms
+    std::thread trig(trig15, std::ref(trig_int), trig_enabled, cycles, p, r, delay);
     const int rc = send_and_trig(fifo, sc, rb, ctr, elements, input, do_not_force_trigger, verb);
     trig.join();
     return rc;
@@ -461,15 +459,12 @@ public:
 
   // Writes to the streamer, and adds the same elements to Sequence 'elements' for verification in a
   // separate thread. See function reader() below.
-  static void writer(FPGA &fpga, streamer_fifo &fifo, streamer_control &sc, const InputParser &input,
-                      const Verbosity &v, Sequence &elements, const bool use_locks) {
-    const auto nr = parse_value(input, "-v", "0"); // 0 = infinity
+  static void writer(FPGA &fpga, streamer_fifo &fifo, streamer_control &sc,
+                      const Verbosity &v, Sequence &elements, const bool use_locks,
+                      const value_t nr, const bool rnd, const bool log_len,
+                      const count_t min_len, const count_t max_len) {
     value_t value = 0;
-    const bool rnd = input.exists("-rnd");
     value_t previous_value = 0; // for randomized tests to prevent collisions
-    const bool log_len = input.exists("-log_len");
-    const auto min_len = parse_count(input, "-cmin", "1");
-    const auto max_len = parse_count(input, "-c", "1000000");
     for (unsigned long i = 0; nr == 0 || i < nr; i++) {
       if (use_locks) fpga.lock();
       if (rnd) {
@@ -497,9 +492,9 @@ public:
     //  elements.push_back(e);
   }
 
-  static int reader(FPGA &fpga, readback &rb, const InputParser &input,
-                    const Verbosity &v, Sequence &elements, const bool use_locks) {
-    const int reporting_period = parse_uint32(input, "-report", "1"); // seconds
+  static int reader(FPGA &fpga, readback &rb, const Verbosity &v,
+                    Sequence &elements, const bool use_locks,
+                    const int reporting_period) {
     Throttler thr(reporting_period);
     Timer t;
     size_t n = 0;
@@ -543,8 +538,14 @@ public:
       use_locks = false;
       if (verb.verbose) std::cout << "Locking disabled." << std::endl;
     }
-    std::thread wr(writer, std::ref(fpga), std::ref(fifo), std::ref(sc), std::ref(input), std::ref(verb), std::ref(elements), use_locks);
-    auto rc = std::async(std::launch::async, reader, std::ref(fpga), std::ref(rb), std::ref(input), std::ref(verb), std::ref(elements), use_locks);
+    const auto nr = parse_value(input, "-v", "0"); // 0 = infinity
+    const bool rnd = input.exists("-rnd");
+    const bool log_len = input.exists("-log_len");
+    const auto min_len = parse_count(input, "-cmin", "1");
+    const auto max_len = parse_count(input, "-c", "1000000");
+    const int reporting_period = parse_uint32(input, "-report", "1"); // seconds
+    std::thread wr(writer, std::ref(fpga), std::ref(fifo), std::ref(sc), std::ref(verb), std::ref(elements), use_locks, nr, rnd, log_len, min_len, max_len);
+    auto rc = std::async(std::launch::async, reader, std::ref(fpga), std::ref(rb), std::ref(verb), std::ref(elements), use_locks, reporting_period);
     wr.join();
     return rc.get();
   }
