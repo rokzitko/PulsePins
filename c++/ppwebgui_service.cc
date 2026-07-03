@@ -523,8 +523,8 @@ void WebGuiController::apply_port_locked(combiner_qout &combiner, const int port
   if (state.force_enabled) {
     combiner.force(port, state.force_value);
   } else {
-    combiner.value(port, state.force_value);
     combiner.release_force(port);
+    combiner.value(port, state.force_value);
   }
 }
 
