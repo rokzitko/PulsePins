@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -26,8 +27,6 @@ public:
     input(_input),
     fpga(_fpga),
     v(_v),
-    s(input, fpga),
-    rb(input, fpga),
     ctr(input, fpga)
     {
       build_tree();
@@ -36,8 +35,8 @@ private:
   const InputParser &input;
   FPGA &fpga;
   const Verbosity &v;
-  streamer s;
-  readback rb;
+  std::optional<streamer> s;
+  std::optional<readback> rb;
   counter ctr;
   bool check = false;
   Sequence elements;
@@ -70,9 +69,17 @@ private:
     push_error(message.str(), EXECUTION_ERROR);
   }
 
-  void prepare_stream_run() {
-    s.reset_for_active_clock();
-    rb.reset();
+  void ensure_hardware_objects_locked() {
+    if (!s)
+      s.emplace(input, fpga);
+    if (!rb)
+      rb.emplace(input, fpga);
+  }
+
+  void prepare_stream_run_locked() {
+    ensure_hardware_objects_locked();
+    s->reset_for_active_clock();
+    rb->reset();
     ctr.reset_all();
   }
 
@@ -84,12 +91,13 @@ private:
 
   void reset_hardware_run_state() {
     auto lock = fpga.acquire_lock();
-    s.set_initial_value(input);
+    ensure_hardware_objects_locked();
+    s->set_initial_value(input);
     fpga.output_enable(true);
-    s.mux.channel(1);
+    s->mux.channel(1);
     combiner(fpga.dev_h2f, address_map::h2f::combiner_qout, "combiner_qout").reset_passthrough();
     combiner(fpga.dev_h2f, address_map::h2f::combiner_trig, "combiner_trig").reset_passthrough();
-    prepare_stream_run();
+    prepare_stream_run_locked();
   }
 
   void build_tree() {
@@ -149,8 +157,8 @@ private:
                 auto input1 = input;
                 input1.add("-check");
                 auto lock = fpga.acquire_lock();
-                prepare_stream_run();
-                int rc = send_and_trig(s.fifo, s.sc, rb, ctr, elements, input1, force_trigger, v);
+                prepare_stream_run_locked();
+                int rc = send_and_trig(s->fifo, s->sc, *rb, ctr, elements, input1, force_trigger, v);
                 if (rc)
                   push_rc_failure("TEST1", rc);
                 return (rc ? "FAILURE" : "SUCCESS");
@@ -181,8 +189,8 @@ private:
                 auto input1 = input;
                 if (check) input1.add("-check");
                 auto lock = fpga.acquire_lock();
-                prepare_stream_run();
-                int rc = send_and_trig(s.fifo, s.sc, rb, ctr, elements, input1, force_trigger_p, v); // to do: async?
+                prepare_stream_run_locked();
+                int rc = send_and_trig(s->fifo, s->sc, *rb, ctr, elements, input1, force_trigger_p, v); // to do: async?
                 sesr_|=OPERATION_COMPLETE;
                 if (rc)
                   push_rc_failure("STREAM", rc);
@@ -210,7 +218,6 @@ public:
 protected:
   std::shared_ptr<ScpiSessionBase> make_session(tcp::socket socket) override {
     std::cout << "Connection from " << socket.remote_endpoint().address().to_string() << std::endl;
-    auto lock = fpga.acquire_lock();
     return std::make_shared<PPSession>(std::move(socket), input, fpga, v);
   }
 };
