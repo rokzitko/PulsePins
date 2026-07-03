@@ -472,6 +472,13 @@ logic ts_core_pps_sigA;
 // This top-level file provides the conduit wiring between those blocks and the actual board-
 // level clocks, resets, output pins, trigger inputs, AUX pins, and debug/status signals.
 
+logic streamer_rst; // reset synchronized to the streamer_clk clock domain
+sync_bit_3stage sb(
+ .clk_dest(streamer_clk),
+ .async_in(reset),
+ .sync_out(streamer_rst)
+);
+
 base_hps u0 (
       .clk_clk                           ( FPGA_CLK1_50 ), // 50MHz Xtal (input signal to PLLs)
       .reset_reset_n                     ( h2f_reset_n ),  // to FPGA core design
@@ -630,6 +637,7 @@ base_hps u0 (
 .combiner_qout_in_in4,
 .combiner_qout_out_o,
 .combiner_qout_clk_clk(streamer_clk),
+.combiner_qout_clk_reset_reset(streamer_rst),
 
 .combiner_trig_in_in1,
 .combiner_trig_in_in2,
@@ -637,6 +645,7 @@ base_hps u0 (
 .combiner_trig_in_in4,
 .combiner_trig_out_o,
 .combiner_trig_clk_clk(streamer_clk),
+.combiner_trig_clk_reset_reset(streamer_rst),
 
 .counter_q_input_data(counter_q_input_data),
 .counter_q_input_clock(counter_q_input_clock),
@@ -699,13 +708,6 @@ heartbeat #(
  .clk(ref_clk),
  .reset(reset_ref),
  .heartbeat(heartbeat)
-);
-
-logic streamer_rst; // reset synchronized to the stream_clk clock domain
-sync_bit_3stage sb(
- .clk_dest(streamer_clk),
- .async_in(reset),
- .sync_out(streamer_rst)
 );
 
 // Aggregate done configuration crosses from the software/control clock domain into the

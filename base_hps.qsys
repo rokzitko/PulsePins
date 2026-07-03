@@ -854,6 +854,11 @@
    type="clock"
    dir="end" />
  <interface
+   name="combiner_qout_clk_reset"
+   internal="combiner_qout.clk_reset"
+   type="reset"
+   dir="end" />
+ <interface
    name="combiner_qout_in"
    internal="combiner_qout.in"
    type="conduit"
@@ -867,6 +872,11 @@
    name="combiner_trig_clk"
    internal="combiner_trig.clk"
    type="clock"
+   dir="end" />
+ <interface
+   name="combiner_trig_clk_reset"
+   internal="combiner_trig.clk_reset"
+   type="reset"
    dir="end" />
  <interface
    name="combiner_trig_in"

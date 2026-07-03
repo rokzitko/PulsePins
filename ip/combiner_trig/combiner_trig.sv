@@ -20,6 +20,7 @@ module combiner_trig #(
  input  wire             clock_clk,         // clock in the control domain
  input  wire             reset_reset,
  input  wire             clk,               // clock in the signal domain
+ input  wire             clk_reset,         // reset synchronized to clk
  input  wire [WIDTH-1:0] in1,
  input  wire [WIDTH-1:0] in2,
  input  wire [WIDTH-1:0] in3,
@@ -108,7 +109,7 @@ cdc_bus_update #(
   .src_update(cfg_update),
   .src_busy(),
   .dst_clk(clk),
-  .dst_reset(reset_reset),
+  .dst_reset(clk_reset),
   .dst_accept(1'b1),
   .dst_data(config_clk),
   .dst_valid(),
@@ -185,27 +186,27 @@ end
 logic [WIDTH-1:0] o_clock, in1_clock, in2_clock, in3_clock, in4_clock;
 
 cdc_snapshot #(.WIDTH(WIDTH)) o_snapshot (
-  .src_clk(clk), .src_reset(reset_reset), .src_data(o),
+  .src_clk(clk), .src_reset(clk_reset), .src_data(o),
   .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(o_clock), .dst_valid()
 );
 
 cdc_snapshot #(.WIDTH(WIDTH)) in1_snapshot (
-  .src_clk(clk), .src_reset(reset_reset), .src_data(in1),
+  .src_clk(clk), .src_reset(clk_reset), .src_data(in1),
   .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(in1_clock), .dst_valid()
 );
 
 cdc_snapshot #(.WIDTH(WIDTH)) in2_snapshot (
-  .src_clk(clk), .src_reset(reset_reset), .src_data(in2),
+  .src_clk(clk), .src_reset(clk_reset), .src_data(in2),
   .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(in2_clock), .dst_valid()
 );
 
 cdc_snapshot #(.WIDTH(WIDTH)) in3_snapshot (
-  .src_clk(clk), .src_reset(reset_reset), .src_data(in3),
+  .src_clk(clk), .src_reset(clk_reset), .src_data(in3),
   .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(in3_clock), .dst_valid()
 );
 
 cdc_snapshot #(.WIDTH(WIDTH)) in4_snapshot (
-  .src_clk(clk), .src_reset(reset_reset), .src_data(in4),
+  .src_clk(clk), .src_reset(clk_reset), .src_data(in4),
   .dst_clk(clock_clk), .dst_reset(reset_reset), .dst_data(in4_clock), .dst_valid()
 );
 
@@ -238,10 +239,17 @@ end
 logic [WIDTH-1:0] x1, x2, x3, x4;
 
 always_ff @(posedge clk) begin
-  x1 <= (force1 ? value1_clk : in1) ^ invert1_clk;
-  x2 <= (force2 ? value2_clk : in2) ^ invert2_clk;
-  x3 <= (force3 ? value3_clk : in3) ^ invert3_clk;
-  x4 <= (force4 ? value4_clk : in4) ^ invert4_clk;
+  if (clk_reset) begin
+    x1 <= '0;
+    x2 <= '0;
+    x3 <= '0;
+    x4 <= '0;
+  end else begin
+    x1 <= (force1 ? value1_clk : in1) ^ invert1_clk;
+    x2 <= (force2 ? value2_clk : in2) ^ invert2_clk;
+    x3 <= (force3 ? value3_clk : in3) ^ invert3_clk;
+    x4 <= (force4 ? value4_clk : in4) ^ invert4_clk;
+  end
 end
 
 // Apply input masks after forcing and inversion.
@@ -281,7 +289,11 @@ end
 
 // Output forcing bypasses the normal output inversion/masking path.
 always_ff @(posedge clk) begin
-  o <= (forceo ? valueo_clk : (z ^ inverto_clk) & masko_clk);
+  if (clk_reset) begin
+    o <= '0;
+  end else begin
+    o <= (forceo ? valueo_clk : (z ^ inverto_clk) & masko_clk);
+  end
 end
 
 endmodule

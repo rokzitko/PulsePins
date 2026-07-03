@@ -47,6 +47,7 @@ end
 combiner_trig dut(
  .clock_clk(clk),
  .clk(clk),
+ .clk_reset(reset),
  .reset_reset(reset),
  .in1,
  .in2,

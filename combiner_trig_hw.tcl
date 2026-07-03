@@ -118,6 +118,20 @@ set_interface_property clock SVD_ADDRESS_GROUP ""
 add_interface_port clk clk clk Input 1
 
 #
+# connection point clk_reset
+#
+add_interface clk_reset reset end
+set_interface_property clk_reset associatedClock clk
+set_interface_property clk_reset synchronousEdges DEASSERT
+set_interface_property clk_reset ENABLED true
+set_interface_property clk_reset EXPORT_OF ""
+set_interface_property clk_reset PORT_NAME_MAP ""
+set_interface_property clk_reset CMSIS_SVD_VARIABLES ""
+set_interface_property clk_reset SVD_ADDRESS_GROUP ""
+
+add_interface_port clk_reset clk_reset reset Input 1
+
+#
 # connection point reset
 #
 add_interface reset reset end
@@ -137,7 +151,7 @@ add_interface_port reset reset_reset reset Input 1
 #
 add_interface in conduit end
 set_interface_property in associatedClock clk
-set_interface_property in associatedReset ""
+set_interface_property in associatedReset clk_reset
 set_interface_property in ENABLED true
 set_interface_property in EXPORT_OF ""
 set_interface_property in PORT_NAME_MAP ""
@@ -155,7 +169,7 @@ add_interface_port in in4 in4 Input 11
 #
 add_interface out conduit end
 set_interface_property out associatedClock clk
-set_interface_property out associatedReset ""
+set_interface_property out associatedReset clk_reset
 set_interface_property out ENABLED true
 set_interface_property out EXPORT_OF ""
 set_interface_property out PORT_NAME_MAP ""
