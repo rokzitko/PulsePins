@@ -62,7 +62,7 @@ The direct trigger-chain test is [`tb_chain_trigger/tb.sv`]({{ source_file("ip/s
 
 ## Retrigger flow
 
-A retrigger element pauses output progression by requesting a trigger-chain reset. The sequence can then wait for another trigger condition and resume from the following output elements.
+A retrigger element pauses output progression by discarding the just-satisfied active trigger stage and returning the trigger chain to idle. The sequence can then wait for the next queued trigger condition and resume from the following output elements. This differs from the runtime `trigger_reset` signal, which preserves the active trigger stage and re-arms the same condition after reset is released.
 
 Sequence shown: the first trigger releases an output burst of `0x12345678` samples, then a retrigger element pauses progression. A second trigger releases `0x87654321` samples, followed by a final element.
 

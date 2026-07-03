@@ -61,13 +61,75 @@ chain_trigger dut(
  .o);
 
 always @(posedge clk) begin
-  $strobe("t=%8.3f i=%3b o=%b used=%d state=%d rdreq=%b one=%b | pat=%3b mask=%3b",
-   $realtime, i, o, dut.used, dut.state, dut.rdreq, dut.one,
+  $strobe("t=%8.3f i=%3b o=%b used=%d state=%d active=%b rdreq=%b one=%b | pat=%3b mask=%3b",
+   $realtime, i, o, dut.used, dut.state, dut.active_stage_valid, dut.rdreq, dut.one,
    dut.at.pattern, dut.at.mask
    );
 end
 
-// Setup
+localparam logic [1:0] TB_S_IDLE = 0, TB_S_LOAD = 1, TB_S_WAIT = 2, TB_S_TRIGGERED = 3;
+
+task automatic wait_state(input logic [1:0] expected);
+  int n;
+  begin
+    n = 0;
+    while (dut.state != expected && n < 100) begin
+      @(posedge clk);
+      #0.1;
+      n++;
+    end
+    assert(dut.state == expected) else $fatal(1, "Timed out waiting for state %0d, got %0d", expected, dut.state);
+  end
+endtask
+
+task automatic expect_stage(input logic [width-1:0] expected_pattern, input logic [width-1:0] expected_mask);
+  begin
+    #0.1;
+    assert(dut.state == TB_S_WAIT && armed) else $fatal(1, "Trigger chain is not armed");
+    assert(dut.active_stage_valid) else $fatal(1, "Active trigger stage is not marked valid");
+    assert(dut.q_pattern == expected_pattern && dut.q_mask == expected_mask)
+      else $fatal(1, "Expected active stage pattern=%b mask=%b, got pattern=%b mask=%b",
+        expected_pattern, expected_mask, dut.q_pattern, dut.q_mask);
+  end
+endtask
+
+task automatic pulse_trigger_reset(input logic [width-1:0] expected_pattern, input logic [width-1:0] expected_mask);
+  begin
+    @(negedge clk);
+    trigger_reset <= 1;
+    @(posedge clk);
+    #0.1;
+    assert(dut.state == TB_S_IDLE && !o) else $fatal(1, "trigger_reset did not deassert the trigger");
+    assert(dut.active_stage_valid) else $fatal(1, "trigger_reset discarded the active trigger stage");
+    assert(dut.q_pattern == expected_pattern && dut.q_mask == expected_mask)
+      else $fatal(1, "trigger_reset changed active stage pattern=%b mask=%b", dut.q_pattern, dut.q_mask);
+    @(negedge clk);
+    trigger_reset <= 0;
+    wait_state(TB_S_WAIT);
+    expect_stage(expected_pattern, expected_mask);
+  end
+endtask
+
+task automatic pulse_retrig;
+  begin
+    @(negedge clk);
+    retrig <= 1;
+    @(posedge clk);
+    #0.1;
+    assert(dut.state == TB_S_IDLE && !o) else $fatal(1, "retrig did not deassert the trigger");
+    assert(!dut.active_stage_valid) else $fatal(1, "retrig preserved the active trigger stage");
+    @(negedge clk);
+    retrig <= 0;
+    repeat (4) begin
+      @(posedge clk);
+      #0.1;
+    end
+    assert(dut.state == TB_S_IDLE && !armed && !o) else $fatal(1, "retrig re-armed without another queued stage");
+  end
+endtask
+
+integer fh;
+
 initial begin
   i <= 0;
   pattern <= 0;
@@ -95,70 +157,35 @@ initial begin
   pattern <= 'b100;
   mask    <= 'b100;
   control <= 'b011; // final
-  #1
+  #1;
   wrreq   <= 0;
-end
 
-// Triggers
-initial begin
-  #20.5
+  wait_state(TB_S_WAIT);
+  expect_stage('b001, 'b001);
+
   i <= 'b001;
-  #10
+  wait_state(TB_S_LOAD);
+  wait_state(TB_S_WAIT);
+  expect_stage('b010, 'b010);
+  i <= 0;
+
+  pulse_trigger_reset('b010, 'b010);
+
   i <= 'b010;
-  #10
+  wait_state(TB_S_LOAD);
+  pulse_trigger_reset('b100, 'b100);
+
   i <= 'b100;
-end
+  wait_state(TB_S_TRIGGERED);
+  assert(o && dut.active_stage_valid) else $fatal(1, "Final trigger stage did not trigger");
 
-// Trigger reset
-initial begin
-  #50
-  trigger_reset <= 1;
-end
+  pulse_trigger_reset('b100, 'b100);
+  wait_state(TB_S_TRIGGERED);
+  assert(o && dut.active_stage_valid) else $fatal(1, "Final trigger stage did not re-trigger after trigger_reset");
 
-// Tests
-initial begin
-  #15.1
-  assert(o == 0 && dut.used == 2 && dut.state == 2 && dut.one == 0) else $fatal;
-end
+  pulse_retrig();
 
-initial begin
-  #21.1
-  assert(o == 0 && dut.used == 2 && dut.state == 2 && dut.one == 1) else $fatal;
-end
-
-initial begin
-  #22.1
-  assert(o == 0 && dut.used == 2 && dut.state == 1 && dut.one == 1) else $fatal;
-  assert(dut.rdreq == 1) else $fatal;
-end
-
-initial begin
-  #32.1
-  assert(o == 0 && dut.used == 1 && dut.state == 1 && dut.one == 1) else $fatal;
-  assert(dut.rdreq == 1) else $fatal;
-end
-
-initial begin
-  #32.1
-  assert(o == 0 && dut.used == 1 && dut.state == 1 && dut.one == 1) else $fatal;
-  assert(dut.rdreq == 1) else $fatal;
-end
-
-initial begin
-  #42.1
-  assert(o == 1 && dut.used == 0 && dut.state == 3 && dut.one == 1) else $fatal;
-  assert(dut.rdreq == 0) else $fatal;
-end
-
-initial begin
-  #51.1
-  assert(o == 0) else $fatal;
-end
-
-integer fh;
-
-initial begin
-  #60 $display("SUCCESS");
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_chain.ucdb");

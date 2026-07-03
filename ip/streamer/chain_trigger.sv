@@ -32,6 +32,7 @@ output reg o                            // output
 
 // reset: clears FIFO
 // rst & trigger_reset: reset and_trigger, state -> IDLE
+// trigger_reset preserves the active trigger stage; retrig discards it
 // (internal) and_trigger_reset: resets and_trigger (for next trigger event)
 
 logic rdreq; // request for next trigger condition to be read from FIFO
@@ -107,6 +108,7 @@ and_trigger at (
 
 // Moore state machine
 logic [1:0] state;
+logic active_stage_valid; // q_* contains a trigger stage already popped from the FIFO
 
 localparam S_IDLE = 0, S_LOAD = 1, S_WAIT = 2, S_TRIGGERED = 3;
 
@@ -121,7 +123,7 @@ always_comb begin
   and_trigger_reset = 1;
   unique case (state)
     S_IDLE:      begin o = 0; rdreq = 0; and_trigger_reset = 1; end
-    S_LOAD:      begin o = 0; rdreq = 1; and_trigger_reset = 1; end
+    S_LOAD:      begin o = 0; rdreq = !(rst || retrig); and_trigger_reset = 1; end
     S_WAIT:      begin o = 0; rdreq = 0; and_trigger_reset = 0; end
     S_TRIGGERED: begin o = 1; rdreq = 0; and_trigger_reset = 0; end
   endcase
@@ -132,31 +134,43 @@ assign is_last = q_control[BIT_TRIGGER_FINAL]; // this trigger condition is the 
 assign armed = (state == S_WAIT); // armed = waiting for trigger
 
 always_ff @(posedge clk) begin
-  if (rst)
+  if (rst) begin
     state <= S_IDLE;
-  else if (trigger_reset || retrig)
+    active_stage_valid <= 1'b0;
+  end else if (retrig) begin
     state <= S_IDLE;
-  else if (trigger_force) // overrides everything (except reset signals)
-    state <= S_TRIGGERED;
-  else
-    unique case (state)
-      S_IDLE:
-        if (fifo_empty) // no trigger conditions available in FIFO -> remain idle
-          state <= S_IDLE;
-        else
-          state <= S_LOAD;
-      S_LOAD:
-        state <= S_WAIT;
-      S_WAIT:
-        if (!one) // trigger condition not fulfilled yet
+    active_stage_valid <= 1'b0;
+  end else begin
+    if (state == S_LOAD)
+      active_stage_valid <= 1'b1;
+
+    if (trigger_reset)
+      state <= S_IDLE;
+    else if (trigger_force) // overrides everything (except reset signals)
+      state <= S_TRIGGERED;
+    else begin
+      unique case (state)
+        S_IDLE:
+          if (active_stage_valid) // trigger_reset re-arms the already loaded condition
+            state <= S_WAIT;
+          else if (fifo_empty) // no trigger conditions available in FIFO -> remain idle
+            state <= S_IDLE;
+          else
+            state <= S_LOAD;
+        S_LOAD:
           state <= S_WAIT;
-        else if (is_last || fifo_empty) // no more trigger conditions (explicitly or implicitly by FIFO being empty)
-          state <= S_TRIGGERED;
-        else
-          state <= S_LOAD; // load next trigger condition from the FIFO
-      S_TRIGGERED:
-        state <= S_TRIGGERED; // we remain in the triggered condition until the reset
-    endcase
+        S_WAIT:
+          if (!one) // trigger condition not fulfilled yet
+            state <= S_WAIT;
+          else if (is_last || fifo_empty) // no more trigger conditions (explicitly or implicitly by FIFO being empty)
+            state <= S_TRIGGERED;
+          else
+            state <= S_LOAD; // load next trigger condition from the FIFO
+        S_TRIGGERED:
+          state <= S_TRIGGERED; // we remain in the triggered condition until the reset
+      endcase
+    end
+  end
 end
 
 endmodule

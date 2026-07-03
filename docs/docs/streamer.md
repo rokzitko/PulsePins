@@ -132,12 +132,12 @@ different layers and have different resume behavior.
 | ------- | -------- | --------- | --------------------- | ------------ |
 | `gate` | Closing `gate_enable`, so `rdreq` stays low even while the trigger remains active | Trigger state, FIFO contents, and current stream position | Reopen the gate; no new trigger is required | External pacing/readiness windows; pause and resume output without resetting the trigger or stream |
 | `stop` | Masking `trigger_activated`, so `rdreq` stays low | Trigger latch, FIFO contents, and current stream position; the unfinished stream is still considered active, not idle | Clear `stop`; if the trigger is still latched and no terminator was consumed, output resumes immediately | Software halt/abort control, especially before streamer reset during timeout recovery |
-| `trigger_reset` | Resetting the trigger-chain FSM so the trigger output deasserts | Streamer/output FIFOs are not cleared; remaining queued trigger conditions are not cleared | Release reset, then activate the trigger again by force or by a remaining/new trigger condition | Trigger re-arm, interlocks, and flows that should wait for another trigger rather than simply unpause |
+| `trigger_reset` | Resetting the trigger-chain FSM so the trigger output deasserts | Streamer/output FIFOs are not cleared; the active trigger condition and remaining queued trigger conditions are preserved | Release reset, then activate the trigger again by force or by the same active trigger condition | Trigger re-arm, interlocks, and flows that should wait for the same trigger again rather than simply unpause |
 
 The main practical difference is that `gate` and `stop` pause an already triggered stream without
-resetting the trigger chain. `trigger_reset` clears the trigger state itself. Holding
-`trigger_reset` asserted prevents triggering, including forced triggering, but does not clear the
-streamer FIFOs.
+resetting the trigger chain. `trigger_reset` clears the trigger state itself while preserving the
+loaded trigger condition. Holding `trigger_reset` asserted prevents triggering, including forced
+triggering, but does not clear the streamer FIFOs.
 
 None of these controls consumes the terminator while output reads are stopped, so `done` does not
 assert until playback later reaches the final element. None of them forces `qout` to a safe value;
@@ -164,6 +164,21 @@ Important behavioral facts:
 * the trigger chain runs in `streamer_clk`
 * forced trigger can bypass normal input-condition detection
 * retrigger support lets a sequence pause and wait for a later trigger event
+
+### `trigger_reset` versus retrigger
+
+`trigger_reset` and a retrigger sequence element both return the trigger-chain FSM to idle, but
+they are not equivalent.
+
+| Mechanism | Source | Active trigger condition | Queued trigger conditions | Intended use |
+| --------- | ------ | ------------------------ | ------------------------- | ------------ |
+| `trigger_reset` signal | Runtime control signal from software, external input, or switch/combiner path | Preserved. If the chain was armed or already triggered on a loaded condition, releasing reset re-arms that same condition. | Preserved. The trigger FIFO is not cleared. | Interlocks, manual re-arm, and abort/retry flows that should wait for the same trigger condition again. |
+| Retrigger element | Encoded sequence element consumed from the output stream after triggering | Discarded. The just-satisfied trigger condition or subsequence is complete. | Preserved. The next queued trigger condition or subsequence is loaded after retriggering. | Sequence-controlled pauses between output bursts, where each burst should wait for the next trigger subsequence. |
+
+Use `trigger_reset` when the trigger program should remain logically at the same stage. Use a
+retrigger element when the sequence has completed one triggered segment and should advance to the
+next trigger segment. Use streamer reset, not `trigger_reset`, when the trigger FIFO itself must be
+cleared.
 
 On the host side there are two related trigger-control paths:
 
