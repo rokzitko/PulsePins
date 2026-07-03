@@ -123,6 +123,27 @@ In [`streamer.sv`]({{ source_file("ip/streamer/streamer.sv") }}), the output FIF
 
 This makes gating an output-side pacing mechanism rather than an input-side buffering mechanism.
 
+#### Gate, trigger reset, and stop
+
+`gate`, `trigger_reset`, and `stop` can all stop visible output advancement, but they act at
+different layers and have different resume behavior.
+
+| Control | Stops by | Preserves | How flow can continue | Intended use |
+| ------- | -------- | --------- | --------------------- | ------------ |
+| `gate` | Closing `gate_enable`, so `rdreq` stays low even while the trigger remains active | Trigger state, FIFO contents, and current stream position | Reopen the gate; no new trigger is required | External pacing/readiness windows; pause and resume output without resetting the trigger or stream |
+| `stop` | Masking `trigger_activated`, so `rdreq` stays low | Trigger latch, FIFO contents, and current stream position; the unfinished stream is still considered active, not idle | Clear `stop`; if the trigger is still latched and no terminator was consumed, output resumes immediately | Software halt/abort control, especially before streamer reset during timeout recovery |
+| `trigger_reset` | Resetting the trigger-chain FSM so the trigger output deasserts | Streamer/output FIFOs are not cleared; remaining queued trigger conditions are not cleared | Release reset, then activate the trigger again by force or by a remaining/new trigger condition | Trigger re-arm, interlocks, and flows that should wait for another trigger rather than simply unpause |
+
+The main practical difference is that `gate` and `stop` pause an already triggered stream without
+resetting the trigger chain. `trigger_reset` clears the trigger state itself. Holding
+`trigger_reset` asserted prevents triggering, including forced triggering, but does not clear the
+streamer FIFOs.
+
+None of these controls consumes the terminator while output reads are stopped, so `done` does not
+assert until playback later reaches the final element. None of them forces `qout` to a safe value;
+`qout` holds the last driven value unless a final element, output override, or streamer reset
+changes it.
+
 The trigger chain latches its triggered state until trigger reset or streamer reset. For that reason,
 software timeout handling must not rely only on clearing trigger-force or trigger-enable bits after an
 already-triggered stream. The shared host workflow treats a streamer-completion timeout as an abort:
