@@ -36,21 +36,30 @@ class pptool:
         self.rb.check_fill_status()
 
     def send_and_check(self, elements, timeout = DEFAULT_READBACK_TIMEOUT_S):
-        self.fifo.send_sequence(elements)
-        usleep(100)
-        self.sc.trigger_force()
-        success = self.rb.check(elements, timeout)
-        if not success:
-            raise RuntimeError("Readback check failed.")
-        start = time.monotonic()
-        while not self.sc.done():
+        initial_value = self.sc.get_qout_streamer()
+        stream_elements, expected_final = pp.prepare_sequence_for_streaming(elements, self.ip, initial_value)
+        check_elements = pp.prepare_sequence_for_readback_check(stream_elements, initial_value)
+        trigger_forced = False
+        try:
+            self.fifo.send_sequence(stream_elements)
+            usleep(100)
+            self.sc.trigger_force()
+            trigger_forced = True
+            success = self.rb.check(check_elements, timeout)
+            if not success:
+                raise RuntimeError("Readback check failed.")
+            start = time.monotonic()
+            while not self.sc.done():
+                if self.sc.buffer_error():
+                    raise RuntimeError("Streamer buffer error detected.")
+                if DEFAULT_COMPLETION_TIMEOUT_S > 0 and (time.monotonic() - start) > DEFAULT_COMPLETION_TIMEOUT_S:
+                    raise TimeoutError("Timeout waiting for streamer completion.")
+                usleep(1)
             if self.sc.buffer_error():
                 raise RuntimeError("Streamer buffer error detected.")
-            if DEFAULT_COMPLETION_TIMEOUT_S > 0 and (time.monotonic() - start) > DEFAULT_COMPLETION_TIMEOUT_S:
-                raise TimeoutError("Timeout waiting for streamer completion.")
-            usleep(1)
-        if self.sc.buffer_error():
-            raise RuntimeError("Streamer buffer error detected.")
-        final_qout = self.sc.get_qout()
-        if final_qout != 0:
-            raise RuntimeError(f"Unexpected final qout: {final_qout}")
+            final_qout = self.sc.get_qout()
+            if expected_final is not None and final_qout != expected_final:
+                raise RuntimeError(f"Unexpected final qout: {final_qout}; expected {expected_final}")
+        finally:
+            if trigger_forced:
+                self.sc.trigger_clear()

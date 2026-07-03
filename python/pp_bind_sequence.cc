@@ -5,11 +5,13 @@
 #include <string>
 
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 
 #include "pp_bind.hh"
 
 #include "elements.hh"
+#include "ppworkflow.hh"
 #include "sequence.hh"
 
 using namespace nb::literals;
@@ -195,4 +197,23 @@ void bind_sequence(nb::module_ &m) {
   m.def("read_sequence_binary", [](const std::string &filename) {
     return Sequence::read_binary_file(filename);
   });
+
+  m.def("prepare_sequence_for_streaming", [](const Sequence &elements,
+                                             const InputParser &input,
+                                             const value_t initial_value) {
+    return prepare_sequence_for_streaming(elements, input, initial_value);
+  },
+  "elements"_a,
+  "input"_a,
+  "initial_value"_a = 0);
+
+  m.def("prepare_sequence_for_readback_check", [](const Sequence &elements,
+                                                  const value_t initial_value) {
+    Sequence prepared = elements;
+    convert_for_readback_check(prepared, initial_value);
+    drop_count0(prepared);
+    return prepared;
+  },
+  "elements"_a,
+  "initial_value"_a = 0);
 }

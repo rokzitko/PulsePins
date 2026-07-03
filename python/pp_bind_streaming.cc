@@ -51,6 +51,7 @@ void bind_streaming(nb::module_ &m) {
     .def("stop", &streamer_control::stop)
     .def("trigger_enable", &streamer_control::trigger_enable)
     .def("trigger_force", &streamer_control::trigger_force)
+    .def("trigger_clear", &streamer_control::trigger_clear)
     .def("trigger_reset", &streamer_control::trigger_reset)
     .def("qout_select", &streamer_control::qout_select)
     .def("stop_on_buffer_error", &streamer_control::stop_on_buffer_error)

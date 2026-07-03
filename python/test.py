@@ -4,6 +4,7 @@
 import pytest
 import pp
 import pp_impl
+import pptool
 import tempfile
 from pathlib import Path
 
@@ -59,6 +60,62 @@ def make_streamer_fifo(dev_h2f):
 def make_streamer_control(dev_h2f):
    sc = pp.streamer_control(dev_h2f, pp_impl.ST_INTERFACE_1_BASE)
    return sc
+
+
+class FakeFifo:
+   def __init__(self):
+      self.sent = None
+
+   def send_sequence(self, elements):
+      self.sent = elements
+
+
+class FakeReadback:
+   def __init__(self, success=True):
+      self.success = success
+      self.checked = None
+      self.timeout = None
+
+   def check(self, elements, timeout):
+      self.checked = elements
+      self.timeout = timeout
+      return self.success
+
+
+class FakeStreamerControl:
+   def __init__(self, initial_qout=0, final_qout=0):
+      self.initial_qout = initial_qout
+      self.final_qout = final_qout
+      self.force_calls = 0
+      self.clear_calls = 0
+
+   def get_qout_streamer(self):
+      return self.initial_qout
+
+   def trigger_force(self):
+      self.force_calls += 1
+
+   def trigger_clear(self):
+      self.clear_calls += 1
+
+   def done(self):
+      return True
+
+   def buffer_error(self):
+      return False
+
+   def get_qout(self):
+      return self.final_qout
+
+
+def make_fake_pptool(sc, rb, fifo):
+   p = pptool.pptool.__new__(pptool.pptool)
+   p.ip = pp.InputParser([])
+   p.sc = sc
+   p.rb = rb
+   p.fifo = fifo
+   return p
+
 
 def test_the_answer():
    assert pp.the_answer == 42
@@ -580,6 +637,84 @@ def test_sequence_binary_roundtrip_control_flow_and_force_trigger():
       seq2, force_trigger = pp.read_sequence_binary(str(path))
       assert force_trigger == True
       assert pp.write_sequence_text(seq2) == pp.write_sequence_text(seq)
+
+
+def test_streamer_control_trigger_clear_binding_exists():
+   assert hasattr(pp.streamer_control, "trigger_clear")
+
+
+def test_prepare_sequence_for_readback_check_normalizes_reference():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(pp.Counter(2), pp.BitSet(0x01)))
+   seq.push_back(pp.el(pp.Counter(3), pp.BitSet(0x01)))
+   seq.push_back(pp.el(0x01))
+
+   prepared, final = pp.prepare_sequence_for_streaming(seq, pp.InputParser([]), 0)
+   check = pp.prepare_sequence_for_readback_check(prepared, 0)
+
+   assert final == 0x01
+   assert pp.write_sequence_text(prepared) == "s 2 0x1\ns 3 0x1\nfinal 0x1\n"
+   assert pp.write_sequence_text(check) == "d 5 0x1\nfinal 0x1\n"
+
+
+def test_pptool_send_and_check_normalizes_readback_and_clears_trigger():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(pp.Counter(2), pp.BitSet(0x01)))
+   seq.push_back(pp.el(pp.Counter(3), pp.BitSet(0x01)))
+   seq.push_back(pp.el(0x01))
+   sc = FakeStreamerControl(final_qout=0x01)
+   rb = FakeReadback()
+   fifo = FakeFifo()
+   p = make_fake_pptool(sc, rb, fifo)
+
+   p.send_and_check(seq, timeout=0.25)
+
+   assert sc.force_calls == 1
+   assert sc.clear_calls == 1
+   assert rb.timeout == 0.25
+   assert pp.write_sequence_text(fifo.sent) == "s 2 0x1\ns 3 0x1\nfinal 0x1\n"
+   assert pp.write_sequence_text(rb.checked) == "d 5 0x1\nfinal 0x1\n"
+
+
+def test_pptool_send_and_check_accepts_inferred_nonzero_final():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(4, 0x15))
+   sc = FakeStreamerControl(final_qout=0x15)
+   rb = FakeReadback()
+   fifo = FakeFifo()
+   p = make_fake_pptool(sc, rb, fifo)
+
+   p.send_and_check(seq)
+
+   assert sc.clear_calls == 1
+
+
+def test_pptool_send_and_check_rejects_wrong_final_and_clears_trigger():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(4, 0x15))
+   sc = FakeStreamerControl(final_qout=0x14)
+   rb = FakeReadback()
+   fifo = FakeFifo()
+   p = make_fake_pptool(sc, rb, fifo)
+
+   with pytest.raises(RuntimeError, match="expected 21"):
+      p.send_and_check(seq)
+
+   assert sc.clear_calls == 1
+
+
+def test_pptool_send_and_check_clears_trigger_after_readback_failure():
+   seq = pp.Sequence()
+   seq.push_back(pp.el(4, 0x15))
+   sc = FakeStreamerControl()
+   rb = FakeReadback(success=False)
+   fifo = FakeFifo()
+   p = make_fake_pptool(sc, rb, fifo)
+
+   with pytest.raises(RuntimeError, match="Readback check failed"):
+      p.send_and_check(seq)
+
+   assert sc.clear_calls == 1
 
 
 @pytest.mark.hardware

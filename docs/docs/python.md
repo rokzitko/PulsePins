@@ -209,6 +209,8 @@ The board-native API exposes the structured C++ option types used by clock and t
 
 Python method defaults match the C++ defaults for `loc.read(...)`, `loc.write(...)`, `mm.get_ptr(...)`, `mm.get_loc(...)`, `streamer_fifo.out(...)`, and `streamer_dma.send_sequence(...)`.
 
+The Python bindings expose the shared C++ sequence-preparation helpers as `pp.prepare_sequence_for_streaming(...)` and `pp.prepare_sequence_for_readback_check(...)`. These are the preferred helpers when Python code needs the same appended-final, inferred-final, and normalized readback-reference behavior as the C++ streaming workflow. `streamer_control.trigger_clear()` is also available for forced-trigger cleanup.
+
 The small helper scripts in [`python/pptool.py`]({{ source_file("python/pptool.py") }}) and [`tests/test2.py`]({{ source_file("tests/test2.py") }}) use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` disabling the readback timeout.
 
 ## Testing expectations
