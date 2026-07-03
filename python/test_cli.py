@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Rok Zitko
 
+import pytest
+
 import pulsepins.cli as cli
+from pulsepins.timeline import TimelineError
 
 
 def test_timeline_preview_cli_writes_sidecar_files(tmp_path, capsys):
@@ -173,6 +176,42 @@ def test_timeline_sweep_cli_live_uses_board_clock(monkeypatch, capsys):
     assert run_calls[0][3] == {"force_trigger": True, "include_final": True}
 
 
+def test_timeline_sweep_cli_invalid_timeline_does_not_reset(monkeypatch):
+    calls = []
+
+    class FakePulsePins:
+        def __init__(self, host, port=5025):
+            calls.append(("init", host, port))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def idn(self):
+            return "PulsePins,TEST"
+
+        def streamer_clock_hz(self):
+            calls.append(("streamer_clock_hz",))
+            return 100_000_000.0
+
+        def reset(self):
+            calls.append(("reset",))
+
+        def run(self, sequence, check=None, **options):
+            calls.append(("run", sequence, check, options))
+            return "SUCCESS"
+
+    monkeypatch.setattr(cli, "PulsePins", FakePulsePins)
+    with pytest.raises(TimelineError):
+        cli.timeline_sweep_main(["board.local", "--delays-us", "0.005"])
+
+    assert ("streamer_clock_hz",) in calls
+    assert ("reset",) not in calls
+    assert not [call for call in calls if call[0] == "run"]
+
+
 def test_notebook_workflow_cli_dry_run(tmp_path, capsys):
     output_dir = tmp_path / "previews"
 
@@ -190,6 +229,42 @@ def test_notebook_workflow_cli_dry_run(tmp_path, capsys):
     assert (output_dir / "timeline.csv").exists()
     assert (output_dir / "timeline.json").exists()
     assert (output_dir / "timeline.vcd").exists()
+
+
+def test_notebook_workflow_cli_invalid_sweep_does_not_reset(monkeypatch):
+    calls = []
+
+    class FakePulsePins:
+        def __init__(self, host, port=5025):
+            calls.append(("init", host, port))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def idn(self):
+            return "PulsePins,TEST"
+
+        def streamer_clock_hz(self):
+            calls.append(("streamer_clock_hz",))
+            return 100_000_000.0
+
+        def reset(self):
+            calls.append(("reset",))
+
+        def run(self, sequence, check=None, **options):
+            calls.append(("run", sequence, check, options))
+            return "SUCCESS"
+
+    monkeypatch.setattr(cli, "PulsePins", FakePulsePins)
+    with pytest.raises(TimelineError):
+        cli.notebook_workflow_main(["board.local", "--run", "--delays-us", "0.005"])
+
+    assert ("streamer_clock_hz",) in calls
+    assert ("reset",) not in calls
+    assert not [call for call in calls if call[0] == "run"]
 
 
 def test_ppscpi_check_cli_reports_identity(monkeypatch, capsys):

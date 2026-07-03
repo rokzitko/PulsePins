@@ -266,9 +266,12 @@ def timeline_sweep_main(argv=None):
         clock_hz = args.clock_hz
         if clock_hz is None:
             clock_hz = pp.streamer_clock_hz()
+        runs = [
+            (delay, build_sweep_timeline(clock_hz, delay))
+            for delay in args.delays_us
+        ]
         pp.reset()
-        for delay in args.delays_us:
-            timeline = build_sweep_timeline(clock_hz, delay)
+        for delay, timeline in runs:
             print("camera delay: {} us".format(delay))
             print(pp.run(timeline, check=args.check, force_trigger=True, include_final=True))
 
@@ -363,16 +366,20 @@ def notebook_workflow_main(argv=None):
         clock_hz = pp.streamer_clock_hz()
         print("# Board streamer clock: {:.17g} Hz".format(clock_hz))
         timeline = build_example_timeline(clock_hz)
+        sweep_runs = [
+            (delay, build_sweep_timeline(clock_hz, delay))
+            for delay in args.delays_us
+        ]
         write_previews(timeline)
         show_sequence(timeline)
         pp.reset()
         print("# Stream example:")
         print(pp.run(timeline, check=args.check, force_trigger=True, include_final=True))
-        for delay in args.delays_us:
+        for delay, sweep_timeline in sweep_runs:
             print("# Stream sweep camera delay: {} us".format(delay))
             print(
                 pp.run(
-                    build_sweep_timeline(clock_hz, delay),
+                    sweep_timeline,
                     check=args.check,
                     force_trigger=True,
                     include_final=True,
