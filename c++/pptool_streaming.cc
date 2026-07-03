@@ -343,7 +343,7 @@ int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
         const auto v = q.out();
         const auto o = (ref^io)&mo;
         if (v != o) {
-          std::cout << red << "ERROR: got 0x" << std::hex << v << " expected 0x" << std::hex << o << rst << std::endl;
+          std::cout << red << "ERROR: i=" << i << " got 0x" << std::hex << v << " expected 0x" << std::hex << o << rst << std::endl;
           rc |= RC_ERROR_CHECK;
         }
         if (verb.veryverbose)
@@ -375,6 +375,8 @@ int ppqout(FPGA &fpga, const InputParser &input, const Verbosity &verb)
       test(y1+y2+y3+y4);
       q.cq.mode(comb_mode::DIFF12);
       test(y1-y2);
+			if (rc != RC_OK)
+				break; // break out of the loop
     }
     if (rc == RC_OK)
       std::cout << green << "SUCCESS." << rst << std::endl;

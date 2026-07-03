@@ -1,4 +1,12 @@
 #!/bin/bash
 set -e
 source "$(dirname "$0")/defs.sh"
+ppreset
+ppqout -self_test
+ppqout -test 1
+ppqout -test 10
+ppqout -test 100
+ppqout -test 1000
+ppqout -test 10000
 ppqout -test 100000
+ppqout -self_test
