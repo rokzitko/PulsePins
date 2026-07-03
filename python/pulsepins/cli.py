@@ -183,8 +183,8 @@ def timeline_stream_main(argv=None):
     parser.add_argument(
         "--clock-hz",
         type=float,
-        default=100_000_000,
-        help="streamer clock used for unit conversion (default: 100 MHz)",
+        default=None,
+        help="override streamer clock used for unit conversion (default: query board)",
     )
     parser.add_argument(
         "--check",
@@ -198,12 +198,14 @@ def timeline_stream_main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    timeline = build_example_timeline(args.clock_hz)
-    if args.print_sequence:
-        print(timeline.to_sequence(force_trigger=True, include_final=True), end="")
-
     with PulsePins(args.host, port=args.port) as pp:
         print(pp.idn())
+        clock_hz = args.clock_hz
+        if clock_hz is None:
+            clock_hz = pp.streamer_clock_hz()
+        timeline = build_example_timeline(clock_hz)
+        if args.print_sequence:
+            print(timeline.to_sequence(force_trigger=True, include_final=True), end="")
         pp.reset()
         pp.check(args.check)
         pp.load(timeline, force_trigger=True, include_final=True)
@@ -229,8 +231,8 @@ def timeline_sweep_main(argv=None):
     parser.add_argument(
         "--clock-hz",
         type=float,
-        default=100_000_000,
-        help="streamer clock used for unit conversion (default: 100 MHz)",
+        default=None,
+        help="override streamer clock used for unit conversion (default: query board; dry-run default: 100 MHz)",
     )
     parser.add_argument(
         "--delays-us",
@@ -251,20 +253,22 @@ def timeline_sweep_main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    timelines = [
-        (delay, build_sweep_timeline(args.clock_hz, delay)) for delay in args.delays_us
-    ]
-
     if args.dry_run:
-        for delay, timeline in timelines:
+        clock_hz = args.clock_hz if args.clock_hz is not None else 100_000_000
+        for delay in args.delays_us:
+            timeline = build_sweep_timeline(clock_hz, delay)
             print("# camera delay: {} us".format(delay))
             print(timeline.to_sequence(force_trigger=True, include_final=True), end="")
         return
 
     with PulsePins(args.host, port=args.port) as pp:
         print(pp.idn())
+        clock_hz = args.clock_hz
+        if clock_hz is None:
+            clock_hz = pp.streamer_clock_hz()
         pp.reset()
-        for delay, timeline in timelines:
+        for delay in args.delays_us:
+            timeline = build_sweep_timeline(clock_hz, delay)
             print("camera delay: {} us".format(delay))
             print(pp.run(timeline, check=args.check, force_trigger=True, include_final=True))
 

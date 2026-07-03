@@ -274,6 +274,8 @@ pulsepins-timeline-stream de10nano --print-sequence
 pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ```
 
+Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting absolute-time pulses; pass `--clock-hz` only when you need to override the board-reported clock. Hardware-free preview and sweep `--dry-run` use the supplied/default dry-run clock.
+
 [`timeline_preview.py`]({{ source_file("python/examples/timeline_preview.py") }}) is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. [`timeline_stream.py`]({{ source_file("python/examples/timeline_stream.py") }}) uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. These Timeline examples include an explicit final value so owned channels return to their resting value after the last pulse. [`timeline_sweep.py`]({{ source_file("python/examples/timeline_sweep.py") }}) shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop. [`notebook_workflow.py`]({{ source_file("python/examples/notebook_workflow.py") }}) combines install notes, clock discovery, preview export, sweep generation, and optional live streaming with `--run`.
 
 See also: [ppscpi - network server](ppscpi.md) and [Python bindings](python.md).
