@@ -200,7 +200,19 @@ inline std::optional<PllParameters> calculate(const std::string &profile) {
 
 inline PllProfileResolution resolve_profile(const std::string &requested_profile,
                                             const std::string &preset_resolved_profile) {
-  if (preset_resolved_profile.empty() || parse_raw_config(preset_resolved_profile)) {
+  if (preset_resolved_profile.empty()) {
+    return {preset_resolved_profile, std::nullopt};
+  }
+
+  int n = 0;
+  int m = 0;
+  int c = 0;
+  if (parse_raw_config(preset_resolved_profile, &n, &m, &c)) {
+    if (!is_strict_candidate(n, m, c)) {
+      throw std::runtime_error(
+        "PLL raw profile is outside strict Cyclone V limits: '" + preset_resolved_profile +
+        "' (N,M,C must keep fPFD in [5 MHz, 325 MHz] and fVCO in [600 MHz, 1600 MHz])");
+    }
     return {preset_resolved_profile, std::nullopt};
   }
 

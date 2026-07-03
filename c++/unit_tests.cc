@@ -1485,14 +1485,19 @@ TEST_CASE("pll calculator respects encoded divider field limit") {
   CHECK(pllcalc::calculate(pllcalc::vco_min_hz / (pllcalc::counter_max + 1)).has_value() == false);
 }
 
-TEST_CASE("pll profile resolution preserves presets and raw strings") {
+TEST_CASE("pll profile resolution preserves strict presets and raw strings") {
   auto preset = pllcalc::resolve_profile("100M", applyReplacement("100M", pll_rules));
-  CHECK(preset.config == "5,20,2");
+  CHECK(preset.config == "1,20,10");
   CHECK(!preset.calculated.has_value());
 
-  auto raw = pllcalc::resolve_profile("7,33,11", applyReplacement("7,33,11", pll_rules));
-  CHECK(raw.config == "7,33,11");
+  auto raw = pllcalc::resolve_profile("1,20,10", applyReplacement("1,20,10", pll_rules));
+  CHECK(raw.config == "1,20,10");
   CHECK(!raw.calculated.has_value());
+}
+
+TEST_CASE("pll profile resolution rejects unsafe raw strings") {
+  CHECK_THROWS_AS(pllcalc::resolve_profile("7,33,11", applyReplacement("7,33,11", pll_rules)), std::runtime_error);
+  CHECK_THROWS_AS(pllcalc::resolve_profile("5,20,2", applyReplacement("5,20,2", pll_rules)), std::runtime_error);
 }
 
 TEST_CASE("pll profile resolution calculates unknown frequency strings") {
@@ -1501,6 +1506,12 @@ TEST_CASE("pll profile resolution calculates unknown frequency strings") {
   CHECK(resolved.config == "5,99,15");
   REQUIRE(resolved.calculated.has_value());
   CHECK(resolved.calculated->actual_hz == doctest::Approx(66.0e6));
+}
+
+TEST_CASE("pll profile resolution rejects unreachable low frequencies") {
+  CHECK_THROWS_AS(pllcalc::resolve_profile("1M", applyReplacement("1M", pll_rules)), std::runtime_error);
+  CHECK_THROWS_AS(pllcalc::resolve_profile("100k", applyReplacement("100k", pll_rules)), std::runtime_error);
+  CHECK_THROWS_AS(pllcalc::resolve_profile("10k", applyReplacement("10k", pll_rules)), std::runtime_error);
 }
 
 TEST_CASE("resolve_trigger_options captures mode invert and mask fields") {

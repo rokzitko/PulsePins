@@ -17,7 +17,7 @@
 using pll_rule_t = std::pair<std::string_view, std::string_view>;
 
 inline std::string applyReplacement(std::string_view s,
-                                    const std::array<pll_rule_t, 20> &rules)
+                                    const std::array<pll_rule_t, 17> &rules)
 {
   for (const auto &[from, to] : rules)
     if (s == from)
@@ -26,21 +26,19 @@ inline std::string applyReplacement(std::string_view s,
 }
 
 // N,M,C triplets, freq = ref * M / (N * C), where ref = 50 MHz on DE10-Nano.
-inline constexpr std::array<pll_rule_t, 20> pll_rules {{
-  {"100M", "5,20,2"},
-  {"80M",  "3,24,5"},
-  {"75M",  "5,30,4"},
-  {"60M",  "5,30,5"},
-  {"50M",  "5,30,6"},
-  {"40M",  "5,20,5"},
-  {"25M",  "10,30,6"},
-  {"30M",  "10,30,5"},
-  {"20M",  "10,20,5"},
-  {"10M",  "10,20,10"},
-  {"5M",   "20,20,10"},
-  {"1M",   "50,20,20"},
-  {"100k", "100,20,100"},
-  {"10k",  "500,20,200"},
+// Presets must satisfy the same strict PFD/VCO limits enforced for raw triplets.
+inline constexpr std::array<pll_rule_t, 17> pll_rules {{
+  {"100M", "1,20,10"},
+  {"80M",  "1,16,10"},
+  {"75M",  "1,21,14"},
+  {"60M",  "1,18,15"},
+  {"50M",  "1,20,20"},
+  {"40M",  "1,20,25"},
+  {"25M",  "1,20,40"},
+  {"30M",  "1,21,35"},
+  {"20M",  "1,20,50"},
+  {"10M",  "1,20,100"},
+  {"5M",   "1,20,200"},
   {"lj",   "1,20,10"},   // 100MHz, low jitter
   {"ilj",  "1,17,13"},   // 65.3846 MHz, incommensurate low jitter
   {"ih",   "3,71,13"},   // 91.0256 MHz

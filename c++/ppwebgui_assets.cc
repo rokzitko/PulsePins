@@ -175,9 +175,6 @@ const char *index_html = R"HTML(<!doctype html>
               <option>20M</option>
               <option>10M</option>
               <option>5M</option>
-              <option>1M</option>
-              <option>100k</option>
-              <option>10k</option>
               <option>lj</option>
               <option>ilj</option>
               <option>ih</option>
@@ -199,9 +196,6 @@ const char *index_html = R"HTML(<!doctype html>
               <option>20M</option>
               <option>10M</option>
               <option>5M</option>
-              <option>1M</option>
-              <option>100k</option>
-              <option>10k</option>
               <option>lj</option>
               <option>ilj</option>
               <option>ih</option>
@@ -217,7 +211,7 @@ const char *index_html = R"HTML(<!doctype html>
           <button id="clocking-measure-button" type="button" class="secondary-button">Remeasure clocks</button>
         </div>
       </form>
-      <div class="meta">Profile menus expose the standard `pll_rules.hh` presets. Non-preset frequency strings are resolved with the same strict calculator as `pllcalc`. If `ppwebgui` starts from a nonstandard current profile, that exact value is shown so the UI stays honest. If startup used an unmanaged/raw source selector, the current source stays read-only until you explicitly apply `int_clk` or `ext_clk` here. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
+      <div class="meta">Profile menus expose the standard strict `pll_rules.hh` presets. Raw `N,M,C` profiles and non-preset frequency strings are accepted only when they satisfy the same PFD/VCO legality checks as `pllcalc`. If `ppwebgui` starts from a nonstandard current profile, that exact value is shown so the UI stays honest. If startup used an unmanaged/raw source selector, the current source stays read-only until you explicitly apply `int_clk` or `ext_clk` here. `ext_clk` follows the external-source path of the currently loaded bitstream.</div>
       <div class="settings-grid">
         <div class="setting"><div class="label">ext_clk</div><div id="clocking-ext-hz" class="mono"></div></div>
         <div class="setting"><div class="label">int_clk</div><div id="clocking-int-hz" class="mono"></div></div>
@@ -848,20 +842,17 @@ const char *app_js = R"JS((() => {
     s: { label: 's', scale: 1n },
   };
   const pllProfileTriplets = new Map([
-    ['100M', [5n, 20n, 2n]],
-    ['80M', [3n, 24n, 5n]],
-    ['75M', [5n, 30n, 4n]],
-    ['60M', [5n, 30n, 5n]],
-    ['50M', [5n, 30n, 6n]],
-    ['40M', [5n, 20n, 5n]],
-    ['25M', [10n, 30n, 6n]],
-    ['30M', [10n, 30n, 5n]],
-    ['20M', [10n, 20n, 5n]],
-    ['10M', [10n, 20n, 10n]],
-    ['5M', [20n, 20n, 10n]],
-    ['1M', [50n, 20n, 20n]],
-    ['100k', [100n, 20n, 100n]],
-    ['10k', [500n, 20n, 200n]],
+    ['100M', [1n, 20n, 10n]],
+    ['80M', [1n, 16n, 10n]],
+    ['75M', [1n, 21n, 14n]],
+    ['60M', [1n, 18n, 15n]],
+    ['50M', [1n, 20n, 20n]],
+    ['40M', [1n, 20n, 25n]],
+    ['25M', [1n, 20n, 40n]],
+    ['30M', [1n, 21n, 35n]],
+    ['20M', [1n, 20n, 50n]],
+    ['10M', [1n, 20n, 100n]],
+    ['5M', [1n, 20n, 200n]],
     ['lj', [1n, 20n, 10n]],
     ['ilj', [1n, 17n, 13n]],
     ['ih', [3n, 71n, 13n]],
