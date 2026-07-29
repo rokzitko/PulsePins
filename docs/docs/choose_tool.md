@@ -1,6 +1,6 @@
 ## Choose the right tool
 
-PulsePins exposes the same hardware through several different surfaces:
+PulsePins exposes the same hardware through several different interfaces:
 
 * small command-line tools (`ppfg`, `ppdelay`, `ppplay`, `ppread`, ...)
 * the C++ API
@@ -8,7 +8,7 @@ PulsePins exposes the same hardware through several different surfaces:
 * the SCPI server (`ppscpi`)
 * the browser UI (`ppwebgui`)
 
-This page is a task-oriented guide for choosing the right entry point.
+This page maps each task to the appropriate tool or interface.
 
 ### Start here
 
@@ -47,7 +47,7 @@ Use:
 * [`ppdelay`](ppdelay.md) for one-shot delayed pulses after a trigger
 * [`pphelloworld`](pphelloworld.md) for the most minimal output-toggle smoke test
 
-These are the best first tools when you want a signal quickly and do not need a saved sequence artifact.
+These are the best first tools when you want a signal quickly and do not need a saved sequence file.
 
 #### I want to play back a sequence file
 
@@ -138,7 +138,7 @@ See: [Python API](python.md).
 Best when:
 
 * you are extending the project itself
-* you need new tool behavior, new wrappers, or tighter control over host-side execution paths
+* you need new tool behavior, new wrappers, or tighter control over ARM-side execution paths
 * performance and direct integration with the existing C++ runtime matter
 
 See: [C++ API](cpp.md).
@@ -156,13 +156,13 @@ Use: [`ppscpi`](ppscpi.md).
 
 Best when:
 
-* you want a quick browser-based control surface
+* you want a quick browser-based control interface
 * you want to inspect live status and adjust trigger/combiner settings interactively
 * you want to stream PulsePins text sequences without writing a custom client
 
 Use: [`ppwebgui`](ppwebgui.md).
 
-### Typical user journeys
+### Typical workflows
 
 #### First hardware bring-up
 

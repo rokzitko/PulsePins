@@ -2,39 +2,39 @@
 
 The C++ code in [`c++/`]({{ source_file("c++/") }}) serves two closely related roles:
 
-* it is the host-side control plane for the PulsePins hardware
-* it is also the implementation substrate for the `pptool` command family
+* it controls the PulsePins hardware from the HPS
+* it is also the implementation for the `pptool` command family
 
 The architecture is intentionally layered so command-line tools, tests, and bindings share the same sequence and hardware-control model.
 
-### Host-side architecture
+### C++ architecture
 
 The main entry point is [`c++/pptool.cc`]({{ source_file("c++/pptool.cc") }}).
 
 At startup it:
 
 1. builds a shared `HostRuntime` from [`host_runtime.hh`]({{ source_file("c++/host_runtime.hh") }})
-2. that runtime parses common options, enables the shared runtime policy, constructs the single `FPGA` object, and performs the startup frequency-meter report
+2. that runtime parses common options, applies the shared runtime settings, constructs the single `FPGA` object, and performs the startup frequency-meter report
 3. dispatches to a command handler based on the executable name
 
 That dispatch model is why one compiled binary can appear as multiple tools such as `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and `ppplay`.
 
-The most important host-side layers are:
+The most important C++ layers are:
 
 * [`fpga.hh`]({{ source_file("c++/fpga.hh") }}) - top-level ownership of memory maps, PLL helpers, trigger monitors, and GPIO-backed control paths
-* [`startup.hh`]({{ source_file("c++/startup.hh") }}) - common process bootstrap and default FPGA startup policy
-* [`host_runtime.hh`]({{ source_file("c++/host_runtime.hh") }}) - shared bootstrap/runtime object used by the main host-side executables
+* [`startup.hh`]({{ source_file("c++/startup.hh") }}) - common process bootstrap and default FPGA startup behavior
+* [`host_runtime.hh`]({{ source_file("c++/host_runtime.hh") }}) - shared bootstrap/runtime object used by the main target-board executables
 * [`options.hh`]({{ source_file("c++/options.hh") }}), [`pll_rules.hh`]({{ source_file("c++/pll_rules.hh") }}), [`pll_calc.hh`]({{ source_file("c++/pll_calc.hh") }}) - typed option resolution, symbolic PLL presets, and calculated PLL profiles shared by multiple tools
 * [`pptool_streaming.cc`]({{ source_file("c++/pptool_streaming.cc") }}), [`pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}) - user-facing command implementations
 * [`ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }}) - shared streaming workflow used by commands that send sequences, arm/force triggers, and optionally validate readback
-* [`elements.hh`]({{ source_file("c++/elements.hh") }}), [`sequence.hh`]({{ source_file("c++/sequence.hh") }}) - host-side representation of pulse programs and trigger programs
+* [`elements.hh`]({{ source_file("c++/elements.hh") }}), [`sequence.hh`]({{ source_file("c++/sequence.hh") }}) - C++ representation of pulse programs and trigger programs
 * subsystem wrappers such as [`streamer.hh`]({{ source_file("c++/streamer.hh") }}), [`readback.hh`]({{ source_file("c++/readback.hh") }}), [`counter.hh`]({{ source_file("c++/counter.hh") }}), [`timestamp.hh`]({{ source_file("c++/timestamp.hh") }}), [`freq_meter.hh`]({{ source_file("c++/freq_meter.hh") }}), and the trigger/combiner helpers in [`trigger.hh`]({{ source_file("c++/trigger.hh") }}), [`trigger_int.hh`]({{ source_file("c++/trigger_int.hh") }}), and [`trigger_ext.hh`]({{ source_file("c++/trigger_ext.hh") }})
 
 For a maintainer-oriented walkthrough of the directory, see [`c++/README.md`]({{ source_file("c++/README.md") }}).
 
 ### Common execution flow
 
-For streamer-oriented tools, the typical host-side path is:
+For streamer-oriented tools, the typical execution path is:
 
 1. build or parse a `Sequence`
 2. construct a transport such as a FIFO-backed streamer or DMA-backed streamer
@@ -45,7 +45,7 @@ For streamer-oriented tools, the typical host-side path is:
 
 That common pattern is centralized in `send_and_trig(...)` in [`ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }}) so that behavior stays consistent across multiple tools. If the streamer-completion wait times out, the workflow aborts the active streamer by asserting `stop`, clearing or disabling the internal trigger path, and pulsing streamer reset before returning the timeout failure.
 
-The startup path follows the same philosophy: `HostRuntime` centralizes executable bootstrap, CLI and environment inputs are normalized by [`options.hh`]({{ source_file("c++/options.hh") }}), then [`startup.hh`]({{ source_file("c++/startup.hh") }}) applies the resulting clock-selection and PLL policy through the `FPGA` wrapper.
+The startup path follows the same philosophy: `HostRuntime` centralizes executable bootstrap, CLI and environment inputs are normalized by [`options.hh`]({{ source_file("c++/options.hh") }}), then [`startup.hh`]({{ source_file("c++/startup.hh") }}) applies the resulting clock-selection and PLL settings through the `FPGA` wrapper.
 
 Trigger configuration follows a similar split:
 
@@ -55,7 +55,7 @@ Trigger configuration follows a similar split:
 
 ### Data types for sequence representation
 
-The host-side sequence model mirrors the encoded data consumed by the streamer core. The core types are defined in [`elements.hh`]({{ source_file("c++/elements.hh") }}) and [`sequence.hh`]({{ source_file("c++/sequence.hh") }}).
+The C++ sequence model mirrors the encoded data consumed by the streamer core. The core types are defined in [`elements.hh`]({{ source_file("c++/elements.hh") }}) and [`sequence.hh`]({{ source_file("c++/sequence.hh") }}).
 
 Besides the text sequence format used by several tools, `Sequence` also supports [Value Change Dump (VCD)](https://en.wikipedia.org/wiki/Value_change_dump) import and deterministic waveform export back to VCD. The export path targets sequences that can be reduced to a regular effective output waveform; control-flow and random elements are intentionally rejected. The C++ VCD export default is `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
 
@@ -73,17 +73,17 @@ Serialization capability matrix:
 
 Class hierarchy for counter and value helper objects:
 
-* ``Counter`` (defined in [`elements.hh`]({{ source_file("c++/elements.hh") }})): lightweight wrappers that carry the repetition count and the strobe policy for regular elements
+* ``Counter`` (defined in [`elements.hh`]({{ source_file("c++/elements.hh") }})): lightweight wrappers that carry the repetition count and the strobe behavior for regular elements
 
-    * ``Strobe``: regular elements that assert the valid/strobe output
-    * ``NoStrobe``: regular elements that update qout without asserting the valid/strobe output
+    * ``Strobe``: regular elements that assert `qout_valid`, which produces `qout_strobe`
+    * ``NoStrobe``: regular elements that update qout without asserting `qout_valid`, so they do not produce `qout_strobe`
 
 Interface of ``Counter`` objects:
 
 * ``count()``: returns the count value
 * ``count_str()``: the count value as a string in hexadecimal and decimal form for inspection and troubleshooting
 * ``control_bits()``: returns the strobe-related bits to be or'd into the control word
-* ``desc()``: descriptive string for the strobe policy
+* ``desc()``: descriptive string for the strobe behavior
 
 Update types (``d`` is the input value, ``q_prev`` is the previous output value, ``q`` is the new streamed value):
 
@@ -133,7 +133,7 @@ Class ``el`` (defined in [`elements.hh`]({{ source_file("c++/elements.hh") }})) 
 * ``el()``: sequence terminator with the default final output value
 * ``el(value_t)``: sequence terminator with an explicit final output value
 * ``el(count_t, value_t)``: regular element, ``BitLoad`` update
-* ``el(Counter, value_t)``: regular element with explicit strobe policy, ``BitLoad`` update
+* ``el(Counter, value_t)``: regular element with explicit strobe behavior, ``BitLoad`` update
 * ``el(Counter, Value)``: regular element with explicit strobe and update mode
 * ``el(trigger_t, trigger_t, bool)``: trigger condition element
 * ``el(Replay, count_t, value_t)``: replay a stored subsequence; the length must not exceed the fast-memory depth (``POSITIONS``)
@@ -144,7 +144,7 @@ Important implementation detail: ``el`` derives the effective element kind from 
 
 Useful ``el`` methods:
 
-* ``control()``, ``count()``, ``value()``: raw integer representation sent to the streamer/RLE decoder
+* ``control()``, ``count()``, ``value()``: raw integer representation sent to the streamer's run-length decoder
 * ``kind()``: returns the derived ``el_type``
 * ``mode()``: returns the regular-mode bits from the control word
 * ``no_strobe()``, ``is_stored()``, ``store_slot()``: inspect regular-element control metadata
@@ -192,14 +192,14 @@ The same header also provides ``write_sequence_to_stream(...)`` and ``write_sequ
 
 ### SPI sequence generation
 
-[`SPI.hh`]({{ source_file("c++/SPI.hh") }}) provides a host-side [SPI](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface) sequence generator that emits PulsePins `Sequence` objects.
+[`SPI.hh`]({{ source_file("c++/SPI.hh") }}) provides a C++ [SPI](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface) sequence generator that emits PulsePins `Sequence` objects.
 
 PulsePins generates SPI transactions by turning clock, data, and chip-select transitions into ordinary output-sequence elements.
 
 Generic SPI support lives in the `spi` namespace:
 
 * ``spi::Config``: decoder clock, requested SPI clock, SPI mode, bit order, pin mapping, chip-select polarity, and select/deselect timing
-* ``spi::SequenceBuilder``: stateful encoder that emits RLE `Sequence` elements for SPI idle, select, clock, MOSI, and auxiliary-pin changes
+* ``spi::SequenceBuilder``: stateful encoder that emits run-length-encoded `Sequence` elements for SPI idle, select, clock, MOSI, and auxiliary-pin changes
 
 The builder quantizes the requested SPI clock to the nearest half-period measured in decoder-clock ticks. Use ``half_period_ticks()`` and ``achieved_spi_clock_hz()`` to inspect the resulting timing.
 
@@ -217,9 +217,9 @@ const Sequence &seq = spi_builder.sequence();
 write_sequence_to_file(seq, "spi_sequence.txt");
 ```
 
-Device-specific helpers stay separate from the generic SPI layer. [`PMODDA3.hh`]({{ source_file("c++/PMODDA3.hh") }}) provides [PMOD DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) support in the `pmod_da3` namespace:
+Device-specific helpers stay separate from the generic SPI layer. [`PMODDA3.hh`]({{ source_file("c++/PMODDA3.hh") }}) provides [Pmod DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) support in the `pmod_da3` namespace:
 
-* ``pmod_da3::default_spi_config()``: PMOD pin mapping and timing defaults matching the existing PMOD DA3 example
+* ``pmod_da3::default_spi_config()``: Pmod pin mapping and timing defaults matching the existing Pmod DA3 example
 * ``pmod_da3::code_from_voltage()``: convert output voltage to the 16-bit DAC code
 * ``pmod_da3::transaction_for_code()`` and ``pmod_da3::transaction_for_voltage()``: build the SPI transaction as a `spi::SequenceBuilder`
 
@@ -237,7 +237,7 @@ The C++ streamer wrappers are thin, typed views of the hardware control/status r
 
 This is important for maintainability: the intent is that the code stays close to the actual FPGA programming model.
 
-Class ``streamer_control`` (defined in [`streamer_control.hh`]({{ source_file("c++/streamer_control.hh") }}) and re-exported by [`streamer.hh`]({{ source_file("c++/streamer.hh") }})) is the high-level interface for controlling the RLE-decoder core. Member functions:
+Class ``streamer_control`` (defined in [`streamer_control.hh`]({{ source_file("c++/streamer_control.hh") }}) and re-exported by [`streamer.hh`]({{ source_file("c++/streamer.hh") }})) is the high-level interface for controlling the run-length decoder core. Member functions:
 
 * ``status()``: read the status register (buffer error, done, triggered, armed); these are outputs from the
 core
@@ -260,16 +260,16 @@ core
 called (or using an external trigger enable signal)
 * ``trigger_force()``: assert the internal trigger force signal
 * ``trigger_reset()``: assert the internal trigger reset signal
-* ``gating()``: control gating (control of the streaming using an external output-enable signal)
+* ``gating()``: configure output-advancement gating from `gate_in`, a masked subset of `trigger_in`, or both
 
-Class ``streamer_fifo`` (defined in [`streamer_fifo.hh`]({{ source_file("c++/streamer_fifo.hh") }}) and re-exported by [`streamer.hh`]({{ source_file("c++/streamer.hh") }})) is the high-level interface for spooling the sequence to the RLE-decoder core. Member functions:
+Class ``streamer_fifo`` (defined in [`streamer_fifo.hh`]({{ source_file("c++/streamer_fifo.hh") }}) and re-exported by [`streamer.hh`]({{ source_file("c++/streamer.hh") }})) is the high-level interface for spooling the sequence to the run-length decoder core. Member functions:
 
 * ``out()``: send one element
 * ``send_sequence()``: send entire sequence
 * ``check_fill_status()``: check FIFO status
 
 Class ``streamer_dma`` (defined in [`streamer_dma.hh`]({{ source_file("c++/streamer_dma.hh") }}) and re-exported by [`streamer.hh`]({{ source_file("c++/streamer.hh") }})) is the high-level interface for transmitting the sequence to the
-RLE-decoder code using [direct memory access (DMA)](https://en.wikipedia.org/wiki/Direct_memory_access). Member functions:
+run-length decoder using [direct memory access (DMA)](https://en.wikipedia.org/wiki/Direct_memory_access). Member functions:
 
 * ``write_element()``: write an element at given memory location
 * ``prepare()``: write an entire sequence in the memory buffer
@@ -283,26 +283,26 @@ In practical terms, ``streamer_fifo`` is the simpler CPU-driven path for short s
 
 `FPGA` (defined in [`fpga.hh`]({{ source_file("c++/fpga.hh") }})) is the top-level ARM-side container for memory-mapped FPGA access.
 
-It owns the main memory maps, clock-selection helpers, trigger monitor helpers, PLL control helpers, and the output-enable GPIO path.
+It owns the main memory maps, clock-selection helpers, trigger monitor helpers, PLL control helpers, and the physical `oe` GPIO path.
 The constructor enforces single-owner semantics for this top-level hardware view. Shared startup actions such as clock selection, PLL setup, and the bring-up LED blink are applied by [`startup.hh`]({{ source_file("c++/startup.hh") }}), not by the constructor itself.
 
 Clocking-related responsibilities are split deliberately:
 
 * `FPGA::set_clk()` performs top-level streamer-clock source switching with the required reset hold/release sequence
 * `pll_core_clk` and `pll_int_clk` in [`pll_clk.hh`]({{ source_file("c++/pll_clk.hh") }}) program the two reconfigurable PLLs
-* `FPGA::set_streamer_clk()` stores the measured active streaming frequency for later timing-aware host operations
+* `FPGA::set_streamer_clk()` stores the measured active streaming frequency for later timing-aware software operations
 * `FPGA::streamer_done_config(active_mask, armed_live_mask)` configures the top-level aggregate `streamer_done` masks used by the four-stream output/status path
 
 Streamer classes (defined in [`basic_multi_dma.hh`]({{ source_file("c++/basic_multi_dma.hh") }})):
 
 * ``basic_streamer``: one streamer instance with its control interface and FIFO transport; the minimal building block for higher-level streamer helpers
-* ``streamer``: single-core helper using the FIFO transport and the Avalon-ST mux default path; it also applies the usual bring-up sequence (initial value, output enable, reset)
+* ``streamer``: single-core helper using the FIFO transport and the Avalon-ST mux default path; it also applies the usual bring-up sequence (initial value, physical output enable `oe`, reset)
 * ``dma_streamer``: single-core helper that reuses the same streamer bring-up but switches the transport to DMA via the ST mux
 * ``multistreamer``: container for four independent ``basic_streamer`` instances with coordinated bring-up of the four streamer cores
 
 The single-stream helpers configure aggregate done as `active_mask=0b0001` and `armed_live_mask=0b0001`. `multistreamer` defaults both masks to `0b1111`; commands may override them with `-streamer_active_mask` and `-streamer_armed_live_mask`. For mutually exclusive trigger programs, set `-streamer_armed_live_mask 0` so streamers that remain armed but never activate do not block aggregate completion.
 
-The host-side transport split is:
+The ARM-side transport split is:
 
 * [`streamer_control.hh`]({{ source_file("c++/streamer_control.hh") }}) - register-level lifecycle control, status, gating, CRC readout, and FIFO statistics
 * [`streamer_fifo.hh`]({{ source_file("c++/streamer_fifo.hh") }}) - direct CPU-driven FIFO transport for short/simple sequence delivery
@@ -331,7 +331,7 @@ Common extension paths are:
 * add a new `pp...` command in [`pptool.cc`]({{ source_file("c++/pptool.cc") }}) and declare it in [`pptool_commands.hh`]({{ source_file("c++/pptool_commands.hh") }})
 * extend the sequence model in [`elements.hh`]({{ source_file("c++/elements.hh") }}) / [`sequence.hh`]({{ source_file("c++/sequence.hh") }})
 * add a new typed wrapper for a hardware block and expose it through a tool or higher-level API
-* adjust shared streaming policy in [`ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }})
+* adjust shared streaming behavior in [`ppworkflow.hh`]({{ source_file("c++/ppworkflow.hh") }})
 * update startup defaults in [`startup.hh`]({{ source_file("c++/startup.hh") }})
 * change clock/PLL option semantics in [`options.hh`]({{ source_file("c++/options.hh") }}) and [`pll_rules.hh`]({{ source_file("c++/pll_rules.hh") }})
 

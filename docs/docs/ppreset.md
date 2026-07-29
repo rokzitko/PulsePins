@@ -16,10 +16,10 @@ ppreset [options]
 
 The command:
 
-* applies the normal host startup policy, including any requested clock or PLL changes
+* applies any requested clock or PLL changes during the normal startup sequence
 * always performs an FPGA S2F reset during startup, equivalent to passing `-reset_FPGA`
 * programs the streamer initial output value, defaulting to `0`
-* enables the physical outputs
+* asserts the physical output enable (`oe`)
 * restores the streamer's software-visible control word to its persistent defaults
 * pulses the streamer reset bit
 

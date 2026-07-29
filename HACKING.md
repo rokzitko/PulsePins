@@ -4,12 +4,12 @@ PulsePins is meant to be hacked on, adapted, and extended.
 
 Contributions are welcome across RTL, C++, Python, documentation, tests, board support, examples, measurement workflows, and experimental integration ideas. You do not need to start with a large feature; small fixes, examples, and documentation improvements matter too.
 
-## Good entry points
+## Good first contribution areas
 
 - Documentation: clean up wording, expand guides, add examples, improve onboarding
 - C++ tools: improve `pptool`, add options, improve formatting, add tests for parsing and sequence handling
 - Python bindings: improve packaging, examples, and tests in `python/`
-- RTL and simulation: add or improve test benches under `ip/`
+- RTL and simulation: add or improve testbenches under `ip/`
 - Recipes and examples: add practical command sequences in `recipes/`
 - Worked examples: capture real lab workflows, timing setups, and instrument integrations
 
@@ -21,8 +21,8 @@ You can contribute without a board if you work on:
 
 - documentation under `docs/` and top-level `README*` files
 - sequence parsing and representation in `c++/`
-- Python bindings in `python/` (host-side build/import testing is useful, but production Python builds still happen on the DE10-Nano)
-- HDL test benches and simulation-only RTL work under `ip/`
+- Python bindings in `python/` (build/import testing on a development machine is useful, but production Python builds still happen on the DE10-Nano)
+- RTL testbenches and simulation-only RTL work under `ip/`
 - recipes, examples, and test infrastructure
 
 Good first commands:
@@ -32,13 +32,13 @@ make dev-check
 make -C ip test
 ```
 
-`dev-check` is the default host-side contributor sanity pass.
-`make -C ip test` runs HDL simulation test benches if the required simulator tools are installed.
+`dev-check` is the default local contributor check.
+`make -C ip test` runs RTL simulation testbenches if the required simulator tools are installed.
 
 For Python specifically:
 
-- host-side `make -C python build` is useful for syntax/import/API testing
-- the supported production build of the Python modules still happens on the DE10-Nano board
+- running `make -C python build` on a development machine is useful for syntax/import/API testing
+- the supported production build of the Python modules still happens on the DE10-Nano
 - true Python cross-compilation is not currently supported
 
 ### Hardware helps, but is not always required
@@ -76,9 +76,9 @@ For that baseline, the board:
 
 | Area | Main location | Hardware needed | Main command |
 | ---- | ------------- | --------------- | ------------ |
-| Host-side sanity checks | repo root | no | `make dev-check` |
+| Local checks | repo root | no | `make dev-check` |
 | Docs | `docs/` | no | `make -C docs site` |
-| C++ host tools | `c++/` | not always | `make -C c++ build` |
+| C++ tools | `c++/` | not always | `make -C c++ build` |
 | Python bindings | `python/` | not always | `make -C python build && make -C python test-host` |
 | RTL simulation | `ip/` | no | `make -C ip test` |
 | Fast board smoke | repo root | yes | `make board-smoke` |
@@ -126,7 +126,7 @@ Its KiCad design is published so people can build it, modify it, or use it as a 
 
 Useful capabilities include:
 
-- PMOD connectors for expansion modules
+- Pmod connectors for expansion modules
 - one SMA trigger input with comparator threshold control
 - two buffered SMA outputs
 - external clock and PPS inputs
@@ -137,10 +137,10 @@ Useful capabilities include:
 
 Verified/useful optional workflows around `PP_PMOD` include:
 
-- LED PMODs for visible output patterns
+- LED Pmod modules for visible output patterns
 - onboard `MCP9808` temperature reads
 - external `TMP117` over Qwiic/I2C
-- `PMOD DA3` for fixed-voltage DAC output
+- `Pmod DA3` for fixed-voltage DAC output
 - external clock verification with `ppfreq`
 - PPS verification with `ppts`
 - buffered-output use with oscilloscopes, logic analyzers, spectrum analyzers, and counters
@@ -167,7 +167,7 @@ Worked examples are especially valuable. Example-driven documentation is one of 
 ### Community-contribution areas that would help a lot
 
 - worked examples from real physics/lab scenarios
-- PMOD module and sensor writeups
+- Pmod module and sensor writeups
 - custom shield or daughterboard notes
 - wiring diagrams and timing diagrams
 - screenshots, scope traces, and logic-analyzer captures
@@ -188,12 +188,12 @@ High reliability is a major project goal.
 
 Simulation-only RTL work is therefore very valuable and strongly encouraged, especially when it improves:
 
-- test benches
+- testbenches
 - interface validation
 - CDC and reset correctness
 - executable documentation of behavior
 
-Test benches are useful not only for verification, but also for documenting interfaces and intended functionality.
+Testbenches are useful not only for verification, but also for documenting interfaces and intended functionality.
 
 ## Community interaction
 

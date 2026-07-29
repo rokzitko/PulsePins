@@ -1,18 +1,18 @@
 # ppwebgui
 
-`ppwebgui` is a standalone host-side web server for PulsePins for rapid interactive testing and hardware troubleshooting.
+`ppwebgui` is a standalone web server that runs on the target board for rapid interactive testing and hardware troubleshooting.
 
-It starts an embedded HTTP server on the FPGA board, serves a small browser UI from the same binary, shows live AUX signal status, trigger-input/control, and streamer-runtime status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream PulsePins text sequences from the browser.
+It starts an embedded HTTP server on the target board, serves a small browser UI from the same binary, shows live AUX signal status, trigger-input/control, and streamer-runtime status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream PulsePins text sequences from the browser.
 
 The code is intentionally simple (HTTP only, no authentication, browser polling for live status updates,
 embedded HTML, CSS, and JavaScript).
 
 ## Startup
 
-`ppwebgui` follows the same shared host-side startup path as the other standalone host tools:
+`ppwebgui` follows the same shared startup path as the other standalone target-board tools:
 
 1. construct `HostRuntime`
-2. apply the normal startup policy and create the shared `FPGA` wrapper
+2. apply the requested FPGA reset, clock/PLL, and LED startup settings and create the shared `FPGA` wrapper
 3. measure and report the active clocks
 4. start the embedded HTTP server
 
@@ -31,7 +31,7 @@ ppwebgui
 This starts the server on all interfaces on port `4242` and prints the bound URL to standard output.
 It also prints a red `WARNING` line, states `waiting one second`, and waits one second before accepting browser traffic.
 
-When bound to `0.0.0.0`, `ppwebgui` also prints the discovered non-loopback interface names, IPv4 addresses, and matching URLs so you can connect directly from another machine without looking up the address separately.
+When bound to `0.0.0.0`, `ppwebgui` also prints the discovered non-loopback interface names, IPv4 addresses, and matching URLs so you can connect directly from another computer without looking up the address separately.
 
 Example with an explicit port:
 
@@ -49,8 +49,8 @@ ppwebgui -port 0
 
 The `ppwebgui` implementation is split into small layers with a strict hardware-ownership boundary:
 
-* [`ppwebgui_main.cc`]({{ source_file("c++/ppwebgui_main.cc") }}): process entry only
-* [`ppwebgui_app.cc`]({{ source_file("c++/ppwebgui_app.cc") }}): composition root; anchors the single `WebGuiController`
+* [`ppwebgui_main.cc`]({{ source_file("c++/ppwebgui_main.cc") }}): contains `main()` and process startup
+* [`ppwebgui_app.cc`]({{ source_file("c++/ppwebgui_app.cc") }}): composition root; anchors the single `WebGuiController` and starts the application
 * [`ppwebgui_server.cc`]({{ source_file("c++/ppwebgui_server.cc") }}): owns the embedded `httplib::Server` lifecycle, bind/listen flow, and startup URL reporting
 * [`ppwebgui_http.cc`]({{ source_file("c++/ppwebgui_http.cc") }}): request parsing, validation, error handling, and route registration
 * [`ppwebgui_json.cc`]({{ source_file("c++/ppwebgui_json.cc") }}): JSON/status rendering
@@ -65,7 +65,7 @@ The runtime flow is:
 2. [`ppwebgui_app.cc`]({{ source_file("c++/ppwebgui_app.cc") }}) anchors `WebGuiController` and creates a non-owning `WebGuiService` adapter
 3. [`ppwebgui_server.cc`]({{ source_file("c++/ppwebgui_server.cc") }}) builds `httplib::Server` and starts the listener
 4. [`ppwebgui_http.cc`]({{ source_file("c++/ppwebgui_http.cc") }}) converts requests into value requests for the service layer
-5. [`ppwebgui_service.cc`]({{ source_file("c++/ppwebgui_service.cc") }}) executes those requests against the hardware-owning wrapper graph
+5. [`ppwebgui_service.cc`]({{ source_file("c++/ppwebgui_service.cc") }}) executes those requests through `WebGuiController` and its hardware wrappers
 6. [`ppwebgui_json.cc`]({{ source_file("c++/ppwebgui_json.cc") }}) renders returned value snapshots/results into responses
 
 
@@ -97,15 +97,15 @@ The trigger form uses the same semantic mode names as the CLI trigger tool:
 
 The mode selection and inversion fields are independent: for example, active-low external trigger lines can be handled with `ANY` plus `invert_ext = 0xffffffff`.
 
-Browser-triggered streams first run the same web-controller reset/bring-up sequence exposed by the **Reset hardware** button. That resets the streamer core, readback encoder, and counters for a deterministic run. The tracked idle raw qout value is used as the final output element. Because `ppwebgui` controls the final-output policy, sequence text submitted through the browser must not contain an explicit `final ...` record, and shared random-final overrides such as `PP_RANDOM_FINAL` conflict with browser playback.
+Browser-triggered streams first run the same web-controller reset/bring-up sequence exposed by the **Reset hardware** button. That resets the streamer core, readback encoder, and counters for a deterministic run. The tracked idle raw qout value is used as the final output element. Because `ppwebgui` selects the final output value, sequence text submitted through the browser must not contain an explicit `final ...` record, and shared random-final overrides such as `PP_RANDOM_FINAL` conflict with browser playback.
 
 The **Timeline Composer** is a graphical interface layered on top of the existing sequence text path. It lets users define named output-bit channels and pulse intervals in raw cycles, `ns`, `us`, `ms`, or `s`. It validates that pulses on the same channel do not overlap after conversion to cycles. The result can be reviewed as an SVG timing diagram. The output `d <cycles> <value>` records are copied into the **Sequence** text area once the browser has a status snapshot. Cycle input is integer-only. Absolute-time input accepts decimals and rounds each start/duration to the nearest streamer-clock cycle; durations that round to zero cycles are rejected. For managed `int_clk`, conversion uses the nominal tracked `int_clk` PLL profile, including the standard strict presets, legal raw `N,M,C` triplets, and parseable frequency strings. For managed `ext_clk`, conversion uses the last measured `ext_clk` rounded to a lab-friendly decimal value within `0.1%`; unmanaged sources fall back to the last measured streamer clock. Clicking a preview lane adds a pulse to that channel at the clicked time using the **Preview click duration** field and the selected unit; dragging a preview lane creates a pulse spanning the dragged interval. Hovering a valid lane highlights the row, shows the insertion cursor, and draws a ghost pulse for the configured duration. Clicking an existing preview pulse or non-input area of a pulse-table row selects it and enables **Delete selected pulse**; when focus is not in a text field, `Delete` or `Backspace` removes the selected pulse and `Escape` clears the selection. **Export draft** writes a JSON draft containing the selected unit, channels, and pulses; **Import draft** restores that JSON. **Export CSV** writes one pulse row per interval with `channel,bit,start,duration,color`; **Import CSV** rebuilds channels from those rows using the selected pulse time unit and leaves the timeline unchanged if parsing fails. Unassigned output bits preserve the tracked qout state, timeline-owned bits are driven high only during their pulses, and no `final` record is generated by the browser because the backend appends the tracked qout final value.
 
 Raw timeline clock profiles must be legal profiles accepted by the backend; unsafe raw PLL divider triplets are rejected instead of being used for nominal timing.
 
-When **Check readback** is enabled, `ppwebgui` uses the same default safe timeout policy as the shared CLI workflow: 2s waiting for the first readback element and 2s for later idle gaps. Finite browser-triggered streams also inherit the internal 10s streamer-completion timeout used by the shared playback path. A timeout during streaming is reported back to the browser as an HTTP `504` result, with the message text distinguishing readback wait timeout from streamer-completion timeout.
+When **Check readback** is enabled, `ppwebgui` uses the same conservative default timeouts as the shared CLI workflow: 2 s waiting for the first readback element and 2 s for later idle gaps. Finite browser-triggered streams also inherit the internal 10 s streamer-completion timeout used by the shared playback path. A timeout during streaming is reported back to the browser as an HTTP `504` result, with the message text distinguishing readback wait timeout from streamer-completion timeout.
 
-The header also includes a **Reset hardware** button. That action reapplies the tracked clock/PLL policy, resets the streamer core, readback encoder, and counters, remeasures the clocks, and reapplies the current web-managed trigger, combiner, and output-override settings so the browser state is preserved across the reset. If the tracked clock source came from an unmanaged startup/raw selector state, that exact state is preserved instead of being coerced to `int_clk`.
+The header also includes a **Reset hardware** button. That action reapplies the tracked clock source and PLL settings, resets the streamer core, readback encoder, and counters, remeasures the clocks, and reapplies the current web-managed trigger, combiner, and output-override settings so the browser state is preserved across the reset. If the tracked clock source came from an unmanaged startup/raw selector state, that exact state is preserved instead of being coerced to `int_clk`.
 
 The backend keeps hardware access serialized and the UI polls `/api/status` at the configured interval.
 
@@ -120,10 +120,10 @@ The backend keeps hardware access serialized and the UI polls `/api/status` at t
 
 On the GUI side, this split also keeps the remaining non-hardware dependencies explicit through small value objects:
 
-- `WebGuiRuntimeConfig` for resolved startup/runtime policy
+- `WebGuiRuntimeConfig` for resolved startup/runtime settings
 - `WebGuiAssets` for the embedded browser payload
 - `WebGuiServerBinding` for bind/listen inputs
-- `WebGuiHttpOptions` for route-side logging policy
+- `WebGuiHttpOptions` for route-side logging settings
 
 Those types let the app, server, and HTTP layers depend on each other through pure values instead of reaching across modules for hidden globals or broader runtime objects.
 
@@ -138,7 +138,7 @@ While the user is editing the **Trigger Settings**, **Output Override**, or **Ou
 
 The **Clocking** form behaves the same way. Local clock edits stay in the browser until **Apply clock settings** or **Revert local edits** is pressed, while the measured frequency fields continue to reflect the last captured snapshot. When the tracked source is unmanaged, the current source display remains read-only and the pulldown selects the next managed source to adopt if the user clicks **Apply clock settings**.
 
-Values shown in the browser are rendered in hexadecimal by default. Input fields also accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog-style literals.
+Values shown in the browser are rendered in hexadecimal by default. Input fields also accept the same integer formats as the CLI helpers: decimal, hexadecimal, binary, octal, and Verilog/SystemVerilog-style literals.
 
 ## API summary
 
@@ -214,7 +214,7 @@ and a `clocking` object with:
 
 By default, `ppwebgui` binds to `0.0.0.0:4242`.
 
-That means it accepts connections from outside the board, including from another machine over the Ethernet interface, as long as the network path is reachable.
+That means it accepts connections from outside the target board, including from another computer over the Ethernet interface, as long as the network path is reachable.
 On this bind address, startup prints the external-interface warning and pauses for one second.
 
 If you want local-only access, bind explicitly to loopback instead:

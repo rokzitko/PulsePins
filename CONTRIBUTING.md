@@ -42,7 +42,7 @@ These are intentionally minimal; adapt as needed for your contributions.
 Practical guidance:
 
 - If you are new to the project, start with `HACKING.md`.
-- If you do not have hardware, docs, Python, C++, recipes, and HDL simulation are all useful contribution areas.
+- If you do not have hardware, docs, Python, C++, recipes, and RTL simulation are all useful contribution areas.
 - If you do have hardware, measured workflows, validated examples, and board-setup notes are especially valuable.
 - Docs, examples, and test infrastructure are first-class contributions, not second-tier ones.
 - Worked examples are especially encouraged.
@@ -63,7 +63,7 @@ Some common contribution paths are:
 - **Python bindings**
   - Improve examples, packaging, and API coverage
 - **RTL and simulation**
-  - Improve IP blocks, CDC/reset structure, and test benches
+  - Improve IP blocks, CDC/reset structure, and testbenches
 - **Hardware validation**
   - Verify workflows on a real board and turn them into durable docs
 - **Real-world example contributions**

@@ -31,7 +31,7 @@ All combiner variants expose the same small Avalon-MM model:
 - mask registers for each input and the output
 - value registers for each input and the output
 
-This model is mirrored on the host side by `c++/combiner.hh`, `c++/qout.hh`, and `c++/trigger.hh`.
+This model is mirrored on the HPS side by `c++/combiner.hh`, `c++/qout.hh`, and `c++/trigger.hh`.
 
 ## Reading order for maintainers
 
@@ -46,4 +46,4 @@ This model is mirrored on the host side by `c++/combiner.hh`, `c++/qout.hh`, and
 ## Verification and related docs
 
 - subsystem overview: `docs/docs/combiner.md`
-- host-side wrappers: `c++/combiner.hh`, `c++/qout.hh`, `c++/trigger.hh`
+- HPS-side wrappers: `c++/combiner.hh`, `c++/qout.hh`, `c++/trigger.hh`

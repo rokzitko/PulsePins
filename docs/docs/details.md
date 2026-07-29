@@ -10,10 +10,10 @@ For the maintainer-oriented architectural view of the output engine, start with 
 
 [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }}) - this file defines the bit widths of various registers (data, counter, control)
 
-`WIDTH_COUNTER`: number of bits of the integer variable that specifies the length of runs in run-length encoding. The distributed reference build uses 32-bit counters; the RTL and software can be configured for wider counters
+`WIDTH_COUNTER`: number of bits of the integer variable that specifies the length of runs in run-length encoding. The released DE10-Nano build uses 32-bit counters; the RTL and software can be configured for wider counters
 for high-speed systems and for allowing extremely long delays.
 
-`WIDTH_DATA`: number of bits of data. The distributed reference build uses 32-bit data words; wider data paths are a configurable design variant.
+`WIDTH_DATA`: number of bits of data. The released DE10-Nano build uses 32-bit data words; wider data paths are a configurable design variant.
 
 `WIDTH_CONTROL`: number of bits in the register that controls the streamer core. Fixed to 32.
 

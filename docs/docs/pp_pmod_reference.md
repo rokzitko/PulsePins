@@ -14,23 +14,23 @@ The connector and signal names below follow the KiCad schematics. For final pin-
 
 | Ref | Interface | Type | Function |
 | --- | --- | --- | --- |
-| `J3` | `QOUT_0-7` | 2x6 right-angle socket | output bits `Q0..Q7` |
-| `J4` | `QOUT_8-15` | 2x6 right-angle socket | output bits `Q8..Q15` |
-| `J5` | `QOUT_16-23` | 2x6 right-angle socket | output bits `Q16..Q23` |
-| `J6` | `QOUT_24-31` | 2x6 right-angle socket | output bits `Q24..Q31` |
-| `J7` | `TRIG_IN` | 2x6 right-angle socket | trigger inputs `TRIG_IN0..TRIG_IN7` |
-| `J8` | QOUT sideband | 1x6 right-angle socket | output control/status breakout |
+| `J3` | `QOUT_0-7` | 2 × 6 right-angle socket | output bits `Q0..Q7` |
+| `J4` | `QOUT_8-15` | 2 × 6 right-angle socket | output bits `Q8..Q15` |
+| `J5` | `QOUT_16-23` | 2 × 6 right-angle socket | output bits `Q16..Q23` |
+| `J6` | `QOUT_24-31` | 2 × 6 right-angle socket | output bits `Q24..Q31` |
+| `J7` | `TRIG_IN` | 2 × 6 right-angle socket | trigger inputs `TRIG_IN0..TRIG_IN7` |
+| `J8` | QOUT sideband | 1 × 6 right-angle socket | output control/status breakout |
 | `J9` | `EXT_CLK` | SMA | external clock input |
-| `J10` | trigger control | 1x6 vertical socket | trigger control breakout |
-| `J11` | trigger status | 1x6 vertical socket | trigger status/service breakout |
-| `J12` | `AUX` | 2x6 right-angle socket | auxiliary bus `AUX0..AUX7` |
+| `J10` | trigger control | 1 × 6 vertical socket | trigger control breakout |
+| `J11` | trigger status | 1 × 6 vertical socket | trigger status/service breakout |
+| `J12` | `AUX` | 2 × 6 right-angle socket | auxiliary bus `AUX0..AUX7` |
 | `J13` | buffered output | SMA | buffered `Q0` output |
 | `J14` | buffered output | SMA | buffered `Q1` output |
 | `J17` | trigger SMA | SMA | thresholded trigger input |
-| `J18` | Qwiic-compatible I2C | JST-SH 1x4 | external I2C module connection |
+| `J18` | Qwiic-compatible I2C | JST-SH 1 × 4 | external I2C module connection |
 | `J26` | `PPS_IN` | SMA | pulse-per-second input |
 
-The QOUT, AUX, and trigger bus connectors use the same 2x6 mechanical style as a [PMOD-style expansion connector](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf), but the clock and trigger-control breakouts are simple headers rather than standard PMOD ports.
+The QOUT, AUX, and trigger bus connectors use the same 2 × 6 mechanical style as a [Pmod-style expansion connector](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf), but the clock and trigger-control breakouts are simple headers rather than standard Pmod ports.
 
 ## QOUT And AUX
 
@@ -43,7 +43,7 @@ The four output connectors divide the 32-bit output bus into four 8-bit groups:
 | `J5` | `Q16..Q23` |
 | `J6` | `Q24..Q31` |
 
-Signal grouping on the four 2x6 output connectors:
+Signal grouping on the four 2 × 6 output connectors:
 
 | Connector | Odd-row data pins | Even-row data pins |
 | --- | --- | --- |
@@ -52,7 +52,7 @@ Signal grouping on the four 2x6 output connectors:
 | `J5` | `Q16`, `Q17`, `Q18`, `Q19` | `Q20`, `Q21`, `Q22`, `Q23` |
 | `J6` | `Q24`, `Q25`, `Q26`, `Q27` | `Q28`, `Q29`, `Q30`, `Q31` |
 
-Each 2x6 connector also includes utility power and ground pins.
+Each 2 × 6 connector also includes utility power and ground pins.
 
 `J12` exports the auxiliary bus:
 
@@ -72,12 +72,14 @@ QOUT sideband signals are presented on `J8`:
 | 5 | `GND` |
 | 6 | `+3.3V` |
 
+`OE` is the physical output enable, `QOUT_VALID` is the `qout_valid` sample qualifier, and `STROBE` carries the `qout_strobe` sampling pulse.
+
 Buffered SMA outputs:
 
 * `J13` is tied to the buffered `Q0` path.
 * `J14` is tied to the buffered `Q1` path.
 
-The documentation intentionally uses "buffered SMA outputs" here. If you need to claim a specific source impedance or exact 50 ohm driver behavior, verify and document that explicitly from the circuit and measurement setup.
+The documentation intentionally uses "buffered SMA outputs" here. If you need to claim a specific source impedance or exact 50 Ω driver behavior, verify and document that explicitly from the circuit and measurement setup.
 
 ## Triggering
 
@@ -103,6 +105,8 @@ Trigger control header `J10`, positions `1` through `6` in the schematic:
 | 4 | `TRIG_RESET` |
 | 5 | `TRIG_FORCE` |
 | 6 | `TRIG_ENABLE` |
+
+`GATE_IN` is the external gate input that permits or blocks streamer output advancement.
 
 Trigger status header `J11`, positions `1` through `6` in the schematic:
 
@@ -146,14 +150,14 @@ The clock-related hardware is centered around:
 * `J9`
 * protection device `U20`
 * clock buffer `U19`
-* optional 50 ohm termination resistor `R17`
+* optional 50 Ω termination resistor `R17`
 * in-series 2-pin patch/disconnect header `J20`
 
 `PPS_IN` path:
 
 * `J26`
 * protection device `U21`
-* optional 50 ohm termination resistor `R6`
+* optional 50 Ω termination resistor `R6`
 * monitoring LED path
 * in-series 2-pin patch/disconnect header `J25`
 

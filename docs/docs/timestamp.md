@@ -89,7 +89,7 @@ Each timestamp is assembled from two 32-bit FIFO words into a 64-bit counter val
 
 The timeout-based read functions poll until two FIFO words are available, then reconstruct the full 64-bit timestamp. This is why the timeout is applied to a complete event record rather than to a single 32-bit transfer. By default they also fail if the relevant timestamp overflow latch is set; callers that are intentionally stress-testing fast sources can opt out and keep draining received samples.
 
-The constructor clears both FIFOs on startup, which helps avoid stale samples after reset or reconfiguration. User-facing timestamp sessions select the requested PPS and `sigA` routes before clearing capture state again, so mux-switch artifacts are drained before the first sample is reported.
+The constructor clears both FIFOs on startup, which helps avoid stale samples after reset or reconfiguration. User-facing timestamp sessions select the requested PPS and `sigA` routes before clearing capture state again, so mux-switch transients are drained before the first sample is reported.
 
 The main user-facing command implementations live in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}) (`ppts` and `ppgpsdo`).
 

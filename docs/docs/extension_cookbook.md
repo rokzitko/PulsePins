@@ -85,7 +85,7 @@ If the new feature changes the meaning or representation of sequence elements, t
 1. Add tests first in [`c++/unit_tests.cc`]({{ source_file("c++/unit_tests.cc") }}).
 2. Extend [`elements.hh`]({{ source_file("c++/elements.hh") }}) shared helpers if the feature affects element semantics.
 3. Extend [`sequence.hh`]({{ source_file("c++/sequence.hh") }}) only where the sequence container or parser/writer glue must change.
-4. Update Python bindings if the feature is surfaced there.
+4. Update Python bindings if the feature is available through that API.
 5. Update C++/Python docs if the API or grammar changed.
 
 ### Important rule
@@ -105,18 +105,18 @@ The Python bindings live in:
 
 * add or update a high-level class or method wrapper: the relevant [`python/pp_bind_*.cc`]({{ source_file("python/") }}) file
 * export a new constant or symbolic string: [`python/pp_impl.cc`]({{ source_file("python/pp_impl.cc") }})
-* verify the binding surface: [`python/test.py`]({{ source_file("python/test.py") }})
+* verify the binding API: [`python/test.py`]({{ source_file("python/test.py") }})
 
 ### Typical sequence
 
 1. Add the binding in the relevant [`python/pp_bind_*.cc`]({{ source_file("python/") }}) file.
 2. If the Python tests need a constant from C++, export it in [`python/pp_impl.cc`]({{ source_file("python/pp_impl.cc") }}).
-3. Add host-safe tests to [`python/test.py`]({{ source_file("python/test.py") }}).
+3. Add hardware-independent tests to [`python/test.py`]({{ source_file("python/test.py") }}).
 4. If the test requires a live board or `/dev/mem`, mark it with `@pytest.mark.hardware`.
 
 ### CI note
 
-Host CI runs:
+Hardware-independent CI runs:
 
 ```bash
 make -C python USE_PREGENERATED=1 build test-host
@@ -136,7 +136,7 @@ Main files:
 * [`c++/ppwebgui_http.hh`]({{ source_file("c++/ppwebgui_http.hh") }}) and [`ppwebgui_http.cc`]({{ source_file("c++/ppwebgui_http.cc") }}) - route registration, request parsing, HTTP errors
 * [`c++/ppwebgui_json.cc`]({{ source_file("c++/ppwebgui_json.cc") }}) - JSON rendering
 * [`c++/ppwebgui_assets.cc`]({{ source_file("c++/ppwebgui_assets.cc") }}) - embedded frontend assets
-* [`c++/unit_tests.cc`]({{ source_file("c++/unit_tests.cc") }}) - host-side HTTP and request-validation tests
+* [`c++/unit_tests.cc`]({{ source_file("c++/unit_tests.cc") }}) - hardware-independent HTTP and request-validation tests
 
 ### Recommended order
 
@@ -149,7 +149,7 @@ Main files:
 
 ### Important ownership rule
 
-Keep the hardware-owning object graph anchored in `WebGuiController`. Do not copy or re-own that graph from higher layers. New GUI/HTTP features should normally pass values through the service interface, not bypass it.
+Keep the hardware-owning objects anchored in `WebGuiController`. Do not copy or re-own those objects from higher layers. New GUI/HTTP features should normally pass values through the service interface, not bypass it.
 
 ## Recipe 5: add a new tool helper under [`tools/`]({{ source_file("tools/") }})
 
@@ -172,7 +172,7 @@ The tool [`tools/spi_payload/`]({{ source_file("tools/spi_payload/") }}) is a go
 
 ## Recipe 6: add tests in the right place
 
-### C++ core and host-side logic
+### C++ core and hardware-independent logic
 
 Use:
 
@@ -183,9 +183,9 @@ Best for:
 * sequence semantics
 * parsing/formatting
 * HTTP validation
-* helper wrappers that are safe on the host
+* hardware-independent helper wrappers
 
-### Python binding surface
+### Python binding API
 
 Use:
 
@@ -203,11 +203,11 @@ Mark board-backed tests with:
 @pytest.mark.hardware
 ```
 
-### HDL and RTL behavior
+### RTL behavior
 
 Use:
 
-* [`ip/`]({{ source_file("ip/") }}) test benches
+* [`ip/`]({{ source_file("ip/") }}) testbenches
 
 Best for:
 
@@ -230,7 +230,7 @@ If the feature is mainly for contributors, update:
 
 * [`HACKING.md`]({{ source_file("HACKING.md") }})
 * [`CONTRIBUTING.md`]({{ source_file("CONTRIBUTING.md") }})
-* [`c++/README.md`]({{ source_file("c++/README.md") }}) or [`python/README*`]({{ source_file("python/") }}) if they are the best maintainer-facing entry point
+* [`c++/README.md`]({{ source_file("c++/README.md") }}) or [`python/README*`]({{ source_file("python/") }}) if they are the best starting files for maintainers
 
 ## Quick checklists
 
@@ -242,7 +242,7 @@ If the feature is mainly for contributors, update:
 * tests added
 * docs page added
 
-### New Python API surface
+### New Python API
 
 * binding added in the relevant [`python/pp_bind_*.cc`]({{ source_file("python/") }}) file
 * constants added in [`python/pp_impl.cc`]({{ source_file("python/pp_impl.cc") }}) if needed

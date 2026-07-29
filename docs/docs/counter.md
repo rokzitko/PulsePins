@@ -96,13 +96,13 @@ The `counter` class in [`c++/counter.hh`]({{ source_file("c++/counter.hh") }}) g
 Important operations:
 
 * `reset_all()` - synchronously reset all instruments
-* `latch_all()` - latch current statistics for stable readback
+* `latch_all()` - latch current statistics into a consistent snapshot for subsequent readout
 * `report()` - print a full multi-instrument report
 * `short_report()` - print a smaller report focused on basic/run statistics
 
 The wrapper also embeds typed helper objects for each instrument. Those helpers know how to turn low/high words and instrument-local addresses into usable 64-bit statistics.
 
-The default host-side usage pattern is:
+The default control-software usage pattern is:
 
 1. choose observed channels
 2. optionally reset the instrument bank
@@ -174,7 +174,7 @@ This latch-then-read model is important because several counters are continuousl
 
 ### Tool integration
 
-`ppcounter` is the main command-line entry point for this subsystem.
+`ppcounter` is the main command-line interface for this subsystem.
 
 It can:
 

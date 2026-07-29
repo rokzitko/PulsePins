@@ -2,8 +2,8 @@
 
 `./spi`
 
-Generates the original PMODDA3 transaction and writes the PulsePins text sequence to `sequence`.
-For testing, plug the PMODDA3 module into the first PMOD connector, upper row.
+Generates the original Pmod DA3 transaction and writes the PulsePins text sequence to `sequence`.
+For testing, plug the Pmod DA3 module into the first Pmod connector, upper row.
 
 `./spi_ad9833`
 
@@ -28,16 +28,16 @@ The AD9833 binary uses SPI mode `2` and sends these 16-bit words to the AD9833:
 
 Generates the same AD9833 5 MHz sine setup as `./spi_ad9833`, then programs the module's onboard MCP41010-controlled amplifier stage.
 
-The DollaTek board does not use a dedicated programmable-gain amplifier IC. Instead, the MCP41010 digital potentiometer drives the AD8051 amplified-output stage as a variable attenuator into a fixed op-amp gain of about `x6`.
+The DollaTek board does not use a dedicated programmable-gain amplifier IC. Instead, the MCP41010 digital potentiometer drives the AD8051 amplified-output stage as a variable attenuator into a fixed op-amp gain of about 6×.
 
 Supported ranges for the amplified output are therefore approximate:
 
 * MCP41010 wiper code: `0x00..0xff`
-* module amplified-output gain relative to raw AD9833 `VOUT`: about `0x..6x`
+* module amplified-output gain relative to raw AD9833 `VOUT`: about 0× to 6×
 
 The top of that range is not calibrated and can clip depending on frequency, supply, and load. Treat the gain numbers as wiring-level estimates for this module, not guaranteed analog amplitudes.
 
-The default programmed by `./spi_ad9833_pga` is approximately `5x` amplified output, which maps to MCP41010 wiper code `0xd5` and SPI word `0x11d5`.
+The default programmed by `./spi_ad9833_pga` is approximately 5× amplified output, which maps to MCP41010 wiper code `0xd5` and SPI word `0x11d5`.
 
 The combined binary uses two device-specific transactions on the shared bus:
 

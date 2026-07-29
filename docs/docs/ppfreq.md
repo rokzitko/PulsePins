@@ -4,7 +4,7 @@
 
 For the underlying measurement block and API, see `freq_meter.md`.
 
-The tool creates the shared `pp_freq_meter` wrapper, optionally reprograms the gate settings, waits one full measurement interval, and then prints formatted readings in a loop.
+The tool creates the shared `pp_freq_meter` wrapper, optionally reprograms the measurement-gate settings, waits one full measurement interval, and then prints formatted readings in a loop.
 
 It uses the interface in [`c++/freq_meter.hh`]({{ source_file("c++/freq_meter.hh") }}), and the command implementation lives in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}).
 
@@ -16,7 +16,7 @@ Common options:
 * `-freq_rescale X`: apply correction factor `X` to the reported frequencies; can also be set with `PP_FREQ_RESCALE`
 * `-format F`: output format string, default `%t %e`
 
-Gate configuration follows this order:
+Measurement-gate configuration follows this order:
 
 * if `-gate_time` is present, it is used
 * otherwise `-gate_len` is used, defaulting to `500000`
@@ -45,19 +45,19 @@ Output behavior:
 * each printed line is rendered from the selected output format
 * frequency values use the same formatting as the shared frequency-meter wrapper
 
-Longer gate settings give more stable readings, while shorter gate settings give faster updates.
+Longer gate intervals improve count-based frequency resolution but reduce the update rate.
 
 Use `%%` in the format string for a literal percent sign.
 
 ### Typical examples
 
-Measure using a 1-second gate:
+Measure using a 1-second measurement gate:
 
 ```bash
 ppfreq -gate_time 1s
 ```
 
-Measure using a raw gate length of 1,000,000 counter-clock cycles:
+Measure using a raw gate length of 1,000,000 reference-clock (`cnt_clk`) cycles:
 
 ```bash
 ppfreq -gate_len 1000000

@@ -20,7 +20,7 @@ The following symbols are used in project TODO lists:
 
 ### Source code layout
 
-* [`ip/`]({{ source_file("ip/") }}) - Verilog descriptions of circuitry
+* [`ip/`]({{ source_file("ip/") }}) - SystemVerilog/Verilog RTL
 * [`ip/combiner/`]({{ source_file("ip/combiner/") }}) - IP for the advanced multiplexer
 * [`ip/combiner_comb/`]({{ source_file("ip/combiner_comb/") }}) - combinational version of the advanced multiplexer
 * [`ip/combiner_trig/`]({{ source_file("ip/combiner_trig/") }}) - trigger-signal multiplexer
@@ -40,7 +40,7 @@ The following symbols are used in project TODO lists:
 These manual pages are built with [MkDocs](https://www.mkdocs.org/), using macros plugin. For testing the generated web site, we use
 [caddy](https://caddyserver.com/).
 
-Useful starting points for the codebase:
+Useful codebase references:
 
 * `build.md` - hardware/software build and deployment flow
 * `clock_domain.md` - detailed clocking, CDC, and timing-constraint reference

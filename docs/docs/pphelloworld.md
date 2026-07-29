@@ -43,7 +43,7 @@ After startup, all outputs toggle with frequency:
 
 At the default 100 MHz streamer clock, that is 100 kHz.
 
-This makes `pphelloworld` useful as a quick scope-visible sanity check.
+This makes `pphelloworld` useful for checking output toggling and the expected output rate on a scope.
 
 ## Related pages
 

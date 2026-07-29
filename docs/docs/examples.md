@@ -16,7 +16,7 @@ ppfg -int_pll 10M -cont -trig -freq 10Hz -v1 0x1 -v0 0x0
 
 What it does:
 
-* configures the core clock for a simple 10 MHz working point
+* sets the core clock to 10 MHz
 * auto-triggers (`-trig`) instead of waiting for an external trigger
 * generates a continuous (`-cont`) square wave at 10 Hz
 * drives `qout[0]` high in the `on` phase and low in the `off` phase
@@ -98,7 +98,7 @@ See also: [ppread - readback tool](ppread.md), [ppplay](ppplay.md), and [Readbac
 
 ### Example 4: Measure an external clock and inspect PPS timing
 
-Goal: validate that an external reference is present and that PPS timing is sane.
+Goal: validate that an external reference is present and inspect the PPS intervals.
 
 Measure the external clock:
 
@@ -149,12 +149,12 @@ What to expect:
 * one temperature reading per second
 * values track board temperature changes over time
 
-This is a good sanity check for the PP_PMOD I2C path before attempting DAC or external Qwiic
+This is a useful functional check for the PP_PMOD I2C path before attempting DAC or external Qwiic
 interfacing.
 
 See also: [pptemp - temperature reader](pptemp.md), [PP_PMOD Reference Shield](pp_pmod.md), and [PP_PMOD Hardware Reference](pp_pmod_reference.md).
 
-### Example 6: Generate an SPI/DDS programming sequence from host-side helper code
+### Example 6: Generate an SPI/DDS programming sequence with C++ helper code
 
 Goal: use the standalone sequence generators in [`tools/spi_payload/`]({{ source_file("tools/spi_payload/") }}) to control a peripheral from PulsePins.
 
@@ -182,7 +182,7 @@ When to use:
 
 The exact qout wiring and module-specific notes live in [`tools/spi_payload/README`]({{ source_file("tools/spi_payload/README") }}).
 
-### Example 7: Drive `ppscpi` from a host-side Python notebook
+### Example 7: Drive `ppscpi` from a workstation Python notebook
 
 Goal: keep Jupyter on a laptop or workstation while controlling a DE10-Nano over Ethernet.
 
@@ -192,7 +192,7 @@ On the board, start the SCPI server:
 ppscpi
 ```
 
-On the host, make the repository Python helpers importable:
+On the workstation, make the repository Python helpers importable:
 
 ```bash
 export PYTHONPATH=/path/to/PulsePins/python
@@ -238,7 +238,7 @@ What it does:
 * leaves the outputs at the last sequence value because no explicit `final ...` record is supplied
 * starts playback with `STREAM`
 
-This is the recommended first step for notebook integration. It avoids installing Jupyter on the board and keeps plotting, parameter sweeps, and data analysis on the host computer.
+This is the recommended first step for notebook integration. It avoids installing Jupyter on the board and keeps plotting, parameter sweeps, and data analysis on the workstation.
 
 For named-channel pulse construction, use `Timeline`:
 
@@ -286,5 +286,5 @@ As a rule of thumb:
 
 * use `ppfg` and `ppdelay` for immediate signal-generation tasks
 * use `ppread` / `ppplay` when capture and replay matter more than manual signal description
-* use `ppfreq` and `ppts` for validation of timing sources and timing observability
+* use `ppfreq` and `ppts` for measuring clock frequencies and inspecting timestamp samples
 * use the [`tools/`]({{ source_file("tools/") }}) helpers when you want to prototype device-specific bus transactions or payload generation

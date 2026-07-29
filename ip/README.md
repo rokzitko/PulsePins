@@ -1,8 +1,8 @@
-Verilog description of the FPGA circuitry.
+SystemVerilog/Verilog RTL for the FPGA circuitry.
 
 ## Main subsystems
 
-- `streamer` - primary pulse-sequence engine; accepts encoded sequence elements, applies trigger/gating policy, and produces the final `qout` stream
+- `streamer` - primary pulse-sequence engine; accepts encoded sequence elements, applies configured trigger/gating behavior, and produces the final `qout` stream
 - `rl_encoder_if` - run-length encoder used for readback/testing and for logic-analyzer-style capture workflows
 - `counter` - event counter and statistics subsystem for streamer verification and external-signal measurement
 - `ts_core` - timestamp capture path for trigger logging and synchronization workflows
@@ -28,7 +28,7 @@ That path covers the core programming model, verification path, and measurement 
 
 ## Verification and related docs
 
-- test benches use ModelSim or Icarus
+- testbenches use ModelSim or Icarus
 - main command: `make -C ip test`
 - testbench tree overview: `TESTBENCHES.md`
 - web docs entry points:

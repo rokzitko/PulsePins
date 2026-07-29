@@ -1,29 +1,29 @@
 # PulsePins pulse sequencer
 
-PulsePins is a general-purpose programmable pulse sequencer running on field-programmable gate array (FPGA) system-on-chip (SOC) modules, including [Cyclone V SoC FPGA](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html)-based boards.
-It targets low-speed (up to 100MHz) applications on a moderate number of digital output channels (typically 32 or 64).
+PulsePins is a general-purpose programmable pulse sequencer running on field-programmable gate array (FPGA) system-on-chip (SoC) modules, including [Cyclone V SoC FPGA](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html)-based boards.
+It targets low-speed (up to 100 MHz) applications on a moderate number of digital output channels (typically 32 or 64).
 It is scriptable via Python and C++. It can run on small compact FPGA modules, such as
-[Terasic DE10-Nano FPGA](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046)
-(68.6mmx107mm footprint) using Ethernet connectivity.
+[Terasic DE10-Nano](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046)
+(68.6 mm × 107 mm footprint) using Ethernet connectivity.
 
 Project repository: [https://github.com/rokzitko/PulsePins](https://github.com/rokzitko/PulsePins).
 
 ## Start here
 
-If you have access to a board, these are the best first entry points:
+If you have access to a board, these are the best first guides:
 
 * [Getting started with hardware](getting_started_hardware.md)
 * [Choose the right tool](choose_tool.md)
 * [Worked examples](examples.md)
 * [Extension cookbook](extension_cookbook.md)
 
-PulsePins is primarily a hardware-backed project. Host-side work is useful, but the main workflows and validation paths revolve around a real board.
+PulsePins is primarily a hardware-backed project. Development-machine work is useful, but the main workflows and validation paths revolve around a target board.
 
 ## Common tasks
 
 If you want to...
 
-* bring up a board or run a live sanity check:
+* bring up a board or run a quick live test:
     use [Getting started with hardware](getting_started_hardware.md), [Testing procedures](testing.md), `make board-smoke`, and [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
 * generate a quick digital pattern:
     use [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), or [`pphelloworld`](pphelloworld.md)
@@ -40,7 +40,7 @@ If you want to...
 
 PulsePins is well suited to:
 
-* digital pulse sequencing for laboratory equipment with approximately 10 ns timing resolution
+* digital pulse sequencing for laboratory equipment with a 10 ns programmable time step at a 100 MHz streamer clock
 * digital delay generation and synchronization
 * driving DACs, DDS chips, serializers, and other digital peripherals
 * exact capture/replay workflows via text, VCD, and binary sequence formats
@@ -55,7 +55,7 @@ SerDes circuits that generate high-speed signals on transceiver ports. For Pulse
 triggering with multiple trigger stages and multiple trigger input pins. The main application area
 is timing-critical control of quantum and other experimental devices that require precisely
 scheduled updates of signals (digital; analog via DAC boards; oscillatory via DDS boards). PulsePins is
-distributed both as modifiable source code (Verilog, C++, Python) and as a pre-built SD-card image for a quick start.
+distributed both as modifiable source code (SystemVerilog/Verilog RTL, C++, Python) and as a pre-built SD-card image for a quick start.
 
 This web site serves as the reference and user manual for PulsePins. It provides low-level implementation details,
 interfacing with the hard processor system (HPS), API, software library (C++ and Python interfaces), and testing tools. Timing diagrams are also provided.
@@ -82,8 +82,8 @@ The structure of each _element_ is as follows:
 * ``value_t v``: value payload (output data, trigger pattern, etc.)
 
 This list defines the standard order (as transmitted via Avalon-ST) and the standard variable names (``y``, ``c``, ``v``) of
-the three constituents. In the distributed reference build, the types ``control_t``, ``count_t`` and ``value_t`` are
-32-bit unsigned integers, i.e., ``uint32_t``; both the hardware description and the software library are written in such a way that expansion
+the three constituents. In the released DE10-Nano build, the types ``control_t``, ``count_t`` and ``value_t`` are
+32-bit unsigned integers, i.e., ``uint32_t``; both the RTL and the software library are written in such a way that expansion
 (to e.g. 64-bit values) or narrowing (to e.g. 16-bit values) is possible with a matching build configuration. The control register contains
 information about the exact meaning of the information contained in the two payload items: data updates ("regular
 elements", also known as "symbols"), trigger patterns and masks ("trigger elements", "trigger conditions", or simply
@@ -99,7 +99,7 @@ Defined in [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }})
 | BIT_TRIGGER       | 0           | regular element (0) or trigger element (1)                    |
 | BIT_TRIGGER_FINAL | 1           | intermediate trigger element (0) or final trigger element (1) |
 | BIT_TERMINATE     | 2           | data sequence terminator                                      |
-| BIT_NO_STROBE     | 3           | strobe (0) or no_strobe (1)                                   |
+| BIT_NO_STROBE     | 3           | `qout_valid` sample qualifier and strobe pulse (0) or neither (1) |
 | BIT_MODE*         | 4-7         | mode bits (load, set, clear, flip, invert, shift, etc.)       |
 | BIT_NOPASS        | 8           | preprocessor bit (0 = pass unmodified, 1 = preprocess)        |
 | BIT_STORE         | 9           | store in preprocessor memory                                  |
@@ -111,9 +111,9 @@ Defined in [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }})
 
 ### Element types
 
-Regular elements represent data updates. The data can be strobed out (BIT_NO_STROBE low) or not (BIT_NO_STROBE high). In both cases
-the data will be clocked out on the output bus using the streamer clock, but in the first case strobe signal will
-indicate the validity of the data (see below about the exact timing of the strobe signal with respect to the streamer
+Regular elements represent data updates. The data can assert the sample qualifier (BIT_NO_STROBE low) or not (BIT_NO_STROBE high). In both cases
+the data will be clocked out on the output bus using the streamer clock, but in the first case `streamer_qout_valid` qualifies the sample and
+`streamer_qout_strobe` emits the corresponding pulse (see below about the exact timing of the strobe pulse with respect to the streamer
 clock). For flexibility, regular elements can either specify the new value on the output bus, or encode a change (bit
 set, bit clear, bit flip, etc.). This is controlled by the "mode bits" in the control parameter.
 
@@ -136,7 +136,7 @@ marks the successful completion of a streaming run for the buffer-underrun detec
 ### Replay preprocessor
 
 PulsePins has a "preprocessor" in the input pipeline.  This implements a second level of
-run-length decoding (i.e., repetitions of the same sequence of run-length encoded events).
+run-length decoding (i.e., repetitions of the same sequence of run-length-encoded events).
 
 The preprocessor can store up to 8 elements (the size can be expanded).  A "replay" consists of
 repeatedly emitting these elements back into the queue.  If the number of repetition is set to 0, the
@@ -164,7 +164,7 @@ This design allows conditional streaming of different sequences based on the tri
 
 ## DMA streaming
 
-Streaming can proceed via direct memory access (DMA) up to 512MB in size without any intervention of the HPS, freeing
+Streaming can proceed via direct memory access (DMA) up to 512 MB in size without any intervention of the HPS, freeing
 the processor for other tasks. Except for the difference in the data channel and speed, streaming from DMA
 and through FIFO buffers is equivalent. For sequences with quickly changing signals at
 high streamer_clk frequencies, it may happen that a FIFO buffer underflow occurs. Such errors are detected and indicated
@@ -172,9 +172,9 @@ by the buffer_error LED lighting up. These are the situations where the DMA meth
 
 ## Output enable
 
-By default, all outputs and the valid signal are in the high-Z state and act as inputs (see
-[readback](readback.md) about using the device as a simple runlength-encoding logic analyzer).
-To enable the output buffers, the output enable (``oe``) must be set high.
+By default, the physical output drivers are in the high-Z state, so the pins act as inputs (see
+[readback](readback.md) about using the device as a simple logic analyzer with run-length encoding).
+To drive the pins, the physical output enable (``oe``) must be set high.
 
 ## Clocks and clock domains
 
@@ -183,11 +183,11 @@ PulsePins uses several important clocks. At the top level, the most important on
 actually selected streaming/output clock (`streamer_clk`).
 
 By default, `core_clk` and `int_clk` are both configured for 100 MHz operation. When `streamer_clk` is 100 MHz, the
-design provides 10 ns timing resolution for digital level updates. There is no fixed upper limit on pulse duration; it
+design uses a 10 ns programmable time step for digital level updates. There is no fixed upper limit on pulse duration; it
 is limited only by the counter width and the selected clock.
 
 The active `streamer_clk` can be switched between the internal clock path and an externally connected clock. The
-external clock is a 3.3 V CMOS signal applied to the `EXT_CLKp` input pin.
+external clock is a 3.3 V LVTTL signal applied to the `EXT_CLKp` input pin.
 
 The most important boundary between the main control side and the output side is the dual-clock output FIFO in
 [`ip/streamer/output_fifo.sv`]({{ source_file("ip/streamer/output_fifo.sv") }}).
@@ -197,9 +197,9 @@ For a fuller description of clock relationships, software clock switching, and t
 
 ## Signal routing
 
-### Pinout on the DE10 Nano
+### Pinout on the DE10-Nano
 
-The output data is presented on the GPIO 0 and GPIO 1 headers of Terasic DE10-nano board.
+The output data is presented on the GPIO 0 and GPIO 1 headers of the Terasic DE10-Nano board.
 
 ![PulsePins pinout](img/PulsePins.002.png){: style="height:400px"}
 
@@ -214,16 +214,16 @@ Color code in the schematic:
 | <font color="cyan">cyan</font>      | external clock inputs |
 | <font color="red">red</font>        | output data ports |
 
-In the reference implementation for the DE10 Nano FPGA development board, the signals are present on the following GPIO
+In the reference implementation for the DE10-Nano development board, the signals are present on the following GPIO
 pins (defined in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})). GPIO0[25:22] reflects the currently selected
 `EXTRA_SETB` debug mux; the alternate `EXTRA_SETA` build exposes streamer trigger visibility on those pins instead:
 
 | Connector | Index | Debug port | Name        | Description |
 | --------- | ----- | ----       | ----------- | -------- |
-| GPIO0     | 0     | D0         | <font color="orange">streamer_strobe</font>     | Data strobe |
-|           | 1     | D1         | <font color="orange">oe</font>                  | Output enable |
+| GPIO0     | 0     | D0         | <font color="orange">streamer_qout_strobe</font>     | Data strobe pulse |
+|           | 1     | D1         | <font color="orange">oe</font>                  | Physical output enable |
 |           | 2     | D2         | <font color="orange">streamer_clk</font>        | Streamer clock |
-|           | 3     | D3         | <font color="orange">streamer_qout_valid</font> | Valid/enable signal for data output (qout) |
+|           | 3     | D3         | <font color="orange">streamer_qout_valid</font> | Sample qualifier for data output (qout) |
 |           | 4     |            | <font color="orange">activity</font>            | Activity detected (high when data is being streamed out) |
 |           | 5     |            | <font color="orange">heartbeat</font>           | Pulses when FPGA bitstream is loaded |
 |           | 6     | D8         | <font color="green">trigger_armed</font>        | PulsePins is waiting for the trigger event to occur |
@@ -233,7 +233,7 @@ pins (defined in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})). GPIO0[25:
 |           | 10    |            | <font color="darkblue">ext_trigger_enable</font>    | Trigger enable (make PulsePins sensitive to trigger signals) |
 |           | 11    |            | <font color="darkblue">ext_trigger_force</font>     | External trigger force (unconditional) |
 |           | 12    |            | <font color="darkblue">ext_trigger_reset</font>     | Reset the trigger circuit |
-|           | 13    |            | <font color="darkblue">gate_in</font>               | Gate signal |
+|           | 13    |            | <font color="darkblue">gate_in</font>               | Output-advancement gate input |
 |           | 21:14 |            | <font color="darkblue">ext_trigger_in[7:0]</font>   | Trigger inputs |
 |           | 22    | D12        | <font color="lightskyblue">rnd1</font>                            | Synthetic random debug signal (`EXTRA_SETB`) |
 |           | 23    | D13        | <font color="lightskyblue">rnd2</font>                            | Synthetic random debug signal (`EXTRA_SETB`) |
@@ -272,9 +272,9 @@ The remaining on-board LEDs on DE10-Nano board are connected as follows by defau
 * pin 6: activity
 * pin 7: heartbeat
 
-Activity LED lights up if at least one low-to-high transition is detected within 200ms on the
-streamer_strobe signal. Heartbeat pulses each second if the FPGA bitstream is loaded and
-the clock is running (at the default rate of 100MHz).
+Activity LED lights up if at least one low-to-high transition is detected within 200 ms on the
+streamer_qout_strobe signal. Heartbeat pulses each second if the FPGA bitstream is loaded and
+the clock is running (at the default rate of 100 MHz).
 
 ## Trigger system
 
@@ -349,23 +349,23 @@ PPS_IN signal is connected to pin 2 of the MISC port.
 
 Streaming is synchronous with the read clock which must be running continuously.
 
-### Clocking (strobe)
+### Clocking (sample qualifier and strobe pulse)
 
 Example of a successful decoding run of a short sequence (counter from 0 to 7). After the trigger is activated,
-streamer_qout_valid is asserted at the next rising edge of streamer_clk. The data can be read out in two ways:
+`streamer_qout_valid` is asserted at the next rising edge of `streamer_clk` to qualify the output sample. The data can be read out in two ways:
 
-* at the rising edges of streamer_clk, when streamer_qout_valid is asserted
-* at the rising edges of streamer_strobe
+* at the rising edges of `streamer_clk`, when `streamer_qout_valid` qualifies the sample
+* at the rising edges of the `streamer_qout_strobe` pulses
 
-Streamer strobe is asserted in the middle of the period (i.e., when streamer_clk is deasserted,
+The `streamer_qout_strobe` pulse is asserted in the middle of the period (i.e., when `streamer_clk` is deasserted,
 thus out of phase with the clock).
 
-The first approach (using _valid_ semantics) is potentially more reliable at high frequencies,
-because the signal is guaranteed to be settled at the rising edges of streamer_clk; there is no
-guarantee for this to be the case at the rising edges of streamer_strobe (but in practice the
+The first approach (using the sample qualifier) is potentially more reliable at high frequencies,
+because the signal is guaranteed to be settled at the rising edges of `streamer_clk`; there is no
+guarantee for this to be the case at the rising edges of `streamer_qout_strobe` (but in practice the
 signals are stabilized by then at all frequencies of practical interest).
 
-The second approach (using _strobe_ semantics) is potentially more reliable in slow digital logic
+The second approach (using the strobe pulse) is potentially more reliable in slow digital logic
 systems which may have issues with high slew rates, i.e., those that require long hold times after
 the rising edge of the clock signal in order for flip-flips to function reliably.
 
@@ -407,8 +407,8 @@ PulsePins has been successfully extended to 64 output channels and to a 64-bit s
 only the 32-bit version (32-bit for both data and count registers) is distributed as a prebuilt binary.
 
 PulsePins is portable to other Altera/Intel FPGA solutions and it has been tested, for example, on Arria 10
-FPGAs for driving 10Gbps transceivers, specifically on [Terasic HAN
-Pilot](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=1133), reaching 100ps timing accuracy.
+FPGAs for driving 10 Gb/s transceivers, specifically on [Terasic HAN
+Pilot](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=1133), corresponding to a 100 ps unit interval.
 
 ![PulsePins logo](img/pulsepins.jpg){: .heartbeat style="height:100px;width:100px"}
 { .blink-img }

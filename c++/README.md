@@ -1,6 +1,6 @@
-PulsePins host-side software lives in `c++/`.
+PulsePins C++ software lives in `c++/`.
 
-This directory contains the ARM-side C++ code that configures the FPGA fabric, streams pulse programs, runs self-tests, exposes measurement blocks, and provides the command-line tools shipped as `pptool` and its symlink-based modes.
+This directory contains the board-control code that configures the FPGA fabric, streams pulse programs, runs self-tests, and exposes measurement blocks. It also contains the portable sequence model and the command-line tools shipped as `pptool` and its symlink-based modes.
 
 ## What lives here
 
@@ -20,42 +20,42 @@ This directory contains the ARM-side C++ code that configures the FPGA fabric, s
 - `pptool_commands.hh` - catalog of supported `pp...` command handlers
 - `pptool_streaming.cc` - commands that primarily drive the streamer datapath
 - `pptool_measurement.cc` - commands for readback, counters, timestamps, temperature, and frequency measurement
-- `host_runtime.hh` - shared bootstrap/runtime object used by the main host-side executables
-- `fpga.hh` - top-level ARM-side ownership of memory maps, PLL helpers, trigger monitors, and output-enable GPIO
-- `startup.hh` - common process bootstrap and FPGA startup policy
+- `host_runtime.hh` - shared bootstrap/runtime type used by the main target-board executables
+- `fpga.hh` - top-level HPS-side ownership of memory maps, PLL helpers, trigger monitors, and the physical `oe` GPIO
+- `startup.hh` - common process bootstrap and FPGA startup configuration
 - `options.hh` - typed option-resolution helpers shared by startup, trigger, streamer, and measurement code
 - `ppworkflow.hh` - shared send/trigger/readback/check workflow used by several commands
-- `elements.hh` and `sequence.hh` - host-side representation of pulse programs and trigger elements, including text/VCD import and exact binary serialization
-- `streamer_control.hh`, `streamer_fifo.hh`, `streamer_dma.hh`, `basic_multi_dma.hh` - host-side streamer lifecycle control and transport/topology helpers
+- `elements.hh` and `sequence.hh` - portable C++ representation of pulse programs and trigger elements, including text/VCD import and exact binary serialization
+- `streamer_control.hh`, `streamer_fifo.hh`, `streamer_dma.hh`, `basic_multi_dma.hh` - HPS-side streamer lifecycle control and transport/topology helpers
 - `streamer*.hh`, `readback.hh`, `counter.hh`, `timestamp.hh`, `freq_meter.hh` - typed wrappers around major FPGA subsystems
 
-## Host-side architecture
+## C++ architecture
 
 At a high level the control flow is:
 
-1. `main()` in `pptool.cc` builds a `HostRuntime`, which parses options, applies shared process/bootstrap policy, constructs the single `FPGA` object, and performs the startup frequency-meter report.
-2. `startup.hh` applies clock-selection and PLL policy before command execution begins.
+1. `main()` in `pptool.cc` builds a `HostRuntime`, which parses options, applies shared process/bootstrap behavior, constructs the single `FPGA` instance, and performs the startup frequency-meter report.
+2. `startup.hh` applies clock-selection and PLL configuration before command execution begins.
 3. The executable name (`pptool`, `ppfg`, `ppcounter`, and so on) selects a command handler from the dispatch table in `pptool.cc`.
 4. Command handlers construct typed subsystem wrappers such as `streamer`, `readback`, `counter`, `timestamp`, or `freq_meter`.
 5. Streaming-oriented commands typically build a `Sequence`, transmit it through a transport (`streamer_fifo` or DMA-based transport), then use `send_and_trig(...)` from `ppworkflow.hh` to coordinate triggering, completion checks, CRC verification, and optional readback validation.
 
 This split is intentional:
 
-- `host_runtime.hh` owns the shared executable bootstrap and startup-report policy.
+- `host_runtime.hh` owns the shared executable bootstrap and startup reporting behavior.
 - `pptool*.cc` files define user-facing behavior and option handling.
 - wrapper headers expose hardware blocks as typed C++ interfaces.
 - sequence classes model the programmable pulse stream in a way that can be reused by CLI tools, tests, and future bindings.
 
-## Hardware lifetime policy
+## Hardware wrapper lifetime
 
-Some host-side wrapper graphs are sensitive not only to call ordering but also to object lifetime and storage layout on the deployed target.
+Some HPS-side hardware wrappers are sensitive not only to call ordering but also to instance lifetime and storage layout on the target board.
 
-- Keep hardware-owning runtime objects in one anchored owner for the full process lifetime.
-- Do not copy, move, or re-own objects that directly hold FPGA-facing wrappers, MMIO helpers, or transport/control blocks.
+- Keep hardware-owning runtime instances in one anchored owner for the full process lifetime.
+- Do not copy, move, or re-own instances that directly hold FPGA-facing wrappers, MMIO helpers, or transport/control blocks.
 - If higher layers need access, pass a pointer or reference to the anchored owner instead of embedding or relocating it.
-- When refactoring, prefer adding thin adapter layers over changing where hardware-owning objects live.
+- When refactoring, prefer adding thin adapter layers over changing where hardware-owning instances live.
 
-`ppwebgui` is the current concrete example of this rule: `WebGuiController` must remain a stable owner of the hardware-facing object graph, while the HTTP/UI layer talks to it through non-owning service adapters.
+`ppwebgui` is the current concrete example of this rule: `WebGuiController` must remain a stable owner of the hardware wrappers, while the HTTP/UI layer talks to it through non-owning service adapters.
 
 ## ppwebgui module map
 
@@ -63,7 +63,7 @@ The current `ppwebgui` split is intentionally layered:
 
 - `ppwebgui_main.cc` handles only process entry.
 - `ppwebgui_app.cc` is the composition root and the only place that anchors the `WebGuiController` instance.
-- `ppwebgui_server.cc` owns `httplib::Server`, bind/listen policy, and startup URL reporting for the web server process.
+- `ppwebgui_server.cc` owns `httplib::Server`, bind/listen configuration, and startup URL reporting for the web server process.
 - `ppwebgui_service.cc` owns hardware-facing wrappers and executes value-based requests.
 - `ppwebgui_service_api.cc` exposes a non-owning interface bridge for GUI/HTTP code.
 - `ppwebgui_http.cc` converts HTTP requests into value requests and registers routes.
@@ -81,7 +81,7 @@ The current `ppwebgui` control flow is:
 2. `ppwebgui_app.cc` anchors the single `WebGuiController` instance and creates the non-owning `WebGuiService` adapter.
 3. `ppwebgui_server.cc` creates `httplib::Server`, wires routes/assets, binds, and starts listening.
 4. `ppwebgui_http.cc` parses requests into value requests and forwards them through `WebGuiService`.
-5. `ppwebgui_service.cc` executes those value requests against the hardware-owning wrapper graph and returns value snapshots/results.
+5. `ppwebgui_service.cc` executes those value requests against the hardware wrappers and returns value snapshots/results.
 6. `ppwebgui_json.cc` renders returned snapshots/results into HTTP responses.
 
 The app/server/http side should continue to communicate through small value types such as:
@@ -91,11 +91,11 @@ The app/server/http side should continue to communicate through small value type
 - `WebGuiAssets`
 - `WebGuiHttpOptions`
 
-That keeps the non-hardware layers explicit and prevents them from reaching into broader runtime or hardware objects.
+That keeps the non-hardware layers explicit and prevents them from reaching into broader runtime state or hardware wrappers.
 
 ## Main extension points
 
-If you want to customize or extend the host software, the usual starting points are:
+If you want to customize or extend the C++ software, the usual starting points are:
 
 - add a new CLI mode: implement a new `pp...` function and register it in the dispatch table in `pptool.cc`
 - add a new sequence construct: extend `elements.hh` and `sequence.hh`, then update the relevant command or parser path. Prefer the immutable `el` helpers and shared reconstruction/token utilities in `elements.hh` over new ad hoc setter choreography or duplicated control-bit decoding.
@@ -126,19 +126,19 @@ That order mirrors the path a user command takes from CLI invocation down to FPG
 
 ## Verification and related docs
 
-- build host tools: `make -C c++ build`
+- build C++ tools: `make -C c++ build`
 - run unit tests: `make -C c++ test`
-- check whitespace policy: `make -C c++ lint-whitespace`
+- check whitespace rules: `make -C c++ lint-whitespace`
 - broader contributor workflow: `HACKING.md`
 - C++ API overview: `docs/docs/cpp.md`
 - CLI command overview: `docs/docs/pptool.md`
 - hardware subsystem reference: `docs/docs/counter.md`, `docs/docs/freq_meter.md`, `docs/docs/timestamp.md`, `docs/docs/details.md`
 
-## Whitespace policy
+## Whitespace rules
 
 - C++ files use spaces only, never tabs.
 - Indentation width is 2 spaces.
 - Leading indentation must be divisible by 2.
 - Lines use LF endings, no trailing whitespace, and end with a final newline.
-- This policy intentionally does not enforce a single brace style or broad auto-formatting.
+- These rules intentionally do not enforce a single brace style or broad auto-formatting.
 - `.editorconfig` is the editor-facing source of truth, and `make -C c++ lint-whitespace` checks compliance.

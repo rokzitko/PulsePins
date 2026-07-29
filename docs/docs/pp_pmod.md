@@ -1,6 +1,6 @@
 # PP_PMOD Reference Shield
 
-`PP_PMOD` is the reference KiCad shield design for attaching PulsePins to the DE10-Nano GPIO headers and bringing the FPGA I/O out to lab-friendly connectors.
+`PP_PMOD` is the reference KiCad shield design for attaching PulsePins to the DE10-Nano GPIO headers and bringing the SoC FPGA I/O out to lab-friendly connectors.
 
 It is an optional hardware profile rather than a required baseline. The board is intended both as a usable shield and as a starting point for derivative designs with different connectors, buffering, or peripheral choices.
 
@@ -32,7 +32,7 @@ The reference design includes:
 * test points and probe-grounding features
 * optional oscillator-module footprints and optional input terminations
 
-The `QOUT`, `AUX`, and trigger connector groups use PMOD-style 2x6 mechanics; for the baseline mechanical/electrical convention, see the [Pmod Interface Specification](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf).
+The `QOUT`, `AUX`, and trigger connector groups use Pmod-style 2 × 6 mechanics; for the baseline mechanical/electrical convention, see the [Pmod Interface Specification](https://digilent.com/reference/_media/reference/pmod/pmod-interface-specification-1_3_1.pdf).
 
 All of the external connector-facing signal groups in the design are protected with ESD devices.
 
@@ -89,7 +89,7 @@ Quick reference for the board's main external interfaces:
 
 Examples worth documenting or reproducing on this board include:
 
-* LED PMOD output checks with [`pptest`](pptest.md)
+* LED Pmod output checks with [`pptest`](pptest.md)
 * onboard `MCP9808` reads with [`pptemp`](pptemp.md) or [`I2C/mcp9808.py`]({{ source_file("I2C/mcp9808.py") }})
 * external Qwiic `TMP117` reads with [`I2C/tmp117.py`]({{ source_file("I2C/tmp117.py") }})
 * DAC output checks with [`I2C/ad5693_set_vout.py`]({{ source_file("I2C/ad5693_set_vout.py") }})

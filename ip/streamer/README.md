@@ -1,6 +1,6 @@
 PulsePins streamer subsystem.
 
-This directory contains the RTL for the main pulse-sequence engine: it accepts encoded sequence elements on the control side, expands them into output updates, applies trigger and gating policy, and emits the final `qout` stream in the selected streaming clock domain.
+This directory contains the RTL for the main pulse-sequence engine: it accepts encoded sequence elements on the control side, expands them into output updates, applies configured trigger and gating behavior, and emits the final `qout` stream in the selected streaming clock domain.
 
 ## Main files
 
@@ -24,9 +24,9 @@ The streaming path is intentionally split into two domains:
 
 At a high level the flow is:
 
-1. the host or DMA engine sends encoded `{control, counter, data}` elements into `st_interface.sv`
+1. HPS-side software or the DMA engine sends encoded `{control, counter, data}` elements into `st_interface.sv`
 2. `st_interface.sv` byte-swaps them into the internal layout and forwards them to `streamer.sv`
-3. `input_fifo.sv` absorbs bursty host traffic and provides backpressure through `asi_ready`
+3. `input_fifo.sv` absorbs bursty HPS-side traffic and provides backpressure through `asi_ready`
 4. regular elements go to `rl_decoder.sv`, while trigger elements are consumed by `chain_trigger.sv`
 5. decoder output is buffered by `output_fifo.sv`, which crosses into `streamer_clk`
 6. `chain_trigger.sv` decides when output is allowed to advance
@@ -56,7 +56,7 @@ Important behavioral points:
 - `buffer_error` indicates output-side underrun
 - static output/gating configuration written from Avalon-MM crosses into `streamer_clk` as a
   coherent CDC bundle and is applied only while the streamer is idle or in streamer reset
-- live status, CRC, output value, and output-side counter readbacks are control-domain snapshots
+- live status, CRC, output value, and output-side counter readout values are control-domain snapshots
   of `streamer_clk` state, not direct asynchronous samples
 
 ## Key customization points
@@ -79,7 +79,7 @@ If you want to customize the streamer, the usual starting points are:
 6. `output_fifo.sv`
 7. `chain_trigger.sv`
 
-That order follows the boundary from software-visible control surfaces toward the deeper implementation details.
+That order follows the boundary from software-visible control interfaces toward the deeper implementation details.
 
 ## Verification and related docs
 

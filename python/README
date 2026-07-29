@@ -1,16 +1,16 @@
-This directory contains two Python surfaces:
+This directory contains two Python interfaces:
 
-* `pulsepins/` - a pure-Python SCPI client for host-side scripts and notebooks
-* `pp` / `pp_impl` - nanobind extension modules for direct board-side access
+* `pulsepins/` - a pure-Python SCPI client for scripts and notebooks running on a workstation
+* `pp` / `pp_impl` - nanobind extension modules for direct HPS-side access
 
 This is the supported production build path for the nanobind Python bindings.
 
-The Python extension modules are intended to be built on the DE10-Nano board itself.
-Host-side Python builds are useful for import/syntax/API testing, but true cross-compilation of
+The Python extension modules are intended to be built on the DE10-Nano itself.
+Python builds on a development machine are useful for import/syntax/API testing, but true cross-compilation of
 the Python bindings is not currently supported.
 
 The `pulsepins` SCPI client does not need a build step. From a checkout, either use
-`PYTHONPATH=/path/to/PulsePins/python` or install the host-side package in editable mode:
+`PYTHONPATH=/path/to/PulsePins/python` or install the `pulsepins` package in editable mode:
 
 python3 -m pip install -e /path/to/PulsePins/python
 
@@ -19,9 +19,9 @@ The editable install provides `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`
 It also includes a dependency-free `Timeline` builder that can generate PulsePins text sequences,
 round-trip browser-compatible Timeline CSV/draft JSON, export VCD previews, and render SVG previews in notebooks.
 See `examples/timeline_preview.py` and `examples/timeline_stream.py` for small runnable workflows.
-`examples/timeline_sweep.py` shows a simple host-side parameter sweep.
+`examples/timeline_sweep.py` shows a simple parameter sweep from a workstation.
 
-Host-side board test from a checkout:
+Test a target board from a workstation checkout:
 
 1. If you use a virtual environment, activate it before installing or running the commands. For example:
 
@@ -31,7 +31,7 @@ Host-side board test from a checkout:
 
    conda activate pulsepins
 
-2. Install the host-side package in editable mode:
+2. Install the `pulsepins` package in editable mode:
 
    python3 -m pip install -e ./python
 
@@ -47,7 +47,7 @@ Host-side board test from a checkout:
 
    pulsepins-notebook-workflow --output-dir /tmp/pulsepins-previews
 
-6. To run the notebook-style workflow against the board:
+6. To run the notebook-style workflow against the target board:
 
    pulsepins-notebook-workflow de10nano --output-dir /tmp/pulsepins-live --run
 
@@ -89,4 +89,4 @@ Sequence elements now follow the same flattened `el` API as the C++ layer. Prefe
 * `pp.el(counter, value_wrapper)` for regular non-`BITLOAD` elements
 * `stored_in(...)`, `with_count(...)`, `with_counter(...)`, `with_regular_value(...)`, and `as_bitload_after(...)` for immutable element updates
 
-For the full current binding surface, see `docs/docs/python.md`.
+For the full current binding interface, see `docs/docs/python.md`.

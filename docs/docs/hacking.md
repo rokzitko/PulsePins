@@ -63,11 +63,11 @@ Good if you want to work on the hardware architecture.
 Typical work:
 
 * improve IP blocks
-* add or extend test benches
+* add or extend testbenches
 * improve CDC/reset structure
 * document register maps and interfaces
 
-Simulation-only RTL work is useful. Test benches help with both verification and documentation of interfaces and behavior.
+Simulation-only RTL work is useful. Testbenches help with both verification and documentation of interfaces and behavior.
 
 Start here:
 
@@ -84,7 +84,7 @@ The most accessible areas are:
 * docs
 * Python bindings
 * parsing and sequence logic in C++
-* RTL simulation and test benches
+* RTL simulation and testbenches
 
 Helpful commands:
 
@@ -102,7 +102,7 @@ If you have a DE10-Nano and the PulsePins environment running, you can also work
 * end-to-end streaming verification
 * frequency/timestamp/trigger workflows
 * board bring-up and shield documentation
-* PMOD, clocking, and instrument-integration writeups
+* Pmod, clocking, and instrument-integration writeups
 
 See also [Getting started with hardware](getting_started_hardware.md).
 
@@ -118,7 +118,7 @@ Examples:
 * improve an error message
 * add a recipe for a real lab workflow
 
-Community-contributed artifacts such as wiring diagrams, timing diagrams, screenshots, scope traces, logic-analyzer captures, and photos of custom hardware setups are also very welcome.
+Community contributions such as wiring diagrams, timing diagrams, screenshots, scope traces, logic-analyzer captures, and photos of custom hardware setups are also very welcome.
 
 ### Community direction
 

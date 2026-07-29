@@ -1,6 +1,6 @@
 # IP testbenches
 
-This file is the entry point for understanding the simulation testbench tree under `ip/`.
+This file provides an overview of the simulation testbench tree under `ip/`.
 
 ## What these testbenches are for
 
@@ -9,7 +9,7 @@ The testbenches in `ip/` mix several styles of verification:
 * direct functional checks of datapath behavior
 * Avalon-MM / Avalon-ST wrapper and register-interface checks
 * integration tests across multiple internal blocks
-* randomized sanity loops for repeated register-programmed scenarios
+* randomized regression loops for repeated register-programmed scenarios
 * timing/latency-sensitive checks where cycle alignment matters
 
 The goal is not only to catch regressions, but also to explain what each subsystem promises at its external interface.
@@ -67,5 +67,4 @@ For the main PulsePins data path, start with:
 5. `rl_encoder_if/tb_rl_encoder_if/`
 6. `counter/tb_counter_if/`
 
-That sequence follows the same path a host-generated sequence takes through the hardware and back through the observability path.
-
+That sequence follows a software-generated sequence through the streamer and then through the readback and counter paths.

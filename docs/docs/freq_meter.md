@@ -23,7 +23,7 @@ The design counts transitions in each input clock domain and transfers per-chann
 
 The measurement path is intentionally CDC-heavy because each observed signal is itself a running clock. Rather than sampling those clocks directly in the Avalon domain, the hardware increments a per-channel counter in the input-clock domain, converts it to Gray code, synchronizes that Gray value into the gate/reference clock domain, and computes a delta at the end of each gate interval.
 
-One important consequence is that the reported values are per-gate edge counts, not continuously updated instantaneous frequencies. The host-side wrapper is responsible for turning those per-gate counts into Hz.
+One important consequence is that the reported values are per-gate edge counts, not continuously updated instantaneous frequencies. The ARM-side wrapper is responsible for turning those per-gate counts into Hz.
 
 For gate-update and CDC latency notes, see [RTL latency and timing](latency.md).
 

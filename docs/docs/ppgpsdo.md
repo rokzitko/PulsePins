@@ -1,12 +1,12 @@
 # ppgpsdo
 
-`ppgpsdo` is a reference implementation of a GNSS-disciplined oscillator.
+`ppgpsdo` is a reference implementation of a GPS-disciplined oscillator (GPSDO) using PPS from a GNSS receiver.
 
 It reuses the same timestamp-capture infrastructure as `ppts`, but instead of only printing events it pairs PPS and auxiliary timestamps, derives a timing error, and drives a DAC through a PID controller.
 
 Requirements:
 
-* FPGA running the PulsePins design with an external clock signal (`EXT_CLK`) from a tunable oscillator such as an OCXO or TCXO
+* target board running the PulsePins FPGA design with an external clock signal (`EXT_CLK`) from a tunable oscillator such as an OCXO or TCXO
 * pulse-per-second signal from a GNSS receiver applied to the PPS pin
 * DAC on [PP_PMOD](pp_pmod_reference.md) controlling the frequency of the tunable oscillator
 

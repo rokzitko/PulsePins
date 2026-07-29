@@ -1,4 +1,4 @@
-Tools for building the SD card image for the DE10-Nano board.
+Tools for building the SD card image for the DE10-Nano.
 
 First build PulsePins by running `make` in the repository root. Then run the scripts in this directory to build the image.
 

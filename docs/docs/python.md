@@ -2,12 +2,12 @@
 
 PulsePins has two Python interfaces:
 
-* `pulsepins` - a pure-Python, host-side [SCPI](https://www.ivifoundation.org/About-IVI/scpi.html) client for scripts and Jupyter notebooks talking to a board running `ppscpi`
+* `pulsepins` - a pure-Python [SCPI](https://www.ivifoundation.org/About-IVI/scpi.html) client for scripts and Jupyter notebooks running on a workstation and talking to a board running `ppscpi`
 * `pp` - nanobind extension module for the underlying C++ interface
 
-## Host-side SCPI client
+## Workstation SCPI client
 
-The host-side client lives in [`python/pulsepins/`]({{ source_file("python/pulsepins/") }}) and has no dependency beyond the Python standard library. It is the recommended Python entry point for notebooks running on a laptop or workstation while the DE10-Nano runs `ppscpi`.
+The workstation client lives in [`python/pulsepins/`]({{ source_file("python/pulsepins/") }}) and has no dependency beyond the Python standard library. It is the recommended Python interface for notebooks running on a laptop or workstation while the DE10-Nano runs `ppscpi`.
 
 SCPI is here used as a lightweight ASCII command protocol over TCP for PulsePins-specific commands rather than as a complete SCPI instrument-class implementation.
 
@@ -17,7 +17,7 @@ From a repository checkout, either set `PYTHONPATH`:
 export PYTHONPATH=/path/to/PulsePins/python
 ```
 
-or install the pure-Python host package in editable mode:
+or install the pure-Python client package in editable mode:
 
 ```bash
 python3 -m pip install -e /path/to/PulsePins/python
@@ -83,13 +83,13 @@ pulsepins-timeline-stream de10nano --print-sequence
 pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ```
 
-Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting absolute-time pulses; pass `--clock-hz` only when you need to override the board-reported clock. Hardware-free preview and sweep `--dry-run` use the supplied/default dry-run clock.
+Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting absolute-time pulses; pass `--clock-hz` only when you need to override the board-reported clock. Offline preview and sweep `--dry-run` use the supplied/default dry-run clock.
 
 ## Board-native bindings
 
 PulsePins uses [nanobind](https://nanobind.readthedocs.io/en/latest/) to provide Python bindings for the underlying C++ interface.
 
-The board-native `pp` / `pp_impl` bindings are intended for trusted board-local code. Accounts that can run these bindings should be treated as privileged/root-equivalent: the low-level hardware bindings expose `/dev/mem`-backed MMIO access, and the DMA helpers accept raw physical addresses/descriptors. Use the host-side `pulsepins` SCPI client with a controlled `ppscpi` service for non-root, remote, or less-trusted workflows.
+The board-native `pp` / `pp_impl` bindings are intended for trusted board-local code. Accounts that can run these bindings should be treated as privileged/root-equivalent: the low-level hardware bindings expose `/dev/mem`-backed MMIO access, and the DMA helpers accept raw physical addresses/descriptors. Use the workstation `pulsepins` SCPI client with a controlled `ppscpi` service for non-root, remote, or less-trusted workflows.
 
 The Python binding tree lives in [`python/`]({{ source_file("python/") }}) and builds two modules:
 
@@ -109,7 +109,7 @@ Text and binary sequence helpers preserve terminal explicit `final`, trigger, re
 There are two practical ways to build/test the Python bindings:
 
 * build on the DE10-Nano board - this is the supported production path
-* build on a host machine - useful for syntax/import/API testing only
+* build on a development machine - useful for syntax/import/API testing only
 
 True cross-compilation of the Python bindings is not supported.
 
@@ -131,11 +131,11 @@ If you need debug symbols while developing the bindings, use:
 make PY_DEBUG=1
 ```
 
-## Host-side testing
+## Testing on a development machine
 
-Host-side builds are useful for checking that the binding code compiles and imports cleanly.
+Builds on a development machine are useful for checking that the binding code compiles and imports cleanly.
 
-The recommended host-side command is:
+The recommended command for this build is:
 
 ```bash
 make -C python USE_PREGENERATED=1 build test-host
@@ -164,7 +164,7 @@ Supported `pp.el(...)` constructors include:
 * `pp.el()` - final element with the default final output value
 * `pp.el(value)` - final element with an explicit final output value
 * `pp.el(count, value)` - regular `BITLOAD` element
-* `pp.el(counter, value)` - regular `BITLOAD` element with explicit `Counter` policy
+* `pp.el(counter, value)` - regular `BITLOAD` element with an explicit `Counter` object
 * `pp.el(counter, value_wrapper)` - regular element with explicit `Counter` and `Value` wrapper semantics
 * `pp.el(pattern, mask, final)` - trigger element
 * `pp.el(pp.Replay(), repetitions, length)` - replay element; `length` must not exceed the fast-memory depth (`POSITIONS`)
@@ -213,14 +213,14 @@ Python method defaults match the C++ defaults for `loc.read(...)`, `loc.write(..
 
 The Python bindings expose the shared C++ sequence-preparation helpers as `pp.prepare_sequence_for_streaming(...)` and `pp.prepare_sequence_for_readback_check(...)`. These are the preferred helpers when Python code needs the same appended-final, inferred-final, and normalized readback-reference behavior as the C++ streaming workflow. `streamer_control.trigger_clear()` is also available for forced-trigger cleanup.
 
-The small helper scripts in [`python/pptool.py`]({{ source_file("python/pptool.py") }}) and [`tests/test2.py`]({{ source_file("tests/test2.py") }}) use the same conservative defaults as the shared C++ workflow: 2s readback timeout protection and a 10s streamer-completion timeout, with `timeout=0` disabling the readback timeout.
+The small helper scripts in [`python/pptool.py`]({{ source_file("python/pptool.py") }}) and [`tests/test2.py`]({{ source_file("tests/test2.py") }}) use the same conservative defaults as the shared C++ workflow: 2 s readback timeout protection and a 10 s streamer-completion timeout, with `timeout=0` disabling the readback timeout.
 
 ## Testing expectations
 
 `make -C python test` runs the Python test files listed in [`python/Makefile`]({{ source_file("python/Makefile") }}): [`test.py`]({{ source_file("python/test.py") }}), [`test_cli.py`]({{ source_file("python/test_cli.py") }}), [`test_scpi_client.py`]({{ source_file("python/test_scpi_client.py") }}), and [`test_timeline.py`]({{ source_file("python/test_timeline.py") }}).
 
 Some Python tests exercise board-backed MMIO/FPGA behavior, so they should not be treated as a
-strictly hardware-free test battery.
+strictly hardware-independent test battery.
 
 See also:
 

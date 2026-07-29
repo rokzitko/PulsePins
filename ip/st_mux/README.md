@@ -26,7 +26,7 @@ The Avalon-MM interface exposes:
 - addresses `0` and `1` on read: low/high words of input-1 transfer counter
 - addresses `2` and `3` on read: low/high words of input-2 transfer counter
 
-This model is mirrored by the host-side wrapper in `c++/st_mux.hh`.
+This model is mirrored by the HPS-side wrapper in `c++/st_mux.hh`.
 
 ## Reading order for maintainers
 
@@ -37,4 +37,4 @@ This model is mirrored by the host-side wrapper in `c++/st_mux.hh`.
 ## Verification and related docs
 
 - subsystem overview: `docs/docs/st_mux.md`
-- host-side wrapper: `c++/st_mux.hh`
+- HPS-side wrapper: `c++/st_mux.hh`

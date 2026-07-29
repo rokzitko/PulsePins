@@ -8,17 +8,17 @@ executables, not by ``pptool`` symlinks. Those are ``ppscpi``, ``ppwebgui``, and
 
 ## Dispatch model
 
-The main executable entry point lives in [`c++/pptool.cc`]({{ source_file("c++/pptool.cc") }}).
+The `main()` function and command dispatch table live in [`c++/pptool.cc`]({{ source_file("c++/pptool.cc") }}).
 
-At startup it performs the shared host-side bootstrap:
+At startup it performs the shared target-board startup sequence:
 
 1. build a `HostRuntime` from [`c++/host_runtime.hh`]({{ source_file("c++/host_runtime.hh") }})
-2. parse command-line options and enable the common runtime policy
-3. construct the single `FPGA` object and apply the default clock/PLL startup policy
+2. parse command-line options, lock memory, and enable real-time scheduling
+3. construct the single `FPGA` object and apply the requested FPGA reset, clock/PLL, and LED startup settings
 4. run the startup frequency-meter report that also caches `streamer_clk` in the `FPGA` object
 5. dispatch to a tool-specific handler based on the executable name
 
-This means `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and several other commands are all different front doors into the same host-side runtime.
+This means `pptool`, `ppfg`, `ppcounter`, `ppdelay`, and several other command names are dispatched by the same target-board runtime.
 
 The clock-selection and PLL choices consumed during startup are resolved by [`c++/options.hh`]({{ source_file("c++/options.hh") }}), applied by [`c++/startup.hh`]({{ source_file("c++/startup.hh") }}), and packaged together by [`c++/host_runtime.hh`]({{ source_file("c++/host_runtime.hh") }}), which keeps startup behavior aligned across the main executables.
 
@@ -33,8 +33,8 @@ change timing or mask hardware-check failures, so avoid them in normal automated
 unless the caller deliberately wants that behavior.
 
 * `-exit_delay T` or `PP_EXIT_DELAY`: sleep for the requested time after the command has finished its main work, keeping outputs and status stable briefly before process exit.
-* `-rbmode 1` or `PP_RBMODE=1`: select the supported readback valid/clock mode. Other readback strobe modes are not available in the current build.
-* `-stop_on_buffer_error` or `-sobe`: request streamer stop-on-buffer-error behavior when a command constructs the shared streamer helper. With the default policy, underrun is still latched in `buffer_error` and playback may continue until a terminator, but `done` remains clean-completion-only.
+* `-rbmode 1` or `PP_RBMODE=1`: select the supported readback valid/clock mode. The alternate strobe-clocked readback mode requires an RTL build with `WEIRD_CLOCK` and is not available in the current build.
+* `-stop_on_buffer_error` or `-sobe`: request streamer stop-on-buffer-error behavior when a command constructs the shared streamer helper. Without this option, underrun is still latched in `buffer_error` and playback may continue until a terminator, but `done` remains clean-completion-only.
 * `-pp_ignore_qout_final` or `PP_IGNORE_QOUT_FINAL`: do not fail a streaming command solely because the final observed `qout` differs from the inferred expected final value.
 * `-ignore_rb_error_if_crc_ok` or `PP_IGNORE_RB_ERROR_IF_CRC_OK`: clear only the readback-check error contribution when the readback path reported an error but the streamer and readback CRC values still match; final `qout` and FIFO check failures are still reported.
 * `-server`: start the optional debug line server while the selected command runs. It binds to `-ip` (default `0.0.0.0`) and `-port` (default `5555`), or UDP when `-udp` is present. A `0.0.0.0` bind prints the external-interface warning and waits one second before accepting traffic; use `-ip 127.0.0.1` for local-only access.
@@ -87,7 +87,7 @@ This keeps the high-level user interface stable while letting the internal imple
 * [ppgpsdo](ppgpsdo.md)
 * [pptemp](pptemp.md)
 * [ppfreq](ppfreq.md)
-* [ppvcd](ppvcd.md) - VCD entry point for `ppplay`
+* [ppvcd](ppvcd.md) - VCD compatibility alias for `ppplay`
 * [pphelloworld](pphelloworld.md)
 
 Related non-symlink tools:
@@ -101,19 +101,19 @@ See also:
 * [C++ API](cpp.md)
 * [`c++/README.md`]({{ source_file("c++/README.md") }})
 
-## Bash completion on the board
+## Bash completion on the target board
 
 PulsePins ships a Bash-completion source file for the `pptool` command family at [`contrib/completions/pulsepins.bash`]({{ source_file("contrib/completions/pulsepins.bash") }}).
 
 It is already installed on the prepackaged quick-start images distributed for SD-card use, so users booting those images do not need to install it manually.
 
-To install it on a live board, run:
+To install it on a running target board, run:
 
 ```bash
 sudo ./scripts/install_bash_completion.sh
 ```
 
-The installer copies the completion file to `/etc/profile.d/pulsepins-completion.sh`, which is sourced automatically by the board's `/etc/profile` for login shells.
+The installer copies the completion file to `/etc/profile.d/pulsepins-completion.sh`, which is sourced automatically by the target board's `/etc/profile` for login shells.
 
 After installation, either log out and back in or reload the shell profile manually:
 

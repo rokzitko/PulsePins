@@ -32,18 +32,18 @@ Initial access details:
 
 1. Prepare a board with the latest pre-built PulsePins image
 2. Connect over SSH or serial console
-3. Run the host-side sanity check from your repository checkout
+3. Run the local checks from your repository checkout
 4. Run the baseline test on the board
 5. Verify the specific subsystem you plan to modify
 6. Record the exact commands and outputs that worked
 
-Host-side sanity check:
+Local checks:
 
 ```bash
 make dev-check
 ```
 
-This is the recommended precursor before moving to live-board smoke or heavier hardware testing.
+Run this check before moving to live-board smoke or heavier hardware testing.
 
 ### Baseline verification
 
@@ -67,7 +67,7 @@ For a faster manual regression pass from the repository checkout, use:
 make board-smoke
 ```
 
-This redeploys the local `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` artifacts, reloads the FPGA, kills any running `ppscpi` / `ppwebgui` processes on the board, and runs a concise finite smoke sequence. Override the board target with `TARGETHOST=...` when needed.
+This redeploys the locally built `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` files, reloads the FPGA, kills any running `ppscpi` / `ppwebgui` processes on the board, and runs a concise finite smoke sequence. Override the board target with `TARGETHOST=...` when needed.
 
 ### Updating the board from the repository
 
@@ -94,7 +94,7 @@ It is useful for experimentation and initial hardware exploration, but contribut
 
 Useful capabilities include:
 
-* PMOD expansion connectors
+* Pmod expansion connectors
 * one SMA trigger input with comparator threshold control
 * two buffered SMA outputs
 * external clock and PPS inputs
@@ -111,10 +111,10 @@ See also:
 
 Documented/tested optional examples and checks include:
 
-* LED PMODs driven with `pptest` and various scripts in [`tests/`]({{ source_file("tests/") }})
+* LED Pmod modules driven with `pptest` and various scripts in [`tests/`]({{ source_file("tests/") }})
 * onboard `MCP9808` via `pptemp` or [`I2C/mcp9808.py`]({{ source_file("I2C/mcp9808.py") }})
 * external `TMP117` via [`I2C/tmp117.py`]({{ source_file("I2C/tmp117.py") }}) on the Qwiic connector
-* [PMOD DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) for fixed-voltage DAC output
+* [Pmod DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) for fixed-voltage DAC output
 * external clock checks with `ppfreq`
 * PPS checks with `ppts`
 

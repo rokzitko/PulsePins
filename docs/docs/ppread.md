@@ -1,6 +1,6 @@
 ## ppread
 
-`ppread` is a readback capture tool. It can dump captured run-length encoded data to console,
+`ppread` is a readback capture tool. It can dump captured run-length-encoded data to console,
 or it can switch into export mode and save the capture as PulsePins text sequence format, as VCD,
 as the exact binary sequence format, or as any combination of those.
 
@@ -9,10 +9,10 @@ default `outs` signal and `$timescale 10ns`, matching `ppplay`'s default VCD tar
 
 Command line arguments:
 
-* ``-oe``: output enable (bool). If true, we are reading internally generated data. If false, we are
-reading external data on the device I/O pins. If unspecified, leave the current hardware setting
+* ``-oe``: physical output enable (bool). If true, we are reading internally generated data. If false, we are
+reading external data on the target-board I/O pins. If unspecified, leave the current hardware setting
 unchanged; after reset the default is false.
-* ``-timeout``: controls readback idle wait bounds. If omitted, `ppread` uses a conservative default timeout: 2s waiting for the first readback element and 2s for later idle gaps. A positive value is interpreted as time after the last element read. ``-timeout 0`` disables idle-timeout protection. For compatibility, a negative value is interpreted as an absolute timeout from tool start, in seconds; prefer ``-hard-timeout`` for new commands.
+* ``-timeout``: controls readback idle wait bounds. If omitted, `ppread` uses a conservative default timeout: 2 s waiting for the first readback element and 2 s for later idle gaps. A positive value is interpreted as time after the last element read. ``-timeout 0`` disables idle-timeout protection. For compatibility, a negative value is interpreted as an absolute timeout from tool start, in seconds; prefer ``-hard-timeout`` for new commands.
 * ``-hard-timeout T``: absolute readback timeout from tool start. Time units such as ``ms``, ``s``, and ``min`` are accepted. This is the preferred way to say "capture for at most T".
 * ``-save-vcd <file>``: capture the readback stream and save it as a VCD waveform file. The default C++ VCD export uses ``$timescale 10ns`` so captures replay through ``ppplay`` with its default VCD scale.
 * ``-save-text <file>``: capture the readback stream and save it in PulsePins text sequence format.
@@ -66,4 +66,4 @@ when you want playback to arm the trigger and wait for the configured trigger co
 For a fuller workflow, see [Example 3: Capture a waveform and replay it exactly](examples.md#example-3-capture-a-waveform-and-replay-it-exactly).
 
 When `-oe 0` is used, this becomes a simple external logic-analyzer capture workflow for the
-qout bus and valid signal.
+`qout` bus and `qout_valid` sample qualifier.

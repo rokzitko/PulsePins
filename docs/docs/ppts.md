@@ -4,7 +4,7 @@
 
 For the underlying capture architecture, see [Timestamp capture](timestamp.md).
 
-The tool uses the shared host startup path, configures the timestamp-routing PIO, clears the timestamp FIFOs and overflow state after routing is selected, and then starts one reader thread per enabled timestamp stream.
+The tool uses the shared startup path, configures the timestamp-routing PIO, clears the timestamp FIFOs and overflow state after routing is selected, and then starts one reader thread per enabled timestamp stream.
 
 The implementation lives in [`c++/pptool_measurement.cc`]({{ source_file("c++/pptool_measurement.cc") }}) and uses the timestamp interface from [`c++/timestamp.hh`]({{ source_file("c++/timestamp.hh") }}).
 
@@ -52,7 +52,7 @@ The `sigA` stream is a secondary timestamp path with a selectable source. The se
 | `1` | Streamer trigger input 0 | Observe trigger input 0 at the streamer trigger block. |
 | `2` | External trigger input 0 | Observe external trigger input 0. |
 | `3` | Auxiliary input 0 | Observe AUX input 0. |
-| `4` | 1 s generated pulse | Sanity-check timestamp cadence against a slow internal source. |
+| `4` | 1 s generated pulse | Check timestamp cadence against a slow internal source. |
 | `5` | 100 ms generated pulse | Check 10 Hz internal timing. |
 | `6` | 10 ms generated pulse | Check 100 Hz internal timing. |
 | `7` | 1 ms generated pulse | Stress-test 1 kHz internal timing; use `-ignore_ts_overflow` when overflow is expected. |

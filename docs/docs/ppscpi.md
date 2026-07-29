@@ -1,13 +1,13 @@
 ## ppscpi
 
-`ppscpi` is a standalone network server for remote control of a PulsePins device using
+`ppscpi` is a standalone network server that runs on a PulsePins target board and accepts remote-control commands using
 the [Standard Commands for Programmable Instruments
 (SCPI)](https://www.ivifoundation.org/About-IVI/scpi.html) protocol. It provides a minimal SCPI
 interface for simple sequence streaming.
 
 The IVI Foundation maintains the SCPI standard and hosts the [SCPI-99 specification](https://www.ivifoundation.org/downloads/SCPI/scpi-99.pdf); for a quick non-normative overview, see the [SCPI overview](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments).
 
-`ppscpi` is also convenient for controlling PulsePins from remote computers through Python/Jupyter notebooks (or any programming language/environment that can talk to socket interfaces).
+`ppscpi` is also convenient for controlling PulsePins from remote clients, including Python or Jupyter notebooks and any environment that can use TCP sockets.
 
 The implementation is in [`c++/ppscpi.cc`]({{ source_file("c++/ppscpi.cc") }}) and the SCPI session/server helpers are in [`c++/scpi_server.hh`]({{ source_file("c++/scpi_server.hh") }}).
 
@@ -26,7 +26,7 @@ On startup it:
 
 * configures realtime scheduling and locks memory pages
 * creates the shared `HostRuntime` and top-level `FPGA` wrapper
-* applies the shared clock/PLL startup policy; the FPGA reset-manager pulse runs only if `-reset_FPGA` or `PP_RESET_FPGA` is requested
+* applies the requested clock and PLL settings; the FPGA reset-manager pulse runs only if `-reset_FPGA` or `PP_RESET_FPGA` is requested
 * reports the measured clocks using the frequency-meter block
 * accepts SCPI-style commands over the network
 
@@ -81,17 +81,17 @@ PulsePins-specific commands:
 5. Send `STREAM`
 6. Query `SYST:ERR?` if needed
 
-### Host-side Python and Jupyter
+### Workstation Python and Jupyter
 
-Jupyter should normally run on the host computer, not on the DE10-Nano. The board only needs to run `ppscpi`; the notebook talks to it over Ethernet.
+Jupyter should normally run on a workstation, not on the DE10-Nano. The target board only needs to run `ppscpi`; the notebook talks to it over Ethernet.
 
-The lightweight host-side Python client lives in [`python/pulsepins/`]({{ source_file("python/pulsepins/") }}) and uses only the Python standard library. From a checkout, make that directory importable first:
+The lightweight workstation Python client lives in [`python/pulsepins/`]({{ source_file("python/pulsepins/") }}) and uses only the Python standard library. From a checkout, make that directory importable first:
 
 ```bash
 export PYTHONPATH=/path/to/PulsePins/python
 ```
 
-For notebooks, an editable host-side install is often more convenient:
+For notebooks, an editable install on the workstation is often more convenient:
 
 ```bash
 python3 -m pip install -e /path/to/PulsePins/python
@@ -99,7 +99,7 @@ python3 -m pip install -e /path/to/PulsePins/python
 
 That install also provides example commands such as `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-notebook-workflow`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Add `--self-test` to `pulsepins-ppscpi-check` to run the built-in `TEST1` hardware smoke path after connecting.
 
-Then a notebook or script can drive the board with:
+Then a notebook or script can drive the target board with:
 
 ```python
 from pulsepins import PulsePins
@@ -157,7 +157,7 @@ pulsepins-timeline-stream de10nano --print-sequence
 pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 ```
 
-Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting absolute-time pulses; pass `--clock-hz` only when you need to override the board-reported clock. Hardware-free preview and sweep `--dry-run` use the supplied/default dry-run clock.
+Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting absolute-time pulses; pass `--clock-hz` only when you need to override the streamer-clock frequency measured by `ppscpi` at startup. Hardware-free preview and sweep `--dry-run` use the supplied/default dry-run clock.
 
 ### Notes
 
@@ -169,7 +169,7 @@ Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting ab
 * Repeated `STREAM` commands reuse the stored sequence exactly as parsed; the cached session sequence is not rewritten by readback checking or final-output preparation.
 * Before each hardware-touching run (`TEST1` and `STREAM`), `ppscpi` resets the streamer core, readback encoder, and counters so repeated commands in the same process/session start from a clean hardware state.
 * If `TEST1` or `STREAM` returns `FAILURE`, `ppscpi` also pushes an execution-error record into `SYST:ERR?` with the aggregated PulsePins return-code bits so remote clients can distinguish timeout, readback, CRC, buffer, and overflow failures.
-* When `CHECK ON` is active and no explicit startup `-timeout` or `-hard-timeout` was supplied, the shared workflow uses a conservative default readback timeout: 2s for the first readback element and 2s for later idle gaps. Start `ppscpi` with `-timeout 0` to disable idle-timeout protection, `-timeout <value>` to set the idle-gap timeout, or `-hard-timeout <value>` to set an absolute readback timeout from command start.
+* When `CHECK ON` is active and no explicit startup `-timeout` or `-hard-timeout` was supplied, the shared workflow uses a conservative default readback timeout: 2 s for the first readback element and 2 s for later idle gaps. Start `ppscpi` with `-timeout 0` to disable idle-timeout protection, `-timeout <value>` to set the idle-gap timeout, or `-hard-timeout <value>` to set an absolute readback timeout from command start.
 * Finite `STREAM` runs also inherit the internal 10 s streamer-completion timeout from the shared playback path. When that timeout fires, the user-facing message is `timed out waiting for streamer completion (10 s internal limit)`.
 * Hardware-touching commands are serialized across sessions through the shared FPGA lock, so multiple clients can stay connected without racing each other on streamer/reset state.
 * The server is intended for remote orchestration, not for high-throughput binary bulk transfer.

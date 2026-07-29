@@ -4,7 +4,7 @@ The [`ip/misc/`]({{ source_file("ip/misc/") }}) directory contains reusable supp
 
 These blocks are generally not end-user features by themselves, but they are important for maintenance, integration, and understanding the overall system.
 
-Several of them are specifically about [clock-domain crossing](clock_domain.md#cdc-background-terms), reset hygiene, observability, and small glue-logic transformations.
+Several of them are specifically about [clock-domain crossing](clock_domain.md#cdc-background-terms), reset hygiene, diagnostic visibility, and small glue-logic transformations.
 
 ### Common utility blocks
 
@@ -22,7 +22,7 @@ More detail:
 * [`sig_mux.sv`]({{ source_file("ip/misc/sig_mux.sv") }}) is a small parameterized bit selector that safely handles non-power-of-two input counts
 * [`delay.sv`]({{ source_file("ip/misc/delay.sv") }}) contains `delay_or4`, a simple two-stage register/OR helper for combining delayed trigger-like signals
 
-### Observability and diagnostics
+### Monitoring and diagnostics
 
 * [`activity_monitor.sv`]({{ source_file("ip/misc/activity_monitor.sv") }}) - activity indication / observation support
 * [`heartbeat.sv`]({{ source_file("ip/misc/heartbeat.sv") }}) - periodic heartbeat generation
@@ -43,7 +43,7 @@ More detail:
 More detail:
 
 * [`pulse_gen_timebase.sv`]({{ source_file("ip/misc/pulse_gen_timebase.sv") }}) derives one-clock-wide pulses at `1 ms`, `10 ms`, `100 ms`, and `1 s` intervals from a single base clock
-* [`rand_signal_gen.sv`]({{ source_file("ip/misc/rand_signal_gen.sv") }}) generates pseudo-random test activity including baseline flips, short glitches, and multi-segment bursts, with output-enable based pausing
+* [`rand_signal_gen.sv`]({{ source_file("ip/misc/rand_signal_gen.sv") }}) generates pseudo-random test activity including baseline flips, short glitches, and multi-segment bursts, with pausing controlled by its local `oe` input
 * [`tik.sv`]({{ source_file("ip/misc/tik.sv") }}) is a compact periodic pulse generator that asserts once every configured number of cycles
 * [`level_to_pulse.v`]({{ source_file("ip/misc/level_to_pulse.v") }}) contains several level-to-pulse converters, including variants with extra delay and built-in synchronizer stages
 * [`endianness.sv`]({{ source_file("ip/misc/endianness.sv") }}) contains a 96-bit byte-order swapper used where fixed-layout word packing needs explicit reordering
@@ -58,7 +58,7 @@ When modifying these blocks, pay particular attention to:
 
 For the CDC-oriented blocks in particular, preserving the synchronizer structure is usually more important than micro-optimizing the RTL.
 
-The [`ip/misc/`]({{ source_file("ip/misc/") }}) directory also contains dedicated test benches for several of these blocks.
+The [`ip/misc/`]({{ source_file("ip/misc/") }}) directory also contains dedicated testbenches for several of these blocks.
 
 ### Related pages
 

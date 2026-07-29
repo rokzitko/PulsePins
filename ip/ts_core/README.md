@@ -48,4 +48,4 @@ Register map, word offsets:
 - subsystem overview: `docs/docs/timestamp.md`
 - direct tool entry point: `docs/docs/ppts.md`
 - GPSDO integration: `docs/docs/ppgpsdo.md`
-- host-side wrapper: `c++/timestamp.hh`
+- HPS-side wrapper: `c++/timestamp.hh`

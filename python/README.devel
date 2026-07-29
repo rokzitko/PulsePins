@@ -1,15 +1,15 @@
-For host-side development and testing on a development computer, install the dependencies using
+On a development machine, install the test and build dependencies using
 
 pip3 install pytest
 pip3 install nanobind
 
-Host-side builds are meant for import/syntax/API testing only. They are useful for checking that
+These builds are meant for import/syntax/API testing only. They are useful for checking that
 the binding code compiles and the module imports, but they are not a supported replacement for
 building the production module on the DE10-Nano.
 
-The pure-Python `pulsepins` package is different: it is intended to run on the host and talk to
-`ppscpi` over TCP. It has no dependency beyond the Python standard library.
-The package also contains the host-side `Timeline` sequence builder.
+The pure-Python `pulsepins` package is different: it is intended to run on a workstation and talk to
+`ppscpi` on the target board over TCP. It has no dependency beyond the Python standard library.
+The package also contains the `Timeline` sequence builder.
 For notebook work from a checkout, install it with:
 
 python3 -m pip install -e /path/to/PulsePins/python

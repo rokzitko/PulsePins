@@ -1,6 +1,6 @@
 PulsePins readback / run-length encoder subsystem.
 
-This directory contains the RTL used to observe `qout` activity, compress it back into run-length encoded elements, and expose that captured stream to software for verification and debugging.
+This directory contains the RTL used to observe `qout` activity, compress it back into run-length-encoded elements, and expose that captured stream to software for verification and debugging.
 
 ## Main files
 
@@ -13,16 +13,16 @@ This directory contains the RTL used to observe `qout` activity, compress it bac
 The readback path is the mirror image of the streamer datapath:
 
 1. sampled output symbols arrive on `qin`
-2. normal builds sample valid input words on `qin_clk`; the strobe-clocked policy is dormant behind `WEIRD_CLOCK`
+2. normal builds sample valid input words on `qin_clk`; the alternate strobe-clocked mode is dormant behind `WEIRD_CLOCK`
 3. `rl_encoder.sv` groups consecutive equal values into `{count, value}` runs
-4. a dual-clock FIFO decouples the sampled input domain from software-side reads
+4. a dual-clock FIFO decouples the sampled input domain from HPS-side reads
 5. `rl_encoder_if.sv` exports the captured runs as Avalon-ST data and adds status/control registers
 
 This subsystem is mainly used for:
 
 - self-test of streamer output correctness
-- CRC-based sanity checking
-- debugging external signals when output enable is disabled
+- CRC-based integrity checking
+- debugging external signals when the physical output enable `oe` is deasserted
 
 ## Programming model
 
@@ -45,4 +45,4 @@ The wrapper also maintains a pulse counter and CRC in the sampled-input domain s
 
 - subsystem overview: `docs/docs/readback.md`
 - related streamer docs: `docs/docs/streamer.md`
-- host-side wrapper: `c++/readback.hh`
+- HPS-side wrapper: `c++/readback.hh`

@@ -1,6 +1,6 @@
 PulsePins counter subsystem.
 
-This directory contains the on-chip measurement blocks used to inspect streamed or external digital signals. The counter subsystem acts as a shared measurement backplane: software selects one or more observed channels, chooses an instrument, latches a consistent snapshot, and reads the resulting statistics through a single Avalon-MM programming surface.
+This directory contains the on-chip measurement blocks used to inspect streamed or external digital signals. The counter subsystem acts as a shared measurement backplane: software selects one or more observed channels, chooses an instrument, latches a consistent snapshot, and reads the resulting statistics through a single Avalon-MM programming interface.
 
 ## Main files
 
@@ -17,7 +17,7 @@ This directory contains the on-chip measurement blocks used to inspect streamed 
 
 ## Architecture overview
 
-`counter_if.sv` is the software-visible entry point.
+`counter_if.sv` is the software-visible interface.
 
 Its job is to:
 
@@ -84,7 +84,7 @@ See also `README.clock_domains` and `docs/docs/clock_domain.md`.
 7. `crosscorrelation.sv`
 8. `time_counter.sv`
 
-That order starts from the programming surface and then moves through the individual measurement families.
+That order starts from the programming interface and then moves through the individual measurement families.
 
 ## Verification and related docs
 
@@ -92,4 +92,4 @@ That order starts from the programming surface and then moves through the indivi
 - architecture page: `docs/docs/counter.md`
 - tool entry point: `docs/docs/ppcounter.md`
 - CDC notes: `docs/docs/clock_domain.md`
-- host-side wrapper: `c++/counter.hh`
+- HPS-side wrapper: `c++/counter.hh`

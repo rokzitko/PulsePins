@@ -18,11 +18,11 @@ At a high level the flow is:
 
 1. sampled output values arrive on `qin`
 2. [`rl_encoder.sv`]({{ source_file("ip/rl_encoder_if/rl_encoder.sv") }}) groups consecutive equal samples into runs
-3. a dual-clock FIFO buffers those runs for software-side reads
+3. a dual-clock FIFO buffers those runs for ARM-side reads
 4. [`rl_encoder_if.sv`]({{ source_file("ip/rl_encoder_if/rl_encoder_if.sv") }}) exposes the encoded runs on Avalon-ST and adds control/status registers
 5. [`c++/readback.hh`]({{ source_file("c++/readback.hh") }}) either dumps the captured stream or compares it against a reference `Sequence`
 
-This makes the readback path the main verification seam between the generated FPGA output and the host-side model.
+This makes the readback path the main comparison path between the generated FPGA output and the control-software model.
 
 ## `rl_encoder` core
 
@@ -77,15 +77,14 @@ Captured deterministic waveforms can also be turned into VCD files through the `
 
 At the CLI level, `ppread` can save captures as PulsePins text sequence files, as VCD waveforms, or as the exact binary sequence format.
 
-The `check` function returns true if no errors are detected. A timeout argument can be provided; if no new elements are received during the specified interval, an exception is raised. Higher-level playback tools default to a conservative 
-policy when no explicit timeout is provided: 2s waiting for the first readback element and 2s for later idle gaps. An exception is also raised if the reference sequence is exhausted and a new element is received from the encoder. A report is produced when the check completes, including the number and ratio of errors plus the difference in encoded size and effective output length.
+The `check` function returns true if no errors are detected. A timeout argument can be provided; if no new elements are received during the specified interval, an exception is raised. Higher-level playback tools use conservative defaults when no timeout is provided: 2 s waiting for the first readback element and 2 s for later idle gaps. An exception is also raised if the reference sequence is exhausted and a new element is received from the encoder. A report is produced when the check completes, including the number and ratio of errors plus the difference in encoded size and effective output length.
 
 ## Readback of external signals
 
-If the output enable signal ``oe`` is low, the readback core is reading signals from the external
+If the physical output enable ``oe`` is low, the readback core is reading signals from the external
 pins, i.e. the 32 `qout` pins actually act as inputs, and the `streamer_qout_valid` pin starts
-acting as the valid signal input port. The [ppread](ppread.md) tool can be used to read the
+acting as the `qout_valid` qualifier input port. The [ppread](ppread.md) tool can be used to read the
 generated data stream. One application of this tool is to troubleshoot another PulsePins board
 by connecting the qout and qout_valid ports together and clocking both devices from the same clock
 source. In this mode, PulsePins effectively becomes a simple external digital logic analyzer for
-the qout bus and valid signal.
+the qout bus and `qout_valid` qualifier.

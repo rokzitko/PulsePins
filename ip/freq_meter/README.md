@@ -44,4 +44,4 @@ The hardware continuously produces per-gate edge counts while enabled. Software 
 
 - subsystem overview: `docs/docs/freq_meter.md`
 - direct tool entry point: `docs/docs/ppfreq.md`
-- host-side wrapper: `c++/freq_meter.hh`
+- HPS-side wrapper: `c++/freq_meter.hh`

@@ -100,7 +100,7 @@ Files:
 
 The intended split is:
 
-- [`pll_clk.hh`]({{ source_file("c++/pll_clk.hh") }}) owns PLL reconfiguration policy and reporting
+- [`pll_clk.hh`]({{ source_file("c++/pll_clk.hh") }}) owns PLL reconfiguration behavior and reporting
 - [`fpga.hh`]({{ source_file("c++/fpga.hh") }}) owns the top-level clock-select GPIO path and reset sequencing around source changes
 - [`ppwebgui_service.cc`]({{ source_file("c++/ppwebgui_service.cc") }}) owns the tracked web-GUI clock state and applies it through the same hardware wrappers
 
@@ -157,13 +157,13 @@ Streamer facts:
 - trigger chain: `streamer_clk`
 - output read request: `trigger_activated && gate_enable`
 - Avalon-written static streamer configuration (initial value, qout override/select, gating, and
-  stop-on-buffer-error policy) crosses into `streamer_clk` through a coherent latest-value CDC update
+  stop-on-buffer-error setting) crosses into `streamer_clk` through a coherent latest-value CDC update
   and is applied only while the streamer is idle or held in streamer reset
 - runtime trigger, stop, gate, and trigger-input levels are synchronized before use in `streamer_clk`
 - software-visible streamer-domain status/data readbacks are synchronized snapshots in the Avalon
   clock domain
 
-Host-side trigger routing and software-controlled trigger bits are configured from:
+ARM-side trigger routing and software-controlled trigger bits are configured from:
 
 - [`c++/trigger.hh`]({{ source_file("c++/trigger.hh") }})
 - [`c++/trigger_int.hh`]({{ source_file("c++/trigger_int.hh") }})
