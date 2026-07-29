@@ -1,10 +1,10 @@
-## Hacking on PulsePins
+# Hacking on PulsePins
 
 There are several useful ways to contribute without needing to understand the whole system at once.
 
-### Choose a path
+## Choose a path
 
-#### Documentation and examples
+### Documentation and examples
 
 Good if you want to help people get started more easily.
 
@@ -24,7 +24,7 @@ Start here:
 * [Build and deployment](build.md) ([source]({{ source_file("docs/docs/build.md") }}))
 * [Testing procedures](testing.md) ([source]({{ source_file("docs/docs/testing.md") }}))
 
-#### C++ tools and API
+### C++ tools and API
 
 Good if you like systems programming, command-line tools, and structured data representations.
 
@@ -41,7 +41,7 @@ Start here:
 * [C++ application programming interface](cpp.md) ([source]({{ source_file("docs/docs/cpp.md") }}))
 * [pptool](pptool.md) ([source]({{ source_file("docs/docs/pptool.md") }}))
 
-#### Python bindings
+### Python bindings
 
 Good if you want a higher-level interface or notebook-friendly workflows.
 
@@ -56,7 +56,7 @@ Start here:
 * [`python/`]({{ source_file("python/") }})
 * [Python bindings](python.md) ([source]({{ source_file("docs/docs/python.md") }}))
 
-#### RTL and simulation
+### RTL and simulation
 
 Good if you want to work on the hardware architecture.
 
@@ -75,7 +75,7 @@ Start here:
 * [Development](development.md) ([source]({{ source_file("docs/docs/development.md") }}))
 * [Implementation details](details.md) ([source]({{ source_file("docs/docs/details.md") }}))
 
-### Without hardware
+## Without hardware
 
 Useful work is possible without a board.
 
@@ -94,7 +94,7 @@ make -C python USE_PREGENERATED=1 build test-host
 make -C ip test
 ```
 
-### With hardware
+## With hardware
 
 If you have a DE10-Nano and the PulsePins environment running, you can also work on:
 
@@ -104,9 +104,9 @@ If you have a DE10-Nano and the PulsePins environment running, you can also work
 * board bring-up and shield documentation
 * Pmod, clocking, and instrument-integration writeups
 
-See also [Getting started with hardware](getting_started_hardware.md).
+See also [Hardware setup](getting_started_hardware.md).
 
-### What makes a good first contribution?
+## What makes a good first contribution?
 
 Small, useful, and verifiable changes are ideal.
 
@@ -120,7 +120,7 @@ Examples:
 
 Community contributions such as wiring diagrams, timing diagrams, screenshots, scope traces, logic-analyzer captures, and photos of custom hardware setups are also very welcome.
 
-### Community direction
+## Community direction
 
 Typical application areas where community examples would be appreciated include:
 

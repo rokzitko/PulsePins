@@ -1,15 +1,15 @@
-## Development-machine work without hardware
+# Development-machine work without hardware
 
 PulsePins is primarily a hardware-backed project, but useful contribution work is possible without owning a board.
 
-### Suitable contribution areas
+## Suitable contribution areas
 
 * documentation in [`docs/`]({{ source_file("docs/") }}) and top-level [`README.md`]({{ source_file("README.md") }}) files
 * Python bindings in [`python/`]({{ source_file("python/") }})
 * C++ sequence handling and command-line behavior in [`c++/`]({{ source_file("c++/") }})
 * RTL simulation and testbenches in [`ip/`]({{ source_file("ip/") }})
 
-### Useful commands
+## Useful commands
 
 Build the documentation site:
 
@@ -33,7 +33,7 @@ Run RTL testbenches:
 make -C ip test
 ```
 
-### Good first contributions
+## Good first contributions
 
 * improve docs clarity
 * add recipes and examples
@@ -41,7 +41,7 @@ make -C ip test
 * add simulation tests
 * improve contributor onboarding
 
-### Areas to treat carefully
+## Areas to treat carefully
 
 Without hardware, avoid making strong claims about:
 

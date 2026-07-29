@@ -1,151 +1,74 @@
-## Getting started with hardware
+# Hardware setup
 
-This page is a contributor-oriented starting point for work that needs a real DE10-Nano and a working PulsePins environment.
+Use this page for board access, signal-level context, and optional hardware after following the [Quick start](quick_start.md). Build and deployment workflows for repository changes are documented separately under [Build and deployment](build.md).
 
-### Default baseline
+## Released baseline
 
-The default documented hardware baseline is:
+The default supported setup is intentionally small:
 
-* [`DE10-Nano`](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046) only
-* latest pre-built PulsePins image
-* no extra wiring required for the baseline verification flow
+* one [DE10-Nano](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046)
+* the latest released PulsePins SD-card image
+* no shield or external loopback wiring for baseline validation
 
-Use the linked Terasic board documentation for board-level details such as power, Ethernet, UART, GPIO headers, switches, and connectors. For SoC/HPS family context, see the [Cyclone V SoC FPGA overview](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html).
+Use the Terasic board documentation for power, physical header pins, UART driver setup, switches, and board-level electrical limits. The [DE10-Nano signal reference](de10_nano_reference.md) documents the PulsePins assignments within the FPGA design.
 
-The board obtains an address via DHCP by default.
+## Network access
 
-Initial access details:
+The released image requests an Ethernet address using DHCP. Its default MAC address is `D6:7D:AE:B3:0E:BA`; use that value to identify the board in the router's DHCP lease list.
 
-* SSH user: `root`
-* password: `eit`
-* obtain the IP from the router DHCP lease list, or use the UART USB serial interface as a fallback
-
-### Typical hardware-backed tasks
-
-* validating streamer behavior end to end
-* checking trigger and gating behavior
-* testing timestamp capture and PPS workflows
-* measuring clocks with `ppfreq`
-* validating board/shield wiring and auxiliary interfaces
-
-### Basic workflow
-
-1. Prepare a board with the latest pre-built PulsePins image
-2. Connect over SSH or serial console
-3. Run the local checks from your repository checkout
-4. Run the baseline test on the board
-5. Verify the specific subsystem you plan to modify
-6. Record the exact commands and outputs that worked
-
-Local checks:
+Connect with:
 
 ```bash
-make dev-check
+ssh root@BOARD_IP
 ```
 
-Run this check before moving to live-board smoke or heavier hardware testing.
+The initial password is `eit`. Change it with `passwd` before using the board on an untrusted network. For passwordless access, run `ssh-copy-id root@BOARD_IP` from the development machine.
 
-### Baseline verification
+## UART fallback
 
-The minimal verified contributor smoke test is:
+The USB mini connector marked `UART` provides a serial console when Ethernet configuration or address discovery is not working. Connect it to a host, open the serial device using the settings documented by Terasic for the DE10-Nano, and log in with the same released-image credentials.
 
-```bash
-run_all_tests
-```
+Use the serial console to inspect or change network configuration before retrying SSH.
 
-Expected result:
+## Output and input signals
 
-* the command exits successfully
-* it prints `SUCCESS`
-* it takes a few minutes, around 7 minutes at the default 100 MHz streaming frequency
+PulsePins uses 3.3 V LVTTL signaling. Check voltage compatibility and establish a common ground before connecting laboratory equipment or another digital device.
 
-Treat the runtime as approximate; it is expected to evolve as more tests are added.
+Useful references:
 
-For a faster manual regression pass from the repository checkout, use:
+* [DE10-Nano signal reference](de10_nano_reference.md) for base-board assignments, output enable, LEDs, and manual trigger controls
+* [PP_PMOD hardware reference](pp_pmod_reference.md) for connector-level details on the optional reference shield
+* [Sequencer model](sequencer_model.md#output-enable-and-readback) for high-impedance input/readback behavior
+* [Readback](readback.md#readback-of-external-signals) for external signal capture
 
-```bash
-make board-smoke
-```
+## Baseline validation
 
-This redeploys the locally built `pulsepins.rbf`, `pptool`, `ppscpi`, and `ppwebgui` files, reloads the FPGA, kills any running `ppscpi` / `ppwebgui` processes on the board, and runs a concise finite smoke sequence. Override the board target with `TARGETHOST=...` when needed.
+Before running the board tests, disconnect external circuits from driven PulsePins signals or verify that they can safely accept generated 3.3 V patterns. The tests enable outputs and exercise nonzero values.
 
-### Updating the board from the repository
+Run `run_all_tests` before diagnosing optional hardware or developing a larger experiment. A clean run prints `SUCCESS`; see [Quick start](quick_start.md#4-validate-the-baseline-image) for the first-board procedure and [Testing procedures](testing.md) for test levels, logs, and troubleshooting.
 
-The recommended update flow is:
+For a first externally observed signal, use the finite pulse command in [Quick start](quick_start.md#5-generate-a-first-output), then continue with [Worked examples](examples.md).
 
-1. build the latest GitHub version locally
-2. run `make copy_all`
-3. SSH to the DE10-Nano
-4. from the root home directory on the board, run:
+## Optional PP_PMOD profile
 
-```bash
-FPGA-writeConfig -f pulsepins.rbf
-```
+`PP_PMOD` is a published KiCad reference shield, not a required baseline or prebuilt accessory. It breaks out the output, trigger, AUX, clock, PPS, I2C, and status signals and can be used directly or adapted into a custom interface board.
 
-5. run [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
+Digital trigger routing can be checked with `pptrig`, but the thresholded SMA comparator path should not be treated as systematically validated for every assembly and signal source. Record its threshold, termination, source, and observed waveform when testing it.
 
-Treat the FPGA reload step as required after `make copy_all`.
+Start with:
 
-### Optional profile: PP_PMOD
+* [ppboards shield overview](ppboards.md)
+* [PP_PMOD overview](pp_pmod.md)
+* [PP_PMOD hardware reference](pp_pmod_reference.md)
 
-`PP_PMOD` is an optional reference shield, not a required baseline.
+Record the exact shield revision, populated options, jumper positions, cabling, and external equipment whenever reporting a hardware result.
 
-It is useful for experimentation and initial hardware exploration, but contributors should think of it as a published KiCad design rather than a prebuilt accessory.
+## Working from a repository build
 
-Useful capabilities include:
+For hardware-backed development rather than released-image setup:
 
-* Pmod expansion connectors
-* one SMA trigger input with comparator threshold control
-* two buffered SMA outputs
-* external clock and PPS inputs
-* Qwiic I2C connector
-* optional onboard `AD5693` DAC
-* optional onboard `MCP9808` temperature sensor
-* status LEDs
+* use [Build and deployment](build.md#recommended-workflows) for `make`, `make copy_all`, and the required FPGA reload
+* use [Testing procedures](testing.md) to choose between `make dev-check`, `make board-smoke`, and `run_all_tests`
+* use the [Contributor overview](hacking.md) for subsystem-specific starting points
 
-See also:
-
-* [ppboards - shields for the DE10-Nano board](ppboards.md)
-* [PP_PMOD Reference Shield](pp_pmod.md)
-* [PP_PMOD Hardware Reference](pp_pmod_reference.md)
-
-Documented/tested optional examples and checks include:
-
-* LED Pmod modules driven with `pptest` and various scripts in [`tests/`]({{ source_file("tests/") }})
-* onboard `MCP9808` via `pptemp` or [`I2C/mcp9808.py`]({{ source_file("I2C/mcp9808.py") }})
-* external `TMP117` via [`I2C/tmp117.py`]({{ source_file("I2C/tmp117.py") }}) on the Qwiic connector
-* [Pmod DA3](https://digilent.com/shop/pmod-da3-one-16-bit-d-a-output/) for fixed-voltage DAC output
-* external clock checks with `ppfreq`
-* PPS checks with `ppts`
-
-Buffered outputs have been useful with:
-
-* oscilloscopes
-* logic analyzers
-* spectrum analyzers
-* counters
-
-Known-good external clock source examples include:
-
-* lab signal generators
-* OCXO/GPSDO references
-* CMOS oscillator modules
-
-PPS has been checked with a GNSS receiver PPS output.
-
-The SMA trigger input is available for external trigger experiments, but it should not yet be treated as systematically validated.
-
-### What to document when validating hardware
-
-Please record:
-
-* board revision and shield setup
-* image/runtime version
-* clock source used
-* external wiring and jumpers
-* exact commands run
-* expected and observed output
-
-### Current note
-
-If you validate a setup, please consider contributing the commands, wiring notes, timing diagrams, screenshots, scope traces, or photos through GitHub Issues or a pull request.
+When validating a change, record the board revision, image and software versions, clock source, wiring, exact commands, expected result, and observed result.

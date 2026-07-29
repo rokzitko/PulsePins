@@ -11,10 +11,10 @@ Choose the path that matches what you want to do first:
 
 | Goal | Start here |
 | ---- | ---------- |
-| Bring up a DE10-Nano | [Quick start](INSTALL-quick_start.md) and [hardware setup](docs/docs/getting_started_hardware.md) |
+| Bring up a DE10-Nano | [Quick start](docs/docs/quick_start.md) |
 | Choose a command or API | [Tool chooser](docs/docs/choose_tool.md) |
 | Follow a complete lab workflow | [Worked examples](docs/docs/examples.md) |
-| Understand the sequencer | [Manual home](docs/docs/index.md) |
+| Understand the sequencer | [Sequencer model](docs/docs/sequencer_model.md) |
 | Modify or extend PulsePins | [Hacking guide](HACKING.md) and [extension cookbook](docs/docs/extension_cookbook.md) |
 
 ## At a glance

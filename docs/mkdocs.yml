@@ -6,58 +6,72 @@ extra:
   source_ref: "2026.06"
 nav:
   - Home: index.md
-  - Hardware:
-    - ppboards shields: ppboards.md
-    - PP_PMOD overview: pp_pmod.md
-    - PP_PMOD hardware reference: pp_pmod_reference.md
-    - Technicalities: details.md
-    - Streamer subsystem: streamer.md
-    - Streamer timing diagrams: streamer_timing.md
-    - RTL latency and timing: latency.md
-    - Clock domains: clock_domain.md
-    - Combiner subsystem: combiner.md
-    - Counter subsystem: counter.md
-    - Timestamp capture: timestamp.md
-    - Frequency meter: freq_meter.md
-    - Avalon-ST multiplexer: st_mux.md
-    - Misc IP blocks: misc_ip.md
-  - API:
+  - Get started:
+    - Quick start: quick_start.md
+    - Hardware setup: getting_started_hardware.md
+    - Choose a tool or interface: choose_tool.md
+    - Worked examples: examples.md
+  - Command line:
+    - Overview and shared behavior:
+      - pptool command family: pptool.md
+      - Return codes: return_codes.md
+    - Generate output:
+      - Repeating output smoke test: pphelloworld.md
+      - Function generator: ppfg.md
+      - Delay generator: ppdelay.md
+    - Play and capture:
+      - Sequence playback: ppplay.md
+      - VCD playback alias: ppvcd.md
+      - Readback capture: ppread.md
+    - Measure, monitor, and control:
+      - AUX input monitor: ppaux.md
+      - Counter self-test and diagnostics: ppcounter.md
+      - Frequency meter: ppfreq.md
+      - Timestamp reader: ppts.md
+      - GPSDO controller: ppgpsdo.md
+      - Temperature reader: pptemp.md
+    - Test, diagnose, and reset:
+      - Self-tests: pptest.md
+      - Trigger configuration and diagnostics: pptrig.md
+      - Output routing and diagnostics: ppqout.md
+      - FPGA and primary-streamer reset: ppreset.md
+    - Standalone utility:
+      - PLL calculator: pllcalc.md
+  - Interfaces:
     - C++ API: cpp.md
     - Python API: python.md
+    - SCPI server: ppscpi.md
+    - Web interface: ppwebgui.md
+  - Hardware:
+    - DE10-Nano signal reference: de10_nano_reference.md
+    - Shield overview: ppboards.md
+    - PP_PMOD overview: pp_pmod.md
+    - PP_PMOD hardware reference: pp_pmod_reference.md
+  - Architecture:
+    - Sequencer model: sequencer_model.md
+    - Output engine:
+      - Streamer subsystem: streamer.md
+      - Implementation details: details.md
+    - Timing and clocking:
+      - Streamer timing diagrams: streamer_timing.md
+      - RTL latency and timing: latency.md
+      - Clock domains and CDC: clock_domain.md
+    - Routing and acquisition:
+      - Combiner subsystem: combiner.md
+      - Readback subsystem: readback.md
+      - Avalon-ST multiplexer: st_mux.md
+    - Measurement IP:
+      - Counter subsystem: counter.md
+      - Timestamp capture: timestamp.md
+      - Frequency meter subsystem: freq_meter.md
+    - Reusable support IP: misc_ip.md
+  - Develop and test:
+    - Testing procedures: testing.md
     - Build and deployment: build.md
-  - Contributor guide:
-    - Getting started with hardware: getting_started_hardware.md
-    - Choose the right tool: choose_tool.md
+    - Contributor overview: hacking.md
+    - Work without hardware: getting_started_no_hardware.md
     - Extension cookbook: extension_cookbook.md
-    - Worked examples: examples.md
-    - Hacking on PulsePins: hacking.md
-    - Host-side work without hardware: getting_started_no_hardware.md
-  - pptool:
-    - pptool: pptool.md
-    - Return codes: return_codes.md
-    - ppaux - AUX port tool: ppaux.md
-    - ppcounter - counter tool: ppcounter.md
-    - ppdelay - delay generator: ppdelay.md
-    - ppfg - function generator: ppfg.md
-    - ppfreq - frequency meter: ppfreq.md
-    - ppgpsdo - GNSS disciplined oscillator: ppgpsdo.md
-    - pphelloworld - quick test: pphelloworld.md
-    - pllcalc - PLL parameter calculator: pllcalc.md
-    - ppplay - sequence file playback: ppplay.md
-    - ppqout - multiplexer test: ppqout.md
-    - ppread - readback tool: ppread.md
-    - ppreset - reset tool: ppreset.md
-    - ppts - timestamp reader: ppts.md
-    - pptemp - temperature reader: pptemp.md
-    - pptest - self-tests: pptest.md
-    - pptrig - trigger debugging tool: pptrig.md
-    - ppvcd - VCD compatibility alias: ppvcd.md
-    - ppscpi - network server: ppscpi.md
-    - ppwebgui - web GUI server: ppwebgui.md
-  - Testing:
-    - Test infrastructure: testing.md
-    - Readback: readback.md
-  - Development: development.md
+    - Development practices: development.md
 theme:
    name: readthedocs
    favicon: img/favicon.ico

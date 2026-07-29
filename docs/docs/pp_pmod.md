@@ -85,7 +85,7 @@ Quick reference for the board's main external interfaces:
 | `J18` | [Qwiic I2C connector](pp_pmod_reference.md#i2c-and-onboard-peripherals) |
 | `J26` | `PPS_IN` SMA input |
 
-## Validated workflows
+## Example workflows
 
 Examples worth documenting or reproducing on this board include:
 
@@ -95,6 +95,8 @@ Examples worth documenting or reproducing on this board include:
 * DAC output checks with [`I2C/ad5693_set_vout.py`]({{ source_file("I2C/ad5693_set_vout.py") }})
 * PPS validation with [`ppts`](ppts.md)
 * external clock validation with [`ppfreq`](ppfreq.md)
-* trigger experiments with [`pptrig`](pptrig.md)
+* digital trigger-routing checks with [`pptrig`](pptrig.md)
 
 For these workflows, record board revision, population, jumpers, external wiring, exact commands, and observed behavior.
+
+The thresholded SMA comparator path requires setup-specific validation; record its threshold, termination, source, and observed waveform rather than assuming equivalent behavior across assemblies.

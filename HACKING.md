@@ -37,7 +37,7 @@ make -C ip test
 
 For Python specifically:
 
-- running `make -C python build` on a development machine is useful for syntax/import/API testing
+- running `make -C python USE_PREGENERATED=1 build test-host` on a development machine checks the host-buildable bindings and non-hardware tests
 - the supported production build of the Python modules still happens on the DE10-Nano
 - true Python cross-compilation is not currently supported
 
@@ -79,7 +79,7 @@ For that baseline, the board:
 | Local checks | repo root | no | `make dev-check` |
 | Docs | `docs/` | no | `make -C docs site` |
 | C++ tools | `c++/` | not always | `make -C c++ build` |
-| Python bindings | `python/` | not always | `make -C python build && make -C python test-host` |
+| Python bindings | `python/` | not always | `make -C python USE_PREGENERATED=1 build test-host` |
 | RTL simulation | `ip/` | no | `make -C ip test` |
 | Fast board smoke | repo root | yes | `make board-smoke` |
 | Full FPGA build | repo root | toolchain required | `make` |

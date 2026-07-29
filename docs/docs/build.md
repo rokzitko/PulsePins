@@ -167,6 +167,14 @@ Copy the complete board bundle to the target board:
 make copy_all
 ```
 
+`make copy_all` copies the new bitstream and software but does not program the FPGA. From the root home directory on the board, load the copied bitstream before testing the updated software:
+
+```bash
+FPGA-writeConfig -f pulsepins.rbf
+```
+
+Treat this reload as required after `make copy_all`; otherwise the new executables may run against a stale or ABI-incompatible FPGA image. Then run the appropriate checks from [Testing procedures](testing.md).
+
 Deployment targets use `TARGETHOST` as the board host name and `SCP_TARGET` as the exact ssh/scp destination. By default `SCP_TARGET=$(TARGETHOST)`; override `SCP_TARGET=user@host` when the copy user or ssh destination differs from the board host name.
 
 This also installs the Bash-completion file for the `pptool` command family onto the live board under `/etc/profile.d/pulsepins-completion.sh`.

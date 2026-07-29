@@ -145,7 +145,7 @@ The clock-related hardware is centered around:
 * SMA input `J26` for `PPS_IN`
 * optional terminations
 * optional oscillator-module footprints
-* exported internal timing signals `PPCLK1` and `PPCLK2`
+* board routes named `PPCLK1` and `PPCLK2`; these are reserved and unconnected in the released FPGA top-level design
 
 `EXT_CLK` path:
 

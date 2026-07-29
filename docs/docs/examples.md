@@ -1,10 +1,10 @@
-## Worked examples
+# Worked examples
 
 This page collects some useful concrete PulsePins examples. The goal is not to replace the per-command manual pages, but to show how the pieces fit together in practice.
 
-Unless stated otherwise, these examples assume the standard DE10-Nano PulsePins runtime environment described in [`INSTALL-quick_start.md`]({{ source_file("INSTALL-quick_start.md") }}) and [Getting started with hardware](getting_started_hardware.md) ([source]({{ source_file("docs/docs/getting_started_hardware.md") }})).
+Unless stated otherwise, these examples assume the released DE10-Nano environment described in [Quick start](quick_start.md) and [Hardware setup](getting_started_hardware.md).
 
-### Example 1: Generate a continuous square wave with `ppfg`
+## Example 1: Generate a continuous square wave with `ppfg`
 
 Goal: make `qout[0]` toggle continuously without writing any sequence files.
 
@@ -35,7 +35,7 @@ ppfg -int_pll 10M -burst 3 -period 1ms -trig -t 0x0 -v1 0x1 -v0 0x0
 
 See also: [ppfg - PulsePins Function Generator](ppfg.md) and [`recipes/ppfg`]({{ source_file("recipes/ppfg") }}).
 
-### Example 2: Use PulsePins as a triggered delay generator with `ppdelay`
+## Example 2: Use PulsePins as a triggered delay generator with `ppdelay`
 
 Goal: wait for a trigger, then emit one pulse after a controlled delay.
 
@@ -60,14 +60,18 @@ This is a good starting point for camera triggering, shutter delays, and simple 
 
 See also: [ppdelay](ppdelay.md) and [`recipes/ppdelay`]({{ source_file("recipes/ppdelay") }}).
 
-### Example 3: Capture a waveform and replay it exactly
+## Example 3: Capture a waveform and replay it exactly
 
 Goal: use the readback path as a simple logic-analyzer capture, then replay the exact captured sequence.
 
-Capture commands:
+Start `ppread` in the background before generating the waveform:
 
 ```bash
-ppread -hard-timeout 1s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
+ppread -oe 1 -hard-timeout 2s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin &
+capture_pid=$!
+sleep 0.1
+ppfg -burst 10 -period 10ms -trig -v1 0x1 -v0 0x0 -t 0x0
+wait "$capture_pid"
 ```
 
 Replay commands:
@@ -79,7 +83,9 @@ ppplay -force -file capture.ppbin
 
 What it does:
 
-* `ppread` captures one second of readback data
+* `ppread` resets the readback capture path and starts waiting before `ppfg` runs
+* `ppfg` emits a finite waveform while capture is active
+* `ppread` saves the captured data when its absolute timeout expires
 * the same capture is exported in three formats:
     * `capture.vcd` for waveform viewing
     * `capture.seq` for editable text form
@@ -92,11 +98,11 @@ When to use which format:
 * use `capture.seq` when you want to edit the sequence by hand
 * use `capture.ppbin` when you want exact replay without losing control-flow information
 
-If you are capturing external signals rather than internally generated ones, use the normal `ppread` external-capture path (`-oe 0` / default hardware input configuration).
+If you are capturing external signals rather than internally generated ones, use the normal `ppread` external-capture path (`-oe 0` / default hardware input configuration) and start the external source after `ppread` is waiting.
 
 See also: [ppread - readback tool](ppread.md), [ppplay](ppplay.md), and [Readback](readback.md).
 
-### Example 4: Measure an external clock and inspect PPS timing
+## Example 4: Measure an external clock and inspect PPS timing
 
 Goal: validate that an external reference is present and inspect the PPS intervals.
 
@@ -129,7 +135,7 @@ These tools are useful during board bring-up, external-clock validation, and tro
 
 See also: [ppfreq](ppfreq.md), [ppts](ppts.md), [Frequency meter](freq_meter.md), and [Timestamp capture](timestamp.md).
 
-### Example 5: Read the onboard temperature sensor on `PP_PMOD`
+## Example 5: Read the onboard temperature sensor on `PP_PMOD`
 
 Goal: confirm that the optional `PP_PMOD` shield and its onboard `MCP9808` are working.
 
@@ -154,7 +160,7 @@ interfacing.
 
 See also: [pptemp - temperature reader](pptemp.md), [PP_PMOD Reference Shield](pp_pmod.md), and [PP_PMOD Hardware Reference](pp_pmod_reference.md).
 
-### Example 6: Generate an SPI/DDS programming sequence with C++ helper code
+## Example 6: Generate an SPI/DDS programming sequence with C++ helper code
 
 Goal: use the standalone sequence generators in [`tools/spi_payload/`]({{ source_file("tools/spi_payload/") }}) to control a peripheral from PulsePins.
 
@@ -182,7 +188,7 @@ When to use:
 
 The exact qout wiring and module-specific notes live in [`tools/spi_payload/README`]({{ source_file("tools/spi_payload/README") }}).
 
-### Example 7: Drive `ppscpi` from a workstation Python notebook
+## Example 7: Drive `ppscpi` from a workstation Python notebook
 
 Goal: keep Jupyter on a laptop or workstation while controlling a DE10-Nano over Ethernet.
 
@@ -280,7 +286,7 @@ Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting ab
 
 See also: [ppscpi - network server](ppscpi.md) and [Python bindings](python.md).
 
-### Choosing the right kind of example
+## Choosing the right kind of example
 
 As a rule of thumb:
 

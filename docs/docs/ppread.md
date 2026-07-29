@@ -50,10 +50,14 @@ ppread -hard-timeout 1s -save-binary capture.ppbin
 
 ### Record and replay
 
-Capture once, save all replayable formats, then replay the capture with `ppplay`:
+Start capture before the waveform source. For an internally generated finite signal, one shell can run `ppread` in the background, generate the waveform, wait for capture to finish, and then replay it:
 
 ```bash
-ppread -hard-timeout 1s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
+ppread -oe 1 -hard-timeout 2s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin &
+capture_pid=$!
+sleep 0.1
+ppfg -burst 10 -period 10ms -trig -v1 0x1 -v0 0x0 -t 0x0
+wait "$capture_pid"
 ppplay -force -file capture.vcd
 ppplay -force -file capture.seq
 ppplay -force -file capture.ppbin
@@ -62,6 +66,8 @@ ppplay -force -file capture.ppbin
 Use `capture.vcd` when you want waveform viewing as well as replay, `capture.seq` when you want
 an editable text sequence, and `capture.ppbin` when you want exact lossless replay. Omit `-force`
 when you want playback to arm the trigger and wait for the configured trigger condition.
+
+`ppread` captures only samples produced while it is active. It cannot recover a finite waveform that completed before the readback encoder was reset at command startup.
 
 For a fuller workflow, see [Example 3: Capture a waveform and replay it exactly](examples.md#example-3-capture-a-waveform-and-replay-it-exactly).
 

@@ -12,7 +12,7 @@ PulsePins is built around the idea that long, deterministic digital output progr
 
 The streamer achieves that by separating responsibilities:
 
-* software builds or parses compact [run-length-encoded sequences](index.md#run-length-encoding)
+* software builds or parses compact [run-length-encoded sequences](sequencer_model.md#data-path-and-run-length-encoding)
 * the streamer decodes them into output updates on the FPGA
 * trigger and gate logic decide when those updates are allowed to advance
 * readback and counters provide verification and diagnostic visibility

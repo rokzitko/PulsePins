@@ -7,8 +7,10 @@ tool. A collection of shell scripts can be found in the [`tests/`]({{ source_fil
 of the test battery, run [`run_all_tests`]({{ source_file("tests/run_all_tests") }}). If any error is encountered, testing stops immediately.
 Successful completion is reported by printing the message ``SUCCESS``.
 
+The hardware tests enable output drivers and exercise nonzero 3.3 V patterns. Disconnect external circuits from driven PulsePins signals, or verify that they can safely accept those patterns, before starting a sweep.
+
 One can run the tests continuously using [`run_all_tests_forever`]({{ source_file("tests/run_all_tests_forever") }}) to perform intensive
-stress testing. Logs are collected under `/var/volatile/pulsepins-test-logs` for inspection:
+stress testing. Current-source builds collect logs under `/var/volatile/pulsepins-test-logs` for inspection:
 `report` records the `pptest` version, bitstream timestamp, and successful-run timestamps, while
 `report.run_N` files contain per-run output. Pass `-no-report-files` to avoid writing the
 accumulating `report.run_N` files during long burn-in runs. The runner exits with failure on the
@@ -28,16 +30,7 @@ external clock sources are also visible.
 
 ## Arduino header
 
-Some signals are additionally brought out on the Arduino header for testing purposes.
-
-| Port   | Name |
-| ------ | ---- |
-| D[7:0] | streamer_qout[7:0] |
-| D8     | streamer_clk (internal or external, as configured) |
-| D9     | core_clk (PLL output) |
-| D10    | int_clk (PLL output) |
-| D11    | streamer_qout[0] |
-| D12    | streamer_qout[1] |
+Selected output and clock signals are brought out on the Arduino header for probing and tests. See the [DE10-Nano signal reference](de10_nano_reference.md#arduino-header) for the current mapping.
 
 
 ## Manual testing

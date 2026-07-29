@@ -1,4 +1,4 @@
-## ppscpi
+# ppscpi
 
 `ppscpi` is a standalone network server that runs on a PulsePins target board and accepts remote-control commands using
 the [Standard Commands for Programmable Instruments
@@ -11,7 +11,7 @@ The IVI Foundation maintains the SCPI standard and hosts the [SCPI-99 specificat
 
 The implementation is in [`c++/ppscpi.cc`]({{ source_file("c++/ppscpi.cc") }}) and the SCPI session/server helpers are in [`c++/scpi_server.hh`]({{ source_file("c++/scpi_server.hh") }}).
 
-### Transport and startup
+## Transport and startup
 
 `ppscpi` listens on standard SCPI TCP port `5025`. By default it binds to
 `0.0.0.0`, which accepts connections on all interfaces.
@@ -21,6 +21,8 @@ Command-line options:
 * `-ip <addr>`: bind address, default `0.0.0.0`
 
 When bound to `0.0.0.0`, `ppscpi` prints a red `WARNING` line, states `waiting one second`, and waits one second before accepting client traffic. Use `-ip 127.0.0.1` for local-only access or another specific interface address when remote access should be limited.
+
+`ppscpi` does not provide authentication or transport encryption. Treat the default bind as network-exposed hardware control and use it only on a trusted network, with a restricted bind address, or behind appropriate network controls.
 
 On startup it:
 
@@ -35,7 +37,7 @@ semicolons (`;`); `ppscpi` trims and dispatches each segment in order, with resp
 in the same order. Empty segments are ignored. Each segment is parsed as a complete command
 path, so relative SCPI path continuation is not implemented.
 
-### Session model
+## Session model
 
 Each client connection gets its own SCPI session object.
 
@@ -48,7 +50,7 @@ Session state includes:
 
 The session does not persist across reconnects.
 
-### Supported commands
+## Supported commands
 
 Standard commands:
 
@@ -72,7 +74,7 @@ PulsePins-specific commands:
 * `DISCONNECT` - close the client session; the `ppscpi` server keeps running
 * `TERMINATE` - stop the `ppscpi` server process
 
-### Typical flow
+## Typical flow
 
 1. Connect to TCP port `5025`
 2. Send `*RST`
@@ -81,7 +83,7 @@ PulsePins-specific commands:
 5. Send `STREAM`
 6. Query `SYST:ERR?` if needed
 
-### Workstation Python and Jupyter
+## Workstation Python and Jupyter
 
 Jupyter should normally run on a workstation, not on the DE10-Nano. The target board only needs to run `ppscpi`; the notebook talks to it over Ethernet.
 
@@ -159,7 +161,7 @@ pulsepins-timeline-sweep de10nano --delays-us 0 5 10
 
 Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting absolute-time pulses; pass `--clock-hz` only when you need to override the streamer-clock frequency measured by `ppscpi` at startup. Hardware-free preview and sweep `--dry-run` use the supplied/default dry-run clock.
 
-### Notes
+## Notes
 
 * `STREAM` uses the same send/trigger path as the local tools, including optional readback verification.
 * `*RST` restores a clean remote-control run state; it does not reprogram clocks or PLLs.
@@ -177,7 +179,7 @@ Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting ab
 * After `DISCONNECT`, clients can reconnect and start a fresh independent session.
 * `TERMINATE` is the explicit server-shutdown command; it closes the client session and stops the process.
 
-### Related pages
+## Related pages
 
 * [pptool](pptool.md)
 * [C++ application programming interface](cpp.md)

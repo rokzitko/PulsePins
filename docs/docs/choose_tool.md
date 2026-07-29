@@ -1,209 +1,80 @@
-## Choose the right tool
-
-PulsePins exposes the same hardware through several different interfaces:
-
-* small command-line tools (`ppfg`, `ppdelay`, `ppplay`, `ppread`, ...)
-* the C++ API
-* Python bindings
-* the SCPI server (`ppscpi`)
-* the browser UI (`ppwebgui`)
-
-This page maps each task to the appropriate tool or interface.
-
-### Start here
-
-If you want to...
-
-* generate a quick digital signal without writing a sequence file:
-    use [`ppfg`](ppfg.md) or [`ppdelay`](ppdelay.md)
-* run or replay a saved sequence file:
-    use [`ppplay`](ppplay.md)
-* capture what PulsePins produced and save it for inspection or replay:
-    use [`ppread`](ppread.md)
-* verify board health or run built-in streaming tests:
-    use [`pptest`](pptest.md)
-* inspect external clock or PPS timing:
-    use [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md)
-* troubleshoot trigger routing and trigger sources:
-    use [`pptrig`](pptrig.md)
-* inspect or change combiner routing manually:
-    use [`ppqout`](ppqout.md)
-* drive a workflow from scripts or notebooks:
-    use the [Python API](python.md)
-* build custom sequence-generation logic or hardware wrappers:
-    use the [C++ API](cpp.md)
-* control the device remotely from automation software:
-    use [`ppscpi`](ppscpi.md)
-* interact with the device from a browser:
-    use [`ppwebgui`](ppwebgui.md)
-
-### By task
-
-#### I want to generate a simple digital output
-
-Use:
-
-* [`ppfg`](ppfg.md) for periodic patterns, PWM-style outputs, bursts, and gated square-wave generation
-* [`ppdelay`](ppdelay.md) for one-shot delayed pulses after a trigger
-* [`pphelloworld`](pphelloworld.md) for the most minimal output-toggle smoke test
-
-These are the best first tools when you want a signal quickly and do not need a saved sequence file.
-
-#### I want to play back a sequence file
-
-Use:
-
-* [`ppplay`](ppplay.md)
-
-Choose the file format by goal:
-
-* text (`.seq`, `.txt`) when you want human-editable sequences
-* binary (`.ppbin`) when you want exact replay of the full internal representation
-* VCD when the source waveform came from a waveform-oriented tool
-
-#### I want to capture and inspect what happened
-
-Use:
-
-* [`ppread`](ppread.md)
-
-Typical outputs:
-
-* VCD for waveform viewers
-* text for manual inspection/editing
-* binary for exact replay/regression workflows
-
-If you want a simple digital-logic-analyzer workflow, `ppread` is usually the right first stop.
-
-#### I want to validate clocks, PPS, or timing sources
-
-Use:
-
-* [`ppfreq`](ppfreq.md) for external/internal/streamer clock measurements
-* [`ppts`](ppts.md) for PPS and timestamp stream inspection
-
-These tools are useful during board bring-up, synchronization work, and external-reference troubleshooting.
-
-#### I want to debug triggers and routing
-
-Use:
-
-* [`pptrig`](pptrig.md) to inspect trigger source selection, masks, and inversion
-* [`ppqout`](ppqout.md) to inspect or force combiner/output routing behavior
-
-These are lower-level troubleshooting tools rather than general sequence-generation commands.
-
-#### I want to verify the device itself
-
-Use:
-
-* [`pptest`](pptest.md) for built-in streaming, trigger, preprocessor, and readback verification
-* [`ppcounter`](ppcounter.md) for the integrated counter subsystem
-
-If you just brought up a board or changed low-level behavior, start here before building bigger workflows.
-
-#### I want to read board peripherals
-
-Use:
-
-* [`pptemp`](pptemp.md) for the onboard temperature sensor path
-* [`ppaux`](ppaux.md) for AUX input sampling
-
-For PP_PMOD-specific hardware context, also see [PP_PMOD Reference Shield](pp_pmod.md) and [PP_PMOD Hardware Reference](pp_pmod_reference.md).
-
-### Choose the right interface layer
-
-#### CLI tools
-
-Best when:
-
-* you want immediate interaction from a shell
-* you want copy-pasteable lab commands
-* you want the fastest path to trying a built-in feature
-
-Start with the CLI if the job already maps to an existing tool page.
-
-#### Python API
-
-Best when:
-
-* you want scripting, notebooks, or quick automation
-* you want to generate or transform sequences programmatically without building a C++ binary
-* you want to integrate PulsePins into a larger measurement script
-
-See: [Python API](python.md).
-
-#### C++ API
-
-Best when:
-
-* you are extending the project itself
-* you need new tool behavior, new wrappers, or tighter control over ARM-side execution paths
-* performance and direct integration with the existing C++ runtime matter
-
-See: [C++ API](cpp.md).
-
-#### SCPI server
-
-Best when:
-
-* you want remote instrument-style control from other software
-* your lab already has SCPI-oriented orchestration
-
-Use: [`ppscpi`](ppscpi.md).
-
-#### Web GUI
-
-Best when:
-
-* you want a quick browser-based control interface
-* you want to inspect live status and adjust trigger/combiner settings interactively
-* you want to stream PulsePins text sequences without writing a custom client
-
-Use: [`ppwebgui`](ppwebgui.md).
-
-### Typical workflows
-
-#### First hardware bring-up
-
-Suggested order:
-
-1. [`pphelloworld`](pphelloworld.md)
-2. [`pptest`](pptest.md)
-3. [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md) if timing inputs matter
-4. [`ppfg`](ppfg.md) or [`ppdelay`](ppdelay.md) for your first real output
-
-#### Build a repeatable waveform workflow
-
-Suggested order:
-
-1. prototype with [`ppfg`](ppfg.md) or [`pptest`](pptest.md)
-2. capture with [`ppread`](ppread.md)
-3. replay with [`ppplay`](ppplay.md)
-4. move to Python or C++ if you need generated sequences
-
-#### Bring up a peripheral device from qout pins
-
-Suggested order:
-
-1. validate base outputs with [`pptest`](pptest.md)
-2. validate routing with [`ppqout`](ppqout.md) if needed
-3. prototype the transaction with helper tools under [`tools/`]({{ source_file("tools/") }})
-4. replay the generated sequence with [`ppplay`](ppplay.md)
-
-### When to move beyond the CLI
-
-Move from CLI tools to Python or C++ when:
-
-* you are repeating the same command patterns in scripts
-* you need programmatic sequence generation
-* you want richer error handling than shell pipelines provide
-* you are adding a new capability instead of just using an existing one
-
-### Related pages
-
-* [Worked examples](examples.md)
-* [C++ API](cpp.md)
-* [Python API](python.md)
-* [Build and deployment](build.md)
-* [Hacking on PulsePins](hacking.md)
+# Choose the right tool
+
+PulsePins exposes the same hardware through task-specific commands, C++ and Python APIs, a SCPI-style network service, and a browser interface. Start with the narrowest interface that already matches the job.
+
+This page describes the current source-tree command set. Older released images may provide fewer commands; check the selected release notes when a tool is unavailable.
+
+## Choose by task
+
+| Goal | Start with | Why |
+| ---- | ---------- | --- |
+| Set up and validate a released board | [Quick start](quick_start.md) | linear image, access, self-test, and first-output procedure |
+| Generate a periodic signal, PWM, or finite burst | [`ppfg`](ppfg.md) | direct frequency, period, duty-cycle, and burst controls |
+| Emit a pulse after a trigger and delay | [`ppdelay`](ppdelay.md) | one-shot delay-generator workflow |
+| Run the smallest live output smoke test | [`pphelloworld`](pphelloworld.md) | immediate repeating output without a sequence file |
+| Play a saved sequence | [`ppplay`](ppplay.md) | text, binary, and VCD input |
+| Capture, inspect, or replay a waveform | [`ppread`](ppread.md) and [Readback](readback.md) | text, VCD, and exact binary capture |
+| Run built-in hardware checks | [`pptest`](pptest.md) and [Testing procedures](testing.md) | streamer, trigger, preprocessor, and readback validation |
+| Measure clocks | [`ppfreq`](ppfreq.md) | external, internal, streamer, and core clock measurements |
+| Inspect PPS or timestamp events | [`ppts`](ppts.md) | timestamp stream and interval reporting |
+| Exercise event counters | [`ppcounter`](ppcounter.md) | built-in deterministic or pseudorandom counter test sequences |
+| Monitor AUX pin levels | [`ppaux`](ppaux.md) | formatted sampling of the read-only CLI path |
+| Read the PP_PMOD temperature sensor | [`pptemp`](pptemp.md) | MCP9808 board-peripheral access |
+| Run the GPSDO control loop | [`ppgpsdo`](ppgpsdo.md) | PPS/AUX timestamp error and DAC feedback |
+| Debug trigger sources and masks | [`pptrig`](pptrig.md) | trigger-combiner configuration and live state |
+| Inspect or override output routing | [`ppqout`](ppqout.md) | output-combiner modes, masks, and force values |
+| Reset an interrupted or infinite stream | [`ppreset`](ppreset.md) | return the primary streamer to a known idle state |
+| Calculate a PLL profile without hardware | [`pllcalc`](pllcalc.md) | standalone clock-profile calculation |
+| Automate from a script or notebook | [Python API](python.md) | generated sequences and experiment integration |
+| Add a command or direct hardware wrapper | [C++ API](cpp.md) | native access to the existing runtime and hardware classes |
+| Control a board over the network | [`ppscpi`](ppscpi.md) | line-oriented remote instrument control |
+| Operate interactively from a browser | [`ppwebgui`](ppwebgui.md) | live state plus trigger, routing, and sequence controls |
+
+## Choose an interface layer
+
+| Interface | Best fit | Main tradeoff |
+| --------- | -------- | ------------- |
+| Command-line tools | immediate shell use and existing single-purpose operations | limited composition beyond shell scripts |
+| Python API | notebooks, sweeps, generated sequences, and larger measurement scripts | board-native bindings and workstation SCPI clients have different deployment models |
+| C++ API | new tools, direct wrappers, and performance-sensitive board-side work | requires native build and lower-level project knowledge |
+| SCPI server | remote orchestration and instrument-style clients | unauthenticated control; restrict the bind address or use a trusted network |
+| Web interface | interactive setup, status, and manual operation | intended for trusted networks rather than unattended automation |
+
+Use the command line first when a dedicated tool already provides the operation. Move to Python or C++ when sequence generation, repetition, error handling, or integration logic starts dominating the shell commands.
+
+## Sequence file formats
+
+| Format | Use it when |
+| ------ | ----------- |
+| PulsePins text | the sequence should remain readable and editable |
+| VCD | data comes from or should be inspected in waveform-oriented tools |
+| PulsePins binary (`.ppbin`) | exact internal representation and lossless replay matter |
+
+See [`ppplay`](ppplay.md), [`ppread`](ppread.md), and the [C++ sequence types](cpp.md#data-types-for-sequence-representation) for format-specific behavior.
+
+## Common paths
+
+First board:
+
+1. Follow [Quick start](quick_start.md).
+2. Confirm `run_all_tests` reports `SUCCESS`.
+3. Generate the finite first output.
+4. Select the next command or interface from the task table above.
+
+Repeatable capture and replay:
+
+1. Start [`ppread`](ppread.md) before the signal source and keep the capture running.
+2. Generate with [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), or a custom sequence while capture is active.
+3. Inspect VCD or text output.
+4. Replay with [`ppplay`](ppplay.md).
+
+Readback records live qualified samples; it cannot recover a finite waveform that completed before `ppread` started. See [Example 3](examples.md#example-3-capture-a-waveform-and-replay-it-exactly) for a concurrent shell workflow.
+
+Peripheral transaction:
+
+1. Validate the base output path with [`pptest`](pptest.md).
+2. Check routing with [`ppqout`](ppqout.md) if needed.
+3. Generate the transaction with the C++, Python, or helper-tool layer.
+4. Play and verify the resulting sequence.
+
+For complete command-and-observation examples, continue with [Worked examples](examples.md).
