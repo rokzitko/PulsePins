@@ -23,7 +23,7 @@ The connector and signal names below follow the KiCad schematics. For final pin-
 | `J9` | `EXT_CLK` | SMA | external clock input |
 | `J10` | trigger control | 1 × 6 vertical socket | trigger control breakout |
 | `J11` | trigger status | 1 × 6 vertical socket | trigger status/service breakout |
-| `J12` | `AUX` | 2 × 6 right-angle socket | auxiliary bus `AUX0..AUX7` |
+| `J12` | `AUX` | 2 × 6 right-angle socket | bidirectional auxiliary bus `AUX0..AUX7` |
 | `J13` | buffered output | SMA | buffered `Q0` output |
 | `J14` | buffered output | SMA | buffered `Q1` output |
 | `J17` | trigger SMA | SMA | thresholded trigger input |
@@ -60,6 +60,8 @@ Each 2 × 6 connector also includes utility power and ground pins.
 | --- | --- |
 | odd pins | `AUX3`, `AUX2`, `AUX1`, `AUX0`, then utility pins |
 | even pins | `AUX7`, `AUX6`, `AUX5`, `AUX4`, then utility pins |
+
+Each AUX bit defaults to input after reset and can be configured independently as an output through `pio_cfg`; output values are written through `pio_aux`. The [`ppaux`](ppaux.md) command samples pin levels only. Do not enable an AUX output while an external source is driving the same line.
 
 QOUT sideband signals are presented on `J8`:
 

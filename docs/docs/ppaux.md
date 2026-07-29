@@ -4,6 +4,8 @@
 
 It is a simple observation/debugging tool for the 8-bit auxiliary input path.
 
+The FPGA design exposes `AUX0..AUX7` as bidirectional pins with independent direction control, and all bits default to input after reset. `ppaux` is read-only: it reports the sampled pin levels but does not configure direction or drive output values. Those hardware controls are provided by `pio_cfg` and `pio_aux` for lower-level access.
+
 ## When to use it
 
 Use `ppaux` when you want to:

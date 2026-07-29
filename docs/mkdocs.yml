@@ -5,7 +5,7 @@ extra:
   source_repo: https://github.com/rokzitko/PulsePins
   source_ref: "2026.06"
 nav:
-  - Sequencer: index.md
+  - Home: index.md
   - Hardware:
     - ppboards shields: ppboards.md
     - PP_PMOD overview: pp_pmod.md
@@ -58,7 +58,6 @@ nav:
     - Test infrastructure: testing.md
     - Readback: readback.md
   - Development: development.md
-  - About: about.md
 theme:
    name: readthedocs
    favicon: img/favicon.ico

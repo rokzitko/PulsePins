@@ -1,64 +1,37 @@
 # PulsePins pulse sequencer
 
-PulsePins is a general-purpose programmable pulse sequencer running on field-programmable gate array (FPGA) system-on-chip (SoC) modules, including [Cyclone V SoC FPGA](https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html)-based boards.
-It targets low-speed (up to 100 MHz) applications on a moderate number of digital output channels (typically 32 or 64).
-It is scriptable via Python and C++. It can run on small compact FPGA modules, such as
-[Terasic DE10-Nano](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046)
-(68.6 mm × 107 mm footprint) using Ethernet connectivity.
+This manual covers the released [DE10-Nano](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=167&No=1046) design: 32 digital outputs, 3.3 V LVTTL signaling, and a 10 ns programmable time step at the default 100 MHz streamer clock. The board runs the PulsePins control software on its HPS and can be operated locally, over Ethernet, or from Python and C++.
 
 Project repository: [https://github.com/rokzitko/PulsePins](https://github.com/rokzitko/PulsePins).
 
-## Start here
+## First run
 
-If you have access to a board, these are the best first guides:
+1. Follow the [`INSTALL-quick_start.md`]({{ source_file("INSTALL-quick_start.md") }}) instructions to prepare and access the board.
+2. Run the [baseline board checks](testing.md) and confirm that `run_all_tests` reports `SUCCESS`.
+3. Follow a [worked output example](examples.md) and verify the signal with a scope or logic analyzer.
 
-* [Getting started with hardware](getting_started_hardware.md)
-* [Choose the right tool](choose_tool.md)
-* [Worked examples](examples.md)
-* [Extension cookbook](extension_cookbook.md)
+For source work that does not require a board, see [Development without hardware](getting_started_no_hardware.md).
 
-PulsePins is primarily a hardware-backed project. Development-machine work is useful, but the main workflows and validation paths revolve around a target board.
+## Choose by task
 
-## Common tasks
+| Goal | Start with |
+| ---- | ---------- |
+| Bring up or test a board | [Hardware setup](getting_started_hardware.md) and [testing procedures](testing.md) |
+| Generate a periodic or delayed output | [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), and [worked examples](examples.md) |
+| Play a saved sequence | [`ppplay`](ppplay.md) |
+| Capture, inspect, or replay output | [`ppread`](ppread.md) and [readback](readback.md) |
+| Measure clocks or PPS timing | [`ppfreq`](ppfreq.md) and [`ppts`](ppts.md) |
+| Control a board from Python or a notebook | [Python interface](python.md) and [`ppscpi`](ppscpi.md) |
+| Troubleshoot triggers or output routing | [`pptrig`](pptrig.md) and [`ppqout`](ppqout.md) |
+| Add a command, binding, or hardware feature | [Extension cookbook](extension_cookbook.md) and [build guide](build.md) |
 
-If you want to...
-
-* bring up a board or run a quick live test:
-    use [Getting started with hardware](getting_started_hardware.md), [Testing procedures](testing.md), `make board-smoke`, and [`run_all_tests`]({{ source_file("tests/run_all_tests") }})
-* generate a quick digital pattern:
-    use [`ppfg`](ppfg.md), [`ppdelay`](ppdelay.md), or [`pphelloworld`](pphelloworld.md)
-* replay a saved sequence:
-    use [`ppplay`](ppplay.md)
-* capture and inspect output:
-    use [`ppread`](ppread.md)
-* validate clocks or PPS timing:
-    use [`ppfreq`](ppfreq.md) or [`ppts`](ppts.md)
-* extend the project:
-    start with [Extension cookbook](extension_cookbook.md)
-
-## What PulsePins is good for
-
-PulsePins is well suited to:
-
-* digital pulse sequencing for laboratory equipment with a 10 ns programmable time step at a 100 MHz streamer clock
-* digital delay generation and synchronization
-* driving DACs, DDS chips, serializers, and other digital peripherals
-* exact capture/replay workflows via text, VCD, and binary sequence formats
-* hardware-backed verification and regression checking through the readback path
+For a fuller comparison of the available interfaces, see [Choose the right tool](choose_tool.md).
 
 ## Run-length encoding
 
-[Run-length encoding](https://en.wikipedia.org/wiki/Run-length_encoding) (RLE) is a data-compression technique in which consecutive identical values
-are stored as pairs of value and length (number of repetitions). PulsePins decodes RLE sequences
-and streams the resulting data to the output pins of an FPGA board or to other data sinks, such as
-SerDes circuits that generate high-speed signals on transceiver ports. For PulsePins, holding one output value for `N` streamer-clock cycles can be represented as one regular element with count `N` rather than `N` repeated samples. It supports complex
-triggering with multiple trigger stages and multiple trigger input pins. The main application area
-is timing-critical control of quantum and other experimental devices that require precisely
-scheduled updates of signals (digital; analog via DAC boards; oscillatory via DDS boards). PulsePins is
-distributed both as modifiable source code (SystemVerilog/Verilog RTL, C++, Python) and as a pre-built SD-card image for a quick start.
+[Run-length encoding](https://en.wikipedia.org/wiki/Run-length_encoding) (RLE) stores a stable output value as a value and a repetition count instead of recording one sample per clock. In PulsePins, a regular element with count `N` holds its output value for `N` streamer-clock cycles. The same element stream also carries trigger conditions, final values, and preprocessor instructions such as store and replay.
 
-This web site serves as the reference and user manual for PulsePins. It provides low-level implementation details,
-interfacing with the hard processor system (HPS), API, software library (C++ and Python interfaces), and testing tools. Timing diagrams are also provided.
+The FPGA decodes these elements into output updates and can send them to GPIO pins or other FPGA data paths. Trigger and gate logic control when output advancement is allowed, while the readback path records the emitted stream for comparison or capture.
 
 ![PulsePins diagram](img/PulsePins.001.png){: style="height:300px"}
 
@@ -241,7 +214,7 @@ pins (defined in [`pulsepins.sv`]({{ source_file("pulsepins.sv") }})). GPIO0[25:
 |           | 25    | D15        | <font color="lightskyblue">0</font>                               | Constant low debug output (`EXTRA_SETB`) |
 |           | 26    |            | <font color="DimGrey">I2C SDA</font>            | I2C interface data |
 |           | 27    |            | <font color="DimGrey">I2C SCL</font>            | I2C interface clock |
-|           | 35:28 |            | <font color="#FFD580">AUX</font>            | Auxiliary inputs |
+|           | 35:28 |            | <font color="#FFD580">AUX</font>            | Auxiliary I/O |
 | GPIO1     | 0     |            | <font color="Cyan">EXT_CLKp</font>    | External clock input |
 |           | 1     |            | <font color="Cyan">PPS_IN</font>      | Pulse-per-second input (for synchronization and triggering) |
 |           | 2     |            | <font color="Cyan">PPCLK1</font>      | Reserved external crystal clock 1 |
@@ -396,10 +369,11 @@ processed in the trigger combiner):
 
 Use [pptrig](pptrig.md) for debugging the triggering subsystem.
 
-## Auxiliary inputs (AUX)
+## Auxiliary I/O (AUX)
 
-An eight bit digital bus is attached to an input PIO (pio_aux, lowest 8 bits) that can be read from
-software, see [ppaux](ppaux.md).
+The released design exposes eight bidirectional AUX pins. Direction is selected independently for each bit through `pio_cfg`: `0` selects input, `1` selects output, and all bits default to input after reset. `pio_aux` holds output values and reports the sampled pin levels.
+
+[`ppaux`](ppaux.md) samples the bus; it does not configure pin direction or drive output values.
 
 ## Extensions
 
