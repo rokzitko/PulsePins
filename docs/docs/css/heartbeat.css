@@ -1,3 +1,7 @@
+.wy-nav-content {
+  max-width: none;
+}
+
 .heartbeat {
   /* Make the pulses feel a bit physical */
   animation: heartbeat 1.6s ease-in-out infinite;
