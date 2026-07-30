@@ -29,6 +29,16 @@ Color code used in the diagram:
 
 The indexes below are positions in the top-level GPIO arrays, not physical connector pin numbers. GPIO0 bits 22-25 use the current `EXTRA_SETB` debug selection; an alternate build can expose streamer trigger visibility instead.
 
+Quick connections for the first-output manual chapters:
+
+| Signal | Logical index | DE10-Nano header pin | FPGA pin |
+| ------ | ------------- | -------------------- | -------- |
+| `qout[0]` | GPIO1[4] | GPIO 1 (`JP7`) pin 5 | `PIN_AG28` |
+| `qout[1]` | GPIO1[5] | GPIO 1 (`JP7`) pin 6 | `PIN_AF28` |
+| ground | - | GPIO 1 (`JP7`) pin 12 or pin 30 | - |
+
+Use the numbered connector drawing above to verify orientation before attaching a probe.
+
 | Connector | Index | Debug label | Signal | Function |
 | --------- | ----- | ----------- | ------ | -------- |
 | GPIO0 | 0 | D0 | `streamer_qout_strobe` | output strobe pulse |

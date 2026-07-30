@@ -31,13 +31,13 @@ All standard trigger-combiner and clock-selection options are also accepted.
 Immediate 1 ms pulse after the selected trigger source:
 
 ```bash
-ppdelay -veryverbose -trig_misc -int_pll 10M -duration 1ms
+ppdelay -veryverbose -trig_misc -int_pll 10M -duration 1ms -v1 0x1 -v0 0x0 -t 0x0
 ```
 
 1 ms pulse delayed by 20 ms after the trigger:
 
 ```bash
-ppdelay -veryverbose -trig_misc -int_pll 10M -duration 1ms -delay 20ms
+ppdelay -veryverbose -trig_misc -int_pll 10M -duration 1ms -delay 20ms -v1 0x1 -v0 0x0 -t 0x0
 ```
 
 Pulse with explicit on/off/final values:
@@ -55,8 +55,11 @@ ppdelay -trig_misc -delay 5ms -duration 500us -v1 0x1 -v0 0x0 -t 0x0
 
 With `-veryverbose`, the generated sequence is printed before playback.
 
+`ppdelay` returns after queueing the sequence and arming the trigger; it does not wait for the trigger or pulse to complete. If the intended trigger is not supplied, the wait remains armed indefinitely and a later event can release the pulse. Run `ppreset -i 0x0` to cancel an abandoned attempt. Running `pptrig` also resets the primary streamer, so it cannot inspect this sequence without cancelling it.
+
 ## Related pages
 
 * [`ppfg`](ppfg.md)
 * [`pptrig`](pptrig.md)
-* [Worked examples](examples.md)
+* [User manual](examples.md)
+* [Triggered one-shot delay](manual/triggered_delay.md)

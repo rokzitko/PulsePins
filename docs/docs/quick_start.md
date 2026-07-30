@@ -4,6 +4,8 @@ This is the shortest path from a released SD-card image to a validated DE10-Nano
 
 **Version note:** this manual follows the current source tree and can be newer than the latest published binary image. Check the selected release notes for its included commands. If a documented command is missing, use documentation from that release or deploy a matching current-source build.
 
+The example-led [User manual](examples.md) targets current `main` and host/FPGA ABI 6. Follow those chapters only with a matching host build and FPGA image.
+
 ## What you need
 
 * a DE10-Nano with its power supply
@@ -70,7 +72,7 @@ Generate ten 10 ms periods on `qout[0]`, returning the bus to zero afterward:
 ppfg -burst 10 -period 10ms -trig -v1 0x1 -v0 0x0 -t 0x0
 ```
 
-Expect ten 50% duty-cycle pulses on `qout[0]`; the other output bits remain low. The final value is zero, but the output drivers remain enabled after the command completes.
+Expect ten 50% duty-cycle pulses on `qout[0]`; the other output bits remain low. `ppfg` can return to the shell before the hardware burst finishes, so observe the complete ten-period burst rather than treating the prompt as completion. The final value is zero, but the output drivers remain enabled. Follow the [manual cleanup](manual/first_output.md#cleanup) before connecting another driver.
 
 ## Optional burn-in
 
@@ -85,7 +87,7 @@ The runner stops at the first failed sweep. Current-source builds write summary 
 ## Where to go next
 
 * [Choose the right tool](choose_tool.md) for a task-to-interface map
-* [Worked examples](examples.md) for complete lab workflows
+* [User manual](examples.md) for finite, source-reviewed laboratory workflows
 * [Sequencer model](sequencer_model.md) for the data and trigger model
 * [Hardware setup](getting_started_hardware.md) for board access and optional hardware
 * [Python API](python.md), [C++ API](cpp.md), or [SCPI server](ppscpi.md) for automation

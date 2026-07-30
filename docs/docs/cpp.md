@@ -55,21 +55,23 @@ Trigger configuration follows a similar split:
 
 ### Data types for sequence representation
 
-The C++ sequence model mirrors the encoded data consumed by the streamer core. The core types are defined in [`elements.hh`]({{ source_file("c++/elements.hh") }}) and [`sequence.hh`]({{ source_file("c++/sequence.hh") }}).
+The C++ sequence model mirrors the encoded data consumed by the streamer core. The core types are defined in [`elements.hh`]({{ source_file("c++/elements.hh") }}) and [`sequence.hh`]({{ source_file("c++/sequence.hh") }}); the canonical user-facing grammar is documented in [PulsePins text sequence format](sequence_format.md).
 
-Besides the text sequence format used by several tools, `Sequence` also supports [Value Change Dump (VCD)](https://en.wikipedia.org/wiki/Value_change_dump) import and deterministic waveform export back to VCD. The export path targets sequences that can be reduced to a regular effective output waveform; control-flow and random elements are intentionally rejected. The C++ VCD export default is `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
+Besides the text sequence format used by several tools, `Sequence` also supports [Value Change Dump (VCD)](https://en.wikipedia.org/wiki/Value_change_dump) import and export as a flattened regular-record projection. The export path rejects non-regular elements, but it does not execute preprocessor store semantics, evaluates zero-count operations before removing their runs, and evaluates relative operations from initial value zero rather than the runtime initial `qout`. Normalize to emitted, positive-count BITLOAD records, or evaluate relative operations against the actual initial state before export. The C++ VCD export default is `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
 
-For exact, lossless interchange, `Sequence` also supports a self-describing binary format that preserves the full internal sequence representation, including control-flow elements and the force-trigger flag.
+`Sequence` also supports a self-describing current-build binary snapshot. It preserves normalized current-width `control`, `count`, and `value` element triplets plus the force-trigger flag, but loading requires matching control, count, value, and trigger widths. Reproducing the same execution also requires external context such as the streamer clock, initial output, trigger and gate routing, and output configuration.
 
-In practice this also makes PulsePins useful as a simple logic-analyzer backend for deterministic readback waveforms.
+In practice, readback also makes PulsePins useful as a qualified-sample logic-analyzer backend. Captures represent `qout_valid`-qualified runs rather than authored control flow and omit elapsed intervals while validity is low.
 
 Serialization capability matrix:
 
-| Format | C++ | Python | CLI |
-| ------ | --- | ------ | --- |
-| PulsePins text sequence format | import + export | import + export | export via `ppread -save-text`; import in selected workflows |
-| Value Change Dump (VCD) | import + export | import + export | import via `ppplay` or `ppvcd`; export via `ppread -save-vcd` |
-| PulsePins binary sequence format | import + export | import + export | import via `ppplay`, export via `ppread -save-binary` |
+| Format | C++ | Board-native Python `pp` | CLI |
+| ------ | --- | ------------------------ | --- |
+| [PulsePins text sequence format](sequence_format.md) | import + export | import + export | export via `ppread -save-text`; import in selected workflows |
+| VCD regular-record projection | import + export | import + export | import via `ppplay` or `ppvcd`; export via `ppread -save-vcd` |
+| Current-build binary sequence snapshot | import + export | import + export | import via `ppplay`, export via `ppread -save-binary` |
+
+The Python column refers to the board-native nanobind module. The workstation `pulsepins` package transports text through SCPI and provides separate Timeline authoring and preview helpers rather than these C++ `Sequence` serializers.
 
 Class hierarchy for counter and value helper objects:
 
@@ -186,9 +188,9 @@ Public member functions are:
 
 Two sequences can be compared using function ``compare()`` and using ``operator==``.
 
-[`sequence.hh`]({{ source_file("c++/sequence.hh") }}) also provides ``parse_sequence_from_stream(std::istream&)`` for the text-based sequence format used by `pptest` test 42 and by the SCPI `SEQ` command. That parser accepts the same regular update modes implemented by the `Value` subclasses, non-final triggers, preprocessor operations (`store`, `r`, `rt`, `pr`), terminal explicit final terminators, and the `f` force-trigger flag. The accepted token grammar is documented inline next to the parser and mirrored in [pptest - self-tests](pptest.md) ([source]({{ source_file("docs/docs/pptest.md") }})).
+[`sequence.hh`]({{ source_file("c++/sequence.hh") }}) also provides ``parse_sequence_from_stream(std::istream&)`` for the [PulsePins text sequence format](sequence_format.md) used by `pptest` test 42 and by the SCPI `SEQ` command. The format page is the canonical description of the accepted grammar, numeric syntax, playback boundary, and interface constraints.
 
-The same header also provides ``write_sequence_to_stream(...)`` and ``write_sequence_to_file(...)`` for emitting that text format from an in-memory `Sequence`. These helpers are intended for round-tripping sequences through files or for generating sequence files programmatically instead of hand-writing token streams.
+The same header also provides ``write_sequence_to_stream(...)`` and ``write_sequence_to_file(...)`` for emitting canonical text from an in-memory `Sequence`. These helpers round-trip the parser-representable normalized subset, not arbitrary raw triplets; raw retrigger payloads and other fields omitted by the grammar are not preserved.
 
 ### SPI sequence generation
 

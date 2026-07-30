@@ -24,6 +24,8 @@ Each element contains three 32-bit values in the released DE10-Nano build:
 
 The standard transport order is control, count, value. Matching RTL and software builds can use different data or count widths.
 
+The user-facing [PulsePins text sequence format](sequence_format.md) represents a normalized subset of this model rather than arbitrary raw element triplets.
+
 The control parameter is defined in [`ip/streamer/config.vh`]({{ source_file("ip/streamer/config.vh") }}):
 
 | Name | Bit | Meaning |
@@ -122,7 +124,7 @@ The active output clock can be selected from the internal clock path or an exter
 
 The 32 main output drivers default to high impedance. Setting the physical output enable `oe` lets the final combined `qout` value drive the pins. With `oe` low, the pins can instead be sampled by the readback and counter paths. The same output enable controls the bidirectional `qout_valid` and `qout_strobe` pads used by the external-capture path.
 
-The [Readback](readback.md) subsystem re-encodes observed samples for self-test, waveform capture, VCD export, and exact replay workflows.
+The [Readback](readback.md) subsystem re-encodes `qout_valid`-qualified samples for self-test and capture. Replay of a readback export reproduces those normalized runs rather than recovering authored operators, control flow, no-strobe states, or elapsed invalid gaps. General C++ VCD export is a flattened regular-record projection with additional [fidelity limits](sequence_format.md#representation-fidelity).
 
 ## Configurable variants
 

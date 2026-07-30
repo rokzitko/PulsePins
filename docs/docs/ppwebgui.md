@@ -2,7 +2,7 @@
 
 `ppwebgui` is a standalone web server that runs on the target board for rapid interactive testing and hardware troubleshooting.
 
-It starts an embedded HTTP server on the target board, serves a small browser UI from the same binary, shows live AUX signal status, trigger-input/control, and streamer-runtime status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream PulsePins text sequences from the browser.
+It starts an embedded HTTP server on the target board, serves a small browser UI from the same binary, shows live AUX signal status, trigger-input/control, and streamer-runtime status, reports the current trigger-combiner configuration, lets the user change a single active-streamer qout override and the output-combiner settings, and can stream the canonical [PulsePins text sequence format](sequence_format.md) from the browser.
 
 The code is intentionally simple (HTTP only, no authentication, browser polling for live status updates,
 embedded HTML, CSS, and JavaScript).
@@ -153,7 +153,7 @@ those actions.
 * `POST /api/qout` expects an `application/x-www-form-urlencoded` body with `override_enabled` and `override_value`
 * `POST /api/combiner` expects an `application/x-www-form-urlencoded` body with the combiner mode plus output and input settings
 * `POST /api/reset` reruns the `ppwebgui` controller reset/bring-up path and reapplies the current web-managed settings
-* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with `sequence_text` and optional `force_trigger` and `check_readback`; before streaming, the backend reruns the `ppwebgui` controller reset/bring-up path and then appends the current tracked idle raw qout as the final output value, so submitted text must not already contain `final ...` and `PP_RANDOM_FINAL` should not be set for browser playback. Request-validation failures return HTTP `400`; hardware timeouts return HTTP `504`.
+* `POST /api/stream` expects an `application/x-www-form-urlencoded` body with non-empty canonical PulsePins `sequence_text` and optional `force_trigger` and `check_readback`; when supplied, `force_trigger` overrides the text's force request. Before streaming, the backend reruns the `ppwebgui` controller reset/bring-up path and then appends the current tracked idle raw qout as the final output value, so submitted text must not already contain `final ...` and `PP_RANDOM_FINAL` should not be set for browser playback. Explicit request-validation failures return HTTP `400`, although generic text-parser failures currently reach the HTTP `500` handler; hardware timeouts return HTTP `504`.
 
 The backend rejects oversized form submissions and limits `sequence_text` to 32 KiB per request.
 
@@ -231,6 +231,7 @@ Treat the default `0.0.0.0` bind as network-exposed control access. On shared or
 
 ## Related pages
 
+* [PulsePins text sequence format](sequence_format.md)
 * [ppscpi](ppscpi.md)
 * [pptool](pptool.md)
 * [build](build.md)

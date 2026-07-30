@@ -2,7 +2,7 @@
 
 This page collects lower-level implementation notes that complement the subsystem overviews.
 
-For the maintainer-oriented architectural view of the output engine, start with `streamer.md` and use this page as the lower-level reference for control bits, trigger details, and internal implementation facts.
+For the maintainer-oriented architectural view of the output engine, start with `streamer.md` and use this page as the lower-level reference for control bits, trigger details, and internal implementation facts. The user-facing record grammar is documented in [PulsePins text sequence format](sequence_format.md).
 
 ## Streamer core
 
@@ -25,7 +25,7 @@ for high-speed systems and for allowing extremely long delays.
 complex serial trigger sequences.
 
 `P_FIFO_IN1`, `P_FIFO_IN2`: exponents p that fix the lengths 2^p of the two input FIFO buffers for
-(counter,data,control) triplets received from the software. These buffers should be large enough so that they
+(control,count,value) triplets received from the software. These buffers should be large enough so that they
 never underflow during the streaming process. Underflows are possible if there are long sequences of elements with
 very short lengths. Used in [`input_fifo.sv`]({{ source_file("ip/streamer/input_fifo.sv") }}).
 

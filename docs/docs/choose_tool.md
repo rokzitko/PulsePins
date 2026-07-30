@@ -12,15 +12,14 @@ This page describes the current source-tree command set. Older released images m
 | Generate a periodic signal, PWM, or finite burst | [`ppfg`](ppfg.md) | direct frequency, period, duty-cycle, and burst controls |
 | Emit a pulse after a trigger and delay | [`ppdelay`](ppdelay.md) | one-shot delay-generator workflow |
 | Run the smallest live output smoke test | [`pphelloworld`](pphelloworld.md) | immediate repeating output without a sequence file |
-| Play a saved sequence | [`ppplay`](ppplay.md) | text, binary, and VCD input |
-| Capture, inspect, or replay a waveform | [`ppread`](ppread.md) and [Readback](readback.md) | text, VCD, and exact binary capture |
+| Play a saved sequence | [`ppplay`](ppplay.md) | canonical text plus derived binary and VCD input |
+| Capture, inspect, or replay qualified output samples | [`ppread`](ppread.md) and [Readback](readback.md) | `qout_valid`-qualified runs as text, VCD, or a current-build binary snapshot |
 | Run built-in hardware checks | [`pptest`](pptest.md) and [Testing procedures](testing.md) | streamer, trigger, preprocessor, and readback validation |
 | Measure clocks | [`ppfreq`](ppfreq.md) | external, internal, streamer, and core clock measurements |
 | Inspect PPS or timestamp events | [`ppts`](ppts.md) | timestamp stream and interval reporting |
 | Exercise event counters | [`ppcounter`](ppcounter.md) | built-in deterministic or pseudorandom counter test sequences |
 | Monitor AUX pin levels | [`ppaux`](ppaux.md) | formatted sampling of the read-only CLI path |
 | Read the PP_PMOD temperature sensor | [`pptemp`](pptemp.md) | MCP9808 board-peripheral access |
-| Run the GPSDO control loop | [`ppgpsdo`](ppgpsdo.md) | PPS/AUX timestamp error and DAC feedback |
 | Debug trigger sources and masks | [`pptrig`](pptrig.md) | trigger-combiner configuration and live state |
 | Inspect or override output routing | [`ppqout`](ppqout.md) | output-combiner modes, masks, and force values |
 | Reset an interrupted or infinite stream | [`ppreset`](ppreset.md) | return the primary streamer to a known idle state |
@@ -47,10 +46,10 @@ Use the command line first when a dedicated tool already provides the operation.
 | Format | Use it when |
 | ------ | ----------- |
 | PulsePins text | the sequence should remain readable and editable |
-| VCD | data comes from or should be inspected in waveform-oriented tools |
-| PulsePins binary (`.ppbin`) | exact internal representation and lossless replay matter |
+| VCD | a flattened waveform should be inspected in a waveform-oriented tool and the documented projection limits are acceptable |
+| PulsePins binary (`.ppbin`) | a normalized current-build sequence snapshot is useful and matching field widths are available |
 
-See [`ppplay`](ppplay.md), [`ppread`](ppread.md), and the [C++ sequence types](cpp.md#data-types-for-sequence-representation) for format-specific behavior.
+PulsePins text is the canonical user-facing format. See [PulsePins text sequence format](sequence_format.md), [`ppplay`](ppplay.md), and [`ppread`](ppread.md) for fidelity and interface-specific behavior.
 
 ## Common paths
 
@@ -58,7 +57,7 @@ First board:
 
 1. Follow [Quick start](quick_start.md).
 2. Confirm `run_all_tests` reports `SUCCESS`.
-3. Generate the finite first output.
+3. Follow [First finite output](manual/first_output.md).
 4. Select the next command or interface from the task table above.
 
 Repeatable capture and replay:
@@ -68,7 +67,7 @@ Repeatable capture and replay:
 3. Inspect VCD or text output.
 4. Replay with [`ppplay`](ppplay.md).
 
-Readback records live qualified samples; it cannot recover a finite waveform that completed before `ppread` started. See [Example 3](examples.md#example-3-capture-a-waveform-and-replay-it-exactly) for a concurrent shell workflow.
+Readback records live qualified samples; it cannot recover a finite waveform that completed before `ppread` started, no-strobe states, or the elapsed time in invalid gaps. See [Capture and replay](manual/capture_replay.md) for the two-terminal workflow.
 
 Peripheral transaction:
 
@@ -77,4 +76,8 @@ Peripheral transaction:
 3. Generate the transaction with the C++, Python, or helper-tool layer.
 4. Play and verify the resulting sequence.
 
-For complete command-and-observation examples, continue with [Worked examples](examples.md).
+## Experimental reference
+
+[`ppgpsdo`](ppgpsdo.md) remains an experimental GPSDO reference implementation rather than a recommended user-manual workflow. Establish and verify the complete oscillator-to-timestamp feedback path before treating it as a control loop for laboratory use.
+
+For complete command-and-observation chapters, continue with the [User manual](examples.md).

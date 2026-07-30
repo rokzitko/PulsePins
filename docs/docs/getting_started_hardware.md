@@ -47,7 +47,7 @@ Before running the board tests, disconnect external circuits from driven PulsePi
 
 Run `run_all_tests` before diagnosing optional hardware or developing a larger experiment. A clean run prints `SUCCESS`; see [Quick start](quick_start.md#4-validate-the-baseline-image) for the first-board procedure and [Testing procedures](testing.md) for test levels, logs, and troubleshooting.
 
-For a first externally observed signal, use the finite pulse command in [Quick start](quick_start.md#5-generate-a-first-output), then continue with [Worked examples](examples.md).
+For a first externally observed signal, follow [First finite output](manual/first_output.md), then continue with the [User manual](examples.md).
 
 ## Optional PP_PMOD profile
 

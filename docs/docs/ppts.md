@@ -109,22 +109,30 @@ Read PPS timestamps continuously:
 ppts
 ```
 
-Read only the `sigA` stream from selector `3` with a timeout:
+Read five samples explicitly from the external PPS input, with a finite wait bound:
 
 ```bash
-ppts -nopps -sigA -selA 3 -timeout 2
+ppts -pps_in -nr 5 -timeout 2
+```
+
+Read up to 10 samples from external trigger input 0 through `sigA` selector `2`, stopping if a sample wait times out:
+
+```bash
+ppts -nopps -sigA -selA 2 -nr 10 -timeout 2
 ```
 
 Read only the `sigA` stream from the generated 1 s pulse:
 
 ```bash
-ppts -nopps -sigA -selA 4 -nr 5
+ppts -nopps -sigA -selA 4 -nr 5 -timeout 2
 ```
+
+Before connecting an external source to AUX0 for `-selA 3`, verify that AUX0 is configured as an input. Neither `ppts` nor `ppaux` changes AUX direction, and low-level settings can persist; with the source disconnected, `ppreset -i 0x0` restores the reset-default input direction.
 
 Read both streams and stop after 10 samples per stream:
 
 ```bash
-ppts -sigA -nr 10
+ppts -pps_xtal -sigA -selA 4 -nr 10 -timeout 2
 ```
 
 Read the fast 1 ms generated `sigA` source without failing on expected timestamp overflow:

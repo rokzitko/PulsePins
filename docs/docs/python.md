@@ -2,8 +2,8 @@
 
 PulsePins has two Python interfaces:
 
-* `pulsepins` - a pure-Python [SCPI](https://www.ivifoundation.org/About-IVI/scpi.html) client for scripts and Jupyter notebooks running on a workstation and talking to a board running `ppscpi`
-* `pp` - nanobind extension module for the underlying C++ interface
+* `pulsepins` - a pure-Python [SCPI](https://www.ivifoundation.org/About-IVI/scpi.html) client and Timeline authoring helper for scripts and Jupyter notebooks running on a workstation and talking to a board running `ppscpi`
+* `pp` - a board-native nanobind extension module for the underlying C++ interface
 
 ## Workstation SCPI client
 
@@ -43,7 +43,7 @@ with PulsePins("de10nano") as pp:
 
 The `f` line requests forced triggering; it does not choose the final output value. If no `final ...` line is present, `STREAM` appends a no-modify final terminator and leaves the outputs at the last sequence value.
 
-The client exposes `idn()`, `reset()`, `clear_status()`, `streamer_clock_hz()`, `timeline(...)`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` flattens multiline sequence text into one `SEQ ...` command, so the uploaded command must fit within the `ppscpi` 64 KiB SCPI line limit.
+The client exposes `idn()`, `reset()`, `clear_status()`, `streamer_clock_hz()`, `timeline(...)`, `load_sequence(...)`, `load(...)`, `stream()`, `run(...)`, `test1()`, `check(...)`, `check_enabled()`, `system_error()`, and `errors()`. `load_sequence(...)` accepts the [PulsePins text sequence format](sequence_format.md) and flattens multiline text into one `SEQ ...` command, so the uploaded command must fit within the `ppscpi` 64 KiB SCPI line limit. The workstation package transports text through SCPI; it does not expose the board-native C++ `Sequence` binary and VCD serializers.
 
 The same package also includes a `Timeline` builder for simple named-channel pulse programs:
 
@@ -62,7 +62,7 @@ with PulsePins("de10nano") as pp:
 timeline
 ```
 
-In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns the generated PulsePins text sequence for inspection or manual editing; pass `include_final=True` for upload-ready finite pulse programs that return owned channels to their resting value. `Timeline.to_csv()` / `Timeline.from_csv(...)` use the same `channel,bit,start,duration,color` pulse-table CSV format as the browser Timeline Composer. `Timeline.to_draft_json()` / `Timeline.from_draft_json(...)` use the browser draft JSON format. `Timeline.to_vcd(...)` exports a scalar [Value Change Dump (VCD)](cpp.md#data-types-for-sequence-representation) trace for waveform viewers. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
+In a notebook, evaluating `timeline` renders an SVG preview. `Timeline.to_sequence(...)` returns a generated waveform subset of the PulsePins text format for inspection or manual editing; pass `include_final=True` for upload-ready finite pulse programs that return owned channels to their resting value. `Timeline.to_csv()` / `Timeline.from_csv(...)` use the same `channel,bit,start,duration,color` pulse-table CSV format as the browser Timeline Composer. `Timeline.to_draft_json()` / `Timeline.from_draft_json(...)` use the browser draft JSON format. `Timeline.to_vcd(...)` exports a scalar VCD waveform preview for waveform viewers. Same-channel overlapping pulses are rejected; adjacent pulses are allowed.
 
 Runnable examples:
 
@@ -96,13 +96,13 @@ The Python binding tree lives in [`python/`]({{ source_file("python/") }}) and b
 * `pp`
 * `pp_impl`
 
-At the sequence-serialization level, Python exposes the same practical formats as the core C++ layer:
+At the sequence-serialization level, the board-native `pp` module exposes the C++ formats below; these APIs are not part of the workstation `pulsepins` SCPI/Timeline package:
 
-* PulsePins text sequence format via `parse_sequence_text(...)` and `write_sequence_text(...)`
-* VCD import/export via `Sequence.load_VCD(...)` and `Sequence.write_VCD_file(...)`
-* exact binary sequence import/export via `read_sequence_binary(...)` and `Sequence.write_binary_file(...)`
+* [PulsePins text sequence format](sequence_format.md) via `parse_sequence_text(...)` and `write_sequence_text(...)`
+* VCD regular-record projection import/export via `Sequence.load_VCD(...)` and `Sequence.write_VCD_file(...)`
+* current-build binary sequence snapshots via `read_sequence_binary(...)` and `Sequence.write_binary_file(...)`
 
-Text and binary sequence helpers preserve terminal explicit `final`, trigger, replay, retrigger, and pseudo-random records exactly. VCD export is narrower: `Sequence.write_VCD_file(...)` only accepts deterministic regular sequences and rejects trigger/final/control-flow elements. The underlying C++ VCD export default uses `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
+Text helpers round-trip only the parser-representable normalized subset. The writer preserves represented fields, but not arbitrary raw control or payload fields; raw retrigger payloads are one omitted case, and the separate force-trigger Boolean is emitted only when requested. The binary snapshot preserves normalized current-width element triplets and the supplied force-trigger flag, but loading requires matching control, count, value, and trigger widths, while execution context remains external. `Sequence.write_VCD_file(...)` rejects non-regular elements, but its flattened projection does not execute store semantics, evaluates zero-count operations before dropping their runs, and evaluates relative operations from initial value zero. Use emitted, positive-count BITLOAD records, or evaluate relative operations against the actual runtime initial state first, for a hardware-aligned export. The underlying C++ VCD export default uses `$timescale 10ns`, matching the VCD import default of a 10 ns PulsePins output period.
 
 ## Supported build modes
 
@@ -148,12 +148,14 @@ make -C python USE_PREGENERATED=1 build test-host
 ```python
 import pp
 
-seq, force_trigger = pp.parse_sequence_text("d 3 0x12\nfinal 0x34\n")
+seq, force_trigger = pp.parse_sequence_text("d 3 0x12\n")
 text = pp.write_sequence_text(seq)
 seq.write_VCD_file("capture.vcd")
 seq.write_binary_file("capture.ppbin")
 seq2, force_trigger2 = pp.read_sequence_binary("capture.ppbin")
 ```
+
+The VCD example intentionally contains only an emitted, positive-count regular BITLOAD record. `write_VCD_file(...)` rejects terminal `final`, trigger, replay, retrigger, and pseudo-random elements.
 
 ## Sequence element API
 

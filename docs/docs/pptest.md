@@ -22,8 +22,8 @@ Command line switches:
 * ``-t``: final data value
 * ``-random_final``: append a random final data value instead of the default no-modify final terminator
 * ``-check``: perform verification using the readback method
-* ``-timeout``: controls readback wait bounds during ``-check`` and ``-read``; if omitted, the default is a conservative 2 s timeout both for the first readback element and for later idle gaps. Use a positive value for idle-gap timeout, or ``-timeout 0`` to disable idle-timeout protection. For compatibility, a negative value is interpreted as an absolute timeout from start, in seconds.
-* ``-hard-timeout T``: absolute readback timeout from start during ``-check`` and ``-read``. Time units such as ``ms`` and ``s`` are accepted. This is preferred over negative ``-timeout`` values for new commands.
+* ``-timeout``: controls readback wait bounds during ``-check`` and ``-read``; if omitted, the default is a conservative 2 s timeout both for the first readback element and for later idle gaps. Use a positive value for idle-gap timeout, or ``-timeout 0`` to disable idle-timeout protection. For compatibility, a negative value is interpreted as a total timeout from the start of the current readback phase, in seconds.
+* ``-hard-timeout T``: total timeout from the start of the current ``-check`` or ``-read`` phase. Time units such as ``ms`` and ``s`` are accepted. This is preferred over negative ``-timeout`` values for new commands.
 * ``-dont_wait``: return after queueing the sequence, activating or arming the trigger, and completing any requested readback phase. This skips the normal wait and post-run cleanup, so forced or armed trigger state may remain active until reset, reconfiguration, or explicit deactivation.
 * ``-dump-converted``: dump out the sequence of elements after converting elements with non-trivial update modes to simple BITLOAD elements
 * ``-i``: initial value to be presented on the output ports before the sequence begins to stream out
@@ -183,42 +183,9 @@ Additional parameters:
 
 ### Test 42
 
-Stream out a sequence specified in a text file. The filename is provided using the ``-f`` argument.
+Stream out a sequence from the text file supplied with ``-f``. The accepted records and numeric syntax are defined by the [PulsePins text sequence format](sequence_format.md).
 
-Format:
-
-Regular elements:
-
-* ``d C V``: BITLOAD data element with the `qout_valid` sample qualifier and `qout_strobe` sampling pulse
-* ``dn C V``: BITLOAD data element without the `qout_valid` sample qualifier or `qout_strobe` sampling pulse
-* ``s C V``: BITSET update
-* ``c C V``: BITCLEAR update
-* ``x C V``: BITFLIP update
-* ``n C V``: BITNOT update
-* ``a C V``: BITAND update
-* ``o C V``: BITOR update
-* ``xr C V``: BITXOR update
-* ``xn C V``: BITXNOR update
-* ``sl C V``: BITSLL update
-* ``sr C V``: BITSRL update
-
-Triggers and execution flags:
-
-* ``t P M``: final trigger element
-* ``tn P M``: non-final trigger element
-* ``f``: request forced triggering instead of arm-and-wait; it does not select the final output value
-
-Preprocessor and control-flow elements:
-
-* ``store I OP ...``: parse the following regular-element record and tag it for storage in preprocessor slot ``I``
-* ``r R L``: replay a stored subsequence ``R`` times with replay length ``L``; ``L`` must not exceed the fast-memory depth
-* ``rt``: pause and wait for a retrigger event
-* ``pr C``: emit pseudo-random values for ``C`` cycles
-* ``final V``: explicit final terminator with output value ``V``; it must be the last sequence element
-
-If a tool or workflow already controls the final output value through ``-t`` or ``-random_final``/``PP_RANDOM_FINAL``, do not also include ``final V`` in the sequence text. The shared execution path rejects multiple final-output selections at the same time, and rejects ``final V`` if any sequence element follows it. If no final output is selected, playback appends a no-modify final terminator so the outputs remain at the last sequence value.
-
-The ``store`` wrapper accepts any regular-element token in place of ``OP``: ``d``, ``dn``, ``s``, ``c``, ``x``, ``n``, ``a``, ``o``, ``xr``, ``xn``, ``sl``, or ``sr``.
+Invoke it as ``pptest 42 -f FILE``. Here ``-f`` selects the file, while an ``f`` record inside the file requests forced triggering. Test 42 uses the shared final-output policy: ``-t``, ``-random_final``/``PP_RANDOM_FINAL``, and a terminal ``final V`` record are mutually exclusive; if none is selected, playback appends a no-modify final terminator.
 
 ## ppmstest
 

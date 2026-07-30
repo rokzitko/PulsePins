@@ -11,7 +11,7 @@ Project repository: [https://github.com/rokzitko/PulsePins](https://github.com/r
 | Set up a released image and validate a board | [Quick start](quick_start.md) |
 | Resolve network, UART, or optional-hardware setup | [Hardware setup](getting_started_hardware.md) |
 | Generate, capture, or measure a signal | [Choose the right tool](choose_tool.md) |
-| Follow a complete laboratory workflow | [Worked examples](examples.md) |
+| Follow a complete laboratory workflow | [User manual](examples.md) |
 | Automate an experiment | [Python API](python.md), [C++ API](cpp.md), or [SCPI server](ppscpi.md) |
 | Understand the data, trigger, and timing model | [Sequencer model](sequencer_model.md) |
 | Find board pins and electrical behavior | [DE10-Nano signal reference](de10_nano_reference.md) |
@@ -21,7 +21,7 @@ Project repository: [https://github.com/rokzitko/PulsePins](https://github.com/r
 
 | Section | What it contains |
 | ------- | ---------------- |
-| Get started | first-board setup, tool selection, and worked examples |
+| Get started | first-board setup, tool selection, and finite user-manual procedures |
 | Command line | generation, playback, capture, measurement, and diagnostic commands |
 | Interfaces | C++, Python, SCPI, and browser control |
 | Hardware | DE10-Nano signals and optional shield designs |

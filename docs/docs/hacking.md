@@ -15,7 +15,7 @@ Typical work:
 * document real hardware workflows
 * improve contributor onboarding
 
-Worked examples are especially encouraged.
+Reproducible manual examples are especially encouraged.
 
 Start here:
 

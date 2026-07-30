@@ -1,296 +1,57 @@
-# Worked examples
+# User manual
 
-This page collects some useful concrete PulsePins examples. The goal is not to replace the per-command manual pages, but to show how the pieces fit together in practice.
+This manual is organized around finite, reproducible laboratory tasks. It describes current `main`, host/FPGA ABI 6, and the released 32-bit DE10-Nano design. Older binary images may not provide every command or option used here; use documentation and software from the same revision.
 
-Unless stated otherwise, these examples assume the released DE10-Nano environment described in [Quick start](quick_start.md) and [Hardware setup](getting_started_hardware.md).
+The chapters are source-reviewed procedures, not claims of bench validation. Record the actual hardware, clock, software revision, commands, and observations whenever you run one.
 
-## Example 1: Generate a continuous square wave with `ppfg`
+## Validation status
 
-Goal: make `qout[0]` toggle continuously without writing any sequence files.
+| Status | Meaning |
+| ------ | ------- |
+| source-reviewed | commands and stated behavior were checked against current source and reference documentation |
+| board-tested | the complete procedure was run on a matching DE10-Nano build |
+| bench-validated | wiring and expected physical behavior were checked with the stated instruments |
+| experimental | the workflow is incomplete, setup-dependent, or lacks enough evidence for a supported lab procedure |
 
-Command:
+Only `source-reviewed` status is asserted by these pages unless a chapter includes a dated validation record.
 
-```bash
-ppfg -int_pll 10M -cont -trig -freq 10Hz -v1 0x1 -v0 0x0
-```
+## Core chapters
 
-What it does:
+| Chapter | Outcome | Additional hardware | Status |
+| ------- | ------- | ------------------- | ------ |
+| [First finite output](manual/first_output.md) | generate ten periods on only `qout[0]` and return the bus to zero | high-impedance scope or logic analyzer | source-reviewed |
+| [First text sequence](manual/text_sequence.md) | author and play the canonical PulsePins text format | optional high-impedance probe | source-reviewed |
+| [Triggered one-shot delay](manual/triggered_delay.md) | use KEY0 to release one delayed pulse on `qout[0]` | high-impedance scope or logic analyzer | source-reviewed |
+| [Capture and replay](manual/capture_replay.md) | record a live finite waveform and replay the canonical text capture | two board terminals; optional waveform viewer | source-reviewed |
+| [Workstation Python timeline](manual/python_timeline.md) | generate, inspect, and stream a finite Timeline through restricted SCPI | workstation and trusted network | source-reviewed |
 
-* sets the core clock to 10 MHz
-* auto-triggers (`-trig`) instead of waiting for an external trigger
-* generates a continuous (`-cont`) square wave at 10 Hz
-* drives `qout[0]` high in the `on` phase and low in the `off` phase
+Read the [PulsePins text sequence format](sequence_format.md) before hand-authoring control-flow, trigger, replay, or relative-update records.
 
-What to expect:
+## Before a chapter
 
-* on a scope or logic analyzer, `qout[0]` alternates between `0` and `1`
-* with an LED attached to `qout[0]`, the output visibly blinks
+1. Complete [Quick start](quick_start.md) or deploy a matching current-source build.
+2. Confirm that the host software and FPGA image report the expected ABI.
+3. Disconnect incompatible external drivers and loads.
+4. Use 3.3 V-compatible, high-impedance inputs and a common ground.
+5. Record the active streamer clock instead of assuming 100 MHz.
+6. Keep the chapter's explicit output masks and final value.
 
-Useful variations:
+The manual uses finite operations by default. Command-reference pages may also describe continuous or low-level modes; those modes require their own interrupt, reset, output-state, and safe-rewiring procedure.
 
-```bash
-ppfg -int_pll 10M -cont -trig -period 1ms -duty 5 -v1 0x1 -v0 0x0
-ppfg -int_pll 10M -burst 3 -period 1ms -trig -t 0x0 -v1 0x1 -v0 0x0
-```
+## Reference-only workflows
 
-See also: [ppfg - PulsePins Function Generator](ppfg.md) and [`recipes/ppfg`]({{ source_file("recipes/ppfg") }}).
+The following capabilities remain documented, but they are not yet presented as supported manual chapters:
 
-## Example 2: Use PulsePins as a triggered delay generator with `ppdelay`
+| Area | Current reference | Why it is not a core chapter |
+| ---- | ----------------- | ---------------------------- |
+| external clock measurement | [`ppfreq`](ppfreq.md) and [Frequency meter](freq_meter.md) | source voltage, nominal frequency, termination, selected channel, and negative control must be specified for a reproducible setup |
+| external PPS timestamping | [`ppts`](ppts.md) and [Timestamp capture](timestamp.md) | a chapter must use explicit `-pps_in`, finite sample counts, and a disconnected-input negative control |
+| PP_PMOD temperature | [`pptemp`](pptemp.md) and [PP_PMOD hardware reference](pp_pmod_reference.md) | shield revision, populated sensor, bus visibility, finite sample count, and expected address should be recorded |
+| SPI/DDS generation | [C++ SPI sequence generation](cpp.md#spi-sequence-generation) | generator path, output-bit wiring, decoder clock, peripheral reference clock, and measured result require setup-specific validation |
+| GPSDO controller | [`ppgpsdo`](ppgpsdo.md) | experimental reference implementation; the complete oscillator feedback path must be independently established and verified |
 
-Goal: wait for a trigger, then emit one pulse after a controlled delay.
+These entries should become chapters only after their setup, finite commands, expected result, cleanup, and positive and negative controls have been recorded.
 
-Command:
+## Choose another interface
 
-```bash
-ppdelay -veryverbose -trig_misc -int_pll 10M -duration 1ms -delay 20ms
-```
-
-What it does:
-
-* waits for the trigger source selected by `-trig_misc`
-* delays for 20 ms after the trigger event
-* outputs a 1 ms pulse
-
-What to expect:
-
-* after the trigger event, the chosen output line goes high for 1 ms
-* the pulse starts 20 ms after the trigger rather than immediately
-
-This is a good starting point for camera triggering, shutter delays, and simple time-resolved experiments.
-
-See also: [ppdelay](ppdelay.md) and [`recipes/ppdelay`]({{ source_file("recipes/ppdelay") }}).
-
-## Example 3: Capture a waveform and replay it exactly
-
-Goal: use the readback path as a simple logic-analyzer capture, then replay the exact captured sequence.
-
-Start `ppread` in the background before generating the waveform:
-
-```bash
-ppread -oe 1 -hard-timeout 2s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin &
-capture_pid=$!
-sleep 0.1
-ppfg -burst 10 -period 10ms -trig -v1 0x1 -v0 0x0 -t 0x0
-wait "$capture_pid"
-```
-
-Replay commands:
-
-```bash
-ppplay -force -file capture.seq
-ppplay -force -file capture.ppbin
-```
-
-What it does:
-
-* `ppread` resets the readback capture path and starts waiting before `ppfg` runs
-* `ppfg` emits a finite waveform while capture is active
-* `ppread` saves the captured data when its absolute timeout expires
-* the same capture is exported in three formats:
-    * `capture.vcd` for waveform viewing
-    * `capture.seq` for editable text form
-    * `capture.ppbin` for exact lossless replay
-* `ppplay -force` then immediately replays the saved sequence; omit `-force` to arm the trigger and wait for the configured trigger condition
-
-When to use which format:
-
-* use `capture.vcd` when you want to inspect timing visually
-* use `capture.seq` when you want to edit the sequence by hand
-* use `capture.ppbin` when you want exact replay without losing control-flow information
-
-If you are capturing external signals rather than internally generated ones, use the normal `ppread` external-capture path (`-oe 0` / default hardware input configuration) and start the external source after `ppread` is waiting.
-
-See also: [ppread - readback tool](ppread.md), [ppplay](ppplay.md), and [Readback](readback.md).
-
-## Example 4: Measure an external clock and inspect PPS timing
-
-Goal: validate that an external reference is present and inspect the PPS intervals.
-
-Measure the external clock:
-
-```bash
-ppfreq -gate_time 1s
-```
-
-Inspect PPS timestamps:
-
-```bash
-ppts -nr 10
-```
-
-What to expect:
-
-* `ppfreq` prints a timestamp plus the measured external-clock frequency
-* `ppts` prints timestamp samples and the difference from the previous sample
-* for a stable PPS source, the differences should cluster around one second in timestamp units
-
-Useful variations:
-
-```bash
-ppfreq -gate_len 1000000
-ppts -nopps -sigA -selA 3 -timeout 2
-```
-
-These tools are useful during board bring-up, external-clock validation, and troubleshooting trigger/timestamp routing.
-
-See also: [ppfreq](ppfreq.md), [ppts](ppts.md), [Frequency meter](freq_meter.md), and [Timestamp capture](timestamp.md).
-
-## Example 5: Read the onboard temperature sensor on `PP_PMOD`
-
-Goal: confirm that the optional `PP_PMOD` shield and its onboard `MCP9808` are working.
-
-Command:
-
-```bash
-pptemp
-```
-
-What it does:
-
-* reads the default `MCP9808` on I2C bus 1 at address `0x18`
-* prints temperature samples continuously in human-readable form
-
-What to expect:
-
-* one temperature reading per second
-* values track board temperature changes over time
-
-This is a useful functional check for the PP_PMOD I2C path before attempting DAC or external Qwiic
-interfacing.
-
-See also: [pptemp - temperature reader](pptemp.md), [PP_PMOD Reference Shield](pp_pmod.md), and [PP_PMOD Hardware Reference](pp_pmod_reference.md).
-
-## Example 6: Generate an SPI/DDS programming sequence with C++ helper code
-
-Goal: use the standalone sequence generators in [`tools/spi_payload/`]({{ source_file("tools/spi_payload/") }}) to control a peripheral from PulsePins.
-
-For the AD9833 example:
-
-```bash
-make -C tools/spi_payload
-./tools/spi_payload/spi_ad9833
-scp tools/spi_payload/sequence de10nano:
-ssh de10nano 'pptest 42 -f sequence -veryverbose'
-```
-
-What it does:
-
-* builds the standalone [SPI payload generators](cpp.md#spi-sequence-generation)
-* generates a PulsePins text sequence that programs an AD9833 for a 5 MHz sine output
-* copies that sequence to the board
-* plays it through the normal streaming path using `pptest`
-
-When to use:
-
-* bringing up SPI peripherals from PulsePins outputs
-* validating board wiring and pin assignments
-* prototyping peripheral-control sequences before integrating them elsewhere
-
-The exact qout wiring and module-specific notes live in [`tools/spi_payload/README`]({{ source_file("tools/spi_payload/README") }}).
-
-## Example 7: Drive `ppscpi` from a workstation Python notebook
-
-Goal: keep Jupyter on a laptop or workstation while controlling a DE10-Nano over Ethernet.
-
-On the board, start the SCPI server:
-
-```bash
-ppscpi
-```
-
-On the workstation, make the repository Python helpers importable:
-
-```bash
-export PYTHONPATH=/path/to/PulsePins/python
-```
-
-For repeated notebook work, an editable install is usually more convenient:
-
-```bash
-python3 -m pip install -e /path/to/PulsePins/python
-```
-
-That install provides example commands such as `pulsepins-ppscpi-check`, `pulsepins-ppscpi-hello`, `pulsepins-notebook-workflow`, `pulsepins-timeline-preview`, `pulsepins-timeline-stream`, and `pulsepins-timeline-sweep`. Add `--self-test` to `pulsepins-ppscpi-check` when you want to run the built-in `TEST1` smoke path too.
-
-In Python or a notebook:
-
-```python
-from pulsepins import PulsePins
-
-with PulsePins("de10nano") as pp:
-    print(pp.idn())
-    pp.reset()
-    pp.load_sequence("""
-    d 10 0xff
-    d 5 0x00
-    d 2 0b0101
-    f
-    """)
-    pp.check(False)
-    pp.stream()
-```
-
-The same minimal example is available as [`python/examples/ppscpi_hello.py`]({{ source_file("python/examples/ppscpi_hello.py") }}):
-
-```bash
-PYTHONPATH=python python3 python/examples/ppscpi_hello.py de10nano
-```
-
-What it does:
-
-* connects to TCP port `5025`
-* uploads a PulsePins text sequence with `SEQ ...`
-* requests forced triggering using the sequence's `f` record
-* leaves the outputs at the last sequence value because no explicit `final ...` record is supplied
-* starts playback with `STREAM`
-
-This is the recommended first step for notebook integration. It avoids installing Jupyter on the board and keeps plotting, parameter sweeps, and data analysis on the workstation.
-
-For named-channel pulse construction, use `Timeline`:
-
-```python
-from pulsepins import PulsePins
-
-with PulsePins("de10nano") as pp:
-    timeline = pp.timeline(unit="us")
-    timeline.channel("laser", bit=0)
-    timeline.channel("camera", bit=1)
-    timeline.pulse("laser", start=10, duration=5)
-    timeline.pulse("camera", start=20, duration=10)
-    pp.reset()
-    pp.run(timeline, force_trigger=True, include_final=True)
-```
-
-Two runnable Timeline examples are included:
-
-```bash
-PYTHONPATH=python python3 python/examples/timeline_preview.py --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
-PYTHONPATH=python python3 python/examples/timeline_stream.py de10nano --print-sequence
-PYTHONPATH=python python3 python/examples/timeline_sweep.py de10nano --delays-us 0 5 10
-PYTHONPATH=python python3 python/examples/notebook_workflow.py --output-dir previews
-```
-
-After `python3 -m pip install -e python`, the same commands are available without repository paths:
-
-```bash
-pulsepins-ppscpi-check de10nano --self-test
-pulsepins-notebook-workflow de10nano --output-dir previews --run
-pulsepins-timeline-preview --svg timeline.svg --csv timeline.csv --draft timeline.json --vcd timeline.vcd
-pulsepins-timeline-stream de10nano --print-sequence
-pulsepins-timeline-sweep de10nano --delays-us 0 5 10
-```
-
-Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting absolute-time pulses; pass `--clock-hz` only when you need to override the board-reported clock. Hardware-free preview and sweep `--dry-run` use the supplied/default dry-run clock.
-
-[`timeline_preview.py`]({{ source_file("python/examples/timeline_preview.py") }}) is hardware-free: it prints the generated text sequence and can write SVG, browser-compatible CSV, browser-compatible draft JSON, and VCD previews. [`timeline_stream.py`]({{ source_file("python/examples/timeline_stream.py") }}) uses the same timeline but uploads it to `ppscpi` and streams it with forced triggering. These Timeline examples include an explicit final value so owned channels return to their resting value after the last pulse. [`timeline_sweep.py`]({{ source_file("python/examples/timeline_sweep.py") }}) shows the notebook-style pattern of rebuilding and streaming a timeline inside a parameter loop. [`notebook_workflow.py`]({{ source_file("python/examples/notebook_workflow.py") }}) combines install notes, clock discovery, preview export, sweep generation, and optional live streaming with `--run`.
-
-See also: [ppscpi - network server](ppscpi.md) and [Python bindings](python.md).
-
-## Choosing the right kind of example
-
-As a rule of thumb:
-
-* use `ppfg` and `ppdelay` for immediate signal-generation tasks
-* use `ppread` / `ppplay` when capture and replay matter more than manual signal description
-* use `ppfreq` and `ppts` for measuring clock frequencies and inspecting timestamp samples
-* use the [`tools/`]({{ source_file("tools/") }}) helpers when you want to prototype device-specific bus transactions or payload generation
+Use [Choose the right tool](choose_tool.md) when the task does not match a chapter. Command pages provide option-level reference, while [C++](cpp.md), [Python](python.md), [SCPI](ppscpi.md), and the [web interface](ppwebgui.md) describe programmatic control layers.

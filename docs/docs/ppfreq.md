@@ -54,13 +54,13 @@ Use `%%` in the format string for a literal percent sign.
 Measure using a 1-second measurement gate:
 
 ```bash
-ppfreq -gate_time 1s
+ppfreq -gate_time 1s -nr 5
 ```
 
 Measure using a raw gate length of 1,000,000 reference-clock (`cnt_clk`) cycles:
 
 ```bash
-ppfreq -gate_len 1000000
+ppfreq -gate_len 1000000 -nr 5
 ```
 
 Print 20 measurements and stop:
@@ -72,11 +72,11 @@ ppfreq -nr 20
 Apply a correction factor:
 
 ```bash
-ppfreq -gate_time 1s -freq_rescale 0.99995
+ppfreq -gate_time 1s -freq_rescale 0.99995 -nr 5
 ```
 
-Show all common clock channels:
+Show the external, internal-candidate, and selected streamer clock channels:
 
 ```bash
-ppfreq -gate_time 1s -format "%t ext=%e int=%i streamer=%s"
+ppfreq -gate_time 1s -format "%t ext=%e int=%i streamer=%s" -nr 5
 ```

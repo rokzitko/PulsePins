@@ -3,14 +3,21 @@ repo_url: https://github.com/rokzitko/pulsepins
 edit_uri: edit/main/docs/docs/
 extra:
   source_repo: https://github.com/rokzitko/PulsePins
-  source_ref: "2026.06"
+  source_ref: main
 nav:
   - Home: index.md
   - Get started:
     - Quick start: quick_start.md
     - Hardware setup: getting_started_hardware.md
     - Choose a tool or interface: choose_tool.md
-    - Worked examples: examples.md
+  - User manual:
+    - Start here: examples.md
+    - First finite output: manual/first_output.md
+    - First text sequence: manual/text_sequence.md
+    - Triggered one-shot delay: manual/triggered_delay.md
+    - Capture and replay: manual/capture_replay.md
+    - Workstation Python timeline: manual/python_timeline.md
+    - PulsePins text sequence format: sequence_format.md
   - Command line:
     - Overview and shared behavior:
       - pptool command family: pptool.md
@@ -28,7 +35,6 @@ nav:
       - Counter self-test and diagnostics: ppcounter.md
       - Frequency meter: ppfreq.md
       - Timestamp reader: ppts.md
-      - GPSDO controller: ppgpsdo.md
       - Temperature reader: pptemp.md
     - Test, diagnose, and reset:
       - Self-tests: pptest.md
@@ -37,6 +43,8 @@ nav:
       - FPGA and primary-streamer reset: ppreset.md
     - Standalone utility:
       - PLL calculator: pllcalc.md
+  - Experimental:
+    - GPSDO controller: ppgpsdo.md
   - Interfaces:
     - C++ API: cpp.md
     - Python API: python.md

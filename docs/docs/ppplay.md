@@ -10,11 +10,11 @@ to record a readback stream with `ppread` and replay the saved file with `ppplay
 
 Current supported formats:
 
-* [Value Change Dump (VCD)](https://en.wikipedia.org/wiki/Value_change_dump) (`vcd`)
-* PulsePins text sequence format (`text`)
-* PulsePins binary sequence format (`binary`)
+* [Value Change Dump (VCD)](https://en.wikipedia.org/wiki/Value_change_dump) waveform interchange (`vcd`)
+* [PulsePins text sequence format](sequence_format.md) (`text`)
+* PulsePins current-build binary sequence snapshot (`binary`)
 
-The binary format is exact and lossless: it preserves the full internal sequence representation, including control-flow elements and the force-trigger flag.
+Text represents the parser-representable normalized subset, and VCD imports effective output states rather than authored operators or control flow. The binary snapshot preserves normalized current-width element triplets and the force-trigger flag, but loading requires matching control, count, value, and trigger widths. The streamer clock, initial output, trigger and gate routing, and output configuration remain external execution context for every format.
 
 ## Common options
 
@@ -47,13 +47,9 @@ If the extension is ambiguous, `ppplay` exits with an error and asks for `-forma
 
 ### Replay a `ppread` capture
 
-Record a capture in all replayable formats:
+Follow the [capture and replay procedure](manual/capture_replay.md). Use two board terminals: run `ppread -veryverbose ...` in the foreground in terminal 1 and wait for its initial `Readback status:` line before starting the waveform source in terminal 2. Do not coordinate capture with a background process and a guessed sleep.
 
-```bash
-ppread -hard-timeout 1s -save-vcd capture.vcd -save-text capture.seq -save-binary capture.ppbin
-```
-
-Replay one of the saved files:
+After capture completes, replay one of the saved files:
 
 ```bash
 ppplay -force -file capture.vcd
@@ -62,11 +58,14 @@ ppplay -force -file capture.ppbin
 ```
 
 `ppread` VCD exports use the default `outs` signal and `$timescale 10ns`, so normal captures replay
-with `ppplay -force -file capture.vcd` without extra VCD options. Use `capture.seq` when you want an
-editable text sequence and `capture.ppbin` when you want exact lossless replay. Omit `-force` when
-you want playback to arm the trigger and wait for the configured trigger condition.
-
-For a fuller workflow, see [Example 3: Capture a waveform and replay it exactly](examples.md#example-3-capture-a-waveform-and-replay-it-exactly).
+with `ppplay -force -file capture.vcd` without extra VCD options. All three exports describe the
+`qout_valid`-qualified sample stream: text contains editable normalized runs, VCD projects those
+runs, and binary is a current-build snapshot of that captured `Sequence`. Invalid gaps and
+no-strobe states are absent, so replay compresses those gaps rather than reproducing their elapsed
+time. A captured binary does not restore authored operators, triggers, replay structure, control
+flow, or force request. An unmodified `ppread` capture has no trigger records and stores its force
+flag as false, so supply `-force` when replaying it. To arm on a condition instead, author trigger
+records in a text sequence and configure their trigger routing.
 
 ### Other playback examples
 
@@ -100,7 +99,7 @@ Force playback even when a text file does not request force-triggering:
 ppplay -force -file capture.seq
 ```
 
-Replay an exact binary sequence capture:
+Replay a current-build binary sequence snapshot:
 
 ```bash
 ppplay -force -file capture.ppbin

@@ -37,6 +37,8 @@ semicolons (`;`); `ppscpi` trims and dispatches each segment in order, with resp
 in the same order. Empty segments are ignored. Each segment is parsed as a complete command
 path, so relative SCPI path continuation is not implemented.
 
+The `SEQ` payload uses the canonical [PulsePins text sequence format](sequence_format.md). SCPI supplies transport and session execution around that format; it does not define alternate record spellings, and clock, initial-output, trigger-routing, gate, and output settings remain external execution context.
+
 ## Session model
 
 Each client connection gets its own SCPI session object.
@@ -66,7 +68,7 @@ Standard commands:
 PulsePins-specific commands:
 
 * `TEST1` - run a built-in short self-test sequence
-* `SEQ <data>` - parse and load a sequence from textual representation, including `f`, `final`, and control-flow records supported by `parse_sequence_from_stream(...)`
+* `SEQ <data>` - parse and load a sequence using the canonical PulsePins text grammar
 * `CHECK <bool>` - enable or disable readback checking during `STREAM`
 * `CHECK?` - query the check setting
 * `CLOCK:STREAMER?` - query the measured streamer clock frequency in Hz
@@ -120,7 +122,7 @@ with PulsePins("de10nano") as pp:
     pp.stream()
 ```
 
-`load_sequence(...)` accepts normal multiline PulsePins text sequence input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit and must not contain semicolons.
+`load_sequence(...)` accepts normal multiline [PulsePins text sequence](sequence_format.md) input and flattens it into the single-line `SEQ ...` command that `ppscpi` expects. Because the SCPI transport is line-oriented, one uploaded sequence command must fit within the server's 64 KiB line limit and must not contain semicolons.
 
 If a high-level Python client command receives an error or failure response, it drains `SYST:ERR?` and raises `PulsePinsCommandError` with the queued server-side diagnostic text.
 
@@ -139,7 +141,7 @@ with PulsePins("de10nano") as pp:
     pp.run(timeline, force_trigger=True, include_final=True)
 ```
 
-`Timeline.to_sequence(...)` returns the generated text sequence, `Timeline.to_csv()` writes browser-compatible Timeline CSV, `Timeline.to_draft_json()` writes browser-compatible draft JSON, `Timeline.to_vcd(...)` writes a scalar waveform trace, and notebooks render a lightweight SVG preview when the timeline object is evaluated. Use `include_final=True` when streaming finite Timeline pulses so owned channels return to their resting value after the last pulse.
+`Timeline.to_sequence(...)` returns the generated text sequence, `Timeline.to_csv()` writes browser-compatible Timeline CSV, `Timeline.to_draft_json()` writes browser-compatible draft JSON, `Timeline.to_vcd(...)` writes a scalar VCD waveform preview, and notebooks render a lightweight SVG preview when the timeline object is evaluated. Use `include_final=True` when streaming finite Timeline pulses so owned channels return to their resting value after the last pulse.
 
 The same workflow is available as runnable examples:
 
@@ -168,10 +170,10 @@ Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting ab
 * `SEQ` stores the parsed sequence in memory; nothing is transmitted to the streamer until `STREAM` is issued.
 * Semicolons separate SCPI commands before command parsing, so they are not valid inside a `SEQ` payload.
 * If the loaded sequence does not end with terminal `final V` and the server was not started with `-t`, `-random_final`, or `PP_RANDOM_FINAL`, `STREAM` appends a no-modify final terminator so outputs remain at the last sequence value. The `f` record only requests forced triggering.
-* Repeated `STREAM` commands reuse the stored sequence exactly as parsed; the cached session sequence is not rewritten by readback checking or final-output preparation.
+* Repeated `STREAM` commands reuse the unchanged parsed sequence; the cached session sequence is not rewritten by readback checking or final-output preparation.
 * Before each hardware-touching run (`TEST1` and `STREAM`), `ppscpi` resets the streamer core, readback encoder, and counters so repeated commands in the same process/session start from a clean hardware state.
 * If `TEST1` or `STREAM` returns `FAILURE`, `ppscpi` also pushes an execution-error record into `SYST:ERR?` with the aggregated PulsePins return-code bits so remote clients can distinguish timeout, readback, CRC, buffer, and overflow failures.
-* When `CHECK ON` is active and no explicit startup `-timeout` or `-hard-timeout` was supplied, the shared workflow uses a conservative default readback timeout: 2 s for the first readback element and 2 s for later idle gaps. Start `ppscpi` with `-timeout 0` to disable idle-timeout protection, `-timeout <value>` to set the idle-gap timeout, or `-hard-timeout <value>` to set an absolute readback timeout from command start.
+* When `CHECK ON` is active and no explicit startup `-timeout` or `-hard-timeout` was supplied, the shared workflow uses a conservative default readback timeout: 2 s for the first readback element and 2 s for later idle gaps. Start `ppscpi` with `-timeout 0` to disable idle-timeout protection, `-timeout <value>` to set the idle-gap timeout, or `-hard-timeout <value>` to set a total limit from the start of each readback-check phase. Sequence transmission and trigger activation occur before that phase.
 * Finite `STREAM` runs also inherit the internal 10 s streamer-completion timeout from the shared playback path. When that timeout fires, the user-facing message is `timed out waiting for streamer completion (10 s internal limit)`.
 * Hardware-touching commands are serialized across sessions through the shared FPGA lock, so multiple clients can stay connected without racing each other on streamer/reset state.
 * The server is intended for remote orchestration, not for high-throughput binary bulk transfer.
@@ -181,6 +183,7 @@ Live Timeline stream/sweep commands query `CLOCK:STREAMER?` before converting ab
 
 ## Related pages
 
+* [PulsePins text sequence format](sequence_format.md)
 * [pptool](pptool.md)
 * [C++ application programming interface](cpp.md)
 * [Readback](readback.md)

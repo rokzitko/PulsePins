@@ -25,6 +25,15 @@ The command:
 
 This is a streamer/runtime reset, not a bitstream reload. It does not reprogram `pulsepins.rbf`, and it does not directly reset readback or counter state.
 
+`ppreset` is not a high-impedance operation: it asserts physical output enable and actively drives the selected `-i` value. To stop the streamer at zero and then release the bidirectional `qout`, `qout_valid`, and `qout_strobe` pins before connecting another driver, use:
+
+```bash
+ppreset -i 0x0
+ppread -oe 0 -hard-timeout 100ms
+```
+
+The bounded `ppread` invocation changes `oe` to input mode and exits after the hard timeout; power-down is an alternative when changing wiring.
+
 ## Common Options
 
 Streamer reset options:
