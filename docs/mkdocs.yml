@@ -3,7 +3,7 @@ repo_url: https://github.com/rokzitko/pulsepins
 edit_uri: edit/main/docs/docs/
 extra:
   source_repo: https://github.com/rokzitko/PulsePins
-  source_ref: main
+  source_ref: 2026.06
 nav:
   - Home: index.md
   - Get started:

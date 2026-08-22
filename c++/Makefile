@@ -226,7 +226,9 @@ IMAGE_SUDO ?=
 copy_img: $(TARGETS)
 	$(IMAGE_SUDO) mkdir -p $(IMGROOT)
 	$(IMAGE_SUDO) cp -v $(TARGETS) $(IMGROOT)
-	cd $(IMGROOT) && for L in $(SYMLINKS); do $(IMAGE_SUDO) ln -sf pptool $$L; done
+	for L in $(SYMLINKS); do \
+	    $(IMAGE_SUDO) ln -sf pptool "$(IMGROOT)/$$L"; \
+	done
 
 # Copy source files to the DE10-Nano for local compilation. This is useful because the board can
 # build Python bindings natively and can also rebuild the C++ tools from source when needed.
