@@ -57,7 +57,7 @@ task automatic check;
     #1;
     avs_s0_write <= 0;
     #1;
-    assert(dut.instr == instr);
+    assert(dut.instr == instr) else $fatal;
 
     avs_s0_address <= 3; // addr
     avs_s0_writedata <= addr;
@@ -65,7 +65,7 @@ task automatic check;
     #1;
     avs_s0_write <= 0;
     #1;
-    assert(dut.addr == addr);
+    assert(dut.addr == addr) else $fatal;
 
     #1;
     assert(dut.result == expected) else begin
@@ -125,7 +125,7 @@ initial begin
   assert(dut.latch_all == 1) else $fatal;
 
   #4;
-  assert(dut.bc.d_latch == 1);
+  assert(dut.bc.d_latch == 1) else $fatal;
 
   avs_s0_writedata <= 0; // latch_all off
   avs_s0_write <= 1;
@@ -134,8 +134,8 @@ initial begin
   avs_s0_write <= 0;
   #12;
 
-  assert(dut.bc.ctr_total_r == 9);
-  assert(dut.bc.ctr_total_r == 9);
+  assert(dut.bc.ctr_total_r == 9) else $fatal;
+  assert(dut.bc.ctr_total_r == 9) else $fatal;
 
   avs_s0_address <= 1; // instr
   avs_s0_writedata <= 1; // instr=1
