@@ -31,6 +31,7 @@ logic [WIDTH-1:0] in2;
 logic [WIDTH-1:0] in3;
 logic [WIDTH-1:0] in4;
 logic [WIDTH-1:0] o;
+bit checker_done = 0;
 
 // Trace a few internal datapath signals while stepping through the fixed functional cases.
 always @(posedge clk) begin
@@ -39,6 +40,10 @@ always @(posedge clk) begin
 end
 
 combiner dut(
+ .avs_s0_address('0),
+ .avs_s0_read(1'b0),
+ .avs_s0_write(1'b0),
+ .avs_s0_writedata('0),
  .clock_clk(clk),
  .clk(clk), // output domain
  .clk_reset(reset),
@@ -57,6 +62,7 @@ initial begin
   in3 <= 0;
   in4 <= 0;
   #1;
+  @(negedge clk); // allow both pipeline registers to settle before each check
 
   // Basic selection modes.
   #5;
@@ -160,16 +166,20 @@ initial begin
   force dut.cfg_clk = dut.BLOCK16;
   #2;
   assert(o == 32'h77883344) else $fatal;
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #20 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_combiner1.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout waiting for all combiner mode checks");
 
 endmodule: tb_combiner1

@@ -43,6 +43,8 @@ always @(posedge clk) begin
 end
 
 reg [WIDTH_TRIGGER-1:0] trigger_in;
+wire [WIDTH_DATA-1:0] qout;
+wire qout_valid, done, buffer_error;
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value,
   .initial_reload(1'b0),
@@ -51,8 +53,33 @@ streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_val
   .trigger_force(1'b0),
   .trigger_reset(1'b0),
   .trigger_in,
+  .gate_enable(1'b1), .stop(1'b0), .stop_on_buffer_error(1'b0),
+  .qout, .qout_valid, .done, .buffer_error,
   .streamer_clk(clk) // required for the offloading elements from trigger queue
 );
+
+int samples = 0;
+bit checker_done = 0;
+`include "check_inputs.svh"
+
+always @(posedge clk) begin
+  if (qout_valid) begin
+    assert(samples < 6 && qout === 32'h87654321) else
+      $fatal(1, "final-value test sample %0d: got %h", samples, qout);
+    samples++;
+  end
+end
+
+initial begin
+  wait(done === 1'b1);
+  // The terminator changes qout without adding a valid sample, then holds it.
+  repeat (8) begin
+    @(negedge clk);
+    assert(samples == 6 && qout === 32'hffffffff && !qout_valid && !buffer_error) else
+      $fatal(1, "final value/count not held: samples=%0d qout=%h", samples, qout);
+  end
+  checker_done = 1;
+end
 
 initial begin
   input_data <= 32'b0;
@@ -73,6 +100,7 @@ end
 initial begin
   trigger_in <= 0;
   #30;
+  assert(samples == 0 && qout === initial_value && !done) else $fatal(1, "output before trigger");
   trigger_in <= 'b01;
   #1;
 end
@@ -80,11 +108,14 @@ end
 integer fh;
 
 initial begin
-  #80 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_6.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout waiting for six samples and stable final qout");
 
 endmodule: tb_st_6

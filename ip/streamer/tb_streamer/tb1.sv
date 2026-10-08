@@ -40,8 +40,33 @@ always @(posedge clk) begin
 );
 end
 
+logic trigger_force = 0;
+wire [WIDTH_DATA-1:0] qout;
+wire qout_valid, done, buffer_error;
+
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
-  .initial_value, .initial_reload(1'b0), .initial_value_streamer(initial_value));
+  .initial_value, .initial_reload(1'b0), .initial_value_streamer(initial_value),
+  .streamer_clk(clk), .gate_enable(1'b1), .stop(1'b0), .stop_on_buffer_error(1'b0),
+  .trigger_in('0), .trigger_enable(1'b0), .trigger_force, .trigger_reset(1'b0),
+  .qout, .qout_valid, .done, .buffer_error);
+
+int samples = 0;
+bit checker_done = 0;
+`include "check_inputs.svh"
+
+// Independent expansion of the three programmed run lengths (6 + 7 + 8).
+always @(posedge clk) begin
+  if (qout_valid) begin
+    assert(samples < 21) else $fatal(1, "extra output sample");
+    if (samples < 6)
+      assert(qout === 32'h12345678) else $fatal(1, "first run sample %0d", samples);
+    else if (samples < 13)
+      assert(qout === 32'hababcdcd) else $fatal(1, "second run sample %0d", samples);
+    else
+      assert(qout === 32'h56781234) else $fatal(1, "third run sample %0d", samples);
+    samples++;
+  end
+end
 
 initial begin
   input_data <= 32'b0;
@@ -63,17 +88,28 @@ initial begin
 end
 
 initial begin
-  #5;
+  #40;
+  assert(samples == 0 && qout === initial_value && done === 1'b0) else
+    $fatal(1, "playback started before forced trigger");
+  trigger_force <= 1;
+  wait(done === 1'b1);
+  repeat (4) @(negedge clk);
+  assert(samples == 21 && qout === 32'hffffffff && !qout_valid && !buffer_error) else
+    $fatal(1, "incorrect completion: samples=%0d qout=%h", samples, qout);
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #50 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_1.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout waiting for 21 streamer samples and completion");
 
 endmodule: tb_st_1

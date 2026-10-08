@@ -24,6 +24,10 @@ reg [2:0] addr;
 wire [31:0] result;
 
 localparam int length = 5;
+localparam int SAMPLE_COUNT = 800;
+wire reference_first = d;
+wire reference_second = d;
+`include "../correlation_reference.svh"
 
 autocorrelation #(
  .length(length),
@@ -50,7 +54,7 @@ end
 
 initial begin
   reset <= 1;
-  d <= 'bX;
+  d <= 0;
   valid <= 0;
   latch <= 0;
   high_low <= 0;
@@ -68,13 +72,14 @@ initial begin
   latch <= 0;
   #12;
 
-  #2 $finish;
+  check_correlation();
+  $finish;
 end
 
 initial begin
   $timeformat(-9, 2, " ns", 20);
   $display("Hello world");
-  #1000 $finish;
+  #1000 $fatal(1, "timeout waiting for autocorrelation checks");
 end
 
 endmodule: hello_world

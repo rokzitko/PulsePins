@@ -1,3 +1,4 @@
 #!/bin/sh
-rm -f tb1
+# A failed compile or simulation must not reuse a previous run's pass marker.
+rm -f tb1 SUCCESS
 iverilog -g2012 -o tb1 ../ts_core.sv tb1.sv

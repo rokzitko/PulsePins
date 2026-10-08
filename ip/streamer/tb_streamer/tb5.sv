@@ -39,6 +39,8 @@ always @(posedge clk) begin
 end
 
 reg [WIDTH_TRIGGER-1:0] trigger_in;
+wire [WIDTH_DATA-1:0] qout;
+wire qout_valid, done, buffer_error;
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
   .initial_value('0),
@@ -51,8 +53,31 @@ streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
   .trigger_force(1'b0),
   .trigger_reset(1'b0),
   .trigger_in,
+  .qout, .qout_valid, .done, .buffer_error,
   .streamer_clk(clk) // required for the offloading elements from trigger queue
 );
+
+int samples = 0;
+bit pause_checked = 0;
+bit checker_done = 0;
+`include "check_inputs.svh"
+
+always @(posedge clk) begin
+  if (qout_valid) begin
+    assert(samples < 12) else $fatal(1, "extra retrigger sample");
+    assert(qout === ((samples < 6) ? 32'h12345678 : 32'h87654321)) else
+      $fatal(1, "retrigger sample %0d: got %h", samples, qout);
+    samples++;
+  end
+end
+
+initial begin
+  wait(done === 1'b1);
+  repeat (4) @(negedge clk);
+  assert(samples == 12 && qout === 32'hffffffff && !qout_valid && !buffer_error) else
+    $fatal(1, "incorrect retrigger completion: samples=%0d qout=%h", samples, qout);
+  checker_done = 1;
+end
 
 initial begin
   input_data <= 32'b0;
@@ -85,10 +110,18 @@ initial begin
 
   // First trigger at time 60
   #60;
+  assert(samples == 0 && qout === 0 && !done) else $fatal(1, "output before first trigger");
   trigger_in <= 'b01;
 
-  // Second trigger at time 80
-  #20;
+  wait(samples == 6);
+  wait(dut.trigger_armed === 1'b1);
+  // The second program requires bit 1; the first trigger must not release it.
+  repeat (5) begin
+    @(negedge clk);
+    assert(samples == 6 && !qout_valid && !done && qout === 32'h12345678) else
+      $fatal(1, "playback did not pause for retrigger");
+  end
+  pause_checked = 1;
   trigger_in <= 'b10;
   #1;
 end
@@ -96,11 +129,15 @@ end
 integer fh;
 
 initial begin
-  #100 $display("SUCCESS");
+  wait(pause_checked && checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_5.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout: retrigger pause=%b samples=%0d completion=%b",
+  pause_checked, samples, checker_done);
 
 endmodule: tb_st_5

@@ -1,6 +1,8 @@
 // Purpose: CRC32 helper testbench.
 //
-// Confirms that the CRC block updates deterministically for known input data sequences.
+// Checks CRC values and validity every cycle for fixed and randomized input data,
+// including disabled cycles and back-to-back enabled words. Success requires
+// exact result counts and complete pipeline drain.
 `timescale 1ns/1ps
 
 module tb_crc32;
@@ -63,29 +65,13 @@ module tb_crc32;
   // Scoreboard: expected CRC stream with DUT latency handling
   // --------------------------------------------------------------------------
   logic [31:0] exp_crc_state;
-  logic [31:0] exp_crc_out_pipe [0:15];
-  logic        exp_valid_pipe   [0:15];
-
-  localparam int DUT_LAT = 1; // crc_valid asserted one cycle after data_en
-
-  task automatic pipe_shift(input logic v, input logic [31:0] crc_state_after_word);
-    int k;
-    logic [31:0] outval;
-    begin
-      outval = crc_state_after_word ^ CRC_XOROUT;
-
-      // shift pipeline
-      for (k = 15; k > 0; k--) begin
-        exp_valid_pipe[k]   = exp_valid_pipe[k-1];
-        exp_crc_out_pipe[k] = exp_crc_out_pipe[k-1];
-      end
-      exp_valid_pipe[0]   = v;
-      exp_crc_out_pipe[0] = outval;
-    end
-  endtask
+  logic exp_valid;
+  int expected_count;
+  int received_count;
+  int consecutive_count;
 
   // --------------------------------------------------------------------------
-  // Drive a single word
+  // Drive one cycle; adjacent calls deliberately exercise back-to-back words.
   // --------------------------------------------------------------------------
   task automatic send_word(input logic [31:0] w, input logic en = 1'b1);
     begin
@@ -93,38 +79,36 @@ module tb_crc32;
       data_in <= w;
       data_en <= en;
 
-      // update expected state when enabled
-      if (en) begin
-        exp_crc_state <= crc32_update_word_reflected(exp_crc_state, w);
-        // expected output corresponds to crc AFTER consuming this word
-        pipe_shift(1'b1, crc32_update_word_reflected(exp_crc_state, w));
-      end else begin
-        pipe_shift(1'b0, exp_crc_state);
-      end
-
-      @(negedge clk);
-      data_en <= 1'b0;
-      data_in <= '0;
-      // pipeline advances each cycle regardless
-      pipe_shift(1'b0, exp_crc_state);
     end
   endtask
 
   // --------------------------------------------------------------------------
   // Checker
   // --------------------------------------------------------------------------
-  always_ff @(posedge clk) begin
-    if (rst_n) begin
-      if (crc_valid) begin
-        if (!exp_valid_pipe[DUT_LAT]) begin
-          $fatal(1, "DUT asserted crc_valid unexpectedly.");
-        end
-        if (crc_out !== exp_crc_out_pipe[DUT_LAT]) begin
-          $display("Mismatch @%0t: got 0x%08x exp 0x%08x",
-                   $time, crc_out, exp_crc_out_pipe[DUT_LAT]);
-          $fatal(1, "CRC mismatch.");
-        end
+  always @(posedge clk) begin
+    if (!rst_n) begin
+      exp_crc_state = CRC_INIT;
+      exp_valid = 0;
+      expected_count = 0;
+      received_count = 0;
+      consecutive_count = 0;
+    end else begin
+      // Sample before NBA updates: outputs correspond to the previous edge.
+      assert(crc_valid === exp_valid) else
+        $fatal(1, "CRC validity mismatch: got %b expected %b, received=%0d expected=%0d",
+          crc_valid, exp_valid, received_count, expected_count);
+      if (exp_valid) begin
+        assert(crc_out === (exp_crc_state ^ CRC_XOROUT)) else
+          $fatal(1, "CRC result %0d: got %08x expected %08x",
+            received_count, crc_out, exp_crc_state ^ CRC_XOROUT);
+        received_count++;
       end
+      if (data_en) begin
+        if (exp_valid) consecutive_count++;
+        exp_crc_state = crc32_update_word_reflected(exp_crc_state, data_in);
+        expected_count++;
+      end
+      exp_valid = data_en;
     end
   end
 
@@ -140,15 +124,9 @@ module tb_crc32;
     data_en = 1'b0;
     data_in = '0;
 
-    for (n = 0; n < 16; n++) begin
-      exp_valid_pipe[n]   = 1'b0;
-      exp_crc_out_pipe[n] = '0;
-    end
-
     // reset
     rst_n = 1'b0;
-    exp_crc_state = CRC_INIT;
-    repeat (5) @(posedge clk);
+    repeat (5) @(negedge clk);
     rst_n = 1'b1;
     repeat (2) @(posedge clk);
 
@@ -162,12 +140,8 @@ module tb_crc32;
     send_word(32'hDEAD_BEEF, 1'b1);
 
     // Insert an idle (data_en=0) gap
-    @(negedge clk);
-    data_en <= 1'b0;
-    data_in <= '0;
-    pipe_shift(1'b0, exp_crc_state);
-    @(negedge clk);
-    pipe_shift(1'b0, exp_crc_state);
+    send_word(32'hBAD0_DA7A, 1'b0);
+    send_word('0, 1'b0);
 
     // ----------------------------------------------------------------------
     // Random regression
@@ -177,22 +151,20 @@ module tb_crc32;
       send_word(rnd, 1'b1);
       // occasional disabled cycles
       if ((n % 37) == 0) begin
-        @(negedge clk);
-        data_en <= 1'b0;
-        data_in <= '0;
-        pipe_shift(1'b0, exp_crc_state);
+        send_word($urandom, 1'b0);
       end
     end
 
     // Drain a few cycles
     repeat (10) begin
-      @(negedge clk);
-      data_en <= 1'b0;
-      data_in <= '0;
-      pipe_shift(1'b0, exp_crc_state);
+      send_word('0, 1'b0);
     end
 
-    $display("All tests PASSED.");
+    assert(expected_count == 2004 && received_count == expected_count) else
+      $fatal(1, "incomplete CRC drain: received=%0d expected=%0d", received_count, expected_count);
+    assert(!exp_valid && crc_valid === 1'b0) else $fatal(1, "CRC output did not go idle");
+    assert(consecutive_count > 0) else $fatal(1, "consecutive enabled cycles were not exercised");
+    $display("All tests PASSED: %0d CRC results, %0d consecutive enabled cycles.", received_count, consecutive_count);
     fh = $fopen("SUCCESS", "w");
     $fclose(fh);
     $finish;

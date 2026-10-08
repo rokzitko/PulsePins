@@ -44,6 +44,8 @@ wire trigger_activated;
 
 integer sample_idx = 0;
 integer sample_idx_at_gate_close;
+bit pause_checked = 0;
+bit checker_done = 0;
 
 // Trace the gate state, FIFO occupancy, and visible output so pause/resume failures are easy to
 // diagnose from the console log.
@@ -137,6 +139,7 @@ initial begin
   assert(done == 0) else $fatal;
 
   gate_enable <= 1;
+  pause_checked = 1;
 end
 
 // Check the resumed progression order. We do not assume exact cycle timing, only the visible
@@ -158,16 +161,21 @@ initial begin
   assert(sample_idx == 7) else $fatal;
   assert(qout == 32'h00000055) else $fatal;
   assert(buffer_error == 0) else $fatal;
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #120 $display("SUCCESS");
+  wait(pause_checked && checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_9.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout: pause=%b completion=%b samples=%0d",
+  pause_checked, checker_done, sample_idx);
 
 endmodule: tb_st_9

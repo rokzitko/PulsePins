@@ -123,7 +123,7 @@ end
 initial begin
   $timeformat(-9, 2, " ns", 20);
   $display("Hello world");
-  #1000 $finish;
+  #1000 $fatal(1, "timeout waiting for runs counter checks");
 end
 
 endmodule: hello_world

@@ -38,6 +38,8 @@ reg avs_s0_read;
 reg avs_s0_write;
 wire [cfg::WIDTH_AVS-1:0] avs_s0_readdata;
 reg [cfg::WIDTH_AVS-1:0] avs_s0_writedata;
+bit stimulus_done = 0;
+bit checker_done = 0;
 
 rl_encoder_if dut(
   .clk, .reset,
@@ -78,6 +80,7 @@ initial begin
   qin_valid <= 1;
   #1
   qin_valid <= 0;
+  stimulus_done = 1;
 end
 
 initial begin
@@ -89,15 +92,19 @@ initial begin
   end
   aso_ready <= 1'b1;
   #1step assert(dut.rdreq == 1'b1) else $fatal;
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #50 $display("SUCCESS");
+  wait(stimulus_done && checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $finish;
 end
+
+initial #100 $fatal(1, "timeout waiting for readback handshake checks");
 
 endmodule: tb

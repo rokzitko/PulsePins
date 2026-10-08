@@ -24,6 +24,10 @@ reg [3:0] addr;
 wire [31:0] result;
 
 localparam int length = 5;
+localparam int SAMPLE_COUNT = 100000;
+wire reference_first = d1;
+wire reference_second = d2;
+`include "../correlation_reference.svh"
 
 crosscorrelation #(
  .length(length),
@@ -51,7 +55,7 @@ end
 
 
 // generate autocorrelated random bits
-logic rand_bit1, rand_bit2;
+logic rand_bit1 = 0, rand_bit2 = 1;
 always_ff @(posedge clk) begin
   rand_bit1 <= ($urandom_range(0, 100) > 30 ? $urandom_range(0, 1) : rand_bit2);
   rand_bit2 <= ($urandom_range(0, 100) > 30 ? $urandom_range(0, 1) : rand_bit1);
@@ -100,13 +104,14 @@ initial begin
 
 
 
-  #2 $finish;
+  check_correlation();
+  $finish;
 end
 
 initial begin
   $timeformat(-9, 2, " ns", 20);
   $display("Hello world");
-  #1000000 $finish;
+  #1000000 $fatal(1, "timeout waiting for crosscorrelation checks");
 end
 
 endmodule: hello_world

@@ -52,8 +52,13 @@ st_interface dut (
   .qout,
   .qout_valid,
   .streamer_clk,
-  .strobe_enable
+  .strobe_enable,
+  .avs_s0_address('0), .avs_s0_read(1'b0), .avs_s0_write(1'b0), .avs_s0_writedata('0),
+  .trigger_in('0), .trigger_enable_ext(1'b0), .trigger_reset_ext(1'b0),
+  .gate_in(1'b0)
 );
+
+`include "check_inputs.svh"
 
 // Instantiate Avalon-ST Source BFM
 avalon_st_source_bfm #(
@@ -99,25 +104,36 @@ initial begin
   trigger_force_ext <= 1;
 end
 
-// Tests
+// The two programmed five-cycle runs produce ten consecutive strobe cycles.
+bit checker_done = 0;
 initial begin
-  #44  assert(strobe_enable == 0);
-  #0.1 assert(strobe_enable == 1);
-end
-
-initial begin
-  #243 assert(strobe_enable == 1);
-  #0.1 assert(strobe_enable == 0);
+  wait(trigger_activated === 1'b1);
+  @(negedge clk);
+  assert(strobe_enable === 1'b0) else $fatal(1, "strobe enabled too early");
+  @(negedge clk);
+  assert(strobe_enable === 1'b1) else $fatal(1, "strobe did not start");
+  repeat (9) begin
+    @(negedge clk);
+    assert(strobe_enable === 1'b1) else $fatal(1, "strobe ended too early");
+  end
+  repeat (4) begin
+    @(negedge clk);
+    assert(strobe_enable === 1'b0) else $fatal(1, "strobe did not stop");
+  end
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #300 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_if_2.ucdb");
   $finish;
 end
+
+initial #300 $fatal(1, "timeout waiting for wrapper strobe checks");
 
 endmodule: tb_st_if_2

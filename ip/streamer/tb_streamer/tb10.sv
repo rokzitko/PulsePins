@@ -45,6 +45,8 @@ localparam [31:0] STORE1 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (1 << BIT_POSI
 localparam [31:0] REPLAY = (1 << BIT_NOPASS) + (1 << BIT_REPLAY);
 
 integer sample_idx = 0;
+bit pretrigger_checked = 0;
+bit checker_done = 0;
 
 // Trace trigger state, replay activity, and output progression so failures are easy to diagnose.
 always @(posedge clk) begin
@@ -129,6 +131,7 @@ initial begin
   assert(sample_idx == 0) else $fatal;
   assert(qout == 0) else $fatal;
   assert(done == 0) else $fatal;
+  pretrigger_checked = 1;
 end
 
 // After the trigger, replayed payload must appear in the expected order:
@@ -149,16 +152,21 @@ initial begin
   assert(sample_idx == 10) else $fatal;
   assert(qout == 32'h000000CC) else $fatal;
   assert(buffer_error == 0) else $fatal;
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #120 $display("SUCCESS");
+  wait(pretrigger_checked && checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_10.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout: pretrigger=%b completion=%b samples=%0d",
+  pretrigger_checked, checker_done, sample_idx);
 
 endmodule: tb_st_10

@@ -51,8 +51,10 @@ assign gate_enable = 1'b1;
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value, .initial_reload(1'b0), .initial_value_streamer(initial_value), .trigger_enable, .trigger_force,
              .streamer_clk, .qout, .qout_valid(valid), .gate_enable, .stop(0),
-             .stop_on_buffer_error(0)
+             .stop_on_buffer_error(0), .trigger_in('0), .trigger_reset(1'b0)
              );
+
+`include "check_inputs.svh"
 
 initial begin
   input_data <= 32'b0;

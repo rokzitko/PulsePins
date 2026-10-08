@@ -36,8 +36,14 @@ st_interface dut (
   .asi_data,
   .asi_valid,
   .asi_channel(1'b0),
-  .asi_ready
+  .asi_ready,
+  .streamer_clk(clk),
+  .avs_s0_address('0), .avs_s0_read(1'b0), .avs_s0_write(1'b0), .avs_s0_writedata('0),
+  .trigger_in('0), .trigger_enable_ext(1'b0), .trigger_force_ext(1'b0), .trigger_reset_ext(1'b0),
+  .gate_in(1'b0)
 );
+
+`include "check_inputs.svh"
 
 // Instantiate Avalon-ST Source BFM
 avalon_st_source_bfm #(

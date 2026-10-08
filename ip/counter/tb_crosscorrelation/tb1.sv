@@ -24,6 +24,10 @@ reg [3:0] addr;
 wire [31:0] result;
 
 localparam int length = 5;
+localparam int SAMPLE_COUNT = 800;
+wire reference_first = d1;
+wire reference_second = d2;
+`include "../correlation_reference.svh"
 
 crosscorrelation #(
  .length(length),
@@ -51,8 +55,8 @@ end
 
 initial begin
   reset <= 1;
-  d1 <= 'bX;
-  d2 <= 'bX;
+  d1 <= 0;
+  d2 <= 0;
   valid <= 0;
   latch <= 0;
   high_low <= 0;
@@ -71,13 +75,14 @@ initial begin
   latch <= 0;
   #12;
 
-  #2 $finish;
+  check_correlation();
+  $finish;
 end
 
 initial begin
   $timeformat(-9, 2, " ns", 20);
   $display("Hello world");
-  #1000 $finish;
+  #1000 $fatal(1, "timeout waiting for crosscorrelation checks");
 end
 
 endmodule: hello_world

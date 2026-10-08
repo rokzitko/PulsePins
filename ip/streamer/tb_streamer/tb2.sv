@@ -39,14 +39,30 @@ always @(posedge clk) begin
 );
 end
 
+logic [WIDTH_TRIGGER-1:0] trigger_in = '0;
+wire [WIDTH_DATA-1:0] qout;
+wire qout_valid, done, buffer_error, trigger_armed, trigger_activated;
+
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready, .initial_value,
   .initial_reload(1'b0),
   .initial_value_streamer(initial_value),
   .trigger_enable(1'b1),
   .trigger_force(1'b0),
   .trigger_reset(1'b0),
+  .trigger_in,
+  .gate_enable(1'b1), .stop(1'b0), .stop_on_buffer_error(1'b0),
+  .qout, .qout_valid, .done, .buffer_error, .trigger_armed, .trigger_activated,
   .streamer_clk(clk) // required for the offloading elements from trigger queue
 );
+
+bit checker_done = 0;
+`include "check_inputs.svh"
+
+// A trigger and a terminator must never become ordinary output samples.
+always @(posedge clk) begin
+  if (!reset && $time > 8)
+    assert(qout_valid === 1'b0) else $fatal(1, "trigger/terminator emitted as data");
+end
 
 initial begin
   input_data <= 32'b0;
@@ -62,17 +78,29 @@ initial begin
 end
 
 initial begin
-  #5;
+  wait(trigger_armed === 1'b1);
+  repeat (4) @(negedge clk);
+  assert(!trigger_activated && !done && qout === initial_value) else
+    $fatal(1, "trigger matched before pattern=1 arrived");
+  trigger_in = 1;
+  wait(trigger_activated === 1'b1);
+  wait(done === 1'b1);
+  repeat (4) @(negedge clk);
+  assert(qout === 32'hffffffff && !buffer_error) else $fatal(1, "incorrect trigger-only completion");
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #50 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_2.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout waiting for trigger arming, activation, or completion");
 
 endmodule: tb_st_2

@@ -120,6 +120,9 @@ end
 
 integer used_before_gate;
 integer sample_idx = 0;
+bit gate_checked = 0;
+bit progression_checked = 0;
+bit checker_done = 0;
 
 // While the gate is closed, trigger activation may happen but the output FIFO must not advance.
 initial begin
@@ -133,6 +136,7 @@ initial begin
   assert(qout == INITIAL_VALUE_STREAMER) else $fatal;
   assert(qout_valid == 0) else $fatal;
   assert(done == 0) else $fatal;
+  gate_checked = 1;
 end
 
 // Once the gate opens, output progression should resume in order.
@@ -151,6 +155,7 @@ initial begin
   #55;
   assert(gate_enable == 1) else $fatal;
   assert(dut.fifo0.used < used_before_gate) else $fatal;
+  progression_checked = 1;
 end
 
 initial begin
@@ -159,16 +164,21 @@ initial begin
   assert(sample_idx == 5) else $fatal;
   assert(qout == 32'h00000033) else $fatal;
   assert(buffer_error == 0) else $fatal;
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #90 $display("SUCCESS");
+  wait(gate_checked && progression_checked && checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_7.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout: gate=%b progression=%b completion=%b samples=%0d",
+  gate_checked, progression_checked, checker_done, sample_idx);
 
 endmodule: tb_st_7

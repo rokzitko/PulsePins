@@ -26,6 +26,8 @@ end
 reg [cfg::WIDTH_DATA-1:0] data;
 reg valid;
 wire data_clk = clk;
+bit stimulus_done = 0;
+bit checker_done = 0;
 
 always @(posedge clk) begin
   $strobe("t=%8.3f data=%h valid=%b run_value=%4h run_count=%4d j=%h wrreq=%b",
@@ -33,7 +35,7 @@ always @(posedge clk) begin
   );
 end
 
-rl_encoder dut(.clk, .reset, .data, .valid, .data_clk, .mode(1'b1));
+rl_encoder dut(.clk, .reset, .data, .valid, .data_clk, .mode(1'b1), .strobe(1'b0), .rdreq(1'b0));
 
 initial begin
   data <= 32'b0;
@@ -61,6 +63,7 @@ initial begin
   valid <= 1;
   #1
   valid <= 0;
+  stimulus_done = 1;
 end
 
 initial begin
@@ -72,15 +75,19 @@ initial begin
    wait (dut.wrreq == 1);
    @(posedge clk);
    assert(dut.j == 'h0000000400000022) else $fatal;
+   checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #30 $display("SUCCESS");
+  wait(stimulus_done && checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $finish;
 end
+
+initial #100 $fatal(1, "timeout waiting for encoded runs");
 
 endmodule: tb

@@ -53,44 +53,47 @@ initial begin
   wrreq <= 0;
 end
 
+localparam int EXPECTED_WORDS = 4 * NR + 4;
+int received = 0;
+bit reader_done = 0;
+bit checker_done = 0;
 int j;
 initial begin
+  rdreq <= 0;
   #2060;
-  for (j = 0; j < 2000; j++) begin
+  for (j = 0; j < 2000 && received < EXPECTED_WORDS; j++) begin
     rdreq <= 1;
     #10;
     rdreq <= 0;
     #2;
   end
+  reader_done = 1;
 end
 
-// checker for expected output
-integer i;
-initial begin
-  rdreq <= 0;
-  #42050 rdreq <= 1; // delayed trigger
-
-  @(posedge clk iff rdreq);
-  assert(q == 'h00000000000000ff000008ff) else $fatal;
-  @(posedge clk iff rdreq);
-  assert(q == 'h00000000000000ff000009ff) else $fatal;
-
-  for (i = 0; i < NR; i++) begin
-   @(posedge clk iff rdreq);
-   assert(q[63:0] == 'h00001234000004ff) else $fatal;
-   @(posedge clk iff rdreq);
-   assert(q[63:0] == 'h00001234000005ee) else $fatal;
-   @(posedge clk iff rdreq);
-   assert(q[63:0] == 'h00001234000006dd) else $fatal;
-   @(posedge clk iff rdreq);
-   assert(q[63:0] == 'h00001234000007cc) else $fatal;
+// The FIFO is show-ahead: check the word at every accepted read, including
+// the throttled reads above, before the clock edge advances q.
+logic [WIDTH_TOTAL-1:0] expected;
+always @(posedge clk) begin
+  if (!reset && rdreq && !empty) begin
+    case (received)
+      0: expected = { PASS, 32'h00ff, 32'h08ff };
+      1: expected = { PASS, 32'h00ff, 32'h09ff };
+      4*NR+2: expected = { PASS, 32'h00ff, 32'h01aa };
+      4*NR+3: expected = { TERMINATE, 32'd0, 32'd0 };
+      default: begin
+        assert(received < 4*NR+2) else $fatal(1, "unexpected extra replay output");
+        case ((received-2) % 4)
+          0: expected = { STORE0, 32'h1234, 32'h04ff };
+          1: expected = { STORE1, 32'h1234, 32'h05ee };
+          2: expected = { STORE2, 32'h1234, 32'h06dd };
+          3: expected = { STORE3, 32'h1234, 32'h07cc };
+        endcase
+      end
+    endcase
+    assert(q === expected) else $fatal(1, "word %0d: got %h expected %h", received, q, expected);
+    received = received + 1;
+    checker_done = (received == EXPECTED_WORDS);
   end
-
-  @(posedge clk iff rdreq);
-  assert(q == 'h00000000000000ff000001aa) else $fatal;
-
-  @(posedge clk iff rdreq);
-  $fatal; // should never be reached
 end
 
 initial begin
@@ -105,14 +108,16 @@ end
 integer fh;
 
 initial begin
-  #20000;
-//  wait(empty == 1);
-//  #5;
+  wait(reader_done && checker_done);
+  repeat (8) @(negedge clk);
+  assert(empty && dut.rdempty && !dut.proc.active) else $fatal(1, "replay path did not drain");
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_input_pre_6.ucdb");
   $finish;
 end
+
+initial #40000 $fatal(1, "timeout: checked %0d/%0d replay words", received, EXPECTED_WORDS);
 
 endmodule: tb_input_pre_6

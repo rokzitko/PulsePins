@@ -39,8 +39,41 @@ always @(posedge clk) begin
 );
 end
 
+logic trigger_force = 0;
+wire [WIDTH_DATA-1:0] qout;
+wire qout_valid, done, buffer_error;
+
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
-  .initial_value, .initial_reload(1'b0), .initial_value_streamer(initial_value));
+  .initial_value, .initial_reload(1'b0), .initial_value_streamer(initial_value),
+  .streamer_clk(clk), .gate_enable(1'b1), .stop(1'b0), .stop_on_buffer_error(1'b0),
+  .trigger_in('0), .trigger_enable(1'b0), .trigger_force, .trigger_reset(1'b0),
+  .qout, .qout_valid, .done, .buffer_error);
+
+int samples = 0;
+bit checker_done = 0;
+`include "check_inputs.svh"
+
+// Reference expansion: (2 x AA, 3 x BB) repeated three times.
+always @(posedge clk) begin
+  if (qout_valid) begin
+    assert(samples < 15) else $fatal(1, "extra replay sample");
+    assert(qout === ((samples % 5 < 2) ? 32'hAA : 32'hBB)) else
+      $fatal(1, "replay sample %0d: got %h", samples, qout);
+    samples++;
+  end
+end
+
+initial begin
+  #40;
+  assert(samples == 0 && qout === initial_value && done === 1'b0) else
+    $fatal(1, "replay started before forced trigger");
+  trigger_force <= 1;
+  wait(done === 1'b1);
+  repeat (4) @(negedge clk);
+  assert(samples == 15 && qout === 32'hffffffff && !qout_valid && !buffer_error) else
+    $fatal(1, "incorrect replay completion: samples=%0d qout=%h", samples, qout);
+  checker_done = 1;
+end
 
 localparam [31:0] PASS = 0;
 localparam [31:0] NOPASS = 1 << BIT_NOPASS;
@@ -72,11 +105,14 @@ end
 integer fh;
 
 initial begin
-  #60 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_3.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "timeout waiting for 15 replay samples and completion");
 
 endmodule: tb_st_3

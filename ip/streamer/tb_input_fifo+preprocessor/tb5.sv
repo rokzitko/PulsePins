@@ -2,6 +2,8 @@
 //
 // Verifies that replay/storage behavior remains correct even when downstream readiness applies
 // pressure to the integrated ingress path.
+// Checks store/replay followed by randomized traffic against an expected-output queue;
+// success requires upstream backpressure, complete delivery, and both FIFOs drained.
 // Test backpressure in preprocessor
 // Rok Zitko, 2025
 
@@ -22,8 +24,8 @@ initial clk = 1;
 always #0.5 clk = ~clk;
 
 initial begin
-  reset = 1;
-  #1 reset = 0;
+  reset <= 1;
+  #3 reset <= 0;
 end
 
 // Interface
@@ -45,8 +47,8 @@ always @(posedge clk) begin
 end
 
 input_fifo #(
-.p1(4),  // smaller buffer, size=16!
-.p2(4)
+.p1(5),  // 32 words, leaving capacity beyond the 16-word almost-full margin
+.p2(5)
 )
 dut(
 .clk,
@@ -61,146 +63,109 @@ dut(
 .empty
 );
 
-integer queue[$];
+logic [WIDTH_TOTAL-1:0] expected_queue[$];
+int expected_count = 0;
+int received_count = 0;
+int blocked_cycles = 0;
+bit producer_done = 0;
+bit reader_done = 0;
+bit random_phase_done = 0;
 
 logic want_write;
 assign wrreq = want_write & ~full;  // actual FIFO wrreq
 
-task automatic feed;
-  input int nr;
-  integer i;
+task automatic send(input logic [WIDTH_TOTAL-1:0] word);
   begin
-    queue.push_back(nr);
-    $display("[%0t] Feed: %0d", $time, nr);
-
-    i = 1;
+    @(negedge clk);
+    data = word;
+    want_write = 1;
+    do @(posedge clk); while (!wrreq);
+    @(negedge clk);
     want_write = 0;
-
-    while (i <= nr) begin
-      data       <= i;
-      want_write <= 1;         // propose to write
-      @(posedge clk);
-      if (wrreq) begin
-        // successful write this cycle
-        if (verbose) $display("W %0d %0d", nr, i);
-        i = i + 1;
-      end
-    end
-
-    want_write <= 0;
   end
 endtask
 
-task automatic read;
-  int nr;
-  integer j;
-  reg [WIDTH_TOTAL-1:0] word;
-  begin
-    if (queue.size() > 0) begin
-      nr = queue.pop_front();
-      $display("[%0t] Read: %0d", $time, nr);
-    end else begin
-      $display("[%0t] Read: queue empty", $time);
-      return;
-    end
-
-    j = 1;
-    while (j <= nr) begin
-      @(posedge clk);
-      if (!empty) begin
-        rdreq <= 1;       // request advance
-        @(posedge clk);   // wait one more cycle for q to update
-        word = q;         // now q is valid
-        rdreq <= 0;
-
-        if (verbose) $display("R %0d %0d > %0d", nr, j, word);
-        assert(word == j) else $fatal;
-
-        j = j + 1;
-      end else begin
-        rdreq <= 0;
-      end
-    end
-
-    // clean deassertion after last read
-    @(posedge clk);
-    rdreq <= 0;
-  end
+task automatic expect_word(input logic [WIDTH_TOTAL-1:0] word);
+  expected_queue.push_back(word);
+  expected_count++;
 endtask
 
-// Consumes all data from FIFO
-task automatic readall;
-  reg [WIDTH_TOTAL-1:0] word;
-  begin
-    while (1) begin
-      @(posedge clk);
-      if (!empty) begin
-        rdreq <= 1;       // request advance
-        @(posedge clk);   // wait one more cycle for q to update
-        word = q;         // now q is valid
-        rdreq <= 0;
-
-        if (verbose) $display("R %0h", word);
-      end else begin
-        rdreq <= 0;
-      end
+// Compare show-ahead data on the accepting edge, before the FIFO advances.
+logic [WIDTH_TOTAL-1:0] expected_word;
+always @(posedge clk) begin
+  if (!reset) begin
+    if (want_write && full) blocked_cycles++;
+    if (rdreq && !empty) begin
+      assert(expected_queue.size() != 0) else $fatal(1, "unexpected output %h", q);
+      expected_word = expected_queue.pop_front();
+      assert(q === expected_word) else $fatal(1, "output mismatch at word %0d: got %h expected %h", received_count, q, expected_word);
+      received_count++;
     end
   end
-endtask
+end
 
 parameter int loops = 100;
 
 task automatic producer;
-integer i;
+integer i, j, nr;
+logic [WIDTH_TOTAL-1:0] word;
 begin
-  for (i = 0; i < loops; i = i + 1) begin
-    feed($urandom_range(0, 100));  // generate random int
-    #($urandom_range(10, 50));
+  send({ STORE0, 32'd10, 32'd1 });
+  send({ STORE1, 32'd10, 32'd2 });
+  send({ STORE2, 32'd10, 32'd3 });
+  send({ STORE3, 32'd10, 32'd4 });
+  for (i = 0; i < 8; i++) begin
+    expect_word({ STORE0, 32'd10, 32'd1 });
+    expect_word({ STORE1, 32'd10, 32'd2 });
+    expect_word({ STORE2, 32'd10, 32'd3 });
+    expect_word({ STORE3, 32'd10, 32'd4 });
   end
+  send({ REPLAY, 32'd8, 32'd4 });
+
+  // Fill ingress while replay is stalled to guarantee upstream backpressure.
+  for (i = 0; i < 40; i++) begin
+    word = { PASS, 32'd1, 32'(i) };
+    expect_word(word);
+    send(word);
+  end
+  wait(received_count == expected_count);
+
+  for (i = 0; i < loops; i = i + 1) begin
+    nr = $urandom_range(0, 100);
+    for (j = 0; j < nr; j++) begin
+      word = { PASS, 32'd1, $urandom() };
+      expect_word(word);
+      send(word);
+    end
+    repeat ($urandom_range(10, 50)) @(negedge clk);
+  end
+  random_phase_done = 1;
+  producer_done = 1;
 end
 endtask
 
 task automatic consumer;
-integer i;
 begin
-  for (i = 0; i < loops; i = i + 1) begin
-    #($urandom_range(2, 50));
-    read();
+  // The watchdog bounds this wait as well as the randomized reader below.
+  wait(blocked_cycles >= 4);
+  while (!producer_done || received_count != expected_count) begin
+    @(negedge clk);
+    rdreq = !empty && ($urandom_range(0, 3) != 0);
   end
+  @(negedge clk);
+  rdreq = 0;
+  reader_done = 1;
 end
 endtask
 
 integer fh;
 
 initial begin
-  data <= 96'b0;
-  want_write <= 0;
-  rdreq <= 0;
+  data = '0;
+  want_write = 0;
+  rdreq = 0;
   #5;
 
-  want_write <= 1;
-  data <= { STORE0, 32'd10, 32'd01 }; // store (do not pass)
-  #1
-  data <= { STORE1, 32'd10, 32'd02 }; // store (do not pass)
-  #1
-  data <= { STORE2, 32'd10, 32'd03 }; // store (do not pass)
-  #1
-  data <= { STORE3, 32'd10, 32'd04 }; // store (do not pass)
-  #1
-  data <= { STORE3, 32'd10, 32'd04 }; // store (do not pass)
-  #1
-  want_write <= 0;
-
-  #10;
-  want_write <= 1;
-  data <= { REPLAY, 32'h0004, 32'h05 }; // replay N x M elements
-  #1;
-  want_write <= 0;
-
-  #50;
-  readall();
-
-  // run producer and consumer concurrently
   fork
     producer();
     consumer();
@@ -208,12 +173,20 @@ initial begin
 end
 
 initial begin
-  #150;
-  $display("SUCCESS");
+  wait(producer_done && reader_done);
+  repeat (8) @(negedge clk);
+  assert(random_phase_done && blocked_cycles >= 4) else $fatal(1, "required scenarios not completed");
+  assert(expected_queue.size() == 0 && received_count == expected_count) else $fatal(1, "incomplete delivery");
+  assert(empty && dut.rdempty && !dut.proc.active) else $fatal(1, "FIFO/preprocessor did not drain");
+  assert(!dut.overflow_in && !dut.overflow_out) else $fatal(1, "FIFO overflow");
+  $display("SUCCESS: checked %0d words, %0d blocked cycles", received_count, blocked_cycles);
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_input_pre_5.ucdb");
   $finish;
 end
+
+initial #100000 $fatal(1, "timeout: received=%0d expected=%0d producer=%b reader=%b",
+  received_count, expected_count, producer_done, reader_done);
 
 endmodule: tb5_input

@@ -139,22 +139,36 @@ task testit;
 endtask
 
 int i;
+bit checker_done = 0;
 
 initial begin
+  in1 = 0;
+  in2 = 0;
+  in3 = 0;
+  in4 = 0;
+  avs_s0_address = 0;
+  avs_s0_read = 0;
+  avs_s0_write = 0;
+  avs_s0_writedata = 0;
 #5;
+  @(negedge clk);
   for (int i = 0; i < 500; i = i+1) begin
     testit();
   end
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #10000 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS: completed 500 combiner iterations");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_combiner2.ucdb");
   $finish;
 end
+
+initial #100000 $fatal(1, "timeout waiting for 500 combiner iterations");
 
 endmodule: tb_combiner2
