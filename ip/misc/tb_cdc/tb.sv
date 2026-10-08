@@ -19,9 +19,9 @@ logic dst_reset;
 initial begin
   src_reset = 1;
   dst_reset = 1;
-  repeat (4) @(posedge src_clk);
+  repeat (4) @(negedge src_clk);
   src_reset = 0;
-  repeat (4) @(posedge dst_clk);
+  repeat (4) @(negedge dst_clk);
   dst_reset = 0;
 end
 
@@ -69,10 +69,10 @@ cdc_snapshot #(.WIDTH(8)) snapshot_dut (
 
 task automatic send_update(input logic [7:0] value);
   begin
-    @(posedge src_clk);
+    @(negedge src_clk);
     src_data = value;
     src_update = 1'b1;
-    @(posedge src_clk);
+    @(negedge src_clk);
     src_update = 1'b0;
   end
 endtask
@@ -89,10 +89,11 @@ initial begin
   send_update(8'h11);
   wait(dst_valid && dst_data == 8'h11);
 
+  @(negedge dst_clk);
   dst_accept = 1'b0;
   send_update(8'h22);
   send_update(8'h33);
-  repeat (20) @(posedge dst_clk);
+  repeat (20) @(negedge dst_clk);
   assert(dst_data == 8'h11) else $fatal(1, "dst_data changed while accept was low");
   assert(dst_pending) else $fatal(1, "dst_pending was not set while accept was low");
 
@@ -100,7 +101,7 @@ initial begin
   wait(dst_data == 8'h33);
 
   wait(snap_valid);
-  repeat (20) @(posedge dst_clk);
+  repeat (20) @(negedge dst_clk);
   assert(snap_dst != 8'h00) else $fatal(1, "snapshot did not update");
 
   $display("SUCCESS");

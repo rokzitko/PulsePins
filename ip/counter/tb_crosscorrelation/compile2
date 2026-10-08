@@ -1,3 +1,2 @@
 #!/bin/sh
-rm -f tb2
-iverilog -g2012 -o tb2 ../crosscorrelation.sv ../../misc/cdc.sv tb2.sv
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" hello_world --no-marker ../crosscorrelation.sv ../../misc/cdc.sv tb2.sv "$@"

@@ -32,7 +32,7 @@ lint-verible:
 lint: lint-verible
 
 merge:
-	vcover merge merged.ucdb $(wildcard tb_*/run*.ucdb)
+	vcover merge merged.ucdb $(wildcard tb_*/.sim/questa/*/*/coverage.ucdb)
 
 report: merge
 	vcover report -annotate -codeAll -details -cvg -assert -output report.txt merged.ucdb

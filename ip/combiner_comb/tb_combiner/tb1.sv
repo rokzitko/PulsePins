@@ -30,6 +30,7 @@ logic [WIDTH-1:0] in2;
 logic [WIDTH-1:0] in3;
 logic [WIDTH-1:0] in4;
 logic [WIDTH-1:0] o;
+bit checker_done = 0;
 
 // Trace the selected mode and output while stepping through the deterministic functional cases.
 always @(posedge clk) begin
@@ -156,16 +157,22 @@ initial begin
   force dut.cfg = dut.BLOCK16;
   #1;
   assert(o == 32'h77883344) else $fatal;
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #20 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef IVERILOG
   $set_coverage_db_name("run_combiner1.ucdb");
+`endif
   $finish;
 end
+
+initial #200 $fatal(1, "timeout waiting for combinational combiner checks");
 
 endmodule: tb_combiner1

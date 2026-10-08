@@ -4,41 +4,32 @@ test: test1 test2 test3 test4 test5 test6 test7 test8 test9
 
 test1:
 	./run1
-	@[ -f "SUCCESS" ]
 
 test2:
 	./run2
-	@[ -f "SUCCESS" ]
 
 test3:
 	./run3
-	@[ -f "SUCCESS" ]
 
 test4:
 	./run4
-	@[ -f "SUCCESS" ]
 
 test5:
 	./run5
-	@[ -f "SUCCESS" ]
 
 test6:
 	./run6
-	@[ -f "SUCCESS" ]
 
 test7:
 	./run7
-	@[ -f "SUCCESS" ]
 
 test8:
 	./run8
-	@[ -f "SUCCESS" ]
 
 test9:
 	./run9
-	@[ -f "SUCCESS" ]
 
 clean:
 	rm -f tb SUCCESS transcript
-	rm -rf work
+	rm -rf work .sim
 	rm -rf *.ucdb report.txt report_dir/

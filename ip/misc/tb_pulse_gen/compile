@@ -1,5 +1,2 @@
 #!/bin/sh
-set -e
-rm -f tb
-iverilog -g2012 -o tb ../pulse_gen_timebase.sv tb.sv
-vvp tb
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" hello_world --no-marker ../pulse_gen_timebase.sv tb.sv "$@"

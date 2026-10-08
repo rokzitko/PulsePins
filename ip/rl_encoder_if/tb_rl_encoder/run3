@@ -1,6 +1,2 @@
 #!/bin/sh
-rm -rf work
-rm -f SUCCESS
-vlib work
-vlog -sv tb3.sv ../rl_encoder.sv ../../misc/sync.sv
-vsim -L altera_mf -L lpm -c -do "run -all" tb
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb --library altera_mf --library lpm tb3.sv ../rl_encoder.sv ../../misc/sync.sv "$@"

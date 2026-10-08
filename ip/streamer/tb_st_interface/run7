@@ -1,7 +1,2 @@
 #!/bin/sh
-IPDIR=../../misc
-rm -rf work
-rm -f SUCCESS
-vlib work
-vlog -sv -cover bcesft tb7.sv ../*sv avst.sv ${IPDIR}/endianness.sv ${IPDIR}/crc32.sv ${IPDIR}/sync.sv ${IPDIR}/cdc.sv
-vsim -L altera_mf -L lpm -c -do "run -all" -coverage tb_st_if_7
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_st_if_7 --library altera_mf --library lpm tb7.sv '../*.sv' avst.sv ../../misc/endianness.sv ../../misc/crc32.sv ../../misc/sync.sv ../../misc/cdc.sv "$@"

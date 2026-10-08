@@ -135,7 +135,9 @@ initial begin
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
 `ifndef VERILATOR
+`ifndef IVERILOG
   $set_coverage_db_name("run_st_13.ucdb");
+`endif
 `endif
   $finish;
 end

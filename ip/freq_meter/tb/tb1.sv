@@ -132,9 +132,9 @@ module tb1;
     // Apply resets
     avs_reset = 1'b1;
     cnt_reset = 1'b1;
-    repeat (5) @(posedge avs_clk);
-    repeat (5) @(posedge cnt_clk);
+    repeat (5) @(negedge avs_clk);
     avs_reset = 1'b0;
+    repeat (5) @(negedge cnt_clk);
     cnt_reset = 1'b0;
 
     // Program gate length in cnt_clk cycles

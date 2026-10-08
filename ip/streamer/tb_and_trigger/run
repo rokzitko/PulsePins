@@ -1,6 +1,2 @@
 #!/bin/sh
-rm -rf work
-rm -f SUCCESS
-vlib work
-vlog -sv -cover bcesft tb.sv ../and_trigger.sv
-vsim -c -do "run -all" -coverage tb_and
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_and tb.sv ../and_trigger.sv "$@"

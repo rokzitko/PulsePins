@@ -121,22 +121,34 @@ task testit;
 endtask
 
 int i;
+bit checker_done = 0;
 
 initial begin
+  avs_s0_address = 0;
+  avs_s0_read = 0;
+  avs_s0_write = 0;
+  avs_s0_writedata = 0;
 #5;
+  @(negedge clk); // bus writes are sampled on the opposite edge
   for (int i = 0; i < 500; i = i+1) begin
     testit();
   end
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #10000 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS: completed 500 trigger combiner iterations");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef IVERILOG
   $set_coverage_db_name("run_combiner2.ucdb");
+`endif
   $finish;
 end
+
+initial #100000 $fatal(1, "timeout waiting for 500 trigger combiner iterations");
 
 endmodule: tb_combiner2

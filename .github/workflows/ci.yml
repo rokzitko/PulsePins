@@ -47,4 +47,17 @@ jobs:
           sudo apt-get install -y iverilog
 
       - name: Run Icarus testbenches
-        run: make -C ip test-icarus
+        run: make -C ip -j4 test-icarus
+
+      - name: Check runner isolation and failure propagation
+        run: python3 -m unittest discover -s ip/testbench -p test_runner.py
+
+      - name: Upload simulation diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: icarus-diagnostics
+          include-hidden-files: true
+          path: |
+            ip/**/.sim/**/run.log
+            ip/**/.sim/**/run.json

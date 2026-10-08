@@ -137,6 +137,7 @@ end
 
 always @(posedge streamer_clk) begin
   if (qout_valid) begin
+    assert(samples < 4) else $fatal(1, "extra output sample");
     assert(qout == 32'h000000ff) else $fatal(1, "INIT_VAL was not used as decoder base");
     samples <= samples + 1;
   end
@@ -144,7 +145,8 @@ end
 
 initial begin
   wait(done);
-  assert(samples >= 4) else $fatal(1, "too few output samples");
+  repeat (4) @(negedge streamer_clk);
+  assert(samples == 4) else $fatal(1, "expected exactly four output samples, got %0d", samples);
   assert(buffer_error == 0) else $fatal(1, "unexpected buffer_error");
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");

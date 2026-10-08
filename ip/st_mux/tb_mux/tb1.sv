@@ -156,7 +156,9 @@ initial begin
   #100 $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef IVERILOG
   $set_coverage_db_name("run_mux1.ucdb");
+`endif
   $finish;
 end
 

@@ -45,22 +45,21 @@ module tb_presence_detector;
 
     // Stimulus
     initial begin
-        $dumpfile("tb_presence_detector.vcd");
-        $dumpvars(0, tb_presence_detector);
+        // Use WAVES=1 with the runner to capture waveforms in the run directory.
 
         // Reset for a while
-        #100 reset = 0;
+        repeat(5) @(negedge clk);
+        reset = 0;
 
         // Wait some clocks
-        repeat(5) @(posedge clk);
+        repeat(5) @(negedge clk);
 
         // Synchronous one-cycle pulse must start and eventually expire the activity window.
         pulse = 1;
-        @(posedge clk);
+        @(negedge clk);
         pulse = 0;
-        @(posedge clk);
         if (!sync_active) $fatal(1, "sync detector failed to activate");
-        repeat(WINDOW_CYCLES+2) @(posedge clk);
+        repeat(WINDOW_CYCLES+2) @(negedge clk);
         if (sync_active) $fatal(1, "sync detector failed to expire");
 
         // Generate a posedge *between* clk edges
@@ -72,7 +71,7 @@ module tb_presence_detector;
 
         // Another pulse, this time aligned with a clk edge
         repeat(10) @(posedge clk);
-        sig_in = 1; #20 sig_in = 0;
+        sig_in <= 1; #20 sig_in <= 0;
         repeat(10) @(posedge clk);
         #1;
 
@@ -81,8 +80,7 @@ module tb_presence_detector;
         #5  sig_in = 1; #2 sig_in = 0;
 
         // Wait long enough for window to expire
-        #(WINDOW_CYCLES*30);
-        #1;
+        repeat(WINDOW_CYCLES+5) @(negedge clk);
 
         // Another pulse to re-activate
         sig_in = 1; #10 sig_in = 0;
@@ -90,11 +88,10 @@ module tb_presence_detector;
         #1;
 
         // Wait long enough for window to expire
-        #(WINDOW_CYCLES*30);
-        #1;
+        repeat(WINDOW_CYCLES+5) @(negedge clk);
 
         // Finish
-        #(2000);
+        repeat(100) @(negedge clk);
         $display("PASS");
         $finish;
     end

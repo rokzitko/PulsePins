@@ -49,7 +49,7 @@ initial begin
   $display("Triggered at t=%0.3f", $realtime);
   #0 assert(o == 1'b0) else $fatal; // before clock tick
   @(posedge clk);
-  #1step assert(o == 1'b1) else $fatal; // after clock tick
+  #1ps assert(o == 1'b1) else $fatal; // after clock tick, at the declared timeprecision
 end
 
 integer fh;
@@ -58,7 +58,9 @@ initial begin
   #10 $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef IVERILOG
   $set_coverage_db_name("run_and.ucdb");
+`endif
   $finish;
 end
 

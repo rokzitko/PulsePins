@@ -39,6 +39,7 @@ compile.log
 
 # Temporary stuff
 old/
+ip/**/.sim/
 
 build-log-*
 

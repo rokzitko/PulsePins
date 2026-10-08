@@ -120,7 +120,7 @@ module rl_decoder
   // synthesis translate_off
   always_ff @(posedge clk) if (!reset) begin
     assert(!(in_rdreq && !in_valid))
-      else $fatal("in_rdreq asserted when input not valid");
+      else $fatal(1, "in_rdreq asserted when input not valid");
   end
   // synthesis translate_on
 

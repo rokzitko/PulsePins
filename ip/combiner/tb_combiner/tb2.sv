@@ -165,7 +165,9 @@ initial begin
   $display("SUCCESS: completed 500 combiner iterations");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef IVERILOG
   $set_coverage_db_name("run_combiner2.ucdb");
+`endif
   $finish;
 end
 

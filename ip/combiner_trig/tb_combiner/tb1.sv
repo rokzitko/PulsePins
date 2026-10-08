@@ -32,6 +32,7 @@ logic [WIDTH-1:0] in3;
 logic [WIDTH-1:0] in4;
 logic [WIDTH-1:0] o;
 logic [31:0] avs_s0_readdata;
+bit checker_done = 0;
 
 // Trace a few internal datapath signals while stepping through the fixed functional cases.
 always @(posedge clk) begin
@@ -63,6 +64,7 @@ initial begin
   in3 <= 0;
   in4 <= 0;
   #1;
+  @(negedge clk);
 
   // Basic selection modes.
   #5;
@@ -114,16 +116,22 @@ initial begin
   force dut.cfg_clk = dut.XNOR;
   #2;
   assert(o == 11'h7dd) else $fatal;
+  checker_done = 1;
 end
 
 integer fh;
 
 initial begin
-  #40 $display("SUCCESS");
+  wait(checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
+`ifndef IVERILOG
   $set_coverage_db_name("run_combiner1.ucdb");
+`endif
   $finish;
 end
+
+initial #200 $fatal(1, "timeout waiting for trigger combiner checks");
 
 endmodule: tb_combiner1

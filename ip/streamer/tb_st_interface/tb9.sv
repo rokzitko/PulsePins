@@ -111,11 +111,15 @@ task push_word(input logic [31:0] control, input logic [31:0] counter, input log
 endtask
 
 integer sample_idx;
+integer stopped_samples;
+logic [31:0] stopped_qout;
 integer fh;
 
 always @(posedge streamer_clk) begin
   if (qout_valid) begin
-    assert(qout != 32'ha5a5_a5a5) else $fatal(1, "override affected stopped/active playback");
+    assert(sample_idx < 144) else $fatal(1, "extra output sample");
+    assert(qout === ((sample_idx < 128) ? 32'h11 : 32'h22)) else
+      $fatal(1, "sample %0d out of order: %h", sample_idx, qout);
     sample_idx <= sample_idx + 1;
   end
 end
@@ -148,7 +152,16 @@ initial begin
   avmm_write(IF_CTRL, 32'h00000021); // request qout_select and stop while playback is unfinished
 
   wait(dut.stop_streamer == 1'b1);
-  repeat (80) @(posedge streamer_clk);
+  // Allow the already registered transfer to retire, then require a stable
+  // public output and no valid samples throughout the stopped interval.
+  repeat (2) @(negedge streamer_clk);
+  stopped_samples = sample_idx;
+  stopped_qout = qout;
+  repeat (80) begin
+    @(negedge streamer_clk);
+    assert(qout_valid === 1'b0 && qout_strobe === 1'b0) else $fatal(1, "output valid while stopped");
+    assert(sample_idx == stopped_samples && qout === stopped_qout) else $fatal(1, "output advanced while stopped");
+  end
   assert(done == 1'b0) else $fatal(1, "stream completed while stop was asserted");
   assert(buffer_error == 1'b0) else $fatal(1, "unexpected buffer_error while stopped");
   assert(dut.streamer_idle == 1'b0) else $fatal(1, "stopped unfinished stream looked idle");

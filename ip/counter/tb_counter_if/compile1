@@ -1,4 +1,3 @@
 #!/bin/sh
-rm -f tb1
-iverilog -g2012 -DDO_SUM2 -DCOUNTER_CC -o tb1 ../counter_if.sv ../basic_counter.sv ../runs_counter.sv ../seq_counter.sv ../autocorrelation.sv \
-  ../packet_stats.sv ../mux32to1.sv ../mux32to2.sv ../crosscorrelation.sv ../time_counter.sv ../../misc/cdc.sv ../cdc.v tb1.sv
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" hello_world --no-marker --define DO_SUM2 --define COUNTER_CC ../counter_if.sv ../basic_counter.sv ../runs_counter.sv ../seq_counter.sv ../autocorrelation.sv \
+  ../packet_stats.sv ../mux32to1.sv ../mux32to2.sv ../crosscorrelation.sv ../time_counter.sv ../../misc/cdc.sv ../cdc.v tb1.sv "$@"

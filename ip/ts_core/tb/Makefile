@@ -6,8 +6,7 @@ test: test1
 
 test1:
 	sh ./compile1
-	vvp ./tb1
-	@[ -f "SUCCESS" ]
 
 clean:
+	rm -rf .sim
 	rm -f tb1 SUCCESS

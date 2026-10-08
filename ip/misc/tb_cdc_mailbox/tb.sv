@@ -47,11 +47,7 @@ module tb;
     out_reset <= 1'b0;
   end
 
-  // Waves (optional)
-  initial begin
-    $dumpfile("tb.vcd");
-    $dumpvars(0, tb);
-  end
+  // Use WAVES=1 with the runner for opt-in waveforms.
 
   // Drive one input word for N sampled in_clk cycles.
   task automatic send_word_n(input logic [WIDTH-1:0] w, input int ncycles);
@@ -70,9 +66,9 @@ module tb;
   // Wait for out_valid with timeout
   task automatic wait_out_valid(input int max_cycles, output bit ok);
     ok = 0;
-    for (int i = 0; i < max_cycles; i++) begin
-      @(posedge out_clk);
-      if (out_valid) begin ok = 1; return; end
+    for (int i = 0; i < max_cycles && !ok; i++) begin
+      @(negedge out_clk);
+      if (out_valid) ok = 1;
     end
   endtask
 
@@ -81,9 +77,9 @@ module tb;
                                   input int max_cycles,
                                   output bit ok);
     ok = 0;
-    for (int i = 0; i < max_cycles; i++) begin
-      @(posedge out_clk);
-      if (out_data === w) begin ok = 1; return; end
+    for (int i = 0; i < max_cycles && !ok; i++) begin
+      @(negedge out_clk);
+      if (out_data === w) ok = 1;
     end
   endtask
 
@@ -92,9 +88,9 @@ module tb;
                                        input int max_cycles,
                                        output bit ok);
     ok = 0;
-    for (int i = 0; i < max_cycles; i++) begin
-      @(posedge out_clk);
-      if (out_data !== prev) begin ok = 1; return; end
+    for (int i = 0; i < max_cycles && !ok; i++) begin
+      @(negedge out_clk);
+      if (out_data !== prev) ok = 1;
     end
   endtask
 

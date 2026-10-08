@@ -64,6 +64,7 @@ always @(posedge clk) begin
 end
 
 // Stimulus
+bit stimulus_done = 0;
 initial begin
     #3;
 
@@ -71,33 +72,59 @@ initial begin
     src_bfm.init();
 
 //                                  control   counter  data
-    src_bfm.set_transaction_data(96'h12345678_aabbccdd_abcdefaa);
+    // Short counters let both words leave the ingress FIFO within this test.
+    src_bfm.set_transaction_data(96'h12345678_02000000_abcdefaa);
     src_bfm.set_transaction_sop(1);
     src_bfm.set_transaction_eop(1);
     src_bfm.push_transaction();
 
-    src_bfm.set_transaction_data(96'h11223344_ffffffff_eeeeeeee);
+    src_bfm.set_transaction_data(96'h11223344_03000000_eeeeeeee);
     src_bfm.set_transaction_sop(1);
     src_bfm.set_transaction_eop(1);
     src_bfm.push_transaction();
+    stimulus_done = 1;
 end
 
-// Tests
-initial begin
-  wait(dut.st0.empty_i == 0);
-  assert(dut.st0.data[7:0] == 8'hAB) else $fatal;
-  assert(dut.st0.counter[7:0] == 8'hAA) else $fatal;
-  assert(dut.st0.control[7:0] == 8'h12) else $fatal;
+// Check all mapped bits on acceptance and again when the ingress FIFO delivers
+// each word. Correct mapping alone must not hide missing or duplicated delivery.
+localparam logic [95:0] EXPECTED_FIRST = 96'h78563412_00000002_aaefcdab;
+localparam logic [95:0] EXPECTED_SECOND = 96'h44332211_00000003_eeeeeeee;
+int transfers = 0;
+int delivered = 0;
+always @(posedge clk) begin
+  if (!reset && asi_valid && asi_ready) begin
+    case (transfers)
+      0: assert(dut.input_data === EXPECTED_FIRST) else
+           $fatal(1, "first mapped word mismatch: %h", dut.input_data);
+      1: assert(dut.input_data === EXPECTED_SECOND) else
+           $fatal(1, "second mapped word mismatch: %h", dut.input_data);
+      default: $fatal(1, "unexpected extra ingress transfer");
+    endcase
+    transfers++;
+  end
+  if (!reset && dut.st0.rdreq_i && !dut.st0.empty_i) begin
+    case (delivered)
+      0: assert(dut.st0.q_i === EXPECTED_FIRST) else $fatal(1, "first delivered word mismatch: %h", dut.st0.q_i);
+      1: assert(dut.st0.q_i === EXPECTED_SECOND) else $fatal(1, "second delivered word mismatch: %h", dut.st0.q_i);
+      default: $fatal(1, "unexpected extra FIFO delivery");
+    endcase
+    delivered++;
+  end
 end
 
 integer fh;
 
 initial begin
-  #10 $display("SUCCESS");
+  wait(stimulus_done && transfers == 2 && delivered == 2);
+  repeat (8) @(negedge clk);
+  assert(dut.st0.empty_i === 1'b1) else $fatal(1, "ingress FIFO did not drain");
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_if_1.ucdb");
   $finish;
 end
+
+initial #100 $fatal(1, "timeout: accepted %0d/2, delivered %0d/2 transport words", transfers, delivered);
 
 endmodule: tb_st_if_1

@@ -1,5 +1,2 @@
 #!/bin/sh
-set -e
-rm -f tb
-iverilog -g2012 -o tb ../sig_mux.sv tb.sv
-vvp tb
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" hello_world --no-marker ../sig_mux.sv tb.sv "$@"

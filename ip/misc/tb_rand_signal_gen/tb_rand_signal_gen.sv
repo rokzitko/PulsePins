@@ -55,12 +55,8 @@ module tb_rand_signal_gen;
     always #(CLK_PERIOD_NS/2) clk = ~clk;
 
     // -----------------------------
-    // VCD dump
+    // Waveforms are opt-in through WAVES=1 in the test runner.
     // -----------------------------
-    initial begin
-      $dumpfile("rand_signal_gen.vcd");
-      $dumpvars(0, tb_rand_signal_gen);
-    end
 
     // -----------------------------
     // Stimulus + statistics
@@ -76,7 +72,7 @@ module tb_rand_signal_gen;
         int unsigned i;
         begin
             for (i = 0; i < n; i++) begin
-                @(posedge clk);
+                @(negedge clk); // reset/oe changes after this task cannot race the DUT
             end
         end
     endtask
