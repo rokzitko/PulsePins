@@ -2,6 +2,25 @@
 
 This file provides an overview of the simulation testbench tree under `ip/`.
 
+## Running the Icarus tests
+
+On Ubuntu 24.04, install Icarus Verilog and run the tests from the repository root:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y iverilog
+make -C ip test-icarus
+```
+
+This target runs all counter testbenches, the timestamp-core testbench, and the
+`misc/tb_activity_monitor`, `misc/tb_pulse_gen`, `misc/tb_rand_signal_gen`,
+`misc/tb_sig_mux`, and `misc/tb_tik` testbenches using `iverilog` and `vvp`.
+The test directories are listed explicitly in `ip/Makefile`; add new Icarus
+testbenches to `ICARUS_TESTDIRS` to include them.
+
+GitHub Actions runs the same command in the **Icarus testbenches** job on
+`ubuntu-24.04` workers for pull requests and pushes to `main`.
+
 ## What these testbenches are for
 
 The testbenches in `ip/` mix several styles of verification:
