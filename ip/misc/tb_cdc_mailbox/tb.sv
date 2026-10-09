@@ -98,6 +98,11 @@ module tb;
   logic [WIDTH-1:0] held;
   bit ok;
   integer fh;
+  int submitted_samples = 0, held_updates = 0, hold_checks = 0;
+  always @(posedge in_clk) if (!in_reset && in_valid) begin
+    submitted_samples++;
+    if (out_req) held_updates++;
+  end
 
   initial begin
     // Wait for both resets to be low
@@ -134,6 +139,7 @@ module tb;
       if (out_data !== held)
         $fatal(1, "[TB] FAIL: out_data changed while out_req=1 (held=0x%08x now=0x%08x t=%0t)",
                held, out_data, $time);
+      hold_checks++;
     end
 
     // 3) Release hold and verify the sample captured during hold is committed
@@ -149,10 +155,15 @@ module tb;
     wait_out_data_eq(32'h3333_0003, TMO_UPDATE, ok);
     if (!ok) $fatal(1, "[TB] TIMEOUT: one-cycle update did not reach out_data");
 
+    tb_require_scenario("submitted_samples", submitted_samples, 5);
+    tb_require_scenario("updates_while_held", held_updates, 3);
+    tb_require_scenario("held_value_checks", hold_checks, 50);
+    tb_require_scenario("post_hold_delivery", out_data === 32'h3333_0003);
     $display("[TB] PASS (out_data=0x%08x out_valid=%0b)", out_data, out_valid);
     fh = $fopen("SUCCESS", "w");
     $fclose(fh);
     $finish;
   end
 
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

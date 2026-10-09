@@ -31,6 +31,14 @@ reg [31:0] avs_s0_writedata;
 reg saw_aso;
 reg saw_asoA;
 integer fh;
+int transfers = 0, transfers_a = 0, stalled_cycles = 0, stalled_cycles_a = 0;
+logic [1:0] overflow_checked = 0, overflow_clear_checked = 0;
+always @(posedge clk) if (!reset) begin
+  if (aso_valid && aso_ready) transfers++;
+  if (asoA_valid && asoA_ready) transfers_a++;
+  if (aso_valid && !aso_ready) stalled_cycles++;
+  if (asoA_valid && !asoA_ready) stalled_cycles_a++;
+end
 
 localparam [1:0] A_STATUS = 2'd0;
 localparam [1:0] A_CONTROL = 2'd1;
@@ -177,6 +185,7 @@ initial begin
   assert(status[8]) else $fatal;
   mm_read(A_OVERFLOW_COUNT, count);
   assert(count == 1) else $fatal;
+  overflow_checked[0] = 1;
   assert(aso_data == held) else $fatal;
 
   aso_ready <= 1;
@@ -188,6 +197,7 @@ initial begin
   assert(!status[8]) else $fatal;
   mm_read(A_OVERFLOW_COUNT, count);
   assert(count == 0) else $fatal;
+  overflow_clear_checked[0] = 1;
 
   asoA_ready <= 0;
   pulse_sigA();
@@ -200,6 +210,7 @@ initial begin
   assert(status[9]) else $fatal;
   mm_read(A_OVERFLOWA_COUNT, count);
   assert(count == 1) else $fatal;
+  overflow_checked[1] = 1;
   assert(asoA_data == heldA) else $fatal;
 
   asoA_ready <= 1;
@@ -211,9 +222,18 @@ initial begin
   assert(!status[9]) else $fatal;
   mm_read(A_OVERFLOWA_COUNT, count);
   assert(count == 0) else $fatal;
+  overflow_clear_checked[1] = 1;
 
   assert(saw_aso) else $fatal;
   assert(saw_asoA) else $fatal;
+  tb_require_scenario("channel0_transfers", transfers, 2);
+  tb_require_scenario("channel1_transfers", transfers_a, 2);
+  tb_require_scenario("channel0_stalled_capture", stalled_cycles);
+  tb_require_scenario("channel1_stalled_capture", stalled_cycles_a);
+  for (int ch = 0; ch < 2; ch++) begin
+    tb_require_scenario($sformatf("channel_%0d_overflow_checked", ch), overflow_checked[ch]);
+    tb_require_scenario($sformatf("channel_%0d_overflow_cleared", ch), overflow_clear_checked[ch]);
+  end
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -226,4 +246,5 @@ initial begin
   #1000 $fatal(1, "timeout waiting for timestamp capture/checks");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: hello_world

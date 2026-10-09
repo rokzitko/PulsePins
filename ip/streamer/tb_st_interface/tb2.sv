@@ -106,19 +106,24 @@ end
 
 // The two programmed five-cycle runs produce ten consecutive strobe cycles.
 bit checker_done = 0;
+int high_checks = 0, low_checks = 0;
 initial begin
   wait(trigger_activated === 1'b1);
   @(negedge clk);
   assert(strobe_enable === 1'b0) else $fatal(1, "strobe enabled too early");
+  low_checks++;
   @(negedge clk);
   assert(strobe_enable === 1'b1) else $fatal(1, "strobe did not start");
+  high_checks++;
   repeat (9) begin
     @(negedge clk);
     assert(strobe_enable === 1'b1) else $fatal(1, "strobe ended too early");
+    high_checks++;
   end
   repeat (4) begin
     @(negedge clk);
     assert(strobe_enable === 1'b0) else $fatal(1, "strobe did not stop");
+    low_checks++;
   end
   checker_done = 1;
 end
@@ -127,6 +132,8 @@ integer fh;
 
 initial begin
   wait(checker_done);
+  tb_require_scenario("enabled_strobe_cycles_checked", high_checks, 10);
+  tb_require_scenario("disabled_strobe_cycles_checked", low_checks, 5);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -136,4 +143,5 @@ end
 
 initial #300 $fatal(1, "timeout waiting for wrapper strobe checks");
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_if_2

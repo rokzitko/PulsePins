@@ -75,6 +75,11 @@ integer queue[$];
 logic want_write;
 logic saw_backpressure;
 logic producer_done;
+int blocked_cycles = 0, resumed_writes = 0, checked_words = 0, checked_bursts = 0;
+always @(posedge clk) if (!reset) begin
+  if (wrreq && full) blocked_cycles++;
+  if (wrreq && !full && blocked_cycles > 0) resumed_writes++;
+end
 assign wrreq = want_write;  // valid signal, held until accepted by !full
 
 task automatic feed;
@@ -129,6 +134,7 @@ task automatic read;
 
         if (verbose) $display("R %0d %0d > %0d", nr, j, word);
         assert(word == WIDTH_TOTAL'(j)) else $fatal;
+        checked_words++;
 
         rdreq = 1'b1;     // consume the visible word on the next edge
         @(posedge clk);
@@ -144,6 +150,7 @@ task automatic read;
     // clean deassertion after last read
     @(negedge clk);
     rdreq = 1'b0;
+    checked_bursts++;
   end
 endtask
 
@@ -163,6 +170,7 @@ endtask
 
 task automatic consumer;
 begin
+  wait(saw_backpressure); // guarantee the directed first burst reaches its intended scenario
   while (!producer_done || (queue.size() > 0)) begin
 //    #10; // spacing between reads
     if (queue.size() > 0) begin
@@ -198,6 +206,11 @@ initial begin
   assert(ctr2_in == ctr2_out) else $fatal(1, "input FIFO stage 2 counters did not drain");
   assert(!overflow_in) else $fatal(1, "legal input backpressure set overflow_in");
   assert(!overflow_out) else $fatal(1, "legal output backpressure set overflow_out");
+  tb_require_scenario("write_backpressure", blocked_cycles);
+  tb_require_scenario("write_recovery", resumed_writes);
+  tb_require_scenario("checked_bursts", checked_bursts, loops);
+  tb_require_scenario("checked_words", checked_words, 40);
+  tb_require_scenario("drained", empty && ctr1_in == ctr1_out && ctr2_in == ctr2_out);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -211,4 +224,5 @@ initial begin
   #200000 $fatal(1, "timeout");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb3_input

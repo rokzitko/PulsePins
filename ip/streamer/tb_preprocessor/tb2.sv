@@ -66,6 +66,10 @@ localparam [31:0] STORE0 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (0 << BIT_POSI
 localparam [31:0] STORE1 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (1 << BIT_POSITIONS_LO);
 localparam [31:0] STORE2 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (2 << BIT_POSITIONS_LO);
 localparam [31:0] STORE3 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (3 << BIT_POSITIONS_LO);
+localparam [31:0] STORE4 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (4 << BIT_POSITIONS_LO);
+localparam [31:0] STORE5 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (5 << BIT_POSITIONS_LO);
+localparam [31:0] STORE6 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (6 << BIT_POSITIONS_LO);
+localparam [31:0] STORE7 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (7 << BIT_POSITIONS_LO);
 localparam [31:0] REPLAY = (1 << BIT_NOPASS) + (1 << BIT_REPLAY);
 
 initial begin
@@ -92,6 +96,14 @@ initial begin
   #1
   din_valid <= 1;
   din <= { STORE3, 32'h1234, 32'h07cc }; // store (do not pass)
+  #1
+  din <= { STORE4, 32'h1234, 32'h08bb };
+  #1
+  din <= { STORE5, 32'h1234, 32'h09aa };
+  #1
+  din <= { STORE6, 32'h1234, 32'h0a99 };
+  #1
+  din <= { STORE7, 32'h1234, 32'h0b88 };
   #1
   din_valid <= 1;
   din <= { PASS, 32'h00ff, 32'h08ff }; // pass [X3]
@@ -205,6 +217,8 @@ end
 
 // checker for expected output
 integer i;
+int infinite_cycles_checked = 0;
+bit finite_checked = 0;
 initial begin
   // [X]
   @(posedge clk iff dout_valid);
@@ -269,14 +283,15 @@ initial begin
    @(posedge clk iff dout_valid);
    assert(dout[63:0] == 'h00001234000007cc) else $fatal;
    @(posedge clk iff dout_valid);
-//   assert(dout[63:0] == 'h0) else $fatal;
+    assert(dout[63:0] == 'h00001234000008bb) else $fatal;
    @(posedge clk iff dout_valid);
-//   assert(dout[63:0] == 'h0) else $fatal;
+    assert(dout[63:0] == 'h00001234000009aa) else $fatal;
    @(posedge clk iff dout_valid);
-//   assert(dout[63:0] == 'h0) else $fatal;
+    assert(dout[63:0] == 'h0000123400000a99) else $fatal;
    @(posedge clk iff dout_valid);
-//   assert(dout[63:0] == 'h0) else $fatal;
+    assert(dout[63:0] == 'h0000123400000b88) else $fatal;
   end
+  finite_checked = 1;
 
   // [I]
   for (i = 0; ; i++) begin
@@ -288,6 +303,7 @@ initial begin
    assert(dout[63:0] == 'h00001234000006dd) else $fatal;
    @(posedge clk iff dout_valid);
    assert(dout[63:0] == 'h00001234000007cc) else $fatal;
+   infinite_cycles_checked++;
   end
 end
 
@@ -303,11 +319,26 @@ end
 integer fh;
 
 initial begin
-  #200 $display("SUCCESS");
+  #200;
+  @(negedge clk);
+  tb_require_scenario("pass_commands", cov_passes, 6);
+  tb_require_scenario("discard_commands", cov_discards);
+  tb_require_scenario("all_storage_positions", $countones(cov_positions), MEMORY_POSITIONS);
+  tb_require_scenario("zero_length_replays", cov_zero_length, 2);
+  tb_require_scenario("length_one_replays", cov_one_length, 2);
+  tb_require_scenario("maximum_length_replays", cov_max_length, 3);
+  tb_require_scenario("finite_sequence_checked", finite_checked);
+  tb_require_scenario("infinite_cycles_checked", infinite_cycles_checked, 4);
+  tb_require_scenario("infinite_still_running", dut.active && dut.infinite && dout_valid && !din_ready);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_pre_2.ucdb");
   $finish;
 end
 
+wire [95:0] cov_din = din;
+wire cov_valid = din_valid, cov_ready = din_ready, cov_output = dout_valid;
+wire cov_output_ready = dout_ready, cov_active = dut.active, cov_infinite = dut.infinite;
+`include "scenarios.svh"
 endmodule: tb_pre_2

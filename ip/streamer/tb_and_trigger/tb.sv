@@ -30,6 +30,12 @@ logic [WIDTH_TRIGGER-1:0] pattern;
 logic [WIDTH_TRIGGER-1:0] mask;
 logic trigger_enable;
 logic o;
+int mismatch_cycles = 0, matching_cycles = 0;
+bit sampled_trigger_checked = 0;
+always @(posedge clk) if (!reset && trigger_enable) begin
+  if ((i & mask) == (pattern & mask)) matching_cycles++;
+  else mismatch_cycles++;
+end
 
 always @(posedge clk) begin
   $strobe("t=%8.3f reset=%b trigger_enable=%b i=%b o=%b", $realtime, reset, trigger_enable, i, o);
@@ -50,12 +56,17 @@ initial begin
   #0 assert(o == 1'b0) else $fatal; // before clock tick
   @(posedge clk);
   #1ps assert(o == 1'b1) else $fatal; // after clock tick, at the declared timeprecision
+  sampled_trigger_checked = 1;
 end
 
 integer fh;
 
 initial begin
-  #10 $display("SUCCESS");
+  #10;
+  tb_require_scenario("enabled_mismatches", mismatch_cycles);
+  tb_require_scenario("enabled_matches", matching_cycles);
+  tb_require_scenario("registered_trigger_checked", sampled_trigger_checked);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
 `ifndef IVERILOG
@@ -64,4 +75,5 @@ initial begin
   $finish;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_and

@@ -64,10 +64,13 @@ module tb_and_exhaustive;
       control_trials++;
     end
     assert(comparisons == 16777216 && control_trials == 256) else $fatal(1, "incomplete exhaustive coverage");
+    tb_require_scenario("predicate_combinations_checked", comparisons, 16777216);
+    tb_require_scenario("reset_enable_latch_trials", control_trials, 256);
     $display("SUCCESS: %0d trigger comparisons, %0d reset/enable/latch trials", comparisons, control_trials);
     fh = $fopen("SUCCESS", "w");
     $fclose(fh);
     $finish;
   end
   initial #2000000 $fatal(1, "exhaustive trigger watchdog: comparisons=%0d", comparisons);
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

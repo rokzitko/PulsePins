@@ -45,6 +45,16 @@ logic [31:0] avs_s0_writedata;
 logic [2:0] avs_s0_address;
 logic avs_s0_write;
 logic avs_s0_read;
+int channel0_transfers = 0, channel1_transfers = 0, stalled_switches = 0, resumed_transfers = 0;
+bit checker_done = 0;
+always @(posedge clk) if (!reset) begin
+  if (aso_valid && !aso_ready && avs_s0_write && avs_s0_address == 0 && avs_s0_writedata[0] != aso_channel)
+    stalled_switches++;
+  if (aso_valid && aso_ready) begin
+    if (aso_channel) channel1_transfers++; else channel0_transfers++;
+    if (stalled_switches > 0) resumed_transfers++;
+  end
+end
 
 st_mux_if dut(
  .clk,
@@ -146,6 +156,7 @@ initial begin
   #2;
   assert(aso_channel == 1) else $fatal;
   assert(aso_data == 32'hbbbb_0002) else $fatal;
+  checker_done = 1;
   asi_valid1 <= 0;
   asi_valid2 <= 0;
 end
@@ -153,7 +164,13 @@ end
 integer fh;
 
 initial begin
-  #100 $display("SUCCESS");
+  #100;
+  tb_require_scenario("channel0_transfers", channel0_transfers, 10);
+  tb_require_scenario("channel1_transfers", channel1_transfers, 10);
+  tb_require_scenario("switch_requested_while_stalled", stalled_switches);
+  tb_require_scenario("post_stall_transfers", resumed_transfers);
+  tb_require_scenario("switch_checks_completed", checker_done);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
 `ifndef IVERILOG
@@ -162,4 +179,5 @@ initial begin
   $finish;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_mux1

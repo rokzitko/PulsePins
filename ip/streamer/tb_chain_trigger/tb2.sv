@@ -29,6 +29,21 @@ module tb_chain_async;
   int writes = 0, consumed = 0, blocked = 0;
   int reset_cases = 0, retrig_cases = 0, random_programs = 0;
   bit saw_full = 0, saw_empty = 0;
+  logic [3:0] trigger_reset_states = 0, retrig_states = 0, read_reset_states = 0;
+  int full_resets = 0, read_edges = 0, write_edges = 0, coincident_edges = 0;
+  longint last_write_ps = -1;
+  always @(posedge wrclk) begin write_edges++; last_write_ps = longint'($realtime*1000.0); end
+  always @(posedge clk) begin
+    longint edge_ps;
+    edge_ps = longint'($realtime*1000.0); read_edges++;
+    if (!reset) begin
+      if (rst) read_reset_states[dut.state] = 1;
+      else if (retrig) retrig_states[dut.state] = 1;
+      else if (trigger_reset) trigger_reset_states[dut.state] = 1;
+    end
+    #1ps;
+    if (edge_ps == last_write_ps) coincident_edges++;
+  end
 
   task automatic tick;
     @(posedge clk);
@@ -38,7 +53,9 @@ module tb_chain_async;
   endtask
 
   task automatic clear_all;
+    bit was_full;
     @(negedge clk);
+    was_full = wrfull;
     reset = 1; rst = 1;
     trigger_enable = 0; trigger_force = 0; trigger_reset = 0; retrig = 0; i = 0;
     repeat (8) tick();
@@ -46,6 +63,7 @@ module tb_chain_async;
     @(negedge clk); rst = 0;
     repeat (8) tick();
     assert(!armed && !o && !wrfull) else $fatal(1, "global reset did not empty/disarm trigger");
+    if (was_full) full_resets++;
   endtask
 
   task automatic put(input logic [7:0] p, m, input bit last);
@@ -280,8 +298,28 @@ module tb_chain_async;
     empty_after_retrig();
     assert(saw_full && saw_empty && blocked > 0 && reset_cases >= 4 && retrig_cases > 0 && random_programs == 64)
       else $fatal(1, "required trigger scenarios were not exercised");
+    tb_require_scenario("queue_full", saw_full);
+    tb_require_scenario("queue_empty", saw_empty);
+    tb_require_scenario("producer_waited_for_space", blocked);
+    tb_require_scenario("full_queue_reset", full_resets);
+    tb_require_scenario("queue_wrap_stages_checked", consumed-before_consumed, 3*DEPTH);
+    tb_require_scenario("random_programs_checked", random_programs, 64);
+    for (int state_idx = 0; state_idx < 4; state_idx++) begin
+      tb_require_scenario($sformatf("trigger_reset_state_%0d", state_idx), trigger_reset_states[state_idx]);
+      tb_require_scenario($sformatf("retrigger_state_%0d", state_idx), retrig_states[state_idx]);
+      tb_require_scenario($sformatf("read_reset_state_%0d", state_idx), read_reset_states[state_idx]);
+    end
+`ifdef READ_FASTER
+    tb_require_scenario("reader_clock_faster", read_edges > write_edges);
+`else
+    tb_require_scenario("writer_clock_faster", write_edges > read_edges);
+`endif
+`ifdef COINCIDENT_CLOCKS
+    tb_require_scenario("coincident_clock_edges", coincident_edges);
+`endif
     $display("SUCCESS: %0d checked trigger stages, %0d blocked writes, %0d randomized programs", consumed, blocked, random_programs);
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #200000 $fatal(1, "trigger program watchdog: writes=%0d consumed=%0d", writes, consumed);
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

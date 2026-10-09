@@ -11,6 +11,7 @@ module tb_buffer_policies;
   wire [1:0] input_ready, qout_valid, buffer_error, done, active, triggered;
   wire [31:0] qout [0:1];
   int samples [0:1];
+  int underrun_policies_checked = 0, late_termination_checked = 0, recovered_policies = 0;
   for (genvar p = 0; p < 2; p++) begin : policies
     streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready(input_ready[p]),
       .streamer_clk, .gate_enable(1'b1), .initial_value(32'b0), .initial_reload(1'b0),
@@ -45,17 +46,26 @@ module tb_buffer_policies;
     @(negedge streamer_clk);
     assert(samples[0] == 8 && samples[1] == 8 && done == 0 && triggered == 2'b01) else
       $fatal(1, "error policies not distinguished: samples=%0d/%0d done=%b triggered=%b", samples[0], samples[1], done, triggered);
+    underrun_policies_checked = 2;
     send(4, 1, 32'habcdef01);
     repeat (40) @(negedge streamer_clk);
     assert(active == 2'b10 && done == 0 && qout[0] === 32'habcdef01 && qout[1] === 32'h12345678) else
       $fatal(1, "late terminator did not obey buffer-error policy");
+    late_termination_checked = 2;
     clear_all(); send(0, 8, 32'h12345678); send(4, 1, 32'habcdef01);
     repeat (30) @(negedge clk); trigger_force = 1;
     wait(done == 2'b11);
     repeat (8) @(negedge streamer_clk);
     assert(samples[0] == 8 && samples[1] == 8 && buffer_error == 0 && qout_valid == 0 && active == 0) else $fatal(1, "clean recovery failed");
+    recovered_policies = 2;
+    tb_require_scenario("underrun_policies_checked", underrun_policies_checked, 2);
+    tb_require_scenario("late_terminator_policies_checked", late_termination_checked, 2);
+    tb_require_scenario("reset_recovery_policies", recovered_policies, 2);
+    tb_require_scenario("policy0_recovery_samples", samples[0], 8);
+    tb_require_scenario("policy1_recovery_samples", samples[1], 8);
     $display("SUCCESS: both underflow policies, late termination and clean post-reset playback");
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #3000 $fatal(1, "buffer policy watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

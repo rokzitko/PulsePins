@@ -37,6 +37,9 @@ runs_counter dut (
   .result
 );
 
+wire cov_input_bit = d, cov_latch = latch;
+`include "../sample_coverage.svh"
+
 always @(posedge clk) begin
   #0.01;
   $display("t=%t reset=%b d=%b valid=%b ctr_run=%d ctr_run_r=%d result=%d",
@@ -82,40 +85,46 @@ initial begin
 
   addr <= 4'b0000;
   #1;
-  assert(result == 7) else $fatal;
+  assert(result == 7) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 4'b0010;
   #1;
-  assert(result == 4) else $fatal;
+  assert(result == 4) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 4'b0011;
   #1;
-  assert(result == 3) else $fatal;
+  assert(result == 3) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 4'b0100;
   #1;
-  assert(result == 5) else $fatal;
+  assert(result == 5) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 4'b0101;
   #1;
-  assert(result == 4) else $fatal;
+  assert(result == 4) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 4'b0110;
   #1;
-  assert(result == 2) else $fatal;
+  assert(result == 2) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 4'b0111;
   #1;
-  assert(result == 2) else $fatal;
+  assert(result == 2) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 4'b1000;
   #1;
-  assert(result == 3) else $fatal;
+  assert(result == 3) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 4'b1001;
   #1;
-  assert(result == 2) else $fatal;
+  assert(result == 2) cov_read_addresses[addr] = 1; else $fatal;
 
+  tb_require_scenario("sampled_lows", cov_low, 5);
+  tb_require_scenario("sampled_highs", cov_high, 4);
+  tb_require_scenario("run_transitions", cov_rises + cov_falls, 6);
+  tb_require_scenario("valid_drop_flush", cov_ends);
+  tb_require_scenario("latched_statistics", cov_latches);
+  tb_require_scenario("statistics_checked", $countones(cov_read_addresses), 9);
   #20 $finish;
 end
 

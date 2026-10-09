@@ -98,6 +98,7 @@ task avmm_write(input logic [4:0] addr, input logic [31:0] data);
 endtask
 
 integer samples;
+bit initial_value_checked = 0;
 integer fh;
 
 initial begin
@@ -118,6 +119,7 @@ initial begin
   avmm_write(INIT_VAL, 32'h000000f0);
   repeat (80) @(posedge clk);
   assert(qout == 32'h000000f0) else $fatal(1, "committed idle qout did not update");
+  initial_value_checked = 1;
 
   //                                  control   counter   data
   // BITSET 0x0f for four samples. If the decoder base was not reloaded, qout would be 0x0f.
@@ -148,6 +150,9 @@ initial begin
   repeat (4) @(negedge streamer_clk);
   assert(samples == 4) else $fatal(1, "expected exactly four output samples, got %0d", samples);
   assert(buffer_error == 0) else $fatal(1, "unexpected buffer_error");
+  tb_require_scenario("initial_value_committed", initial_value_checked);
+  tb_require_scenario("relative_operation_samples_checked", samples, 4);
+  tb_require_scenario("clean_completion", done && !buffer_error);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -161,6 +166,7 @@ initial begin
   #1000 $fatal(1, "timeout");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_if_7
 
 `default_nettype wire

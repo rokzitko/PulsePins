@@ -39,6 +39,7 @@ always @(posedge clk) begin
 end
 
 reg [WIDTH_TRIGGER-1:0] trigger_in;
+int boundary_checks = 0;
 
 streamer dut(.clk, .reset, .input_data, .input_valid, .input_ready,
   .initial_value('0),
@@ -127,18 +128,27 @@ initial begin
   #87;
   #1step;
   assert(dut.fifo0.q == 32'h87654326) else $fatal;
+  boundary_checks++;
   #1;
   assert(dut.fifo0.q == 32'hffffffff) else $fatal;
+  boundary_checks++;
 end
 
 integer fh;
 
 initial begin
-  #100 $display("SUCCESS");
+  #100;
+  tb_require_scenario("trigger_activations", cov_activations, 2);
+  tb_require_scenario("retrigger_consumed", cov_retriggers);
+  tb_require_scenario("payload_samples", cov_payload, 12);
+  tb_require_scenario("boundary_checks", boundary_checks, 2);
+  tb_require_scenario("clean_completion", cov_completions);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_5a.ucdb");
   $finish;
 end
 
+`include "scenarios.svh"
 endmodule: tb_st_5a

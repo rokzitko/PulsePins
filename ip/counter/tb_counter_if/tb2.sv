@@ -16,6 +16,9 @@ module tb_counter_channels;
   bit a [0:63], b [0:63], c [0:63];
   int sel_a, sel_b, sel_c, highs, lag_matches, run_length, sum2_l, sum2_h;
   logic [31:0] got;
+  int checked_sets = 0, live_resets = 0, checked_results = 0;
+  logic [15:0] checked_instruments = 0;
+  always @(posedge d_clk) if (!reset && dut.d_reset && d_valid && dut.bc.ctr_total != 0) live_resets++;
 
   task automatic write_reg(input logic [3:0] address, input logic [31:0] value);
     @(negedge clk); avs_s0_address = address; avs_s0_writedata = value; avs_s0_write = 1;
@@ -26,6 +29,8 @@ module tb_counter_channels;
     @(negedge clk); avs_s0_address = 0; avs_s0_read = 1;
     @(posedge clk); #1ps; got = avs_s0_readdata;
     assert(got === expected) else $fatal(1, "instrument=%0d address=%0d got=%0d expected=%0d", instrument, address, got, expected);
+    checked_results++;
+    checked_instruments[instrument] = 1;
     @(negedge clk); avs_s0_read = 0;
   endtask
   task automatic latch_results;
@@ -89,9 +94,17 @@ module tb_counter_channels;
       read_result(2, 12, 0); read_result(2, 13, 0);
 `endif
       write_reg(2, 1); read_result(1, 0, 0); write_reg(2, 0);
+      checked_sets++;
     end
+    tb_require_scenario("selector_sets_checked", checked_sets, 2);
+    tb_require_scenario("reset_while_counting", live_resets, 2);
+    tb_require_scenario("register_results_checked", checked_results, 20);
+    tb_require_scenario("basic_counter_readback", checked_instruments[1]);
+    tb_require_scenario("run_statistics_readback", checked_instruments[2]);
+    tb_require_scenario("correlation_feature_readback", checked_instruments[7]);
     $display("SUCCESS: two distinct selector sets, asynchronous sampling/reset, optional-feature register checks");
     $finish;
   end
   initial #30000 $fatal(1, "counter channel/feature watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

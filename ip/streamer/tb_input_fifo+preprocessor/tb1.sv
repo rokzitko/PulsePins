@@ -64,6 +64,7 @@ end
 
 // checker for expected output
 integer i;
+bit output_checked = 0, timing_checked = 0;
 initial begin
   rdreq <= 0;
   #50 rdreq <= 1; // delayed trigger
@@ -98,14 +99,16 @@ initial begin
   @(posedge clk iff rdreq);
   assert(q== 'h00000000000000ff00000bff) else $fatal;
   $strobe("done comparing");
+  output_checked = 1;
 end
 
 // check exact timing
 initial begin
-  #77;
-  @(posedge clk);
-  #1step $display("%h", q);
+  @(posedge rdreq);
+  repeat (17) @(posedge clk);
+  @(negedge clk); // final word is visible after the penultimate accepted read
   assert(q == 'h00000000000000ff00000bff) else $fatal;
+  timing_checked = 1;
   $set_coverage_db_name("run1.ucdb");
 end
 
@@ -122,13 +125,21 @@ integer fh;
 
 initial begin
   #50;
-  wait(empty == 1);
+  wait(empty == 1 && output_checked && timing_checked);
   #5;
+  tb_require_scenario("pass_commands", cov_passes, 6);
+  tb_require_scenario("discard_commands", cov_discards, 1);
+  tb_require_scenario("stored_positions", $countones(cov_positions), 4);
+  tb_require_scenario("finite_replay_words", cov_finite_words, 12);
+  tb_require_scenario("checked_order", output_checked);
+  tb_require_scenario("checked_timing", timing_checked);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_input_pre_1.ucdb");
   $finish;
 end
+
+initial #200 $fatal(1, "required ordering/timing scenario did not complete");
 
 endmodule: tb_input_pre_1

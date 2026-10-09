@@ -44,10 +44,17 @@ logic [31:0] avs_s0_writedata = 0;
 logic gate_in = 1;
 bit random_gate = 0;
 int gated_cycles = 0;
+int resumed_samples = 0;
+int accepted_modes [0:10];
 always @(negedge streamer_clk) if (random_gate) begin
   gate_in = ($urandom_range(0, 3) != 0);
-  if (!gate_in) gated_cycles++;
 end
+always @(posedge streamer_clk) begin
+  if (dut.st0.trigger_activated && !dut.st0.gate_enable) gated_cycles++;
+  if (qout_valid && dut.st0.gate_enable && gated_cycles > 0) resumed_samples++;
+end
+always @(posedge clk) if (!reset && dut.st0.rl0.in_valid && dut.st0.rl0.in_rdreq && dut.st0.rl0.in_counter != 0)
+  if (dut.st0.rl0.in_opmode <= 10) accepted_modes[dut.st0.rl0.in_opmode]++;
 
 st_interface dut (
   .clk,
@@ -124,6 +131,7 @@ initial begin
   logic [31:0] ctrl, count, data;
   int length, repetitions;
   trigger_force_ext <= 0;
+  for (int op = 0; op <= 10; op++) accepted_modes[op] = 0;
   reference_reset(0);
   #5;
   src_bfm.init();
@@ -171,6 +179,14 @@ initial begin
     $fatal(1, "incomplete wrapper delivery: %0d/%0d", received, reference_count);
   assert(reference_modes == '1 && reference_random_samples >= 20 && gated_cycles > 0 &&
          store_commands > 8 && replay_commands > 0 && discard_commands > 0) else $fatal(1, "missing randomized program scenario");
+  tb_require_scenario("pass_commands", cov_passes);
+  tb_require_scenario("store_commands", cov_stores, 8);
+  tb_require_scenario("discard_commands", cov_discards);
+  tb_require_scenario("replay_commands", cov_replays);
+  for (int op = 0; op <= 10; op++) tb_require_scenario($sformatf("accepted_decoder_mode_%0d", op), accepted_modes[op]);
+  tb_require_scenario("active_gate_stalls", gated_cycles);
+  tb_require_scenario("post_gate_samples", resumed_samples);
+  tb_require_scenario("reference_samples_checked", received, reference_count);
   $display("SUCCESS: %0d reference-checked wrapper samples, %0d gated cycles", received, gated_cycles);
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -184,4 +200,9 @@ initial begin
   $fatal(1, "randomized wrapper watchdog: %0d/%0d", received, reference_count);
 end
 
+wire [95:0] cov_din = dut.st0.fifo_i.proc.din;
+wire cov_valid = dut.st0.fifo_i.proc.din_valid, cov_ready = dut.st0.fifo_i.proc.din_ready;
+wire cov_output = dut.st0.fifo_i.proc.dout_valid, cov_output_ready = dut.st0.fifo_i.proc.dout_ready;
+wire cov_active = dut.st0.fifo_i.proc.active, cov_infinite = dut.st0.fifo_i.proc.infinite;
+`include "../tb_preprocessor/scenarios.svh"
 endmodule: tb_st_if_3

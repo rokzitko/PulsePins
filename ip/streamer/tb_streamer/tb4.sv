@@ -37,6 +37,7 @@ reg trigger_enable;
 reg trigger_force;
 wire [31:0] qout;
 wire valid;
+bit occupancy_checked = 0, final_checked = 0;
 
 always @(posedge clk) begin
   $strobe("t=%8.3f ctr=%h data=%h rdreq_i=%b empty_i=%b in_v_d=%b curr_value=%h curr_cnt=%d out_data=%h out_wrreq=%b in_rdreq=%b used_o=%d qout=%h",
@@ -70,6 +71,7 @@ end
 initial begin
   #20;
   assert(dut.fifo0.used == 1) else $fatal;
+  occupancy_checked = 1;
 end
 
 initial begin
@@ -81,6 +83,7 @@ initial begin
   #1;
   #1step;
   assert(qout == 32'hffffffff) else $fatal;
+  final_checked = 1;
 end
 
 integer i;
@@ -103,11 +106,18 @@ end
 integer fh;
 
 initial begin
-  #60 $display("SUCCESS");
+  #60;
+  tb_require_scenario("terminator_prefilled", occupancy_checked);
+  tb_require_scenario("trigger_activation", cov_activations);
+  tb_require_scenario("empty_sequence_completion", cov_completions);
+  tb_require_scenario("final_value_checked", final_checked);
+  tb_require_scenario("no_payload", cov_payload == 0 && cov_quiet_cycles > 0);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_st_4.ucdb");
   $finish;
 end
 
+`include "scenarios.svh"
 endmodule: tb_st_4

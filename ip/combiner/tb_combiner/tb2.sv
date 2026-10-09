@@ -59,6 +59,9 @@ combiner dut(
  .avs_s0_writedata
 );
 
+wire [3:0] cov_mode = dut.cfg_clk[3:0];
+`include "scenarios.svh"
+
 // Helper modeling a single Avalon-MM register write to the mode/config register.
 task set_cfg(input logic [31:0] cfg);
   $display("cfg=%h", cfg);
@@ -140,6 +143,7 @@ endtask
 
 int i;
 bit checker_done = 0;
+int completed_iterations = 0;
 
 initial begin
   in1 = 0;
@@ -154,6 +158,7 @@ initial begin
   @(negedge clk);
   for (int i = 0; i < 500; i = i+1) begin
     testit();
+    completed_iterations++;
   end
   checker_done = 1;
 end
@@ -162,6 +167,10 @@ integer fh;
 
 initial begin
   wait(checker_done);
+  @(negedge clk);
+  tb_require_scenario("random_iterations_checked", completed_iterations, 500);
+  for (int mode = 0; mode <= 15; mode++)
+    if (mode != 8 && mode != 14) tb_require_scenario($sformatf("selected_mode_%0d", mode), cov_modes[mode]);
   $display("SUCCESS: completed 500 combiner iterations");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);

@@ -117,6 +117,9 @@ module tb_rand_signal_gen;
         if ((mean < (0.5 - MEAN_TOL)) || (mean > (0.5 + MEAN_TOL))) begin
             $fatal(1, "Mean out of tolerance: mean=%.8f (tol=±%.6f)", mean, MEAN_TOL);
         end else begin
+            tb_require_scenario("measured_samples", sample_count, MEASURE_CYCLES);
+            tb_require_scenario("high_samples", ones_count);
+            tb_require_scenario("low_samples", sample_count - ones_count);
             $display("PASS: mean within ±%.6f of 0.5", MEAN_TOL);
         end
 
@@ -125,4 +128,5 @@ module tb_rand_signal_gen;
         $finish;
     end
 
+    `include "../../testbench/scenario_coverage.svh"
 endmodule

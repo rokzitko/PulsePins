@@ -49,8 +49,10 @@ initial begin
 
   if (tik_count != 3) $fatal(1, "tik count mismatch: %0d", tik_count);
 
+  tb_require_scenario("checked_ticks", tik_count, 3);
   $display("PASS");
   $finish;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: hello_world

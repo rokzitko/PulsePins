@@ -20,6 +20,9 @@ module tb_tick_boundaries;
       end
     end
     assign coverage_complete[g] = checked_ticks >= 8;
+    task automatic report_scenarios;
+      tb_require_scenario($sformatf("period_%0d_ticks_checked", P), checked_ticks, 8);
+    endtask
   end
   initial begin
     repeat (3) @(negedge clk); reset = 0;
@@ -27,6 +30,9 @@ module tb_tick_boundaries;
     repeat (3) @(negedge clk); reset = 0;
     repeat (83) @(negedge clk);
     assert(&coverage_complete) else $fatal(1, "tick boundary scenario incomplete");
+    periods[0].report_scenarios(); periods[1].report_scenarios(); periods[2].report_scenarios();
+    periods[3].report_scenarios(); periods[4].report_scenarios(); periods[5].report_scenarios(); periods[6].report_scenarios();
     $display("SUCCESS: exact tick phase/spacing at periods 1,2,3,7,8,9,16"); $finish;
   end
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

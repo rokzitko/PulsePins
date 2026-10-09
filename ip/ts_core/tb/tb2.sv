@@ -21,9 +21,26 @@ module tb_timestamp_reference;
   logic [7:0] timestamp [0:1];
   logic [31:0] dropped [0:1], expected_register;
   int delivered = 0, simultaneous = 0, coincident = 0, overflows = 0;
+  int held_channels [0:1], timestamp_wraps [0:1];
+  int simultaneous_transfers = 0, pending_resets = 0, saturation_checks = 0, clear_checks = 0;
+  bit have_timestamp [0:1];
+  logic [7:0] last_timestamp [0:1];
+  always @(posedge reset) if (|valid) pending_resets++;
   always @(posedge sig[0]) if (!reset) due[0] = cycle + 3;
   always @(posedge sig[1]) if (!reset) due[1] = cycle + 3;
   always @(posedge clk) begin
+    if (!reset) begin
+      if (valid == 3 && ready == 3) simultaneous_transfers++;
+      for (int ch = 0; ch < 2; ch++) begin
+        if (valid[ch] && !ready[ch] && ready[1-ch]) held_channels[ch]++;
+        if (valid[ch] && ready[ch]) begin
+          if (have_timestamp[ch] && data[ch] < last_timestamp[ch]) timestamp_wraps[ch]++;
+          last_timestamp[ch] = data[ch]; have_timestamp[ch] = 1;
+        end
+      end
+    end else begin
+      have_timestamp[0] = 0; have_timestamp[1] = 0;
+    end
     cycle++;
     expected_register = 0;
     if (reset) begin
@@ -72,9 +89,12 @@ module tb_timestamp_reference;
     @(negedge clk); avs_s0_address = address; avs_s0_read = 1;
     @(posedge clk); #2ps;
     assert(avs_s0_readdata === expected) else $fatal(1, "timestamp register %0d got=%h expected=%h", address, avs_s0_readdata, expected);
+    if (address >= 2 && expected == 32'hffffffff) saturation_checks++;
+    if (address >= 2 && expected == 0) clear_checks++;
     @(negedge clk); avs_s0_read = 0;
   endtask
   initial begin
+    for (int ch = 0; ch < 2; ch++) begin held_channels[ch] = 0; timestamp_wraps[ch] = 0; have_timestamp[ch] = 0; end
     repeat (5) @(negedge clk); reset = 0; ready = 3;
     repeat (8) begin pulse(3); repeat (6) @(negedge clk); end
     // Each sink stalls independently; activity on its peer must not consume or
@@ -116,8 +136,19 @@ module tb_timestamp_reference;
       read_reg(0, 0);
     end
     assert(delivered > 80 && simultaneous >= 8 && overflows >= 4 && coincident == 2) else $fatal(1, "missing timestamp coverage");
+    tb_require_scenario("timestamp_transfers_checked", delivered, 81);
+    tb_require_scenario("simultaneous_output_transfers", simultaneous_transfers, 8);
+    tb_require_scenario("capture_with_consumption", coincident, 2);
+    tb_require_scenario("reset_pending_capture", pending_resets);
+    tb_require_scenario("saturated_overflow_readbacks", saturation_checks, 2);
+    tb_require_scenario("cleared_overflow_readbacks", clear_checks, 2);
+    for (int ch = 0; ch < 2; ch++) begin
+      tb_require_scenario($sformatf("channel_%0d_independent_stall", ch), held_channels[ch]);
+      tb_require_scenario($sformatf("channel_%0d_timestamp_wrap", ch), timestamp_wraps[ch]);
+    end
     $display("SUCCESS: exact dual timestamps, spacing/wrap, simultaneous acceptance, reset pending, overflow saturation");
     $finish;
   end
   initial #20000 $fatal(1, "timestamp reference watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

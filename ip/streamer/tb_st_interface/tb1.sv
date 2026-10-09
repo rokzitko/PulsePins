@@ -118,6 +118,9 @@ initial begin
   wait(stimulus_done && transfers == 2 && delivered == 2);
   repeat (8) @(negedge clk);
   assert(dut.st0.empty_i === 1'b1) else $fatal(1, "ingress FIFO did not drain");
+  tb_require_scenario("mapped_transfers_checked", transfers, 2);
+  tb_require_scenario("fifo_delivery_checked", delivered, 2);
+  tb_require_scenario("ingress_drained", dut.st0.empty_i === 1'b1);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -127,4 +130,5 @@ end
 
 initial #100 $fatal(1, "timeout: accepted %0d/2, delivered %0d/2 transport words", transfers, delivered);
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_if_1

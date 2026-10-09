@@ -47,6 +47,9 @@ combiner_comb dut(
  .o
 );
 
+wire [3:0] cov_mode = dut.cfg[3:0];
+`include "../../combiner/tb_combiner/scenarios.svh"
+
 initial begin
   // Start from a fully idle input state so reset/default behavior is obvious.
   in1 <= 0;
@@ -164,6 +167,9 @@ integer fh;
 
 initial begin
   wait(checker_done);
+  @(negedge clk);
+  for (int mode = 0; mode <= 13; mode++) tb_require_scenario($sformatf("selected_mode_%0d", mode), cov_modes[mode]);
+  tb_require_scenario("directed_checks_completed", checker_done);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);

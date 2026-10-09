@@ -168,6 +168,11 @@ integer fh;
 
 initial begin
   wait(pause_checked && checker_done);
+  @(negedge clk);
+  tb_require_scenario("active_while_gated", cov_gated_cycles);
+  tb_require_scenario("midstream_pause_checked", pause_checked);
+  tb_require_scenario("payload_samples", cov_payload, 7);
+  tb_require_scenario("clean_completion", cov_completions);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -178,4 +183,5 @@ end
 initial #200 $fatal(1, "timeout: pause=%b completion=%b samples=%0d",
   pause_checked, checker_done, sample_idx);
 
+`include "scenarios.svh"
 endmodule: tb_st_9

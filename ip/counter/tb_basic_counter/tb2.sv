@@ -15,6 +15,11 @@ module tb_basic_async;
   int count = 0, cycle = 0, snapshots = 0, upper_reads = 0;
   logic [7:0] snapshot [0:7];
   bit producer_done = 0;
+  int live_latches = 0, live_resets = 0, overflow_checks = 0;
+  always @(posedge d_clk) if (!reset) begin
+    if (d_latch && d_valid && dut.ctr_total != 0) live_latches++;
+    if (d_reset && d_valid && dut.ctr_total != 0) live_resets++;
+  end
 
   always @(posedge d_clk) begin
     if (reset) begin
@@ -76,22 +81,32 @@ module tb_basic_async;
     check_snapshot();
     assert(producer_done && count > 255 && overflow === 1'b1 && snapshot[0] == 255) else
       $fatal(1, "saturation/overflow was not exercised");
+    overflow_checks++;
     assert(snapshots == 4 && upper_reads > 0) else $fatal(1, "missing latch/high-word coverage");
     @(negedge d_clk); d_reset = 1;
     @(negedge d_clk); d_reset = 0;
     check_snapshot();
     assert(overflow === 1'b0 && snapshot[0] == 0) else $fatal(1, "counter reset did not clear overflow");
+    overflow_checks++;
     // Distinguish reaching the maximum from overflowing it on the next sample.
     for (int n = 0; n < 255; n++) begin @(negedge d_clk); d = 1; d_valid = 1; end
     @(negedge d_clk); d_valid = 0;
     check_snapshot();
     assert(count == 255 && snapshot[0] == 255 && overflow === 1'b0) else $fatal(1, "overflow asserted before the 256th sample");
+    overflow_checks++;
     @(negedge d_clk); d = 0; d_valid = 1;
     @(negedge d_clk); d_valid = 0;
     check_snapshot();
     assert(count == 256 && snapshot[0] == 255 && overflow === 1'b1) else $fatal(1, "overflow boundary mismatch");
+    overflow_checks++;
+    tb_require_scenario("live_snapshots", live_latches);
+    tb_require_scenario("reset_while_counting", live_resets);
+    tb_require_scenario("snapshot_readbacks", snapshots, 7);
+    tb_require_scenario("nonzero_high_words", upper_reads);
+    tb_require_scenario("overflow_boundary_and_clear", overflow_checks, 4);
     $display("SUCCESS: asynchronous live snapshots, high words, mid-count reset and natural overflow");
     $finish;
   end
   initial #20000 $fatal(1, "asynchronous basic counter watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

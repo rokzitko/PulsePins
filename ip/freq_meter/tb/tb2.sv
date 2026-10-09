@@ -17,6 +17,12 @@ module tb_frequency_boundaries;
   wire avs_waitrequest;
   freq_meter_avalon_gray #(.N_CH(3), .COUNTER_W(8)) dut(.*);
   int edges [0:2];
+  int gate_checks [0:96];
+  int stopped_checks = 0, fast_bus_checks = 0, slow_bus_checks = 0;
+  int zero_gate_checked = 0, rapid_gate_checked = 0, rapid_clear_checked = 0, disabled_hold_checked = 0;
+  realtime last_avs_edge = 0, last_cnt_edge = 0, avs_period = 0, cnt_period = 0;
+  always @(posedge avs_clk) begin avs_period = $realtime - last_avs_edge; last_avs_edge = $realtime; end
+  always @(posedge cnt_clk) begin cnt_period = $realtime - last_cnt_edge; last_cnt_edge = $realtime; end
   for (genvar ch = 0; ch < 3; ch++) begin : edge_counts
     always @(posedge sig_in[ch]) if (!cnt_reset) begin
       edges[ch]++;
@@ -37,6 +43,7 @@ module tb_frequency_boundaries;
   task automatic check_results(input int gate_length);
     logic [31:0] value;
     int lo, hi, period;
+    assert(dut.enable_cnt && dut.gate_len_cnt == gate_length) else $fatal(1, "required count-domain gate configuration was not applied");
     for (int ch = 0; ch < 3; ch++) begin
       period = 4 + 2*ch;
       lo = running[ch] ? (10*gate_length)/period : 0;
@@ -44,7 +51,11 @@ module tb_frequency_boundaries;
       read_reg(4+ch, value);
       assert(value >= lo && value <= hi) else
         $fatal(1, "frequency gate=%0d channel=%0d got=%0d expected=%0d..%0d", gate_length, ch, value, lo, hi);
+      if (!running[ch]) stopped_checks++;
     end
+    gate_checks[gate_length]++;
+    if (avs_period < cnt_period) fast_bus_checks++;
+    if (avs_period > cnt_period) slow_bus_checks++;
   endtask
   task automatic configure(input int requested_gate);
     write_reg(0, 0); repeat (12) @(negedge cnt_clk);
@@ -56,11 +67,13 @@ module tb_frequency_boundaries;
   logic [31:0] value, held;
   integer fh;
   initial begin
+    for (int gate = 0; gate <= 96; gate++) gate_checks[gate] = 0;
     for (int ch = 0; ch < 3; ch++) edges[ch] = 0;
     repeat (8) @(negedge cnt_clk);
     avs_reset = 0; cnt_reset = 0; running = 3;
     configure(0); check_results(1); read_reg(1, value);
     assert(value == 0) else $fatal(1, "gate register did not retain requested zero");
+    zero_gate_checked = 1;
     configure(1); check_results(1);
     configure(24); check_results(24);
     // Two writes entirely between reference-clock sampling edges must still
@@ -70,10 +83,12 @@ module tb_frequency_boundaries;
     repeat (120) @(negedge cnt_clk);
     read_reg(1, value); assert(value == 17) else $fatal(1, "rapid write readback mismatch");
     check_results(17);
+    rapid_gate_checked = 1;
     write_reg(0, 0); repeat (20) @(negedge cnt_clk); read_reg(4, held);
     running = 0;
     repeat (80) @(negedge cnt_clk); read_reg(4, value);
     assert(value == held) else $fatal(1, "disabled meter changed its published result");
+    disabled_hold_checked = 1;
     write_reg(0, 1); repeat (100) @(negedge cnt_clk); check_results(17);
     for (int phase = 0; phase < 4; phase++) begin
       running = phase == 0 ? 1 : phase == 1 ? 2 : phase == 2 ? 4 : 7;
@@ -86,6 +101,7 @@ module tb_frequency_boundaries;
     for (int ch = 0; ch < 3; ch++) begin
       read_reg(4+ch, value);
       assert(value == 0) else $fatal(1, "rapid clear requests cancelled each other");
+      rapid_clear_checked++;
     end
     // A one-cycle gate also has to publish fresh results when the bus clock
     // is slower than the reference clock (a raw toggle can alias indefinitely).
@@ -95,8 +111,21 @@ module tb_frequency_boundaries;
     running = 0;
     repeat (100) @(negedge cnt_clk); check_results(1);
     assert(edges[0] > 256 && edges[1] > 256 && edges[2] > 256) else $fatal(1, "input counter wrap not exercised");
+    tb_require_scenario("zero_gate_normalization_checked", zero_gate_checked);
+    tb_require_scenario("gate1_measurements", gate_checks[1], 2);
+    tb_require_scenario("gate17_measurements", gate_checks[17]);
+    tb_require_scenario("gate24_measurements", gate_checks[24]);
+    tb_require_scenario("gate96_measurements", gate_checks[96]);
+    tb_require_scenario("rapid_gate_update_checked", rapid_gate_checked);
+    tb_require_scenario("rapid_clear_channels_checked", rapid_clear_checked, 3);
+    tb_require_scenario("disabled_result_hold_checked", disabled_hold_checked);
+    tb_require_scenario("stopped_channel_measurements", stopped_checks);
+    tb_require_scenario("faster_bus_measurements", fast_bus_checks);
+    tb_require_scenario("slower_bus_measurements", slow_bus_checks);
+    for (int ch = 0; ch < 3; ch++) tb_require_scenario($sformatf("channel_%0d_wrap_edges", ch), edges[ch], 257);
     $display("SUCCESS: stopped/restarted phases, gate 0/1, rapid writes, disable/re-enable and natural wraps");
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #50000 $fatal(1, "frequency boundary watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

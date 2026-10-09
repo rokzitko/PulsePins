@@ -18,6 +18,7 @@ module tb_mux_reference;
   localparam int N = 256;
   int input_count [0:1], output_count [0:1];
   int stalled = 0, switches = 0, register_reads = 0;
+  int busy_switches = 0, stalled_switch_requests = 0;
   bit active = 0, was_stalled = 0, previous_channel = 0;
   logic [32:0] held;
   logic [31:0] expected_register;
@@ -35,6 +36,9 @@ module tb_mux_reference;
     held = {aso_channel, aso_data};
     if (was_stalled) stalled++;
     if (aso_channel != previous_channel) switches++;
+    if (aso_channel != previous_channel && asi_valid1 && asi_valid2) busy_switches++;
+    if (aso_valid && !aso_ready && avs_s0_write && avs_s0_address == 0 && avs_s0_writedata[0] != aso_channel)
+      stalled_switch_requests++;
     previous_channel = aso_channel;
     expected_register = 0;
     if (avs_s0_address == 0) expected_register = input_count[0];
@@ -62,6 +66,9 @@ module tb_mux_reference;
   initial begin
     input_count[0] = 0; input_count[1] = 0; output_count[0] = 0; output_count[1] = 0;
     repeat (4) @(negedge clk); reset = 0; active = 1;
+    repeat (2) @(negedge clk);
+    select_channel(1); // deterministic switch request with both sources stalled
+    repeat (4) @(negedge clk); aso_ready = 1;
     for (int n = 0; n < 1000; n++) begin
       @(negedge clk);
       aso_ready = ($urandom_range(0, 3) != 0);
@@ -80,8 +87,15 @@ module tb_mux_reference;
     end
     assert(output_count[0] == N && output_count[1] == N && stalled > 0 && switches > 10 && register_reads > 20) else
       $fatal(1, "incomplete mux coverage/delivery");
+    tb_require_scenario("channel0_checked_transfers", output_count[0], N);
+    tb_require_scenario("channel1_checked_transfers", output_count[1], N);
+    tb_require_scenario("downstream_stalls", stalled);
+    tb_require_scenario("switches_with_both_sources_valid", busy_switches);
+    tb_require_scenario("switch_requests_while_stalled", stalled_switch_requests);
+    tb_require_scenario("counter_readbacks_checked", register_reads, 20);
     $display("SUCCESS: 512 ordered mux transfers, stalls/switches and live count registers");
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #10000 $fatal(1, "mux reference watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

@@ -159,6 +159,11 @@ integer fh;
 
 initial begin
   wait(pretrigger_checked && checker_done);
+  @(negedge clk);
+  tb_require_scenario("pretrigger_hold_checked", pretrigger_checked);
+  tb_require_scenario("trigger_activation", cov_activations);
+  tb_require_scenario("replayed_samples", cov_payload, 10);
+  tb_require_scenario("clean_completion", cov_completions);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -169,4 +174,5 @@ end
 initial #200 $fatal(1, "timeout: pretrigger=%b completion=%b samples=%0d",
   pretrigger_checked, checker_done, sample_idx);
 
+`include "scenarios.svh"
 endmodule: tb_st_10

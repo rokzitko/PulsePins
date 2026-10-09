@@ -23,6 +23,14 @@ reg d_prev;
 reg start_async, stop_async;
 wire ready;
 wire [31:0] result;
+int starts = 0, stops = 0, completions = 0;
+bit previous_ready = 0;
+always @(posedge clk) if (!reset) begin
+  if (start_async) starts++;
+  if (stop_async) stops++;
+  if (ready && !previous_ready) completions++;
+  previous_ready = ready;
+end
 
 time_counter dut (
   .clk,
@@ -61,6 +69,8 @@ end
 initial begin
   reset <= 1;
   high_low <= 0;
+  d <= 0;
+  valid <= 0;
   #2;
   reset <= 0;
   #1;
@@ -82,6 +92,10 @@ initial begin
 
   #1;
   assert(result == 3) else $fatal;
+  tb_require_scenario("start_events", starts);
+  tb_require_scenario("stop_events", stops);
+  tb_require_scenario("completed_capture", completions);
+  tb_require_scenario("elapsed_value_checked", ready && result == 3);
 
   #1 $finish;
 end
@@ -92,4 +106,5 @@ initial begin
   #1000 $fatal(1, "timeout waiting for time counter checks");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: hello_world

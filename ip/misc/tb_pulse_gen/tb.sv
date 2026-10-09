@@ -60,8 +60,11 @@ initial begin
   if (pulse_1ms_count != 1000) $fatal(1, "pulse_1ms count mismatch: %0d", pulse_1ms_count);
   if (pulse_1s_count != 1) $fatal(1, "pulse_1s count mismatch: %0d", pulse_1s_count);
 
+  tb_require_scenario("observed_1ms_pulses", pulse_1ms_count, 1000);
+  tb_require_scenario("observed_1s_pulses", pulse_1s_count);
   $display("PASS");
   $finish;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: hello_world

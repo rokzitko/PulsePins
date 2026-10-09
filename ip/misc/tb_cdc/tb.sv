@@ -78,6 +78,15 @@ task automatic send_update(input logic [7:0] value);
 endtask
 
 integer fh;
+int committed_updates = 0, held_pending_cycles = 0, committed_snapshots = 0;
+always @(posedge dst_clk) begin
+  #1ps;
+  if (!dst_reset) begin
+    if (dst_valid) committed_updates++;
+    if (!dst_accept && dst_pending) held_pending_cycles++;
+    if (snap_valid) committed_snapshots++;
+  end
+end
 
 initial begin
   src_data = 8'h00;
@@ -103,6 +112,10 @@ initial begin
   wait(snap_valid);
   repeat (20) @(negedge dst_clk);
   assert(snap_dst != 8'h00) else $fatal(1, "snapshot did not update");
+  tb_require_scenario("committed_updates", committed_updates, 2);
+  tb_require_scenario("blocked_pending_update", held_pending_cycles);
+  tb_require_scenario("snapshot_commits", committed_snapshots);
+  tb_require_scenario("latest_value_delivered", dst_data === 8'h33);
 
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
@@ -114,6 +127,7 @@ initial begin
   #10000 $fatal(1, "timeout");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule
 
 `default_nettype wire

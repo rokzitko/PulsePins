@@ -20,6 +20,7 @@ module tb_encoder_reference;
   logic [31:0] run_value;
   bit checking = 0;
   int stalled = 0, split_runs = 0, modes_checked = 0;
+  int pending_resets = 0, overflow_resets = 0;
   always @(negedge clk) ready = ($urandom_range(0, 3) != 0);
   always @(posedge clk) begin
     if (checking && !empty && !rdreq) stalled++;
@@ -37,6 +38,8 @@ module tb_encoder_reference;
     end
   endtask
   task automatic clear_all(input bit selected_mode);
+    bit was_pending, had_overflow;
+    was_pending = (empty === 1'b0); had_overflow = (overflow === 1'b1);
     checking = 0; read_enable = 0; valid = 0; strobe = 0; reset = 1; mode = selected_mode;
     repeat (12) @(negedge data_clk);
     reset = 0;
@@ -44,6 +47,8 @@ module tb_encoder_reference;
     expected_count = 0; received = 0; run_length = 0; sample_count = 0; decoded_count = 0;
     checking = 1;
     assert(empty && !overflow) else $fatal(1, "encoder reset did not clear pending/overflow state");
+    if (was_pending) pending_resets++;
+    if (had_overflow) overflow_resets++;
   endtask
   task automatic begin_burst;
     // For strobe mode, select the stopped strobe clock while both possible
@@ -111,8 +116,19 @@ module tb_encoder_reference;
     assert(modes_checked == 1) else $fatal(1, "normal sampling mode was not checked");
 `endif
     assert(stalled > 0 && split_runs >= 4) else $fatal(1, "missing stalls/count saturation");
+    tb_require_scenario("data_clock_samples", cov_modes[1]);
+`ifdef WEIRD_CLOCK
+    tb_require_scenario("strobe_clock_samples", cov_modes[0]);
+`endif
+    tb_require_scenario("count_limit_splits", cov_splits, 4*modes_checked);
+    tb_require_scenario("end_of_block_flushes", cov_flushes, modes_checked);
+    tb_require_scenario("downstream_stalls", stalled);
+    tb_require_scenario("overflow_events", cov_overflows, modes_checked);
+    tb_require_scenario("pending_data_resets", pending_resets, modes_checked);
+    tb_require_scenario("overflow_cleared_by_reset", overflow_resets, modes_checked);
     $display("SUCCESS: encoder modes=%0d, natural count splitting, randomized stalls, overflow and reset", modes_checked);
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #30000 $fatal(1, "encoder reference watchdog: %0d/%0d", received, expected_count);
+  `include "scenarios.svh"
 endmodule

@@ -117,6 +117,7 @@ end
 
 // checker for expected output
 integer i;
+bit checker_done = 0;
 initial begin
   @(posedge clk iff dout_valid);
   assert(dout == 'h00000000000000ff000001ff) else $fatal;
@@ -136,6 +137,7 @@ initial begin
   assert(dout == 'h00000000000000ff00000aff) else $fatal;
   @(posedge clk iff dout_valid);
   assert(dout == 'h00000000000000ff00000bff) else $fatal;
+  checker_done = 1;
 end
 
 initial begin
@@ -150,11 +152,22 @@ end
 integer fh;
 
 initial begin
-  #40 $display("SUCCESS");
+  #40;
+  tb_require_scenario("pass_commands", cov_passes, 6);
+  tb_require_scenario("discard_commands", cov_discards);
+  tb_require_scenario("stored_positions", $countones(cov_positions), 4);
+  tb_require_scenario("length_one_replay", cov_one_length);
+  tb_require_scenario("ordered_outputs", checker_done);
+  tb_require_scenario("finite_drain", !dut.active && !dout_valid);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_pre_3.ucdb");
   $finish;
 end
 
+wire [95:0] cov_din = din;
+wire cov_valid = din_valid, cov_ready = din_ready, cov_output = dout_valid;
+wire cov_output_ready = dout_ready, cov_active = dut.active, cov_infinite = dut.infinite;
+`include "scenarios.svh"
 endmodule: tb_pre_3

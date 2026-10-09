@@ -130,6 +130,12 @@ integer fh;
 
 initial begin
   wait(pause_checked && checker_done);
+  @(negedge clk);
+  tb_require_scenario("trigger_activations", cov_activations, 2);
+  tb_require_scenario("retrigger_consumed", cov_retriggers);
+  tb_require_scenario("retrigger_pause_checked", pause_checked);
+  tb_require_scenario("payload_samples", cov_payload, 12);
+  tb_require_scenario("clean_completion", cov_completions);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -140,4 +146,5 @@ end
 initial #200 $fatal(1, "timeout: retrigger pause=%b samples=%0d completion=%b",
   pause_checked, samples, checker_done);
 
+`include "scenarios.svh"
 endmodule: tb_st_5

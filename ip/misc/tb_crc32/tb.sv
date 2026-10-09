@@ -69,6 +69,8 @@ module tb_crc32;
   int expected_count;
   int received_count;
   int consecutive_count;
+  int idle_valid_checks;
+  int enabled_blocks;
 
   // --------------------------------------------------------------------------
   // Drive one cycle; adjacent calls deliberately exercise back-to-back words.
@@ -92,6 +94,8 @@ module tb_crc32;
       expected_count = 0;
       received_count = 0;
       consecutive_count = 0;
+      idle_valid_checks = 0;
+      enabled_blocks = 0;
     end else begin
       // Sample before NBA updates: outputs correspond to the previous edge.
       assert(crc_valid === exp_valid) else
@@ -102,9 +106,9 @@ module tb_crc32;
           $fatal(1, "CRC result %0d: got %08x expected %08x",
             received_count, crc_out, exp_crc_state ^ CRC_XOROUT);
         received_count++;
-      end
+      end else idle_valid_checks++;
       if (data_en) begin
-        if (exp_valid) consecutive_count++;
+        if (exp_valid) consecutive_count++; else enabled_blocks++;
         exp_crc_state = crc32_update_word_reflected(exp_crc_state, data_in);
         expected_count++;
       end
@@ -164,6 +168,11 @@ module tb_crc32;
       $fatal(1, "incomplete CRC drain: received=%0d expected=%0d", received_count, expected_count);
     assert(!exp_valid && crc_valid === 1'b0) else $fatal(1, "CRC output did not go idle");
     assert(consecutive_count > 0) else $fatal(1, "consecutive enabled cycles were not exercised");
+    tb_require_scenario("crc_results_checked", received_count, 2004);
+    tb_require_scenario("consecutive_enabled_cycles", consecutive_count);
+    tb_require_scenario("idle_validity_checks", idle_valid_checks, 10);
+    tb_require_scenario("enabled_blocks_separated_by_gaps", enabled_blocks, 2);
+    tb_require_scenario("pipeline_drained", !exp_valid && crc_valid === 1'b0);
     $display("All tests PASSED: %0d CRC results, %0d consecutive enabled cycles.", received_count, consecutive_count);
     fh = $fopen("SUCCESS", "w");
     $fclose(fh);
@@ -175,4 +184,5 @@ initial begin
 end
 
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule

@@ -112,6 +112,9 @@ endtask
 
 integer sample_idx;
 integer stopped_samples;
+int stopped_cycles_checked = 0, active_stop_requests = 0;
+always @(posedge clk) if (!reset && avs_s0_write && avs_s0_address == IF_CTRL &&
+                         avs_s0_writedata[0] && dut.st0.stream_active) active_stop_requests++;
 logic [31:0] stopped_qout;
 integer fh;
 
@@ -161,6 +164,7 @@ initial begin
     @(negedge streamer_clk);
     assert(qout_valid === 1'b0 && qout_strobe === 1'b0) else $fatal(1, "output valid while stopped");
     assert(sample_idx == stopped_samples && qout === stopped_qout) else $fatal(1, "output advanced while stopped");
+    stopped_cycles_checked++;
   end
   assert(done == 1'b0) else $fatal(1, "stream completed while stop was asserted");
   assert(buffer_error == 1'b0) else $fatal(1, "unexpected buffer_error while stopped");
@@ -174,6 +178,11 @@ initial begin
   repeat (80) @(posedge streamer_clk);
   assert(qout == 32'ha5a5_a5a5) else $fatal(1, "pending override did not commit after drain");
   assert(sample_idx == 144) else $fatal(1, "sample count mismatch");
+  tb_require_scenario("stop_requested_during_playback", active_stop_requests);
+  tb_require_scenario("stopped_midstream", stopped_samples > 0 && stopped_samples < 144);
+  tb_require_scenario("stopped_cycles_checked", stopped_cycles_checked, 80);
+  tb_require_scenario("payload_samples_checked", sample_idx, 144);
+  tb_require_scenario("post_stop_completion", done && !buffer_error);
 
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
@@ -188,6 +197,7 @@ initial begin
   #2000 $fatal(1, "timeout");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_if_9
 
 `default_nettype wire

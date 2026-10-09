@@ -250,6 +250,10 @@ integer fh;
 
 initial begin
   wait(gate_closed_checked && gate_open_checked && done_checked);
+  tb_require_scenario("masked_trigger_gate_hold_checked", gate_closed_checked);
+  tb_require_scenario("masked_trigger_gate_release_checked", gate_open_checked);
+  tb_require_scenario("payload_samples_checked", sample_idx, 5);
+  tb_require_scenario("final_state_checked", done_checked);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -263,4 +267,5 @@ initial begin
   #300 $fatal(1, "timeout");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_if_5

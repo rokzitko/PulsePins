@@ -164,6 +164,10 @@ integer fh;
 
 initial begin
   wait(underrun_checked && terminal_checked);
+  tb_require_scenario("payload_samples", cov_payload, 3);
+  tb_require_scenario("underflow_observed", cov_errors);
+  tb_require_scenario("underflow_checked", underrun_checked);
+  tb_require_scenario("late_termination_checked", terminal_checked);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -175,4 +179,5 @@ initial begin
   #200 $fatal(1, "tb8 timeout");
 end
 
+`include "scenarios.svh"
 endmodule: tb_st_8

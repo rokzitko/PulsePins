@@ -18,6 +18,7 @@ import time
 
 
 ERROR = re.compile(r"\*\* (?:Error|Fatal):|\b(?:ERROR|FATAL):")
+SCENARIO = re.compile(r"^(?:#\s*)?SCENARIO\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s*$")
 
 
 def flag(name):
@@ -27,7 +28,7 @@ def flag(name):
     return value == "1"
 
 
-def run_command(command, directory, log, verbose, timeout):
+def run_command(command, directory, log, verbose, timeout, scenarios):
     log.write("$ " + shlex.join(command) + "\n")
     log.flush()
     recent = deque(maxlen=100)
@@ -49,6 +50,14 @@ def run_command(command, directory, log, verbose, timeout):
     try:
         for line in process.stdout:
             recent.append(line)
+            match = SCENARIO.fullmatch(line.strip())
+            if match:
+                name, observed, minimum = match.groups()
+                observed, minimum = int(observed), int(minimum)
+                if name in scenarios:
+                    errors.append(f"duplicate scenario report: {name}\n")
+                scenarios[name] = dict(observed=observed, required=minimum,
+                                       met=minimum > 0 and observed >= minimum)
             if ERROR.search(line):
                 errors.append(line)
             if verbose:
@@ -120,6 +129,8 @@ def main():
     metadata = dict(simulator=sim, seed=seed, top=args.top, sources=sources,
                     defines=args.define, libraries=args.library, verbose=verbose,
                     waves=waves, timeout_seconds=timeout, replay=replay, status="running")
+    scenarios = {}
+    metadata["scenario_coverage"] = scenarios
     metadata_path = directory / "run.json"
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
     label = f"{bench.parent.name}/{bench.name}/{script.name}"
@@ -136,7 +147,7 @@ def main():
     try:
         with (directory / "run.log").open("w") as log:
             def execute(command):
-                run_command(command, directory, log, verbose, timeout)
+                run_command(command, directory, log, verbose, timeout, scenarios)
 
             if sim == "icarus":
                 runtime = str(Path(__file__).with_name("runtime.sv"))
@@ -164,7 +175,13 @@ def main():
                          "-do", "; ".join(commands), args.top, *plusargs])
             if not args.no_marker and not (directory / "SUCCESS").is_file():
                 raise RuntimeError("simulation exited without a SUCCESS marker")
+            if not scenarios:
+                raise RuntimeError("simulation exited without required scenario coverage")
+            missing = [name for name, counts in scenarios.items() if not counts["met"]]
+            if missing:
+                raise RuntimeError("required scenarios not exercised: " + ", ".join(missing))
         metadata["status"] = "passed"
+        print(f"[COVERAGE] {label}: {len(scenarios)}/{len(scenarios)} required scenarios (details in run.json)", flush=True)
         print(f"[PASS] {label} sim={sim} seed={seed}", flush=True)
         return 0
     except (OSError, RuntimeError) as error:

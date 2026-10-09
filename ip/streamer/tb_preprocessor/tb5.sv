@@ -10,6 +10,10 @@ module tb_pre_reference;
   wire din_ready, dout_valid;
   wire [95:0] dout;
   preprocessor dut(.clk, .reset, .din, .din_valid, .din_ready, .dout, .dout_valid, .dout_ready);
+  wire [95:0] cov_din = din;
+  wire cov_valid = din_valid, cov_ready = din_ready, cov_output = dout_valid;
+  wire cov_output_ready = dout_ready, cov_active = dut.active, cov_infinite = dut.infinite;
+  `include "scenarios.svh"
   logic [95:0] memory_ref [0:7], expected [0:16383];
   int sent = 0, received = 0, stalls = 0, stores = 0, replays = 0, passes = 0, discards = 0;
   bit consume = 0, randomized = 1;
@@ -48,6 +52,8 @@ module tb_pre_reference;
   initial begin
     repeat (4) @(negedge clk); reset = 0; consume = 1;
     for (int n = 0; n < 8; n++) store_word(n);
+    replay_words(1, 1);
+    replay_words(8, 1);
     for (int n = 0; n < 240; n++) begin
       case (n % 4)
         0: store_word($urandom_range(0, 7));
@@ -81,6 +87,16 @@ module tb_pre_reference;
       assert(!dout_valid) else $fatal(1, "stale replay survived reset");
       for (int n = 0; n < 8; n++) store_word(n);
     end
+    tb_require_scenario("pass_commands", cov_passes, 60);
+    tb_require_scenario("discard_commands", cov_discards, 60);
+    tb_require_scenario("all_storage_positions", $countones(cov_positions), MEMORY_POSITIONS);
+    tb_require_scenario("length_one_replay", cov_one_length);
+    tb_require_scenario("maximum_length_replay", cov_max_length);
+    tb_require_scenario("replay_stalls", cov_replay_stalls);
+    tb_require_scenario("finite_replay_words", cov_finite_words);
+    tb_require_scenario("infinite_replay_words", cov_infinite_words, 5);
+    tb_require_scenario("reset_during_finite_replay", cov_reset_finite);
+    tb_require_scenario("reset_during_infinite_replay", cov_reset_infinite);
     $display("SUCCESS: independent store/discard/pass/replay model, stalls, finite/infinite replay reset");
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end

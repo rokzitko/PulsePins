@@ -93,3 +93,12 @@ That order starts from the programming interface and then moves through the indi
 - tool entry point: `docs/docs/ppcounter.md`
 - CDC notes: `docs/docs/clock_domain.md`
 - HPS-side wrapper: `c++/counter.hh`
+
+Every counter bench requires named scenario reports before finishing. Directed
+tests count sampled levels/transitions, packet boundaries, snapshot requests,
+and successfully checked readout addresses. Correlation tests require all lag
+readbacks; randomized cases additionally require both levels on each input.
+The asynchronous regressions require live snapshots/resets, high-word readback,
+natural overflow boundaries, and the selected instrument/feature cases. Counts
+and requirements are retained in each run's `run.json`; see
+`../testbench/README.md` for the reporting contract.

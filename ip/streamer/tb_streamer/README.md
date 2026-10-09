@@ -12,3 +12,12 @@
 The policy regression catches widening of a bitwise negation by an unsized
 constant in the `trigger_activated` expression: the error policy must be a
 one-bit Boolean condition.
+
+Before success, benches require named counts from the playback domain or their
+functional checkers. Legacy tests select the relevant activation/completion,
+gate-hold, retrigger, underrun, and checked-payload bins. `test14` separately
+requires checked output for every operation, accepted zero-length runs,
+stalls/recovery during a run, and reset while a run is still active; idle reset
+does not satisfy that requirement. `test15` requires checked underrun-policy
+outcomes and post-reset recovery for both policies. Reports are retained under
+`scenario_coverage` in each run's `run.json`.

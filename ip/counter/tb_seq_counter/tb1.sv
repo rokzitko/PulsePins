@@ -43,6 +43,9 @@ seq_counter #(
   .result
 );
 
+wire cov_input_bit = d, cov_latch = latch;
+`include "../sample_coverage.svh"
+
 always @(posedge clk) begin
   #0.01;
   $display("t=%t reset=%b d=%b valid=%b l=%d w=%b wr=%b ctr[0]=%d ctr_r[0]=%d ctr[7]=%d result=%d",
@@ -76,6 +79,8 @@ task automatic check;
       $display("Mismatch: addr=%d result=%d expected=%d", v, result, expected);
       $fatal;
     end
+    cov_read_checks++;
+    cov_read_addresses[addr] = 1;
   end
 endtask
 
@@ -149,6 +154,11 @@ initial begin
   check(3'b111, 2);
   $display("series 3 ok");
 
+  tb_require_scenario("valid_samples", cov_samples, 3*LEN);
+  tb_require_scenario("completed_bursts", cov_ends, 3);
+  tb_require_scenario("snapshots", cov_latches, 3);
+  tb_require_scenario("verified_results", cov_read_checks, 24);
+  for (int bin = 0; bin < 8; bin++) tb_require_scenario($sformatf("histogram_%0d", bin), cov_read_addresses[bin]);
   #2 $finish;
 end
 

@@ -21,6 +21,9 @@ module tb_readback_registers;
   logic [95:0] expected [0:255];
   logic [31:0] crc, got;
   int expected_count = 0, received = 0, run_length, stalled = 0;
+  int sampled_inputs = 0, checked_registers = 0, checked_epochs = 0;
+  logic [1:0] readback_modes = 0;
+  always @(posedge qin_clk) if (!reset && qin_valid && !dut.input_reset) sampled_inputs++;
   logic [31:0] run_value;
   always @(negedge clk) aso_ready = !reset && ($urandom_range(0, 3) != 0);
   always @(posedge clk) if (!reset) begin
@@ -45,6 +48,8 @@ module tb_readback_registers;
     @(negedge clk); avs_s0_address = address; avs_s0_read = 1;
     @(posedge clk); #1ps;
     assert(avs_s0_readdata === value) else $fatal(1, "readback register %0d got=%h expected=%h", address, avs_s0_readdata, value);
+    checked_registers++;
+    if (address == 0) readback_modes[avs_s0_readdata[2]] = 1;
     @(negedge clk); avs_s0_read = 0;
   endtask
   integer fh;
@@ -78,10 +83,18 @@ module tb_readback_registers;
       read_reg(1, 0); read_reg(2, 0);
       write_reg(0, 0);
       repeat (40) @(negedge qin_clk);
+      checked_epochs++;
     end
     assert(stalled > 0) else $fatal(1, "readback stalls not exercised");
+    tb_require_scenario("sampled_inputs", sampled_inputs, 512);
+    tb_require_scenario("stalled_output", stalled);
+    tb_require_scenario("capture_and_reset_epochs", checked_epochs, 2);
+    tb_require_scenario("csr_results_checked", checked_registers, 10);
+    tb_require_scenario("mode0_readback", readback_modes[0]);
+    tb_require_scenario("mode1_readback", readback_modes[1]);
     $display("SUCCESS: public RLE stream, both normal-build mode values, pulse-count/CRC readback and reset");
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #20000 $fatal(1, "readback register watchdog: %0d/%0d", received, expected_count);
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

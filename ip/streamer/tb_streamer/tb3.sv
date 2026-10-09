@@ -106,6 +106,12 @@ integer fh;
 
 initial begin
   wait(checker_done);
+  @(negedge clk);
+  tb_require_scenario("pretrigger_quiet_cycles", cov_quiet_cycles);
+  tb_require_scenario("trigger_activation", cov_activations);
+  tb_require_scenario("replayed_samples", cov_payload, 15);
+  tb_require_scenario("clean_completion", cov_completions);
+  tb_require_scenario("final_state_checked", checker_done);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -115,4 +121,5 @@ end
 
 initial #200 $fatal(1, "timeout waiting for 15 replay samples and completion");
 
+`include "scenarios.svh"
 endmodule: tb_st_3

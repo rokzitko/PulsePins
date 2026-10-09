@@ -179,6 +179,12 @@ initial begin
   assert(expected_queue.size() == 0 && received_count == expected_count) else $fatal(1, "incomplete delivery");
   assert(empty && dut.rdempty && !dut.proc.active) else $fatal(1, "FIFO/preprocessor did not drain");
   assert(!dut.overflow_in && !dut.overflow_out) else $fatal(1, "FIFO overflow");
+  tb_require_scenario("write_backpressure", blocked_cycles, 4);
+  tb_require_scenario("stored_positions", $countones(cov_positions), 4);
+  tb_require_scenario("replay_stalls", cov_replay_stalls);
+  tb_require_scenario("finite_replay_words", cov_finite_words, 32);
+  tb_require_scenario("checked_delivery", received_count, 72);
+  tb_require_scenario("random_phase_completed", random_phase_done);
   $display("SUCCESS: checked %0d words, %0d blocked cycles", received_count, blocked_cycles);
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -189,4 +195,8 @@ end
 initial #100000 $fatal(1, "timeout: received=%0d expected=%0d producer=%b reader=%b",
   received_count, expected_count, producer_done, reader_done);
 
+wire [95:0] cov_din = dut.proc.din;
+wire cov_valid = dut.proc.din_valid, cov_ready = dut.proc.din_ready, cov_output = dut.proc.dout_valid;
+wire cov_output_ready = dut.proc.dout_ready, cov_active = dut.proc.active, cov_infinite = dut.proc.infinite;
+`include "../tb_preprocessor/scenarios.svh"
 endmodule: tb5_input

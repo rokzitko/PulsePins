@@ -43,11 +43,20 @@ module tb_random_boundaries;
       end
     end
     assign coverage_complete[g] = paused > 0 && high_seen && (LO == HI || reloads > 0);
+    task automatic report_scenarios;
+      tb_require_scenario($sformatf("range_%0d_minimum", g), minimum_seen);
+      tb_require_scenario($sformatf("range_%0d_maximum", g), maximum_seen);
+      tb_require_scenario($sformatf("range_%0d_paused_cycles", g), paused);
+      tb_require_scenario($sformatf("range_%0d_active_output", g), high_seen);
+      if (LO != HI) tb_require_scenario($sformatf("range_%0d_reload_events", g), reloads);
+    endtask
   end
   initial begin
     repeat (4) @(negedge clk); reset = 0;
     for (int n = 0; n < 2000; n++) begin @(negedge clk); oe = n % 37 >= 9; end
     assert(&coverage_complete) else $fatal(1, "random boundary coverage incomplete");
+    ranges[0].report_scenarios(); ranges[1].report_scenarios(); ranges[2].report_scenarios();
     $display("SUCCESS: random-generator period endpoints, reload bounds and pause/resume"); $finish;
   end
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

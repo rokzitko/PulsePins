@@ -13,6 +13,7 @@ module tb_cdc_coherence;
   cdc_snapshot #(.WIDTH(64)) snapshot_dut(.src_clk, .src_reset, .src_data,
     .dst_clk, .dst_reset, .dst_data(snap_data), .dst_valid(snap_valid));
   int epoch = 1, serial = 0, commits = 0, snapshots = 0, pending_cases = 0;
+  int inflight_resets = 0, latest_checks = 0;
   bit drive = 0, allowed [0:255];
   logic [63:0] held = 0;
   function automatic logic [63:0] encoded(input int e, n);
@@ -45,8 +46,10 @@ module tb_cdc_coherence;
   end
   integer fh;
   initial begin
+    bit was_inflight;
     for (int phase = 1; phase <= 3; phase++) begin
-      @(negedge src_clk); src_reset = 1; dst_reset = 1; drive = 0; src_update = 0; src_data = 0; epoch = phase;
+      @(negedge src_clk); was_inflight = src_busy === 1'b1;
+      src_reset = 1; dst_reset = 1; drive = 0; src_update = 0; src_data = 0; epoch = phase;
       repeat (8) @(negedge dst_clk);
       @(negedge src_clk); src_reset = 0; drive = 1;
       repeat (4) @(negedge dst_clk); dst_reset = 0; dst_accept = 0;
@@ -61,6 +64,8 @@ module tb_cdc_coherence;
       wait(!src_busy);
       repeat (20) @(negedge dst_clk);
       assert(dst_data === encoded(epoch, 250) && snap_data === encoded(epoch, 250)) else $fatal(1, "latest CDC value did not converge");
+      latest_checks++;
+      if (was_inflight) inflight_resets++;
       assert(!dst_valid && !dst_pending && !src_busy) else $fatal(1, "update handshake did not return to idle");
       @(negedge src_clk); src_data = encoded(epoch, 251); src_update = 1;
       @(negedge src_clk); src_update = 0;
@@ -70,8 +75,14 @@ module tb_cdc_coherence;
     repeat (8) @(negedge dst_clk);
     assert(dst_data == 0 && snap_data == 0 && !src_busy && !dst_pending && !dst_valid) else $fatal(1, "final in-flight reset did not drain");
     assert(commits > 10 && snapshots > 30 && pending_cases == 3) else $fatal(1, "insufficient CDC coverage");
+    tb_require_scenario("coherent_update_commits", commits, 11);
+    tb_require_scenario("coherent_snapshot_commits", snapshots, 31);
+    tb_require_scenario("pending_acceptance_cases", pending_cases, 3);
+    tb_require_scenario("latest_values_checked", latest_checks, 3);
+    tb_require_scenario("recovered_inflight_resets", inflight_resets, 2);
     $display("SUCCESS: CDC coherence, blocked/latest-value delivery and reset-in-flight epochs");
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #20000 $fatal(1, "CDC coherence watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

@@ -167,6 +167,9 @@ initial begin
 end
 
 integer sample_idx = 0;
+int active_override_requests = 0;
+always @(posedge clk) if (!reset && avs_s0_write && avs_s0_address == IF_CTRL &&
+                         avs_s0_writedata[5] && dut.st0.stream_active) active_override_requests++;
 
 always @(posedge streamer_clk) begin
   if (qout_valid) begin
@@ -193,6 +196,10 @@ initial begin
   repeat (20) @(posedge clk);
   wait_qout_readback(32'ha5a5_a5a5);
 
+  tb_require_scenario("override_requested_during_playback", active_override_requests);
+  tb_require_scenario("payload_samples_checked", sample_idx, 40);
+  tb_require_scenario("override_visible_after_completion", done && qout === 32'ha5a5_a5a5);
+  tb_require_scenario("override_readback_checked", avs_s0_readdata === 32'ha5a5_a5a5);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -206,6 +213,7 @@ initial begin
   #1000 $fatal(1, "timeout");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_if_6
 
 `default_nettype wire

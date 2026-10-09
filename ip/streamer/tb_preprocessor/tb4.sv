@@ -157,6 +157,14 @@ integer fh;
 
 initial begin
   wait(checker_done);
+  @(negedge clk);
+  tb_require_scenario("pass_commands", cov_passes, 6);
+  tb_require_scenario("discard_commands", cov_discards);
+  tb_require_scenario("stored_positions", $countones(cov_positions), 4);
+  tb_require_scenario("length_one_replay", cov_one_length);
+  tb_require_scenario("oversized_replay", cov_bad_length);
+  tb_require_scenario("replay_words", cov_finite_words, 4);
+  tb_require_scenario("ordered_outputs", checker_done);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -170,4 +178,8 @@ initial begin
   #100 $fatal(1, "timeout");
 end
 
+wire [95:0] cov_din = din;
+wire cov_valid = din_valid, cov_ready = din_ready, cov_output = dout_valid;
+wire cov_output_ready = dout_ready, cov_active = dut.active, cov_infinite = dut.infinite;
+`include "scenarios.svh"
 endmodule: tb_pre_4

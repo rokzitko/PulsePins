@@ -82,6 +82,12 @@ integer fh;
 
 initial begin
   wait(stimulus_done && checker_done);
+  @(negedge clk);
+  tb_require_scenario("accepted_samples", cov_samples, 7);
+  tb_require_scenario("valid_blocks", cov_blocks);
+  tb_require_scenario("end_of_block_flush", cov_flushes);
+  tb_require_scenario("encoded_runs", cov_encoded, 2);
+  tb_require_scenario("run_values_checked", checker_done);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -90,4 +96,5 @@ end
 
 initial #100 $fatal(1, "timeout waiting for encoded runs");
 
+`include "scenarios.svh"
 endmodule: tb

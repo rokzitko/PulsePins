@@ -41,6 +41,9 @@ reg [cfg::WIDTH_AVS-1:0] avs_s0_writedata;
 bit stimulus_done = 0;
 bit checker_done = 0;
 int received = 0;
+int stalled_cycles = 0, sampled_inputs = 0;
+always @(posedge clk) if (!reset && aso_valid && !aso_ready) stalled_cycles++;
+always @(posedge qin_clk) if (!reset && qin_valid && !dut.input_reset) sampled_inputs++;
 logic [cfg::WIDTH_TOTAL-1:0] held_data;
 
 rl_encoder_if dut(
@@ -119,6 +122,10 @@ integer fh;
 
 initial begin
   wait(stimulus_done && checker_done);
+  tb_require_scenario("sampled_inputs", sampled_inputs, 7);
+  tb_require_scenario("stalled_output", stalled_cycles, 3);
+  tb_require_scenario("encoded_transfers_checked", received, 2);
+  tb_require_scenario("drain_checked", checker_done);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -127,4 +134,5 @@ end
 
 initial #100 $fatal(1, "timeout waiting for readback handshake checks");
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb

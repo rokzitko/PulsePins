@@ -94,6 +94,11 @@ integer fh;
 
 initial begin
   wait(checker_done);
+  @(negedge clk);
+  tb_require_scenario("pretrigger_quiet_cycles", cov_quiet_cycles);
+  tb_require_scenario("trigger_activation", cov_activations);
+  tb_require_scenario("empty_sequence_completion", cov_completions);
+  tb_require_scenario("no_payload_checked", checker_done && cov_payload == 0);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -103,4 +108,5 @@ end
 
 initial #200 $fatal(1, "timeout waiting for trigger arming, activation, or completion");
 
+`include "scenarios.svh"
 endmodule: tb_st_2

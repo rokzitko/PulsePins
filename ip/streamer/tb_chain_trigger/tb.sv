@@ -41,6 +41,16 @@ logic retrig;
 logic armed;
 logic wrfull;
 logic o;
+int written_stages = 0, activations = 0, retrigger_events = 0;
+logic [3:0] reset_states = 0;
+bit previous_active = 0;
+always @(posedge clk) if (!reset) begin
+  if (wrreq && !wrfull) written_stages++;
+  if (o && !previous_active) activations++;
+  if (trigger_reset) reset_states[dut.state] = 1;
+  if (retrig) retrigger_events++;
+  previous_active = o;
+end
 
 chain_trigger dut(
  .clk,
@@ -185,6 +195,12 @@ initial begin
 
   pulse_retrig();
 
+  tb_require_scenario("queued_stages", written_stages, 3);
+  tb_require_scenario("trigger_and_rearm_activations", activations, 2);
+  tb_require_scenario("reset_during_load", reset_states[TB_S_LOAD]);
+  tb_require_scenario("reset_while_waiting", reset_states[TB_S_WAIT]);
+  tb_require_scenario("reset_after_trigger", reset_states[TB_S_TRIGGERED]);
+  tb_require_scenario("retrigger_discard", retrigger_events);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -192,4 +208,5 @@ initial begin
   $finish;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_chain

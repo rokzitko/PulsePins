@@ -103,6 +103,9 @@ module tb_combiner_reference;
     if (checking) begin
       assert(o === expected) else $fatal(1, "mode=%0d pipeline output got=%h expected=%h", registers[0][3:0], o, expected);
       checked[registers[0][3:0]]++;
+      if (registers[0][16]) forced_seen[0] = 1;
+      else if (registers[0][3:0] <= 3 && registers[0][17+registers[0][3:0]])
+        forced_seen[1+registers[0][3:0]] = 1;
     end
   end
   task automatic write_reg(input int a, input logic [31:0] value);
@@ -136,7 +139,6 @@ module tb_combiner_reference;
         end
         cfg = mode | (pass ? (32'(1 << (mode % 5)) << 16) : 0);
         write_reg(0, cfg);
-        forced_seen |= cfg[20:16];
         for (int a = 0; a < 16; a++) read_reg(a, registers[a]);
         repeat (24) @(negedge clk);
         checking = 1;
@@ -144,6 +146,18 @@ module tb_combiner_reference;
         checking = 0;
       end
     end
+    // Each input force must affect a checked selection, rather than merely
+    // being programmed while an unrelated mode ignores that input.
+    write_reg(1, 0); write_reg(2, MAXIMUM); write_reg(3, W'(32'h13572468));
+    for (int k = 0; k < 4; k++) begin
+      write_reg(4+k, 0); write_reg(8+k, MAXIMUM); write_reg(12+k, W'(32'h13572468 ^ k));
+      write_reg(0, k | (1 << (17+k)));
+      repeat (24) @(negedge clk);
+      checking = 1; repeat (8) @(negedge clk); checking = 0;
+    end
+    write_reg(1, MAXIMUM); write_reg(2, 0); write_reg(0, 1 << 16);
+    repeat (24) @(negedge clk);
+    checking = 1; repeat (8) @(negedge clk); checking = 0;
     // Live-port readback must select the external port rather than the stored
     // override value. Hold inputs stable while their snapshots cross domains.
     @(negedge clk); drive = 0;
@@ -152,9 +166,11 @@ module tb_combiner_reference;
     read_reg(3, o); read_reg(12, in1); read_reg(13, in2); read_reg(14, in3); read_reg(15, in4);
     for (int mode = 0; mode < 16; mode++)
       assert(checked[mode] >= 128) else $fatal(1, "mode %0d was not checked every cycle", mode);
-    assert(forced_seen == 5'b11111) else $fatal(1, "missing force-path coverage");
+    for (int mode = 0; mode < 16; mode++) tb_require_scenario($sformatf("mode_%0d_output_checks", mode), checked[mode], 128);
+    for (int path = 0; path < 5; path++) tb_require_scenario($sformatf("force_path_%0d_checked", path), forced_seen[path]);
     $display("SUCCESS: 16 modes, cycle-varying inputs, arithmetic boundaries, all register/force paths and live readback");
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #100000 $fatal(1, "combiner reference watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

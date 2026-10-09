@@ -25,6 +25,7 @@ wire [31:0] result;
 
 localparam int length = 5;
 localparam int SAMPLE_COUNT = 800;
+localparam bit REQUIRE_VARIATION = 0;
 wire reference_first = d1;
 wire reference_second = d2;
 `include "../correlation_reference.svh"

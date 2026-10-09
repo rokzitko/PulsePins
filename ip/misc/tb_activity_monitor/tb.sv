@@ -13,11 +13,20 @@ module tb_presence_detector;
 
     // Signals
     reg clk   = 0;
-    reg reset = 1;
+    reg reset = 0;
     reg sig_in = 0;
     reg pulse = 0;
     wire active;
     wire sync_active;
+    int async_active_cycles = 0, sync_active_cycles = 0, async_expirations = 0, sync_expirations = 0;
+    bit previous_async = 0, previous_sync = 0;
+    always @(negedge clk) if (!reset) begin
+        if (active) async_active_cycles++;
+        if (sync_active) sync_active_cycles++;
+        if (previous_async && !active) async_expirations++;
+        if (previous_sync && !sync_active) sync_expirations++;
+        previous_async = active; previous_sync = sync_active;
+    end
 
     // Clock: 50 MHz
     always #10 clk = ~clk;
@@ -45,6 +54,7 @@ module tb_presence_detector;
 
     // Stimulus
     initial begin
+        reset <= 1; // deliver a reset edge to the asynchronous event latch
         // Use WAVES=1 with the runner to capture waveforms in the run directory.
 
         // Reset for a while
@@ -92,8 +102,13 @@ module tb_presence_detector;
 
         // Finish
         repeat(100) @(negedge clk);
+        tb_require_scenario("async_activity_detected", async_active_cycles);
+        tb_require_scenario("async_window_expired", async_expirations);
+        tb_require_scenario("sync_activity_detected", sync_active_cycles);
+        tb_require_scenario("sync_window_expired", sync_expirations);
         $display("PASS");
         $finish;
     end
 
+    `include "../../testbench/scenario_coverage.svh"
 endmodule

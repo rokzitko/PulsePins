@@ -6,6 +6,12 @@ module tb_activity_windows;
   wire [2:0] async_active, sync_active;
   int cycle = 0, async_due = -1, async_last = -1, sync_last = -1;
   int async_events = 0, sync_events = 0;
+  logic [2:0] observed_async = 0, observed_sync = 0;
+  int reset_pending = 0, reset_active = 0;
+  always @(posedge reset) begin
+    if (async_due > cycle) reset_pending++;
+    if (|async_active) reset_active++;
+  end
   for (genvar g = 0; g < 3; g++) begin : windows
     localparam int N = g == 0 ? 0 : g == 1 ? 1 : 8;
     presence_detector_async_posedge #(.CLK_FREQ_HZ(1000), .WINDOW_MS(N)) a(
@@ -16,6 +22,8 @@ module tb_activity_windows;
       if (!reset) begin
         assert(async_active[g] === (async_last >= 0 && cycle-async_last <= N)) else $fatal(1, "async window %0d mismatch at cycle %0d", N, cycle);
         assert(sync_active[g] === (sync_last >= 0 && cycle-sync_last <= N)) else $fatal(1, "sync window %0d mismatch", N);
+        if (async_active[g]) observed_async[g] = 1;
+        if (sync_active[g]) observed_sync[g] = 1;
       end
     end
   end
@@ -56,8 +64,15 @@ module tb_activity_windows;
     repeat (4) @(negedge clk); reset = 0;
     asynchronous_pulse(0); repeat (20) @(negedge clk);
     assert(async_events >= 5 && sync_events == 3) else $fatal(1, "missing activity cases");
+    for (int window = 0; window < 3; window++) begin
+      tb_require_scenario($sformatf("async_window_%0d", window), observed_async[window]);
+      tb_require_scenario($sformatf("sync_window_%0d", window), observed_sync[window]);
+    end
+    tb_require_scenario("reset_pending_detection", reset_pending);
+    tb_require_scenario("reset_active_window", reset_active);
     $display("SUCCESS: async short-pulse capture, burst coalescing, windows 0/1/8, expiry and reset");
     $finish;
   end
   initial #5000 $fatal(1, "activity window watchdog");
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

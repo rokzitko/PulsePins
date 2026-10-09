@@ -32,6 +32,15 @@ logic rdreq;
 logic [WIDTH_TOTAL-1:0] q;
 logic full;
 logic empty;
+int written = 0, received = 0, held_cycles = 0, resumed_reads = 0, checks = 0;
+always @(posedge clk) if (!reset) begin
+  if (wrreq && !full) written++;
+  if (received > 0 && !rdreq && !empty) held_cycles++;
+  if (rdreq && !empty) begin
+    received++;
+    if (held_cycles > 0) resumed_reads++;
+  end
+end
 
 always @(posedge clk) begin
   $strobe("t=%8.3f reset=%b wrreq=%b rdreq=%b q=%h empty=%b used1=%d used2=%d", $realtime, reset, wrreq, rdreq, q, empty, dut.used1, dut.used2);
@@ -85,24 +94,35 @@ initial begin
   #8
   // use #1step to perform the test after the non-blocking assignments
   #1step assert(q == 1) else $fatal; // show ahead
+  checks++;
 
   @(posedge rdreq);
   @(posedge clk); // next clock tick
   #1step assert(q == 2) else $fatal; // advanced from 1 to 2
+  checks++;
 
   @(posedge rdreq);
   @(posedge clk); // next clock tick
   #1step assert(q == 5) else $fatal; // advanced from 4 to 5
+  checks++;
 end
 
 integer fh;
 
 initial begin
-  #30 $display("SUCCESS");
+  #30;
+  tb_require_scenario("accepted_writes", written, 5);
+  tb_require_scenario("accepted_reads", received, 5);
+  tb_require_scenario("buffered_read_pause", held_cycles);
+  tb_require_scenario("resumed_reads", resumed_reads, 2);
+  tb_require_scenario("showahead_checks", checks, 3);
+  tb_require_scenario("drained", empty === 1'b1);
+  $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
   $set_coverage_db_name("run_input_1.ucdb");
   $finish;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb1_input

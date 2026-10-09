@@ -11,3 +11,11 @@ and underflow. Registered variants must have the documented two-register
 latency; the combinational variant is checked without that delay. Configuration
 uses an unrelated clock, and rapid writes must converge before datapath checks
 resume after a bounded settling interval.
+
+Required scenario reports count checked outputs separately for all 16 modes
+(at least 128 each), plus output forcing and each of the four input-force paths.
+An input-force bin is credited only while its input is selected and the output
+matches the reference. Directed selections ensure every force affects a checked
+result; programming a force bit in an unrelated mode is insufficient.
+The older directed/random benches also require their selected modes to be
+observed with nonidle inputs and their complete check sequences to finish.

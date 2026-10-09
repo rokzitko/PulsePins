@@ -111,6 +111,10 @@ initial begin
   wait(reader_done && checker_done);
   repeat (8) @(negedge clk);
   assert(empty && dut.rdempty && !dut.proc.active) else $fatal(1, "replay path did not drain");
+  tb_require_scenario("stored_positions", $countones(cov_positions), 4);
+  tb_require_scenario("finite_replay_words", cov_finite_words, 4*NR);
+  tb_require_scenario("replay_backpressure", cov_replay_stalls);
+  tb_require_scenario("checked_output_words", received, EXPECTED_WORDS);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);

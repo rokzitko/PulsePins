@@ -127,6 +127,10 @@ initial begin
   assert(qout == FINAL_VALUE) else $fatal;
   assert(buffer_error == 0) else $fatal;
   assert(ctr_out == 3) else $fatal;
+  tb_require_scenario("no_strobe_data_update", saw_no_strobe_qout);
+  tb_require_scenario("strobed_data_update", saw_strobed_qout);
+  tb_require_scenario("consumed_elements", ctr_out, 3);
+  tb_require_scenario("final_value_checked", done && qout == FINAL_VALUE);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -140,6 +144,7 @@ initial begin
   #100 $fatal;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_11
 
 `default_nettype wire

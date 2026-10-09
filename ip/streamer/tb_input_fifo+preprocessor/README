@@ -1,2 +1,12 @@
 These tests are based on those in tb_preprocessor, but now the preprocessor is embedded between two FIFO buffers.
 We are thus also testing synchronization and throttling.
+
+Every test requires observed scenario counts before success. Tests 1-4 require
+accepted pass/discard/store commands, finite replay output, and both ordering and
+timing check completion. Timing is measured from the first read request; a fatal
+watchdog prevents a missing checker from silently hanging or passing early.
+Tests 3-4 additionally require a length-one replay. Test 5 requires blocked writes,
+replay stalls, checked delivery, and completion of the randomized phase. Test 6
+requires all expected replay words to be checked while exercising replay
+backpressure. The observer samples the embedded preprocessor's accepted commands
+and outputs, rather than counting words merely offered to the ingress FIFO.

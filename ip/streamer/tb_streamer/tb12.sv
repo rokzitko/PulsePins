@@ -177,6 +177,11 @@ initial begin
   assert(activation_read_count == TOTAL_TRIGGERS) else $fatal;
   assert(qout == FINAL_VALUE) else $fatal;
   assert(buffer_error == 0) else $fatal;
+  @(negedge clk);
+  tb_require_scenario("trigger_queue_backpressure", backpressure_seen);
+  tb_require_scenario("trigger_records_consumed", trigger_read_count, TOTAL_TRIGGERS);
+  tb_require_scenario("trigger_activation", cov_activations);
+  tb_require_scenario("clean_completion", cov_completions);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -188,6 +193,7 @@ initial begin
   #2000 $fatal;
 end
 
+`include "scenarios.svh"
 endmodule: tb_st_12
 
 `default_nettype wire

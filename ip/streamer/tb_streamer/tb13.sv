@@ -131,6 +131,7 @@ integer fh;
 initial begin
   wait(out_count == 3);
   repeat (2) @(posedge clk);
+  tb_require_scenario("prng_relative_final_outputs_checked", out_count, 3);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -146,6 +147,7 @@ initial begin
   #100 $fatal;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_13
 
 `default_nettype wire

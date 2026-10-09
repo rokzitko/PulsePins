@@ -17,6 +17,7 @@ wire o;
 reg [0:0] sel;
 integer inputs;
 integer s;
+logic [7:0] checked_combinations = 0;
 
 sig_mux #( .INPUTS(2) ) dut (
  .i( {i2, i1} ),
@@ -49,11 +50,15 @@ initial begin
       if (o !== (s == 0 ? i1 : i2)) begin
         $fatal(1, "mux mismatch inputs=%b sel=%0d got=%b", {i2, i1}, s, o);
       end
+      checked_combinations[2*inputs+s] = 1;
     end
   end
 
+  for (int combination = 0; combination < 8; combination++)
+    tb_require_scenario($sformatf("input_select_%0d", combination), checked_combinations[combination]);
   $display("PASS");
   $finish;
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: hello_world

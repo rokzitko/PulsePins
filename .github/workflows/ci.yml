@@ -49,8 +49,8 @@ jobs:
       - name: Run Icarus testbenches
         run: make -C ip -j4 test-icarus
 
-      - name: Check runner isolation and failure propagation
-        run: python3 -m unittest discover -s ip/testbench -p test_runner.py
+      - name: Check runner isolation, failure propagation and required scenarios
+        run: python3 -m unittest discover -s ip/testbench -p 'test_*.py'
 
       - name: Check exhaustive trigger oracle against injected defects
         run: python3 ip/streamer/tb_chain_trigger/test_faults.py --primitive-only --sim icarus

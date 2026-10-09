@@ -56,6 +56,8 @@ module tb_st_if_triggers;
   int expected_count = 0, samples = 0;
   bit checking = 0;
   int pin_cases = 0, priority_cases = 0;
+  logic [31:0] pin_cases_checked = 0;
+  logic [3:0] priorities_checked = 0;
   bit retrigger_checked = 0, reset_pending_checked = 0, reset_active_checked = 0;
   always @(posedge streamer_clk) begin
     if (checking) begin
@@ -146,6 +148,7 @@ module tb_st_if_triggers;
           mm_read(EXT_TRIG_IN, status);
           assert(status[7:0] === match_value) else $fatal(1, "trigger pin readback mismatch");
           pin_cases++;
+          pin_cases_checked[4*b + 2*polarity + source] = 1;
         end
       end
     end
@@ -169,6 +172,7 @@ module tb_st_if_triggers;
         else trigger_reset_ext = 0;
         complete(~payload);
         priority_cases++;
+        priorities_checked[2*force_source + reset_source] = 1;
       end
     end
 
@@ -216,8 +220,17 @@ module tb_st_if_triggers;
 
     assert(pin_cases == 32 && priority_cases == 4 && retrigger_checked && reset_pending_checked && reset_active_checked)
       else $fatal(1, "missing trigger integration scenario");
+    for (int b = 0; b < 8; b++)
+      for (int polarity = 0; polarity < 2; polarity++)
+        for (int source = 0; source < 2; source++)
+          tb_require_scenario($sformatf("pin_%0d_polarity_%0d_enable_%0d", b, polarity, source), pin_cases_checked[4*b+2*polarity+source]);
+    for (int p = 0; p < 4; p++) tb_require_scenario($sformatf("force_reset_priority_%0d", p), priorities_checked[p]);
+    tb_require_scenario("retrigger_pause_and_reset", retrigger_checked);
+    tb_require_scenario("reset_armed_program", reset_pending_checked);
+    tb_require_scenario("reset_active_playback", reset_active_checked);
     $display("SUCCESS: 32 pin/polarity/enable cases, four force/reset priorities, retrigger and in-flight resets");
     fh = $fopen("SUCCESS", "w"); $fclose(fh); $finish;
   end
   initial #200000 $fatal(1, "trigger integration watchdog: pin=%0d priority=%0d samples=%0d", pin_cases, priority_cases, samples);
+  `include "../../testbench/scenario_coverage.svh"
 endmodule

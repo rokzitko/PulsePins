@@ -41,3 +41,14 @@ The chain engine intentionally treats an empty queue as an implicit final stage.
 Multi-stage programs are therefore queued before matching is enabled. A
 `trigger_reset` re-arms the active record; `retrig` discards it and proceeds to
 the next queued program. Tests check these different contracts explicitly.
+
+Required coverage is reported before success. The asynchronous chain bench
+samples the DUT's pre-edge state when trigger reset, retrigger, or read reset is
+actually applied, and requires each control in all four states. State observation
+is used only for coverage; the functional oracle remains queue-based. Further
+bins require a full-queue reset, producer backpressure, checked delivery across
+three queue wraps, all 64 randomized programs, and the selected clock ordering
+(plus coincident edges in that configuration). The exhaustive primitive reports
+its complete predicate/control counts. Wrapper tests report every one of the 32
+pin/polarity/enable cases and four force/reset combinations independently, so an
+aggregate count cannot hide a missing case. See each run's `run.json` for counts.

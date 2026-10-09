@@ -21,6 +21,7 @@ module tb;
   initial begin
     #1;
     repeat (8) $display("DATA=%08h", $urandom);
+    $display("SCENARIO sampled_words 8 8");
     fh = $fopen("SUCCESS", "w");
     $fclose(fh);
     $finish;
@@ -117,7 +118,7 @@ class RunnerTests(unittest.TestCase):
         self.assertIn("injected failure", result.stderr)
 
     def test_missing_marker_requires_explicit_legacy_mode(self):
-        self.source.write_text("module tb; initial #1 $finish; endmodule\n")
+        self.source.write_text('module tb; initial begin #1; $display("SCENARIO completed 1 1"); $finish; end endmodule\n')
         (self.bench / "SUCCESS").touch()
         result, _, metadata = self.run_bench()
         self.assertNotEqual(result.returncode, 0)
@@ -130,6 +131,33 @@ class RunnerTests(unittest.TestCase):
         waves = self.assert_pass(self.run_bench(waves="1"))
         self.assertFalse(list(quiet.glob("*.vcd")))
         self.assertGreater((waves / "waves.vcd").stat().st_size, 0)
+
+    def test_scenario_counts_are_recorded(self):
+        run = self.run_bench()
+        self.assert_pass(run)
+        self.assertEqual(run[2]["scenario_coverage"]["sampled_words"],
+                         {"observed": 8, "required": 8, "met": True})
+        self.assertIn("[COVERAGE]", run[0].stdout)
+
+    def test_missing_scenario_summary_cannot_pass_with_marker(self):
+        self.source.write_text(PROBE.replace('$display("SCENARIO sampled_words 8 8");', ''))
+        result, directory, metadata = self.run_bench()
+        self.assertTrue((directory / "SUCCESS").exists())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("without required scenario coverage", result.stderr)
+        self.assertEqual(metadata["status"], "failed")
+
+    def test_unmet_or_duplicate_scenario_cannot_pass(self):
+        for report in ('SCENARIO sampled_words 0 8', 'SCENARIO sampled_words 8 0'):
+            with self.subTest(report=report):
+                self.source.write_text(PROBE.replace('SCENARIO sampled_words 8 8', report))
+                result, _, metadata = self.run_bench()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(metadata["scenario_coverage"]["sampled_words"]["met"])
+        self.source.write_text(PROBE.replace('$finish;', '$display("SCENARIO sampled_words 8 8"); $finish;'))
+        result, _, _ = self.run_bench()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate scenario report", result.stderr)
 
     def test_verbose_trace_is_opt_in_and_quiet_log_is_bounded(self):
         self.source.write_text(PROBE.replace("#1;", '#1; repeat (1000) $display("TRACE");'))

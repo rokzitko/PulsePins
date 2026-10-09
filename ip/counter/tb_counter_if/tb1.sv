@@ -26,6 +26,7 @@ reg avs_s0_read;
 reg avs_s0_write;
 wire [31:0] avs_s0_readdata;
 reg [31:0] avs_s0_writedata;
+logic [15:0] checked_instruments = 0;
 
 counter_if dut (
   .clk,
@@ -39,6 +40,9 @@ counter_if dut (
   .avs_s0_readdata,
   .avs_s0_writedata
 );
+
+wire cov_input_bit = d[0], cov_latch = dut.d_latch;
+`include "../sample_coverage.svh"
 
 always @(posedge clk) begin
   #0.01;
@@ -81,6 +85,8 @@ task automatic check;
       $fatal;
     end
     avs_s0_read <= 0;
+    cov_read_checks++;
+    checked_instruments[instr] = 1;
     #1;
 
   end
@@ -222,6 +228,12 @@ initial begin
   check(7, 1, 2);
   check(7, 2, 4);
 
+  tb_require_scenario("sampled_lows", cov_low, 5);
+  tb_require_scenario("sampled_highs", cov_high, 4);
+  tb_require_scenario("latched_statistics", cov_latches);
+  tb_require_scenario("instrument_readbacks", cov_read_checks, 35);
+  for (int instrument = 1; instrument <= 7; instrument++)
+    if (instrument != 4) tb_require_scenario($sformatf("instrument_%0d", instrument), checked_instruments[instrument]);
   #20 $finish;
 end
 

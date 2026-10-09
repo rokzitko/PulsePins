@@ -129,6 +129,9 @@ task wait_for_asi_ready(input int max_cycles);
 endtask
 
 integer samples;
+int armed_initial_writes = 0;
+bit ready_recovered = 0, idle_initial_checked = 0;
+always @(posedge clk) if (!reset && avs_s0_write && avs_s0_address == INIT_VAL && trigger_armed) armed_initial_writes++;
 integer fh;
 
 initial begin
@@ -172,7 +175,9 @@ initial begin
 
   repeat (80) @(posedge clk);
   assert(qout == 32'h000000f0) else $fatal(1, "final INIT_VAL was not committed to idle qout");
+  idle_initial_checked = 1;
   wait_for_asi_ready(80);
+  ready_recovered = 1;
 
   //                                  control   counter   data
   // BITSET 0x0f for four samples. If the decoder base was not reloaded, qout would be 0x0f.
@@ -197,6 +202,10 @@ initial begin
   repeat (4) @(negedge streamer_clk);
   assert(samples == 4) else $fatal(1, "expected exactly four output samples, got %0d", samples);
   assert(buffer_error == 0) else $fatal(1, "unexpected buffer_error");
+  tb_require_scenario("initial_writes_while_armed", armed_initial_writes, 2);
+  tb_require_scenario("latest_initial_value_checked", idle_initial_checked);
+  tb_require_scenario("input_ready_recovered", ready_recovered);
+  tb_require_scenario("relative_operation_samples_checked", samples, 4);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -210,6 +219,7 @@ initial begin
   #2000 $fatal(1, "timeout");
 end
 
+`include "../../testbench/scenario_coverage.svh"
 endmodule: tb_st_if_8
 
 `default_nettype wire

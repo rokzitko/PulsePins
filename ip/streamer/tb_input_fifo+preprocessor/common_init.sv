@@ -57,3 +57,12 @@ localparam [31:0] STORE1 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (1 << BIT_POSI
 localparam [31:0] STORE2 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (2 << BIT_POSITIONS_LO);
 localparam [31:0] STORE3 = (1 << BIT_NOPASS) + (1 << BIT_STORE) + (3 << BIT_POSITIONS_LO);
 localparam [31:0] REPLAY = (1 << BIT_NOPASS) + (1 << BIT_REPLAY);
+
+wire [95:0] cov_din = dut.proc.din;
+wire cov_valid = dut.proc.din_valid;
+wire cov_ready = dut.proc.din_ready;
+wire cov_output = dut.proc.dout_valid;
+wire cov_output_ready = dut.proc.dout_ready;
+wire cov_active = dut.proc.active;
+wire cov_infinite = dut.proc.infinite;
+`include "../tb_preprocessor/scenarios.svh"

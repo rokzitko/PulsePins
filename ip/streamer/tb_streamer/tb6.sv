@@ -109,6 +109,11 @@ integer fh;
 
 initial begin
   wait(checker_done);
+  @(negedge clk);
+  tb_require_scenario("trigger_activation", cov_activations);
+  tb_require_scenario("payload_samples", cov_payload, 6);
+  tb_require_scenario("clean_completion", cov_completions);
+  tb_require_scenario("final_value_hold_checked", checker_done);
   $display("SUCCESS");
   fh = $fopen("SUCCESS", "w");
   $fclose(fh);
@@ -118,4 +123,5 @@ end
 
 initial #200 $fatal(1, "timeout waiting for six samples and stable final qout");
 
+`include "scenarios.svh"
 endmodule: tb_st_6

@@ -39,6 +39,9 @@ basic_counter dut (
   .overflow
 );
 
+wire cov_input_bit = d, cov_latch = latch;
+`include "../sample_coverage.svh"
+
 always @(posedge clk) begin
   #0.01;
   $display("t=%t reset=%b d=%b valid=%b ctr_total=%d ctr_total_r=%d result=%d",
@@ -82,24 +85,30 @@ initial begin
 
   addr <= 0;
   #1;
-  assert(result == 9) else $fatal;
+  assert(result == 9) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 3'b010;
   #1;
-  assert(result == 5) else $fatal;
+  assert(result == 5) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 3'b011;
   #1;
-  assert(result == 4) else $fatal;
+  assert(result == 4) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 3'b100;
   #1;
-  assert(result == 3) else $fatal;
+  assert(result == 3) cov_read_addresses[addr] = 1; else $fatal;
 
   addr <= 3'b101;
   #1;
-  assert(result == 3) else $fatal;
+  assert(result == 3) cov_read_addresses[addr] = 1; else $fatal;
 
+  tb_require_scenario("sampled_lows", cov_low, 5);
+  tb_require_scenario("sampled_highs", cov_high, 4);
+  tb_require_scenario("rising_edges", cov_rises, 3);
+  tb_require_scenario("falling_edges", cov_falls, 3);
+  tb_require_scenario("snapshot_after_samples", cov_latches);
+  tb_require_scenario("statistics_checked", $countones(cov_read_addresses), 5);
   #20 $finish;
 end
 
