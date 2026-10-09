@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_activity_windows --no-marker ../activity_monitor.sv tb2.sv "$@"

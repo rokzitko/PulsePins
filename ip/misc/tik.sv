@@ -4,7 +4,7 @@
 
 module tik #(
   PERIOD = 10,
-  WIDTH = $clog2(PERIOD)
+  WIDTH = (PERIOD > 1) ? $clog2(PERIOD) : 1
 )(
   input wire clk,
   input wire reset,
@@ -12,6 +12,9 @@ module tik #(
 );
 
 reg [WIDTH-1:0] counter;
+
+initial assert (PERIOD >= 1 && WIDTH >= ((PERIOD > 1) ? $clog2(PERIOD) : 1))
+  else $fatal(1, "tik requires a positive period and sufficient counter width");
 
 assign tik = (counter == PERIOD-1);
 

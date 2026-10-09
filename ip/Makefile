@@ -6,7 +6,7 @@ ICARUS_TESTDIRS := counter/tb_autocorrelation counter/tb_basic_counter counter/t
 ICARUS_TESTDIRS += combiner/tb_combiner combiner_comb/tb_combiner combiner_trig/tb_combiner \
 	freq_meter/tb st_mux/tb_mux misc/tb_cdc misc/tb_cdc_mailbox streamer/tb_and_trigger
 
-.PHONY: test test-icarus clean $(SUBDIRS) $(ICARUS_TESTDIRS:%=%-icarus) decoder-icarus
+.PHONY: test test-icarus clean $(SUBDIRS) $(ICARUS_TESTDIRS:%=%-icarus) decoder-icarus preprocessor-icarus
 
 test: $(SUBDIRS)
 	@echo "$(GREEN) SUCCESS $(RESET)"
@@ -14,14 +14,17 @@ test: $(SUBDIRS)
 $(SUBDIRS):
 	$(MAKE) -C $@
 
-test-icarus: $(ICARUS_TESTDIRS:%=%-icarus) decoder-icarus
+test-icarus: $(ICARUS_TESTDIRS:%=%-icarus) decoder-icarus preprocessor-icarus
 
 $(ICARUS_TESTDIRS:%=%-icarus):
 	$(MAKE) -C $(@:%-icarus=%) SIM=icarus
 
 # Only the standalone decoder scenario in this directory is vendor-independent.
 decoder-icarus:
-	$(MAKE) -C streamer/tb_streamer SIM=icarus test13
+	$(MAKE) -C streamer/tb_streamer SIM=icarus test13 test14
+
+preprocessor-icarus:
+	$(MAKE) -C streamer/tb_preprocessor SIM=icarus test5
 
 clean: $(SUBDIRS:%=%-clean)
 

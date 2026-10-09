@@ -52,15 +52,16 @@ Coverage merge/report targets aggregate the retained Questa runs. Use
 
 ## Portable CI coverage
 
-`make -C ip test-icarus` runs 30 benches: the original 18 counter, timestamp,
-and miscellaneous tests, plus all six combiner benches, the frequency meter,
-streaming mux, CDC update/snapshot and mailbox helpers, single-stage trigger,
-and standalone decoder (`test13` in `streamer/tb_streamer/`). GitHub Actions runs
-these on Ubuntu 24.04 with four parallel jobs and uploads diagnostics on failure.
+`make -C ip test-icarus` runs 48 benches: counter, timestamp and miscellaneous
+tests; all nine combiner benches; the frequency meter and streaming mux;
+CDC helpers; exhaustive single-stage triggering; standalone decoder tests 13/14;
+and the preprocessor reference-model test 5. GitHub Actions runs these on Ubuntu
+24.04 with four parallel jobs, checks the trigger oracle against six RTL mutants,
+and uploads diagnostics on failure. The full mixed-simulator target runs 99 benches.
 
 CRC was assessed but remains on Questa: Icarus does not support the DUT's
 unpacked array of CRC-mask parameters. FIFO-based streamer/readback tests need
-vendor models; the preprocessor benches use event-filter syntax unsupported
+vendor models; the older preprocessor benches use event-filter syntax unsupported
 by Icarus. The Icarus target selects only supported benches rather than
 substituting behavioral DUT models.
 

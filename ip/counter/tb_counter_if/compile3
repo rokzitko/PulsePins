@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_counter_channels --no-marker '../*.sv' ../cdc.v ../../misc/cdc.sv tb2.sv "$@"

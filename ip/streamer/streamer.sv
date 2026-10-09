@@ -237,7 +237,7 @@ chain_trigger ct0 (
 
 // `trigger_activated` is the final runtime enable for output progression. It folds in
 // trigger state, explicit stop, terminator consumption, and the optional stop-on-buffer-error policy.
-assign trigger_activated = trigger_o && ~terminal_seen && (stop_on_buffer_error ? ~buffer_error : 1) && ~stop;
+assign trigger_activated = trigger_o && ~terminal_seen && (!stop_on_buffer_error || !buffer_error) && ~stop;
 
 endmodule
 

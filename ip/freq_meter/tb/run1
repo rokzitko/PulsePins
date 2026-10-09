@@ -1,2 +1,2 @@
 #!/bin/sh
-exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb1 tb1.sv ../freq_meter.sv "$@"
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb1 tb1.sv ../freq_meter.sv ../../misc/cdc.sv "$@"

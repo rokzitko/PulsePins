@@ -1,7 +1,18 @@
-.PHONY: test clean
+.PHONY: test test1 test2 test3 test4 clean
 
-test:
+test: test1 test2 test3 test4
+
+test1:
 	./run
+
+test2:
+	./run2
+
+test3:
+	./run3
+
+test4:
+	./run4
 
 clean:
 	rm -f tb SUCCESS transcript

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_chain_async --define READ_FASTER --library altera_mf --library lpm tb2.sv ../and_trigger.sv ../chain_trigger.sv "$@"

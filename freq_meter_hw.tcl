@@ -41,6 +41,7 @@ set_fileset_property QUARTUS_SYNTH TOP_LEVEL freq_meter_avalon_gray
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file freq_meter.sv SYSTEM_VERILOG PATH ip/freq_meter/freq_meter.sv TOP_LEVEL_FILE
+add_fileset_file cdc.sv SYSTEM_VERILOG PATH ip/misc/cdc.sv
 
 
 #

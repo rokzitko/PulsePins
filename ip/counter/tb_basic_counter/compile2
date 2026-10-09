@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_basic_async --no-marker ../basic_counter.sv ../../misc/cdc.sv tb2.sv "$@"

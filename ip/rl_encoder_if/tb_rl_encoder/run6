@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_encoder_reference --define WEIRD_CLOCK --library altera_mf --library lpm tb5.sv ../rl_encoder.sv ../../misc/sync.sv "$@"

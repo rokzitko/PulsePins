@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_frequency_boundaries tb2.sv ../freq_meter.sv ../../misc/cdc.sv "$@"

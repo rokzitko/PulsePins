@@ -6,7 +6,7 @@
 //   - converts those counters to Gray code
 //   - synchronizes the Gray values into the gate/reference clock domain
 //   - computes per-gate deltas there
-//   - transfers stable results back to the Avalon domain using update toggles
+//   - transfers coherent latest results back through an acknowledged CDC mailbox
 //
 // This is the main hardware block wrapped by `c++/freq_meter.hh`.
 
@@ -38,42 +38,25 @@ module freq_meter_avalon_gray #(
   reg        reg_enable;
   reg [31:0] reg_gate_len;
 
-  // Controls cross from Avalon into the gate/reference domain via toggles so one-shot
-  // requests and configuration updates survive the CDC boundary cleanly.
-  reg        enable_tgl_avs;
-  reg        clear_tgl_avs;
-  reg [31:0] gate_len_shadow_avs;
-  reg        gate_len_tgl_avs;
+  // A coherent mailbox retains the latest configuration even if several writes
+  // occur between reference-clock edges. Clear requests travel as a sequence
+  // number so an even number of requests cannot cancel each other.
+  reg [31:0] clear_seq_avs;
+  reg        control_update_avs;
 
   // Results sampled into avs_clk domain.
-  reg [COUNTER_W-1:0] result_avs [N_CH];
+  wire [COUNTER_W-1:0] result_avs [N_CH];
 
-  // Results from cnt_clk domain plus per-channel update toggles.
+  // Results from cnt_clk domain, published as one coherent multi-channel bundle.
   wire [COUNTER_W-1:0] result_cnt [N_CH];
-  wire [N_CH-1:0]      upd_tgl_cnt;
-
-  // Sync update toggles into avs_clk and sample stable-held result_cnt
-  reg [N_CH-1:0] upd_tgl_meta, upd_tgl_sync, upd_tgl_sync_d;
-
-  integer i;
-  always @(posedge avs_clk or posedge avs_reset) begin
-    if (avs_reset) begin
-      upd_tgl_meta   <= '0;
-      upd_tgl_sync   <= '0;
-      upd_tgl_sync_d <= '0;
-      for (i = 0; i < N_CH; i++) result_avs[i] <= '0;
-    end else begin
-      upd_tgl_meta   <= upd_tgl_cnt;
-      upd_tgl_sync   <= upd_tgl_meta;
-      upd_tgl_sync_d <= upd_tgl_sync;
-
-      for (i = 0; i < N_CH; i++) begin
-        if (upd_tgl_sync[i] ^ upd_tgl_sync_d[i]) begin
-          result_avs[i] <= result_cnt[i];
-        end
-      end
-    end
-  end
+  wire [N_CH*COUNTER_W-1:0] result_bundle_cnt, result_bundle_avs;
+  reg result_update_cnt;
+  cdc_bus_update #(.WIDTH(N_CH*COUNTER_W), .RESET_VALUE('0)) result_cdc (
+    .src_clk(cnt_clk), .src_reset(cnt_reset), .src_data(result_bundle_cnt),
+    .src_update(result_update_cnt), .src_busy(),
+    .dst_clk(avs_clk), .dst_reset(avs_reset), .dst_accept(1'b1),
+    .dst_data(result_bundle_avs), .dst_valid(), .dst_pending()
+  );
 
   // --------------------------
   // Avalon address map (word offsets)
@@ -101,25 +84,20 @@ module freq_meter_avalon_gray #(
     if (avs_reset) begin
       reg_enable          <= 1'b0;
       reg_gate_len        <= 32'd100000;
-      gate_len_shadow_avs <= 32'd100000;
-
-      enable_tgl_avs      <= 1'b0;
-      clear_tgl_avs       <= 1'b0;
-      gate_len_tgl_avs    <= 1'b0;
+      clear_seq_avs      <= 32'd0;
+      control_update_avs <= 1'b0;
     end else begin
+      control_update_avs <= avs_write && (avs_address == A_CTRL || avs_address == A_GATE_LEN);
       if (avs_write) begin
         case (avs_address)
           A_CTRL: begin
             reg_enable     <= avs_writedata[0];
-            enable_tgl_avs <= ~enable_tgl_avs;
             if (avs_writedata[1]) begin
-              clear_tgl_avs <= ~clear_tgl_avs; // W1P
+              clear_seq_avs <= clear_seq_avs + 1'b1; // W1P
             end
           end
           A_GATE_LEN: begin
             reg_gate_len        <= avs_writedata;
-            gate_len_shadow_avs <= avs_writedata;
-            gate_len_tgl_avs    <= ~gate_len_tgl_avs;
           end
           default: /* no-op */ ;
         endcase
@@ -143,56 +121,24 @@ module freq_meter_avalon_gray #(
   end
 
   // --------------------------
-  // CDC controls: avs_clk -> cnt_clk (toggle sync)
+  // CDC controls: avs_clk -> cnt_clk (coherent latest-value mailbox)
   // --------------------------
-  reg enable_tgl_meta_cnt, enable_tgl_sync_cnt, enable_tgl_sync_d_cnt;
-  reg clear_tgl_meta_cnt,  clear_tgl_sync_cnt,  clear_tgl_sync_d_cnt;
-  reg gate_len_tgl_meta_cnt, gate_len_tgl_sync_cnt, gate_len_tgl_sync_d_cnt;
-
-  reg        enable_cnt;
-  reg [31:0] gate_len_cnt;
-
-  wire [31:0] gate_len_shadow_to_cnt = gate_len_shadow_avs;
-
+  wire [64:0] control_cnt;
+  wire control_valid_cnt;
+  wire enable_cnt = control_cnt[0];
+  wire [31:0] gate_len_cnt = control_cnt[32:1] == 0 ? 32'd1 : control_cnt[32:1];
+  reg [31:0] clear_seq_seen_cnt;
+  cdc_bus_update #(.WIDTH(65), .RESET_VALUE({32'd0, 32'd100000, 1'b0})) control_cdc (
+    .src_clk(avs_clk), .src_reset(avs_reset),
+    .src_data({clear_seq_avs, reg_gate_len, reg_enable}), .src_update(control_update_avs), .src_busy(),
+    .dst_clk(cnt_clk), .dst_reset(cnt_reset), .dst_accept(1'b1),
+    .dst_data(control_cnt), .dst_valid(control_valid_cnt), .dst_pending()
+  );
   always @(posedge cnt_clk or posedge cnt_reset) begin
-    if (cnt_reset) begin
-      enable_tgl_meta_cnt     <= 1'b0;
-      enable_tgl_sync_cnt     <= 1'b0;
-      enable_tgl_sync_d_cnt   <= 1'b0;
-
-      clear_tgl_meta_cnt      <= 1'b0;
-      clear_tgl_sync_cnt      <= 1'b0;
-      clear_tgl_sync_d_cnt    <= 1'b0;
-
-      gate_len_tgl_meta_cnt   <= 1'b0;
-      gate_len_tgl_sync_cnt   <= 1'b0;
-      gate_len_tgl_sync_d_cnt <= 1'b0;
-
-      enable_cnt              <= 1'b0;
-      gate_len_cnt            <= 32'd100000;
-    end else begin
-      enable_tgl_meta_cnt   <= enable_tgl_avs;
-      enable_tgl_sync_cnt   <= enable_tgl_meta_cnt;
-      enable_tgl_sync_d_cnt <= enable_tgl_sync_cnt;
-
-      clear_tgl_meta_cnt    <= clear_tgl_avs;
-      clear_tgl_sync_cnt    <= clear_tgl_meta_cnt;
-      clear_tgl_sync_d_cnt  <= clear_tgl_sync_cnt;
-
-      gate_len_tgl_meta_cnt   <= gate_len_tgl_avs;
-      gate_len_tgl_sync_cnt   <= gate_len_tgl_meta_cnt;
-      gate_len_tgl_sync_d_cnt <= gate_len_tgl_sync_cnt;
-
-      if (enable_tgl_sync_cnt ^ enable_tgl_sync_d_cnt) begin
-        enable_cnt <= reg_enable;
-      end
-      if (gate_len_tgl_sync_cnt ^ gate_len_tgl_sync_d_cnt) begin
-        gate_len_cnt <= (gate_len_shadow_to_cnt == 32'd0) ? 32'd1 : gate_len_shadow_to_cnt;
-      end
-    end
+    if (cnt_reset) clear_seq_seen_cnt <= 0;
+    else if (control_valid_cnt) clear_seq_seen_cnt <= control_cnt[64:33];
   end
-
-  wire clear_pulse_cnt = (clear_tgl_sync_cnt ^ clear_tgl_sync_d_cnt);
+  wire clear_pulse_cnt = control_valid_cnt && (control_cnt[64:33] != clear_seq_seen_cnt);
 
   // ============================================================
   // Per-channel input-clocked Gray counters + CDC into cnt_clk
@@ -209,11 +155,8 @@ module freq_meter_avalon_gray #(
   // Previous sampled binary count in cnt_clk domain (for delta)
   reg [COUNTER_W-1:0] bin_prev_cnt [N_CH];
 
-  // Stable-held results and update toggles in cnt_clk domain
+  // Stable-held results in cnt_clk domain
   reg [COUNTER_W-1:0] result_cnt_r [N_CH];
-  reg [N_CH-1:0]      upd_tgl_cnt_r;
-
-  assign upd_tgl_cnt = upd_tgl_cnt_r;
 
   genvar g;
   generate
@@ -245,6 +188,8 @@ module freq_meter_avalon_gray #(
 
       // expose stable-held result
       assign result_cnt[g] = result_cnt_r[g];
+      assign result_bundle_cnt[g*COUNTER_W +: COUNTER_W] = result_cnt[g];
+      assign result_avs[g] = result_bundle_avs[g*COUNTER_W +: COUNTER_W];
     end
   endgenerate
 
@@ -266,18 +211,19 @@ module freq_meter_avalon_gray #(
   always @(posedge cnt_clk or posedge cnt_reset) begin
     if (cnt_reset) begin
       gate_down_cnt <= 32'd0;
-      upd_tgl_cnt_r <= '0;
+      result_update_cnt <= 1'b0;
       for (c = 0; c < N_CH; c++) begin
         bin_prev_cnt[c] <= '0;
         result_cnt_r[c] <= '0;
       end
     end else begin
+      result_update_cnt <= 1'b0;
       if (clear_pulse_cnt) begin
         gate_down_cnt <= gate_len_cnt;
+        result_update_cnt <= 1'b1;
         for (c = 0; c < N_CH; c++) begin
           bin_prev_cnt[c] <= gray2bin(gray_sync[c]);
           result_cnt_r[c] <= '0;
-          upd_tgl_cnt_r[c] <= ~upd_tgl_cnt_r[c];
         end
       end else if (!enable_cnt) begin
         gate_down_cnt <= gate_len_cnt;
@@ -289,12 +235,12 @@ module freq_meter_avalon_gray #(
       end else begin
         if (gate_down_cnt <= 32'd1) begin
           // Gate ends: snapshot current counts and compute delta
+          result_update_cnt <= 1'b1;
           for (c = 0; c < N_CH; c++) begin
             logic [COUNTER_W-1:0] bin_now;
             bin_now = gray2bin(gray_sync[c]);
             result_cnt_r[c]  <= bin_now - bin_prev_cnt[c]; // modulo 2^W is fine
             bin_prev_cnt[c]  <= bin_now;
-            upd_tgl_cnt_r[c] <= ~upd_tgl_cnt_r[c];
           end
           gate_down_cnt <= gate_len_cnt;
         end else begin

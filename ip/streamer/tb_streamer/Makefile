@@ -1,6 +1,6 @@
 .PHONY: test1 test2 test3 test4 test5 test5a test6 test7 test8 test9 test10 test11 test12 test13 clean merge report
 
-all: test1 test2 test3 test4 test5 test5a test6 test7 test8 test9 test10 test11 test12 test13
+all: test1 test2 test3 test4 test5 test5a test6 test7 test8 test9 test10 test11 test12 test13 test14 test15
 
 test1:
 	./run1
@@ -43,6 +43,14 @@ test12:
 
 test13:
 	./run13
+
+.PHONY: test14
+test14:
+	./run14
+
+.PHONY: test15
+test15:
+	./run15
 
 clean:
 	rm -f tb SUCCESS transcript

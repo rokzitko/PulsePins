@@ -52,6 +52,9 @@ jobs:
       - name: Check runner isolation and failure propagation
         run: python3 -m unittest discover -s ip/testbench -p test_runner.py
 
+      - name: Check exhaustive trigger oracle against injected defects
+        run: python3 ip/streamer/tb_chain_trigger/test_faults.py --primitive-only --sim icarus
+
       - name: Upload simulation diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

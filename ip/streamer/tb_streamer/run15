@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_buffer_policies --library altera_mf --library lpm tb15.sv ../input_fifo.sv ../preprocessor.sv ../streamer.sv ../rl_decoder.sv ../output_fifo.sv ../chain_trigger.sv ../and_trigger.sv ../prng.sv ../../misc/sync.sv "$@"

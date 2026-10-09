@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_st_if_triggers --define STREAMER_FASTER --library altera_mf --library lpm tb10.sv '../*.sv' ../../misc/endianness.sv ../../misc/crc32.sv ../../misc/sync.sv ../../misc/cdc.sv "$@"

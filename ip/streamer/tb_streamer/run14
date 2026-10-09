@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_decoder_reference tb14.sv ../rl_decoder.sv ../prng.sv "$@"

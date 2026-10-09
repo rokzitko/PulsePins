@@ -1,6 +1,6 @@
-.PHONY: test test1 test2 test3 test4 test5 test6 test7 test8 test9 clean
+.PHONY: test test1 test2 test3 test4 test5 test6 test7 test8 test9 test10 test11 clean
 
-test: test1 test2 test3 test4 test5 test6 test7 test8 test9
+test: test1 test2 test3 test4 test5 test6 test7 test8 test9 test10 test11
 
 test1:
 	./run1
@@ -28,6 +28,12 @@ test8:
 
 test9:
 	./run9
+
+test10:
+	./run10
+
+test11:
+	./run11
 
 clean:
 	rm -f tb SUCCESS transcript

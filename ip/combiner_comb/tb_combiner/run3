@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_combiner_reference --define COMBINATIONAL_COMBINER ../combiner_comb.sv ../../combiner/tb_combiner/tb3.sv "$@"

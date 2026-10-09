@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_timestamp_reference --no-marker ../ts_core.sv tb2.sv "$@"

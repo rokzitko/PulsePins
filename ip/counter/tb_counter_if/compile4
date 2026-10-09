@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_counter_channels --no-marker --define DO_SUM2 '../*.sv' ../cdc.v ../../misc/cdc.sv tb2.sv "$@"

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(dirname "$0")/../../testbench/run.py" "$0" tb_random_boundaries --no-marker ../rand_signal_gen.sv tb2.sv "$@"
