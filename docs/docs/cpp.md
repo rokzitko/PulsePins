@@ -233,6 +233,14 @@ std::cout << dac.achieved_spi_clock_hz() << std::endl;
 write_sequence_to_stream(dac.sequence(), std::cout, true);
 ```
 
+For the four-channel AD9959 module on PP_PMOD J3/J4,
+[`tools/spi_payload/spi_ad9959`]({{ source_file("tools/spi_payload/spi_ad9959.cc") }})
+generates a standalone text sequence for continuous 50, 75, 100 and 125 MHz
+tones on CH0–CH3. It assumes a 25 MHz DDS reference, x20 PLL, and 100 MHz
+PulsePins streamer. See the [generator README]({{ source_file("tools/spi_payload/README") }})
+for wiring, custom frequencies, playback with `ppplay -check`, and the distinction
+between digital readback verification and RF measurement.
+
 ### Streamer control interface
 
 The C++ streamer wrappers are thin, typed views of the hardware control/status registers rather than a separate software simulation of the datapath.
