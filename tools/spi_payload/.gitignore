@@ -3,4 +3,15 @@ spi_ad9833
 spi_ad9833_pga
 spi_ad9959
 ad9959.seq
+ad9959_test1.seq
+ad9959_test2.seq
+ad9959_test3.seq
+ad9959_test4.seq
+ad9959_test5.seq
+ad9959_test6.seq
+ad9959_test7.seq
+ad9959_test8.seq
+ad9959_test9.seq
+ad9959_test10.seq
+__pycache__/
 sequence

@@ -120,3 +120,401 @@ To blank all four DDS outputs, drive PWR_DWN_CTL high with CS still high:
 ```
 
 Replay the generated sequence to reinitialize and resume the tones.
+
+### Test 1: CH1 frequency staircase
+
+`./spi_ad9959 --test1 [output.seq]` writes `ad9959_test1.seq` by default.
+After the standard four-channel initialization, CH1 cycles through 50, 75,
+100 and 125 MHz six times, dwelling 1 s at each frequency (plus a few
+microseconds for programming). After about 24 s, CH1 returns to 75 MHz.
+CH0, CH2 and CH3 stay at 50, 100 and 125 MHz during the staircase.
+
+On a Siglent SVA1015X connected to CH1, use Spectrum Analyzer mode, center
+87.5 MHz, span 100 MHz, RBW 100 kHz, VBW 300 kHz, reference level 0 dBm,
+10 dB/div, input attenuation 20 dB, preamp off, positive-peak detector,
+continuous sweep, free trigger and automatic sweep time. Trace 1 in Clear Write shows the
+hopping carrier; optional Trace 2 in Max Hold collects all four peaks.
+Configure the analyzer before starting playback.
+
+```sh
+./spi_ad9959 --test1 /tmp/ad9959_test1.seq
+scp /tmp/ad9959_test1.seq root@BOARD_IP:ad9959_test1.seq
+```
+
+On the board:
+
+```sh
+./ppplay -file ad9959_test1.seq -format text -i 0x2 -force -check -timeout 3 -hard-timeout 35s
+```
+
+Keep `-check` enabled for this long sequence: the readback check waits through
+the programmed dwells before the normal 10 s completion wait starts. The
+3 s idle timeout allows the 1 s gaps between SPI transactions. A successful
+run checks the complete digital waveform and final qout=0x2; confirm the four
+RF frequencies and the final 75 MHz carrier on the analyzer separately.
+
+### Test 2: CH1 two-level profile FSK
+
+`./spi_ad9959 --test2 [output.seq]` writes `ad9959_test2.seq` by default.
+It preloads CH1's CFTW0 with 70 MHz and CW1 with 80 MHz, enables two-level
+frequency modulation, and toggles P1 (Q9 on J4) every 500 ms for 24 cycles.
+There is a 10 ms idle pause between standard initialization and FSK setup to
+let the board's readback FIFO drain before the next burst of SPI transitions.
+The 24 s modulation interval contains only profile-pin changes. It then
+restores single-tone operation at 75 MHz. CH0, CH2 and CH3 stay at their
+standard 50, 100 and 125 MHz settings during modulation.
+
+Use the same SVA1015X settings as Test 1, except center 75 MHz and span
+20 MHz (65-85 MHz). Clear Write shows the alternating 70/80 MHz peaks.
+Max Hold retains both; it can also retain the 75 MHz carrier from before
+or after the test. Configure the analyzer before playback.
+
+```sh
+./spi_ad9959 --test2 /tmp/ad9959_test2.seq
+scp /tmp/ad9959_test2.seq root@BOARD_IP:ad9959_test2.seq
+```
+
+On the board, use the same long-sequence readback timeout policy as Test 1:
+
+```sh
+./ppplay -file ad9959_test2.seq -format text -i 0x2 -force -check -timeout 3 -hard-timeout 35s
+```
+
+### Test 3: CH1 sixteen-level profile FSK
+
+`./spi_ad9959 --test3 [output.seq]` writes `ad9959_test3.seq` by default.
+CH1's 16 frequency words cover 60 through 90 MHz in 2 MHz increments. The
+profile pins select this scrambled order, at 250 ms per frequency:
+
+```text
+60 74 64 86 70 80 62 90 76 66 84 72 88 68 82 78 MHz
+```
+
+The four-second pattern repeats six times, then CH1 returns to 75 MHz in
+single-tone mode. CH0, CH2 and CH3 retain their standard frequencies during
+the hopping interval. FR1=0xD01300 assigns all four profile pins to CH1 with
+16-level modulation; [P0:P3] is MSB-first, mapping Q8 to the profile MSB and
+Q11 to the LSB. Initialization includes 10 ms drain pauses between groups of
+profile writes to bound the readback FIFO occupancy. There are no SPI writes
+during the 24 s hopping interval.
+
+On the SVA1015X, use center 75 MHz and span 40 MHz (55-95 MHz). Keep the
+bandwidth, amplitude, detector and sweep settings from Test 1. Trace 1/A
+in Clear Write shows the hops; Trace 2/B in Max Hold collects the 16 peaks
+at 60, 62, ..., 90 MHz. Max Hold may also retain the initial/final 75 MHz
+carrier. Configure the analyzer before starting playback.
+
+```sh
+./spi_ad9959 --test3 /tmp/ad9959_test3.seq
+scp /tmp/ad9959_test3.seq root@BOARD_IP:ad9959_test3.seq
+```
+
+On the board:
+
+```sh
+./ppplay -file ad9959_test3.seq -format text -i 0x2 -force -check -timeout 3 -hard-timeout 35s
+```
+
+### Test 4: CH1 asymmetric triangular frequency sweep
+
+`./spi_ad9959 --test4 [output.seq]` writes `ad9959_test4.seq` by default.
+It uses the AD9959 linear frequency sweep engine, with endpoints 60/90 MHz,
+RDW=516, FDW=172, and LSRR=0xFAFA. Both step intervals are 2 us; the frequency
+steps are approximately 60.0703 Hz up and 20.0234 Hz down. The endpoint times
+are approximately 0.998830 s and 2.996490 s. P1 stays high for 1 s, then low
+for 3 s, allowing the DDS to reach and briefly hold each endpoint. Six cycles
+run for 24 s before CH1 returns to single-tone 75 MHz. The other channels
+retain their standard frequencies during the sweep interval.
+
+For a clear view of the unequal sweep slopes on the SVA1015X, configure:
+
+* Center 75 MHz, span 0 Hz (Zero Span).
+* RBW 1 MHz, VBW 1 MHz, sweep time 4 s, continuous sweep, free trigger.
+* Reference 0 dBm, 10 dB/div, attenuation 20 dB, preamp off.
+* Trace 1/A Clear Write with Pos Peak; turn other traces off/Blank.
+
+The display is now power versus time. Each four-second cycle crosses 75 MHz
+twice: a narrow rounded pulse on the upward sweep and a pulse about three
+times wider on the downward sweep. Their approximate 3 dB widths are 33 ms
+and 100 ms for a 1 MHz RBW. The peaks are about 2 s apart. Before and after
+the test, the steady 75 MHz carrier produces a flat high trace.
+
+```sh
+./spi_ad9959 --test4 /tmp/ad9959_test4.seq
+scp /tmp/ad9959_test4.seq root@BOARD_IP:ad9959_test4.seq
+```
+
+On the board, allow more than 3 s between readback transitions:
+
+```sh
+./ppplay -file ad9959_test4.seq -format text -i 0x2 -force -check -timeout 5 -hard-timeout 35s
+```
+
+### Test 5: CH1 retriggered no-dwell frequency sweep
+
+`./spi_ad9959 --test5 [output.seq]` writes `ad9959_test5.seq` by default.
+CH1 sweeps from 60 to 90 MHz in approximately 0.499416 s, then immediately
+jumps back to 60 MHz and waits for the next trigger. The no-dwell bit is
+enabled (CFR=0x80E301), with RDW=1032 and a 2 us rising step interval.
+P1 stays high for 750 ms, then low for 250 ms, providing a fresh rising edge
+every second. The return happens while P1 is still high; no-dwell does not
+automatically repeat the sweep. Falling sweep parameters are unused.
+After 24 cycles, CH1 returns to single-tone 75 MHz. CH0, CH2 and CH3 retain
+their standard frequencies during the sweep interval. Initialization uses
+a 10 ms readback drain pause as in Test 4.
+
+Keep the Test 4 SVA1015X settings (75 MHz center, Zero Span, RBW/VBW 1 MHz,
+Clear Write/Pos Peak, other traces Blank), but change sweep time to 2 s.
+Expect equally spaced crossing pulses once per second, approximately 17 ms
+wide at 3 dB below their peaks. Each two-second display shows about two
+pulses. The steady 75 MHz carrier before and after produces a flat high trace.
+
+```sh
+./spi_ad9959 --test5 /tmp/ad9959_test5.seq
+scp /tmp/ad9959_test5.seq root@BOARD_IP:ad9959_test5.seq
+```
+
+On the board:
+
+```sh
+./ppplay -file ad9959_test5.seq -format text -i 0x2 -force -check -timeout 3 -hard-timeout 35s
+```
+
+### Test 6: CH1 digital amplitude staircase
+
+`./spi_ad9959 --test6 [output.seq]` writes `ad9959_test6.seq` by default.
+CH1 stays at 75 MHz while its manual amplitude scale factor steps through
+1023, 512, 256, 128 and 64, holding each for 1 s plus programming time.
+Relative to the initial full output, these are approximately 0, -6.012,
+-12.033, -18.053 and -24.074 dB. The five-second pattern repeats five times,
+then full amplitude is restored. The DAC current remains at its full setting;
+CH0, CH2 and CH3 retain their standard tones during the staircase.
+Initialization includes a 10 ms readback drain pause.
+
+On the SVA1015X, configure:
+
+* Center 75 MHz, span 0 Hz (Zero Span).
+* RBW 100 kHz, VBW 300 kHz, sweep time 5 s, continuous sweep, free trigger.
+* Reference 0 dBm, 10 dB/div, attenuation 20 dB, preamp off.
+* Trace 1/A Clear Write with Pos Peak; other traces off/Blank.
+
+Expect a repeating five-level staircase, falling by roughly 6 dB each second
+before jumping back to the top. The level offsets are relative to full output,
+not absolute dBm readings. Free triggering can place the start of the pattern
+anywhere on the display. After about 25 s, the trace returns to its original
+flat level.
+
+```sh
+./spi_ad9959 --test6 /tmp/ad9959_test6.seq
+scp /tmp/ad9959_test6.seq root@BOARD_IP:ad9959_test6.seq
+```
+
+On the board:
+
+```sh
+./ppplay -file ad9959_test6.seq -format text -i 0x2 -force -check -timeout 3 -hard-timeout 35s
+```
+
+### Test 7: CH1 sampled sinusoidal AM
+
+`./spi_ad9959 --test7 [output.seq]` writes `ad9959_test7.seq` by default.
+CH1 stays at 75 MHz with a 1 kHz, 50%-depth amplitude envelope. Eight samples
+of `round(682 + 341*cos(2*pi*k/8))` are preloaded into amplitude profiles.
+FR1=0xD01200 assigns P0:P2 to CH1 in eight-level mode, with P0 the profile
+MSB. Profile zero uses ACR[9:0]; CW1..CW7 hold MSB-aligned 10-bit amplitudes.
+The other channels retain their standard tones during modulation.
+
+The generated file uses eight PulsePins `store` slots and `r 24000 8` to
+replay 125 us samples for 24 s, fitting the board's finite input buffers.
+Every SPI transaction includes a 10 ms readback drain pause so verbose
+capture can format and write each edge. The `tone_sequence` helper accepts
+an optional `post_write_idle_ticks` argument for this; its default is 4 ticks.
+After playback, CH1 returns to a full-amplitude, unmodulated 75 MHz carrier.
+
+On the SVA1015X, return to a frequency-span display:
+
+* Initially use center 75 MHz, span 100 kHz; Peak Search and Marker -> Center
+  Frequency on the current carrier, then reduce span to 10 kHz. This follows
+  the module's actual reference frequency rather than assuming exact 75 MHz.
+* RBW 100 Hz, VBW 300 Hz, continuous sweep, automatic sweep time, free trigger.
+* Reference 0 dBm, 10 dB/div, attenuation 20 dB, preamp off.
+* Trace 1/A Clear Write with Pos Peak; other traces off/Blank.
+
+Expect a carrier and two sidebands at +/-1 kHz, each approximately -12.3 dBc.
+Ideal sinusoidal AM gives -12.04 dBc; the eight-sample zero-order hold adds
+about 0.22 dB attenuation. The carrier itself drops about 3.52 dB relative to
+the preceding full-amplitude tone because the mean amplitude is 682/1023.
+Sampling images occur farther out (the first at +/-7 kHz), outside this span.
+
+```sh
+./spi_ad9959 --test7 /tmp/ad9959_test7.seq
+scp /tmp/ad9959_test7.seq root@BOARD_IP:ad9959_test7.seq
+```
+
+The installed ABI 5 `ppplay -check` does not expand store/replay commands.
+Capture with `-read` instead; this also drains readback during the 24 s run:
+
+```sh
+./ppplay -file ad9959_test7.seq -format text -i 0x2 -force -read -timeout 3 -hard-timeout 35s > ad9959_test7.log 2>&1
+```
+
+`-read` ends after 3 s without further captured data, printing an idle-timeout
+message after the waveform finishes. Check the playback exit status and CRC,
+then copy the log back and compare every captured run, including SPI setup
+and restoration, against the locally expanded sequence:
+
+```sh
+scp root@BOARD_IP:ad9959_test7.log /tmp/ad9959_test7.log
+python3 check_readback.py /tmp/ad9959_test7.seq /tmp/ad9959_test7.log
+```
+
+`check_readback.py` supports the generator's `d`, finite `store`/`r`, `final`
+and `f` subset. It compares merged run lengths and pin values and verifies
+the logged final output value. This complements the board's CRC/FIFO checks.
+
+### Test 8: CH1 native binary phase switching
+
+`./spi_ad9959 --test8 [output.seq]` writes `ad9959_test8.seq` by default.
+CH1 stays at 75 MHz with full amplitude. Two-level phase modulation selects
+0 degrees from CPOW0 or 180 degrees from CW1=0x80000000 (MSB-aligned 14-bit
+phase). P1 selects the phase, holding each for 50 us: a 10 kHz repeating
+pattern. Two stored pin states replay 30,000 times for a 3 s PSK block, then
+P1 stays low for a 3 s plain-carrier block. Four pairs run for 24 s, followed
+by restoration of single-tone mode. The other channels retain their standard
+tones. Every SPI transaction has the same 10 ms capture-drain pause as Test 7.
+
+The `sinusoidal_am_sequence()` and `phase_keying_sequence()` helpers return a
+`ProfileSequence`: setup, stored period, repetitions per block, block count,
+idle ticks after each block, and restoration. Idle blocks use the normal idle
+pin value, selecting profile zero.
+
+On the SVA1015X, keep the center on the actual carrier found in Test 7:
+
+* Span 80 kHz, RBW 1 kHz, VBW 3 kHz.
+* Continuous sweep, automatic sweep time, free trigger.
+* Reference 0 dBm, 10 dB/div, attenuation 20 dB, preamp off.
+* Trace 1/A Clear Write with Pos Peak; other traces off/Blank.
+
+During PSK, the center carrier is ideally suppressed. The strongest lines
+are at +/-10 kHz, each about 3.92 dB below the plain-carrier level. The next
+pair at +/-30 kHz is about 9.54 dB below the first pair. During each plain
+block, the center carrier returns. Clear Write lets you see the change every
+3 s; after the test, the plain carrier remains.
+
+```sh
+./spi_ad9959 --test8 /tmp/ad9959_test8.seq
+scp /tmp/ad9959_test8.seq root@BOARD_IP:ad9959_test8.seq
+```
+
+On the board, use quiet capture and allow more than 3 s between readback
+transitions. Formatting all 20,000 transitions per second overflows readback
+on the bench board, even with the log in RAM; `-quiet` drains without printing
+individual runs:
+
+```sh
+./ppplay -file ad9959_test8.seq -format text -i 0x2 -force -read -quiet -timeout 5 -hard-timeout 35s > ad9959_test8.log 2>&1
+```
+
+As in Test 7, `-read` ends with an idle-timeout message after playback. Verify
+the result locally using summary mode:
+
+```sh
+scp root@BOARD_IP:ad9959_test8.log /tmp/ad9959_test8.log
+python3 check_readback.py --summary /tmp/ad9959_test8.seq /tmp/ad9959_test8.log
+```
+
+`--summary` checks the captured run count and duration, successful playback,
+and final pins. It also computes the expected IEEE CRC-32 over every intended
+32-bit little-endian pin sample and compares it with the hardware CRC. This
+verifies the waveform against the input sequence without verbose capture.
+
+### Test 9: CH1 abrupt versus automatically ramped bursts
+
+`./spi_ad9959 --test9 [output.seq]` writes `ad9959_test9.seq` by default.
+CH1 stays at 75 MHz. P1 alternates high for 10 ms and low for 10 ms, giving
+50 bursts per second. Each case lasts 250 bursts (5 s): abrupt, ramped,
+abrupt, ramped. Approximately 20 ms of SPI programming separates cases.
+After about 20 s, full-amplitude single-tone output is restored. CH0, CH2
+and CH3 retain their standard tones during the burst comparison.
+
+Abrupt bursts use two-level amplitude modulation, with zero amplitude in
+ACR and full amplitude in CW1. Ramped bursts use the single-tone automatic
+RU/RD engine: ACR=0x3D1FFF enables the multiplier, automatic ramp and timer
+reload, with ARR=61 and a 1-LSB increment/decrement. At SYNC_CLK=125 MHz,
+1023 steps take approximately 0.499 ms. P1 high ramps up; P1 low ramps down.
+The envelope ramps linearly in amplitude, so a logarithmic power display
+shows curved edges. The `ProfileSequence.block_setup` vectors provide the
+SPI mode changes before each replay block; an empty vector omits them.
+
+Configure the SVA1015X:
+
+* Keep the center on the actual 75 MHz carrier; span 0 Hz (Zero Span).
+* RBW 1 MHz, VBW 1 MHz, sweep time 20 ms.
+* Continuous sweep, free trigger; Trace 1/A Clear Write with Pos Peak.
+* Reference 0 dBm, 10 dB/div, attenuation 20 dB, preamp off; other traces Blank.
+
+Each screen covers about one on/off cycle. Look for sharp edges during the
+first five seconds, sloped/curved edges for the next five, then a repeat of
+both cases. Free triggering can place the edges anywhere on the display.
+At the end, the trace returns to a flat full-amplitude level.
+
+```sh
+./spi_ad9959 --test9 /tmp/ad9959_test9.seq
+scp /tmp/ad9959_test9.seq root@BOARD_IP:ad9959_test9.seq
+```
+
+On the board:
+
+```sh
+./ppplay -file ad9959_test9.seq -format text -i 0x2 -force -read -quiet -timeout 3 -hard-timeout 35s > ad9959_test9.log 2>&1
+```
+
+Use the same summary and independently calculated CRC check as Test 8:
+
+```sh
+scp root@BOARD_IP:ad9959_test9.log /tmp/ad9959_test9.log
+python3 check_readback.py --summary /tmp/ad9959_test9.seq /tmp/ad9959_test9.log
+```
+
+### Test 10: CH1 DAC current versus digital scaling
+
+`./spi_ad9959 --test10 [output.seq]` writes `ad9959_test10.seq` by default.
+CH1 stays at 75 MHz while two four-second patterns alternate:
+
+* DAC-current block: full, half, quarter, eighth current, 1 s per setting,
+  with digital scale fixed at 1023. CFR[9:8] codes are 11, 01, 10, 00.
+* Digital-scaling block: full DAC current, with amplitude scales 1023, 512,
+  256 and 128, again 1 s per setting.
+
+Three eight-second pairs run for about 24 s, then full current and digital
+amplitude are restored. Both methods give approximately 0, -6, -12 and
+-18 dB relative to full output. The DAC-current steps ideally differ by
+6.0206 dB; digital rounding changes these comparisons by less than 0.01 dB.
+Harmonic/spur behavior can differ because the two methods change different
+parts of the signal path. CH0, CH2 and CH3 retain their standard tones during
+the comparison. Each dwell includes a few microseconds of programming time.
+
+On the SVA1015X, return to a frequency-span display:
+
+* Center 125 MHz, span 250 MHz (0-250 MHz).
+* RBW 100 kHz, VBW 300 kHz, continuous sweep, automatic sweep time, free trigger.
+* Reference 0 dBm, 10 dB/div, attenuation 20 dB, preamp off.
+* Trace 1/A Clear Write with Pos Peak; other traces off/Blank.
+
+Watch the 75 MHz carrier descend through four levels. The first four seconds
+use DAC-current scaling; the next four use digital scaling, and this pair
+repeats three times. Compare any visible harmonics at 150 and 225 MHz and
+other spurs at corresponding carrier levels. The RF measurement determines
+whether their relative levels change; identical-looking traces are a valid
+observation at the chosen bandwidth and display scale.
+
+```sh
+./spi_ad9959 --test10 /tmp/ad9959_test10.seq
+scp /tmp/ad9959_test10.seq root@BOARD_IP:ad9959_test10.seq
+```
+
+This sequence uses regular data records and supports the board's full check:
+
+```sh
+./ppplay -file ad9959_test10.seq -format text -i 0x2 -force -check -timeout 3 -hard-timeout 35s
+```
