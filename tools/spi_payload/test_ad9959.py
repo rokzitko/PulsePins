@@ -23,7 +23,7 @@ class Ad9959Test(unittest.TestCase):
         )
         return result, path
 
-    def decode(self, text, update_count=2, allowed_pins=0xC7):
+    def decode(self, text, update_count=2, allowed_pins=0xC7, reset_expected=True):
         lines = text.splitlines()
         self.assertEqual(lines[-2:], ["final 0x2", "f"])
         previous = 2
@@ -60,8 +60,9 @@ class Ad9959Test(unittest.TestCase):
             if previous & 0x40 and not pins & 0x40:
                 self.assertGreaterEqual(now - update_start, 100)
             if previous & 2 and not pins & 2:
-                self.assertIsNotNone(reset_end)
-                self.assertGreaterEqual(now - reset_end, 100)
+                if reset_expected:
+                    self.assertIsNotNone(reset_end)
+                    self.assertGreaterEqual(now - reset_end, 100)
                 selected_at = now
                 bits = []
             if (pins ^ previous) & 4:
@@ -87,7 +88,10 @@ class Ad9959Test(unittest.TestCase):
                 selected_at = None
             previous = pins
             now += count
-        self.assertIsNotNone(reset_end)
+        if reset_expected:
+            self.assertIsNotNone(reset_end)
+        else:
+            self.assertIsNone(reset_end)
         self.assertIsNone(selected_at)
         self.assertEqual(previous, 2)
         self.assertEqual(len(updates), update_count)
@@ -140,6 +144,47 @@ class Ad9959Test(unittest.TestCase):
 
     def test_custom_tones(self):
         self.check_program((1, 10e6, 80e6, 200e6))
+
+    def test_ch1_update(self):
+        for frequency, scale in ((0, 1023), (200e6, 102), (75e6, 0)):
+            with self.subTest(frequency=frequency, scale=scale), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "point.seq"
+                result = subprocess.run([str(GENERATOR), "--set-ch1", str(path), str(frequency), str(scale)],
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                text = path.read_text()
+                self.assertLessEqual(len(text.splitlines()) - 1, 3382)
+                transactions, updates = self.decode(text, update_count=1, allowed_pins=0x47, reset_expected=False)
+            selected = 0xF0
+            registers = {}
+            widths = {0: 1, 3: 3, 4: 4, 5: 2, 6: 3}
+            for timestamp, data in transactions:
+                address, value = data[0], int.from_bytes(data[1:], "big")
+                self.assertIn(address, widths)  # no global registers or PLL reconfiguration
+                self.assertEqual(len(data), widths[address] + 1)
+                if address == 0:
+                    selected = value
+                    self.assertEqual(selected, 0x20 if timestamp < updates[0] else 0xF0)
+                else:
+                    self.assertEqual(selected, 0x20)  # all other channels retain their registers
+                    self.assertLess(timestamp, updates[0])  # frequency and scale latch together
+                    self.assertNotIn(address, registers)
+                    registers[address] = value
+            self.assertEqual(selected, 0xF0)
+            self.assertEqual(registers[3], 0x301)
+            self.assertEqual(registers[5], 0)
+            self.assertEqual(registers[6], 0x1000 | scale)
+            self.assertLessEqual(abs(registers[4] * 500e6 / 2**32 - frequency), 500e6 / 2**33)
+
+    def test_ch1_update_invalid(self):
+        for frequency, scale in ((-1, 100), ("nan", 100), (200000001, 100),
+                                 (1, -1), (1, 1024), (1, "102.5")):
+            with self.subTest(frequency=frequency, scale=scale), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "point.seq"
+                result = subprocess.run([str(GENERATOR), "--set-ch1", str(path), str(frequency), str(scale)],
+                                        capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(path.exists())
 
     def test_frequency_staircase(self):
         with tempfile.TemporaryDirectory() as directory:

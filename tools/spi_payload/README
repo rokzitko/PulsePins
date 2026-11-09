@@ -518,3 +518,82 @@ This sequence uses regular data records and supports the board's full check:
 ```sh
 ./ppplay -file ad9959_test10.seq -format text -i 0x2 -force -check -timeout 3 -hard-timeout 35s
 ```
+
+### Measured frequency/amplitude sweep: sweep1.py
+
+`sweep1.py` controls PulsePins over SSH and the SVA1015X over LAN (SCPI TCP
+5025). It sweeps CH1 through **100 equally spaced points including 0 and
+200 MHz**, with a nominal total duration of **60 seconds**. The digital
+amplitude decreases linearly with frequency from full scale to 10%:
+`round(1023 * (1 - 0.9 * frequency / 200e6))`. The last code is 102, or
+9.9707% of full scale, because of the DDS's 10-bit amplitude quantization.
+This is digital voltage-amplitude scaling; the module's frequency response
+also affects measured RF amplitude.
+
+Run on the development computer, with the analyzer connected to CH1:
+
+```sh
+make -C tools/spi_payload spi_ad9959 check-ad9959 check-sweep1
+python3 tools/spi_payload/sweep1.py
+```
+
+Defaults are PulsePins `root@192.168.3.47`, analyzer `192.168.3.55`, and output
+`sweep1.dat` in the current directory. Requires Python 3, OpenSSH `ssh`/`scp`,
+passwordless board access, and the board's existing `/home/root/ppplay`.
+No Python packages, FPGA update or board-software installation are needed.
+Options are `--board`, `--analyzer`, `--points`, `--duration`, and `--output`:
+
+```sh
+python3 tools/spi_payload/sweep1.py --points 100 --duration 60 --output sweep1.dat
+```
+
+The script initializes the standard four-channel tones, uploads short
+per-point sequences once, and reuses an SSH connection. Each point is played
+with `ppplay -check`, changing CH1 frequency and amplitude with one UPDATE.
+Separate short playbacks fit the ABI 5 finite input buffer; the DDS stays
+at the programmed setting while the analyzer measures it. CH0/CH2/CH3 stay
+at their standard 50/100/125 MHz tones throughout the sweep.
+
+The analyzer follows each setpoint in a 200 kHz span with 1 kHz RBW, 3 kHz
+VBW, positive-peak detection, Clear Write, 20 dB attenuation, preamp off,
+0 dBm reference and 10 dB/div. It acquires a fresh single scan, waits for
+completion, then searches for and reads the peak marker. These are measured
+trace peak positions, with resolution limited by the trace grid and RBW.
+The script allows additional trace-publication time after scan completion
+and retries invalid markers with up to three fresh scans at the same DDS
+setting (the bench firmware sometimes returns a transient zero marker).
+At least 600 ms is allocated per point by default, including programming
+and measurement. If a point takes longer, the script extends the sweep
+rather than advancing the DDS during acquisition. Initialization/upload
+time is additional; the actual sweep duration is recorded in the file.
+
+The ASCII file contains exactly two columns, both in Hz:
+
+```text
+# set_frequency_Hz measured_frequency_Hz
+0.000000000 nan
+```
+
+There is one row per point, including `nan` at DC (0 Hz has no RF carrier).
+Peaks below -80 dBm, non-finite readings, or peaks more than 90 kHz away
+from the setpoint after retries are also saved as `nan`. Each row is flushed immediately;
+an interrupted run retains completed rows. A completed run includes a final
+comment with row count, valid peak count and elapsed time. An existing output
+file is replaced. Remote sequences and playback logs remain in the printed
+`/home/root/sweep1.*` directory for inspection.
+
+At completion CH1 remains at **200 MHz and amplitude code 102**. The analyzer
+returns to continuous scanning at the final center frequency. On interruption
+or error, CH1 holds its last programmed setting.
+
+The generator also exposes the per-point operation independently:
+
+```sh
+./spi_ad9959 --set-ch1 point.seq 200e6 102
+```
+
+`--set-ch1 output.seq CH1_Hz amplitude_code` requires prior standard DDS
+initialization. It updates CH1 only, without resetting the DDS/PLL; frequency
+and amplitude latch together. This mode accepts DC through 200 MHz and
+integer amplitude codes 0..1023. The ordinary four-tone initialization still
+requires strictly positive frequencies.

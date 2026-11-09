@@ -13,5 +13,6 @@ ad9959_test7.seq
 ad9959_test8.seq
 ad9959_test9.seq
 ad9959_test10.seq
+sweep1.dat
 __pycache__/
 sequence

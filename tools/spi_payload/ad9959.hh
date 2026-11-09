@@ -85,6 +85,23 @@ class Ad9959 {
     return result;
   }
 
+  // Update an initialized DDS without resetting its PLL or the other channels.
+  static std::vector<SpiRleEncoder::Token> channel1_sequence(double frequency_hz, uint32_t amplitude_code)
+  {
+    const auto word = frequency_hz == 0.0 ? 0 : tuning_word_for_frequency(frequency_hz);
+    if (amplitude_code > 1023)
+      throw std::invalid_argument("AD9959 amplitude code must be in 0..1023");
+    SpiRleEncoder spi(default_spi_config());
+    write_register(spi, 0x00, 0x20, 1);
+    write_register(spi, 0x03, 0x000301, 3); // single tone, full DAC current, sine
+    write_register(spi, 0x05, 0x0000, 2);
+    write_register(spi, 0x04, word, 4);
+    write_register(spi, 0x06, 0x001000 | amplitude_code, 3);
+    update(spi); // apply frequency and amplitude together
+    write_register(spi, 0x00, 0xF0, 1);
+    return spi.tokens();
+  }
+
   static std::vector<SpiRleEncoder::Token> frequency_staircase_sequence()
   {
     auto result = tone_sequence();

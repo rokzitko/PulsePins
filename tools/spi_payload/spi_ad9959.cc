@@ -12,6 +12,7 @@ namespace {
 void usage(std::ostream &out)
 {
   out << "Usage: spi_ad9959 [output.seq [CH0_Hz CH1_Hz CH2_Hz CH3_Hz]]\n"
+      << "       spi_ad9959 --set-ch1 output.seq CH1_Hz amplitude_code\n"
       << "       spi_ad9959 --test1 [output.seq]\n"
       << "       spi_ad9959 --test2 [output.seq]\n"
       << "       spi_ad9959 --test3 [output.seq]\n"
@@ -23,6 +24,7 @@ void usage(std::ostream &out)
       << "       spi_ad9959 --test9 [output.seq]\n"
       << "       spi_ad9959 --test10 [output.seq]\n"
       << "Defaults: ad9959.seq, 50e6 75e6 100e6 125e6\n"
+      << "--set-ch1: update initialized CH1 only; 0..200 MHz, amplitude code 0..1023, no reset.\n"
       << "Test 1: CH1 frequency staircase, 1 s per tone, six cycles; returns to 75 MHz.\n"
       << "Test 2: CH1 profile FSK at 70/80 MHz, 500 ms per tone, 24 cycles; returns to 75 MHz.\n"
       << "Test 3: CH1 16-level FSK, 60-90 MHz in scrambled order, 250 ms per tone, six cycles.\n"
@@ -54,6 +56,7 @@ int main(int argc, char **argv)
     usage(std::cout);
     return 0;
   }
+  const bool set_ch1 = argc >= 2 && std::string(argv[1]) == "--set-ch1";
   const int test = argc >= 2 && std::string(argv[1]) == "--test1" ? 1
                  : argc >= 2 && std::string(argv[1]) == "--test2" ? 2
                  : argc >= 2 && std::string(argv[1]) == "--test3" ? 3
@@ -64,15 +67,26 @@ int main(int argc, char **argv)
                  : argc >= 2 && std::string(argv[1]) == "--test8" ? 8
                  : argc >= 2 && std::string(argv[1]) == "--test9" ? 9
                  : argc >= 2 && std::string(argv[1]) == "--test10" ? 10 : 0;
-  if ((test && argc != 2 && argc != 3) || (!test && argc != 1 && argc != 2 && argc != 6)) {
+  if (set_ch1 ? argc != 5 : (test && argc != 2 && argc != 3) || (!test && argc != 1 && argc != 2 && argc != 6)) {
     usage(std::cerr);
     return 1;
   }
 
   try {
-    const std::string filename = test ? (argc == 3 ? argv[2] : "ad9959_test" + std::to_string(test) + ".seq")
+    const std::string filename = set_ch1 ? argv[2]
+                               : test ? (argc == 3 ? argv[2] : "ad9959_test" + std::to_string(test) + ".seq")
                                      : (argc >= 2 ? argv[1] : "ad9959.seq");
     auto frequencies = Ad9959::kDefaultFrequenciesHz;
+    uint32_t amplitude_code = 1023;
+    if (set_ch1) {
+      frequencies[1] = parse_frequency(argv[3]);
+      const std::string text(argv[4]);
+      std::size_t consumed = 0;
+      const auto code = std::stoul(text, &consumed);
+      if (consumed != text.size() || code > 1023)
+        throw std::invalid_argument("Amplitude code must be an integer in 0..1023");
+      amplitude_code = static_cast<uint32_t>(code);
+    }
     if (argc == 6)
       for (std::size_t channel = 0; channel < frequencies.size(); ++channel)
         frequencies[channel] = parse_frequency(argv[channel + 2]);
@@ -80,7 +94,8 @@ int main(int argc, char **argv)
     const auto profile = test == 7 ? Ad9959::sinusoidal_am_sequence()
                        : test == 8 ? Ad9959::phase_keying_sequence()
                        : test == 9 ? Ad9959::burst_comparison_sequence() : Ad9959::ProfileSequence{};
-    const auto tokens = test == 1 ? Ad9959::frequency_staircase_sequence()
+    const auto tokens = set_ch1 ? Ad9959::channel1_sequence(frequencies[1], amplitude_code)
+                      : test == 1 ? Ad9959::frequency_staircase_sequence()
                       : test == 2 ? Ad9959::two_level_fsk_sequence()
                       : test == 3 ? Ad9959::sixteen_level_fsk_sequence()
                       : test == 4 ? Ad9959::asymmetric_sweep_sequence()
@@ -128,6 +143,8 @@ int main(int argc, char **argv)
 
     std::cout << "DDS reference: 25 MHz; PLL x20; system clock: 500 MHz\n"
               << "PulsePins streamer: 100 MHz; SPI: 12.5 MHz, mode 0, 1-bit MSB-first\n";
+    if (set_ch1)
+      std::cout << "CH1-only update, no DDS reset; amplitude code " << amplitude_code << "/1023 of maximum.\n";
     if (test == 1)
       std::cout << "Test 1: CH1 cycles 50 -> 75 -> 100 -> 125 MHz, 1 s per tone, six cycles.\n"
                 << "After about 24 s, returns to the following steady tones:\n";
@@ -170,7 +187,9 @@ int main(int argc, char **argv)
                 << "First 4 s: DAC current; next 4 s: digital scaling; repeat three times.\n"
                 << "After about 24 s, restores full current/amplitude and the following steady tones:\n";
     for (std::size_t channel = 0; channel < frequencies.size(); ++channel) {
-      const auto word = Ad9959::tuning_word_for_frequency(frequencies[channel]);
+      if (set_ch1 && channel != 1)
+        continue;
+      const auto word = frequencies[channel] == 0.0 ? 0 : Ad9959::tuning_word_for_frequency(frequencies[channel]);
       std::cout << "CH" << channel << ": " << std::fixed << std::setprecision(6)
                 << frequencies[channel] << " Hz, FTW=0x" << std::hex
                 << std::setw(8) << std::setfill('0') << word << std::dec
