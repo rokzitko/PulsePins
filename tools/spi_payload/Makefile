@@ -1,7 +1,7 @@
 CXX = g++-13
 CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra
 
-.PHONY: all clean check-ad9959 check-sweep1
+.PHONY: all clean check-ad9959 check-sweep1 check-sweep2 check-spi-update-rate
 
 all: spi spi_ad9833 spi_ad9833_pga spi_ad9959
 
@@ -22,6 +22,12 @@ check-ad9959: spi_ad9959
 
 check-sweep1:
 	python3 test_sweep1.py
+
+check-sweep2: check-sweep1
+	python3 test_sweep2.py
+
+check-spi-update-rate: check-sweep2
+	python3 test_spi_update_rate.py
 
 clean:
 	rm -f spi spi_ad9833 spi_ad9833_pga spi_ad9959

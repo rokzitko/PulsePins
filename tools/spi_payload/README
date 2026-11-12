@@ -597,3 +597,207 @@ initialization. It updates CH1 only, without resetting the DDS/PLL; frequency
 and amplitude latch together. This mode accepts DC through 200 MHz and
 integer amplitude codes 0..1023. The ordinary four-tone initialization still
 requires strictly positive frequencies.
+
+### Full-amplitude, fixed-analyzer-range sweep: sweep2.py
+
+`sweep2.py` sweeps CH1 through **1000 equally spaced points from 0 to 200 MHz**
+in a nominal **one hour (3600 seconds)**, allocating **3.6 seconds per point**,
+with **full DAC current and amplitude code 1023 at every point**.
+The analyzer is configured once to **0-250 MHz** (center
+125 MHz, span 250 MHz), and its frequency range stays fixed throughout
+acquisition, retries and subsequent continuous scanning. Start and stop
+frequencies are checked before each measurement and after every scan.
+
+Run on the development computer with the analyzer connected to CH1:
+
+```sh
+make -C tools/spi_payload spi_ad9959 check-ad9959 check-sweep2
+python3 tools/spi_payload/sweep2.py --output tools/spi_payload/sweep2.dat
+```
+
+The connection defaults, dependencies and available options match `sweep1.py`;
+`--points` defaults to 1000 and `--duration` to 3600 seconds. The default
+output is `sweep2.dat` in the current directory. The new script
+reuses `sweep1.py`'s SSH, SCPI transport and checked/paced acquisition helpers,
+so keep both scripts together. Remote sequences and playback logs are retained
+in the printed `/home/root/sweep1.*` directory, also recorded in the data header.
+
+Analyzer settings are RBW 100 kHz, VBW 300 kHz, Clear Write, positive-peak
+detection, automatic sweep time, 20 dB attenuation, preamp off, reference
+0 dBm and 10 dB/div. Each DDS point is held until a fresh trace is measured;
+slow scans extend the nominal duration. The peak marker moves across the
+fixed display. Peak frequencies have the coarser resolution of this wide-span
+trace, not the narrow tracking window used by `sweep1.py`.
+
+The output retains two columns: set frequency and measured peak frequency,
+both in Hz. DC is recorded as `nan`; non-finite readings, peaks below -80 dBm,
+zero-frequency markers, or peaks more than 500 kHz from the requested frequency
+are also `nan` after up to three fresh scans. Console progress includes measured
+peak power in dBm. Full digital amplitude does not compensate for the module's
+analog frequency response. Each completed row is flushed immediately; an
+existing output file is replaced.
+
+At completion CH1 remains at **200 MHz, amplitude code 1023**, and the analyzer
+scans continuously over **0-250 MHz**. On interruption or error the DDS holds
+its last setting and the analyzer resumes continuous scanning over that same range.
+
+### SPI update-rate validation
+
+`spi_update_rate.py` tests CH1 with 100 frequencies from 100 to 101 MHz at
+full amplitude, initially using 10 MHz mode-0 SPI. See
+[`SPI_RATE_VALIDATION.md`](SPI_RATE_VALIDATION.md) for the step-by-step bench
+procedure, acceptance criteria and results ledger.
+
+```sh
+make -C tools/spi_payload check-spi-update-rate
+python3 tools/spi_payload/spi_update_rate.py --generate-only --mode burst
+python3 tools/spi_payload/spi_update_rate.py --mode slow --spi-clock 10e6
+```
+
+Modes are `slow` (one write then a fresh SA measurement at each point), `burst`
+(all points back-to-back, for external time-resolved capture), and `endpoints`
+(successively longer burst prefixes, measuring the held final frequency).
+`--trials` repeats the selected test; `--interval` specifies a minimum host-side
+interval between playbacks, not a delay inside a burst. Both default to 1.
+`--start`, `--stop`, `--points`, `--spi-clock`, `--tolerance` (default 5000 Hz),
+`--board`, `--analyzer`, `--run-dir`, and `--note` are configurable. Tolerance
+must be less than half the frequency step. `--generate-only` contacts no hardware.
+
+With `--clock-source qout` (default), SCLK comes from Q0 and defaults to 10 MHz.
+The script quantizes SCLK to equal integer half-periods of the 100 MHz streamer
+and reports the achieved clock. After initialization, only the five-byte CFTW0
+write and a 20 ns high/20 ns low UPDATE are sent at each point. Initialization
+uses a 1 us reset, 1 us PLL UPDATE pulse and 2 ms PLL settling. The nominal
+update interval is `(80 * half_period_ticks + 12) * 10 ns`: 4.12 us at 10 MHz.
+The full 100-update block occupies 412 us, plus 10 ns idle at either end.
+CH1 holds its final frequency and full amplitude after each playback.
+The sequence uses lossless eight-slot store/replay compression of common SPI
+half-cycles to reduce DMA bandwidth. The expanded pin values, timing and waveform
+CRC are identical to the uncompressed sequence. Both expanded and encoded record
+counts are saved. `sequence_compact.py` contains the reusable run encoder.
+
+`--clock-source streamer` uses the free-running **100 MHz** clock from **J8 pin 3**
+as SCLK. Move the DDS SCLK lead from Q0 to J8 pin 3; the two outputs must not be
+joined. Keep CS, SDIO_0, UPDATE, reset and ground on their existing connections.
+This mode defaults to 100 MHz and rejects a different `--spi-clock`. Q0 stays low.
+By default it emits one data bit per 10 ns, with CS low for exactly 40 cycles per FTW write.
+The 20 ns pre-write guard is deselected, followed by 400 ns data, 60 ns deselected
+guard and the usual 20 ns high/20 ns low UPDATE. Scheduled spacing is **520 ns**
+(**1,923,076.923 updates/s**), or **52.02 us** for 100 writes including idle.
+Forwarded-clock sequences use plain run-length records rather than SPI-edge replay.
+
+The AD9959 Rev. C datasheet specifies SCLK up to 200 MHz, data setup 2.2 ns,
+data hold 0 ns and CS setup 1 ns (Table 25). The timing model assumes the DDS
+samples the preceding QOUT state on each rising clock edge, before the new
+data/CS arrives. Actual clock/data/CS skew and edge quality need bench validation;
+the existing FPGA output constraints do not guarantee receiver timing. CS must
+exclude all idle clock edges: CS high pauses the serial port rather than resetting
+its bit counter. The Q0-clocked sequence cannot be reused with forwarded SCLK.
+The hardware CRCs cover QOUT data/control only; the J8 clock is outside that CRC.
+
+Prepare offline, then after rewiring run the slow baseline before endpoint bursts:
+
+```sh
+python3 tools/spi_payload/spi_update_rate.py --clock-source streamer --mode endpoints --generate-only
+python3 tools/spi_payload/spi_update_rate.py --clock-source streamer --mode slow
+python3 tools/spi_payload/spi_update_rate.py --clock-source streamer --mode endpoints
+```
+
+Four-bit writes use `--clock-source streamer --serial-bits 4`. Connect Q2..Q5
+to SDIO_0..SDIO_3, respectively, with SCLK still on J8 pin 3. Initialization
+uses the established one-bit timing, then writes CSR=0x26 in one-bit mode,
+pulses UPDATE and waits 1 us before any four-bit traffic. SDIO_3 stays low until
+the mode switch. Both instruction and data are sent high nibble first, with
+SDIO_0 carrying each nibble's least significant bit. Each FTW write takes ten
+100 MHz clocks (100 ns); default update spacing is **220 ns**, or
+**4,545,454.545 updates/s**. The DDS remains in four-bit mode after this run;
+each subsequent script invocation resets and initializes the DDS again.
+
+Forwarded-clock timing can be adjusted in 10 ns ticks:
+
+* `--pre-guard-ticks` (default 2): deselected time before each write, minimum 0.
+* `--post-guard-ticks` (default 6): deselected time before UPDATE, minimum 0.
+  At zero, CS high and UPDATE high launch together after the last data symbol.
+* `--update-ticks` (default 2): high and low UPDATE durations, minimum 1 each.
+  At a 500 MHz DDS system clock, one SYNC_CLK period is 8 ns; the nominal
+  10 ns minimum exceeds it, but physical margin and asynchronous sampling
+  still require validation. Initialization always retains its original guards
+  and UPDATE widths regardless of these burst settings.
+
+The scheduled interval is `(40 / serial_bits + pre + post + 2 * update) * 10 ns`.
+Zero guards and one-tick UPDATE high/low give 120 ns in four-bit mode. This is
+the minimum of this non-overlapped waveform format, not a proven DDS limit.
+Guard and pulse settings, serial width and achieved rate are stored in reports.
+
+`--shuffle-seed INTEGER` deterministically shuffles the frequency order, recorded
+in `report.json`. `--burst-cycles N` (default 1) repeats the list without host
+gaps inside the waveform. In endpoint mode, each prefix is preceded by N-1
+complete passes, so lengths are `(N-1)*points+1` through `N*points`. In burst
+mode it sends N complete passes. Slow mode requires N=1. Use a smaller point
+count for long-burst endpoint tests to limit generated file volume. Frequency
+tolerance is still checked against the spacing of the original sorted grid.
+
+```sh
+python3 tools/spi_payload/spi_update_rate.py --clock-source streamer --serial-bits 4 --mode slow
+python3 tools/spi_payload/spi_update_rate.py --clock-source streamer --serial-bits 4 --mode endpoints
+python3 tools/spi_payload/spi_update_rate.py --clock-source streamer --serial-bits 4 --mode endpoints \
+    --points 10 --burst-cycles 100 --shuffle-seed 42
+```
+
+The device-independent `sequence_dma.cc` helper is copied to a unique
+`/home/root/spi-rate.*` directory and compiled with the board's native `g++`
+and installed `/home/root/c++` headers (including `include` and `third_party/hwlib`).
+It uses the existing DMA path and reserved upper 512 MB of board RAM, avoiding
+the finite CPU-fed input-buffer limit. The bench boot configuration is `mem=512M`.
+No FPGA or installed PulsePins binary is replaced. The helper accepts
+`-file FILE -crc EXPECTED_CRC -i INITIAL_PINS`, only finite `d/store/r/final/f` files,
+and at most five seconds of samples at 100 MHz. It primes the output FIFO before
+triggering and checks completion, underrun, input overflow, FIFO accounting,
+final pins and both hardware CRCs against the locally computed sample CRC.
+
+Raw run-by-run capture cannot keep up with these dense bursts. Its FIFO overflow
+is explicitly recorded as `capture_overflow`; the readback CRC is computed
+upstream of that FIFO and still covers every valid sample. A matching CRC is
+digital-output evidence, not proof of reception at the DDS connector. The helper
+does not claim a lossless raw capture. Other transport/CRC failures stop the run.
+
+Slow and endpoint modes keep the SA at the sweep interval plus half its width
+on each side (99.5-101.5 MHz by default), RBW 1 kHz and VBW 3 kHz, verifying the
+range throughout acquisition. Burst mode leaves the analyzer controls alone for
+manual scope/SA experiments. Analyzer measurements are taken only after a checked
+playback. Invalid peaks are saved as empty CSV fields/null JSON values and cause
+an unsuccessful RF result. An analyzer is required only for slow/endpoint modes.
+
+Each run creates a new directory under `tools/spi_payload/results/`, or the new
+directory specified by `--run-dir`. It retains the SCLK source, exact sequences and SHA-256 hashes,
+script/helper source snapshots, build and playback logs, `measurements.csv`,
+`report.json` and `report.md`. Rows are flushed as acquired. Source snapshots
+reuse the adjacent sweep modules and are provenance records, not standalone
+installations. The script refuses to start while a local `sweep1.py`/`sweep2.py`
+process is active; keep other instrument-control processes stopped during a test.
+
+Four-bit validation on 2026-11-11 passed a ten-trial short-burst soak at
+**120 ns/update (8.333 million updates/s)**: 1,000/1,000 RF endpoints, 50,500
+programmed writes, no output underruns. Bursts contained 1-100 writes. Use:
+
+```sh
+python3 tools/spi_payload/spi_update_rate.py --clock-source streamer --serial-bits 4 \
+    --mode endpoints --pre-guard-ticks 0 --post-guard-ticks 0 --update-ticks 1 --trials 10
+```
+
+Longer DMA-fed bursts exposed playback underruns: 600 and 620 ns settings passed
+one trial but failed during repetition. The fastest fully passing long-burst
+soak tested was **720 ns/update (1.389 million/s)**, with 100/100 RF endpoints
+and 999,550 programmed writes in bursts of 9,991-10,000. Reproduce it with:
+
+```sh
+python3 tools/spi_payload/spi_update_rate.py --clock-source streamer --serial-bits 4 \
+    --mode endpoints --pre-guard-ticks 0 --post-guard-ticks 60 --update-ticks 1 \
+    --points 10 --burst-cycles 1000 --shuffle-seed 42 --trials 10
+```
+
+These are endpoint-tested finite-burst rates; host gaps separate bursts. The
+long-burst limit is waveform-dependent and its exact boundary is not established.
+All completed waveform CRCs passed; raw-capture overflows are recorded separately.
+See `SPI_RATE_VALIDATION.md` for the complete four-bit spacing scan, retained
+failure logs, soak reports and evidence audits.
